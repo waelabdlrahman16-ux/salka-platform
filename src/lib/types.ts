@@ -59,3 +59,13 @@ export interface Slot {
   capacity: number; remaining: number; scheduled_date: string
 }
 export interface Setting { key: string; value: string; label: string }
+
+export interface Shift {
+  id: number; driver_id: number; shift_date: string
+  start_time: string; end_time: string; status: string
+}
+export interface SwapRequest {
+  request_id: number; reason: string; created_at: string
+  shift_id: number; shift_date: string; start_time: string; end_time: string
+  requested_by_name: string
+}

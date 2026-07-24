@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import type { Assignment, Booking, Driver, Earning, MenuItem, Order, Restaurant, Setting } from '../lib/types'
+import type { Assignment, Booking, Driver, Earning, MenuItem, Order, Restaurant, Setting, Shift } from '../lib/types'
 import { ping, askNotificationPermission } from '../lib/notify'
 
-type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings'
+type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts'
 const TABS: { key: Tab; label: string }[] = [
   { key: 'unassigned', label: 'طلبات غير معيّنة' },
   { key: 'active', label: 'توصيلات جارية' },
@@ -12,6 +12,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'orders', label: 'كل الطلبات' },
   { key: 'earnings', label: 'الأرباح' },
   { key: 'settings', label: 'الإعدادات' },
+  { key: 'shifts', label: 'الورديات' },
 ]
 
 export default function Admin() {
@@ -27,9 +28,12 @@ export default function Admin() {
   const [openRest, setOpenRest] = useState<number | null>(null)
   const [newItem, setNewItem] = useState({ name: '', category: '', price: '' })
   const [settings, setSettings] = useState<Setting[]>([])
+  const [shifts, setShifts] = useState<Shift[]>([])
+  const [escalations, setEscalations] = useState<any[]>([])
+  const [newShift, setNewShift] = useState({ driver_id: '', shift_date: '', start_time: '', end_time: '' })
 
   async function load() {
-    const [o, a, d, b, e, r, m, st] = await Promise.all([
+    const [o, a, d, b, e, r, m, st, sh, esc] = await Promise.all([
       supabase.from('orders').select('*, restaurants(name)').order('id', { ascending: false }),
       supabase.from('delivery_assignments').select('*, orders(*, restaurants(name)), drivers(*)').order('id', { ascending: false }),
       supabase.from('drivers').select('*').order('id'),
@@ -38,10 +42,15 @@ export default function Admin() {
       supabase.from('restaurants').select('*').order('id'),
       supabase.from('menu_items').select('*').order('id'),
       supabase.from('settings').select('*').order('key'),
+      supabase.from('shifts').select('*').order('shift_date', { ascending: false }).limit(40),
+      supabase.from('shift_swap_requests').select('*, shifts(*), requester:drivers!shift_swap_requests_requested_by_fkey(name)')
+        .eq('status', 'escalated').order('escalated_at', { ascending: false }),
     ])
     setOrders(o.data ?? []); setAssignments(a.data ?? []); setDrivers(d.data ?? [])
     setBookings(b.data ?? []); setEarnings(e.data ?? [])
     setRestaurants(r.data ?? []); setMenu(m.data ?? []); setSettings(st.data ?? [])
+    setShifts(sh.data ?? []); setEscalations(esc.data ?? [])
+    ping('escalated_shifts', (esc.data ?? []).length, 'مندوب محتاج بديل', 'في وردية اتصعّدت للإدارة')
   }
 
   useEffect(() => {
@@ -93,6 +102,15 @@ export default function Admin() {
 
   async function toggleRestaurant(r: Restaurant) {
     await supabase.from('restaurants').update({ is_open: !r.is_open }).eq('id', r.id)
+    load()
+  }
+
+  async function addShift() {
+    await supabase.from('shifts').insert({
+      driver_id: Number(newShift.driver_id), shift_date: newShift.shift_date,
+      start_time: newShift.start_time, end_time: newShift.end_time
+    })
+    setNewShift({ driver_id: '', shift_date: '', start_time: '', end_time: '' })
     load()
   }
 
@@ -321,6 +339,65 @@ export default function Admin() {
             وقت وصول المندوب بيتحسب قبل ما الأكل يجهز، عشان يوصل المطعم في الوقت المناسب
             من غير ما يستنى.
           </p>
+        </div>
+      )}
+
+      {tab === 'shifts' && (
+        <div>
+          {escalations.length > 0 && (
+            <div className="mb-6">
+              <h2 className="font-bold text-red-300 mb-3">⚠️ محتاجين تدخل الإدارة</h2>
+              <div className="space-y-3">
+                {escalations.map((e: any) => (
+                  <div key={e.id} className="card p-4 border-red-400/50">
+                    <p className="font-semibold">{e.requester?.name}</p>
+                    <p className="text-sm text-mist mt-0.5">
+                      {e.shifts && new Date(e.shifts.shift_date).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'numeric' })}
+                      {' '}· {e.shifts?.start_time?.slice(0,5)}–{e.shifts?.end_time?.slice(0,5)}
+                    </p>
+                    {e.reason && <p className="text-sm text-mist mt-1">"{e.reason}"</p>}
+                    <p className="text-xs text-red-300 mt-2">محدش من المندوبين وافق يستلم الوردية</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <h2 className="font-bold text-mist mb-3">جدول الورديات</h2>
+          <div className="card p-4 mb-4">
+            <p className="text-sm text-mist mb-2">إضافة وردية جديدة</p>
+            <div className="grid grid-cols-2 gap-2">
+              <select className="field" value={newShift.driver_id}
+                onChange={e => setNewShift({ ...newShift, driver_id: e.target.value })}>
+                <option value="">اختر مندوب…</option>
+                {drivers.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+              <input type="date" className="field" value={newShift.shift_date}
+                onChange={e => setNewShift({ ...newShift, shift_date: e.target.value })} />
+              <input type="time" className="field" value={newShift.start_time}
+                onChange={e => setNewShift({ ...newShift, start_time: e.target.value })} />
+              <input type="time" className="field" value={newShift.end_time}
+                onChange={e => setNewShift({ ...newShift, end_time: e.target.value })} />
+            </div>
+            <button className="btn-sea w-full mt-3"
+              disabled={!newShift.driver_id || !newShift.shift_date || !newShift.start_time || !newShift.end_time}
+              onClick={addShift}>إضافة</button>
+          </div>
+
+          <div className="space-y-2.5">
+            {shifts.map(sh => {
+              const d = drivers.find(x => x.id === sh.driver_id)
+              return (
+                <div key={sh.id} className="card p-3.5 flex items-center justify-between text-sm">
+                  <div>
+                    <span className="font-semibold">{d?.name}</span>
+                    <span className="text-mist"> — {new Date(sh.shift_date).toLocaleDateString('ar-EG')} · {sh.start_time.slice(0,5)}–{sh.end_time.slice(0,5)}</span>
+                  </div>
+                  {sh.status === 'swapped' && <span className="badge-closed">اتبدلت</span>}
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 

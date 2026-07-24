@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase, DELIVERY_FEE, DRIVER_EARNING, ADMIN_AMOUNT } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { ping, askNotificationPermission } from '../lib/notify'
-import type { Assignment, Driver } from '../lib/types'
+import type { Assignment, Driver, Shift, SwapRequest } from '../lib/types'
 
 interface PoolOrder {
   id: number; total: number; zone: string
@@ -18,6 +18,10 @@ export default function DriverPage() {
   const [reason, setReason] = useState('')
   const [pool, setPool] = useState<PoolOrder[]>([])
   const [claiming, setClaiming] = useState<number | null>(null)
+  const [shifts, setShifts] = useState<Shift[]>([])
+  const [swaps, setSwaps] = useState<SwapRequest[]>([])
+  const [myOpenRequests, setMyOpenRequests] = useState<Map<number, number>>(new Map())
+  const [swapReason, setSwapReason] = useState<Record<number, string>>({})
 
   async function load() {
     if (!id) return
@@ -30,6 +34,19 @@ export default function DriverPage() {
     setAssignments(a ?? [])
     const { data: p } = await supabase.rpc('available_orders')
     setPool((p as PoolOrder[]) ?? [])
+
+    const today = new Date().toISOString().slice(0, 10)
+    const { data: sh } = await supabase.from('shifts').select('*')
+      .eq('driver_id', id).gte('shift_date', today)
+      .neq('status', 'cancelled').order('shift_date').limit(10)
+    setShifts(sh ?? [])
+
+    const { data: sw } = await supabase.rpc('open_swaps')
+    setSwaps((sw as SwapRequest[]) ?? [])
+
+    const { data: mine } = await supabase.from('shift_swap_requests')
+      .select('id, shift_id').eq('requested_by', id).eq('status', 'open')
+    setMyOpenRequests(new Map((mine ?? []).map((x: any) => [x.shift_id, x.id])))
     ping('pool', ((p as PoolOrder[]) ?? []).length, 'طلب متاح', 'في طلب جديد متاح للاستلام')
   }
 
@@ -60,6 +77,25 @@ export default function DriverPage() {
         total_deliveries: (driver?.total_deliveries ?? 0) + 1
       }).eq('id', id)
     }
+    load()
+  }
+
+  async function requestSwap(shiftId: number) {
+    const { error } = await supabase.rpc('request_swap', {
+      p_shift_id: shiftId, p_reason: swapReason[shiftId] || ''
+    })
+    if (error) alert('حصل خطأ، جرب تاني')
+    load()
+  }
+
+  async function acceptSwap(requestId: number) {
+    const { error } = await supabase.rpc('accept_swap', { p_request_id: requestId })
+    if (error) alert(error.message.includes('unavailable') ? 'حد تاني سبقك' : 'حصل خطأ')
+    load()
+  }
+
+  async function escalate(requestId: number) {
+    await supabase.rpc('escalate_swap', { p_request_id: requestId })
     load()
   }
 
@@ -98,6 +134,72 @@ export default function DriverPage() {
         </div>
         <span className={driver.available ? 'badge-open' : 'badge-closed'}>{driver.status}</span>
       </div>
+
+      {shifts.length > 0 && (
+        <div className="mb-6">
+          <h2 className="font-bold text-mist mb-3">ورديتك القادمة</h2>
+          <div className="space-y-3">
+            {shifts.map(sh => {
+              const requested = myOpenRequests.has(sh.id)
+      const myRequestId = myOpenRequests.get(sh.id)
+              return (
+                <div key={sh.id} className="card p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold">
+                        {new Date(sh.shift_date).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'numeric' })}
+                      </p>
+                      <p className="text-sm text-mist mt-0.5">{sh.start_time.slice(0,5)} — {sh.end_time.slice(0,5)}</p>
+                    </div>
+                    {sh.status === 'swapped' && <span className="badge-closed">اتبدلت</span>}
+                  </div>
+
+                  {sh.status === 'scheduled' && !requested && (
+                    <div className="mt-3 flex gap-2">
+                      <input className="field !py-1.5 text-sm" placeholder="سبب الاستبدال (اختياري)"
+                        value={swapReason[sh.id] || ''}
+                        onChange={e => setSwapReason({ ...swapReason, [sh.id]: e.target.value })} />
+                      <button className="btn-ghost !py-1.5 text-sm shrink-0" onClick={() => requestSwap(sh.id)}>
+                        طلب استبدال
+                      </button>
+                    </div>
+                  )}
+                  {requested && myRequestId && (
+                    <div className="mt-3">
+                      <p className="text-sand text-sm">⏳ طلب الاستبدال معروض على باقي المندوبين</p>
+                      <button className="btn-danger w-full mt-2 text-sm"
+                        onClick={() => escalate(myRequestId)}>
+                        محدش وافق — بلّغ الإدارة
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {swaps.filter(s => !myOpenRequests.has(s.shift_id)).length > 0 && (
+        <div className="mb-6">
+          <h2 className="font-bold text-mist mb-3">ورديات محتاجة مندوب بديل</h2>
+          <div className="space-y-3">
+            {swaps.filter(s => !myOpenRequests.has(s.shift_id)).map(sw => (
+              <div key={sw.request_id} className="card p-4 border-sand/40">
+                <p className="font-semibold">
+                  {new Date(sw.shift_date).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'numeric' })}
+                  {' '}· {sw.start_time.slice(0,5)}–{sw.end_time.slice(0,5)}
+                </p>
+                <p className="text-sm text-mist mt-1">مطلوبة من {sw.requested_by_name}</p>
+                {sw.reason && <p className="text-sm text-mist mt-0.5">"{sw.reason}"</p>}
+                <button className="btn-sea w-full mt-3" onClick={() => acceptSwap(sw.request_id)}>
+                  أقبل الوردية
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {pool.length > 0 && (
         <div className="mb-6">
