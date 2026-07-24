@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase, DELIVERY_FEE, DRIVER_EARNING, ADMIN_AMOUNT } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
+import { ping, askNotificationPermission } from '../lib/notify'
 import type { Assignment, Driver } from '../lib/types'
 
 interface PoolOrder {
@@ -29,9 +30,11 @@ export default function DriverPage() {
     setAssignments(a ?? [])
     const { data: p } = await supabase.rpc('available_orders')
     setPool((p as PoolOrder[]) ?? [])
+    ping('pool', ((p as PoolOrder[]) ?? []).length, 'طلب متاح', 'في طلب جديد متاح للاستلام')
   }
 
   useEffect(() => {
+    askNotificationPermission()
     load()
     const t = setInterval(load, 10000)
     return () => clearInterval(t)

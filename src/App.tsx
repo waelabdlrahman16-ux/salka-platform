@@ -9,6 +9,8 @@ import Admin from './pages/Admin'
 import DriverPage from './pages/Driver'
 import Login from './pages/Login'
 import Vendor from './pages/Vendor'
+import MyOrders from './pages/MyOrders'
+import Terms from './pages/Terms'
 
 function Header() {
   const { pathname } = useLocation()
@@ -31,7 +33,7 @@ function Header() {
         ) : !isStaff && (
           <nav className="flex items-center gap-1">
             <Link className={`tab ${pathname === '/' ? 'tab-active' : ''}`} to="/">المطاعم</Link>
-            <Link className={`tab ${pathname.startsWith('/chalets') ? 'tab-active' : ''}`} to="/chalets">الشاليهات</Link>
+            <Link className={`tab ${pathname.startsWith('/my-orders') ? 'tab-active' : ''}`} to="/my-orders">طلباتي</Link>
           </nav>
         )}
       </div>
@@ -49,6 +51,8 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/restaurant/:id" element={<RestaurantDetail />} />
             <Route path="/chalets" element={<Chalets />} />
+            <Route path="/my-orders" element={<MyOrders />} />
+            <Route path="/terms" element={<Terms />} />
             <Route path="/track/:token" element={<Track />} />
             <Route path="/login" element={<Login />} />
             <Route path="/admin" element={<Protected role="admin"><Admin /></Protected>} />
@@ -56,6 +60,9 @@ export default function App() {
             <Route path="/vendor" element={<Protected role="vendor"><Vendor /></Protected>} />
           </Routes>
         </main>
+        <footer className="max-w-5xl mx-auto px-4 pb-8 text-center">
+          <Link to="/terms" className="text-xs text-mist hover:text-foam">الشروط وسياسة الخصوصية</Link>
+        </footer>
       </div>
     </AuthProvider>
   )

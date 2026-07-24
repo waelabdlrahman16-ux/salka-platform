@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import type { Assignment, Booking, Driver, Earning, MenuItem, Order, Restaurant } from '../lib/types'
+import type { Assignment, Booking, Driver, Earning, MenuItem, Order, Restaurant, Setting } from '../lib/types'
+import { ping, askNotificationPermission } from '../lib/notify'
 
-type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'bookings' | 'earnings'
+type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings'
 const TABS: { key: Tab; label: string }[] = [
   { key: 'unassigned', label: 'طلبات غير معيّنة' },
   { key: 'active', label: 'توصيلات جارية' },
   { key: 'drivers', label: 'إدارة المندوبين' },
   { key: 'menu', label: 'المطاعم والمنيو' },
   { key: 'orders', label: 'كل الطلبات' },
-  { key: 'bookings', label: 'الحجوزات' },
   { key: 'earnings', label: 'الأرباح' },
+  { key: 'settings', label: 'الإعدادات' },
 ]
 
 export default function Admin() {
@@ -25,9 +26,10 @@ export default function Admin() {
   const [menu, setMenu] = useState<MenuItem[]>([])
   const [openRest, setOpenRest] = useState<number | null>(null)
   const [newItem, setNewItem] = useState({ name: '', category: '', price: '' })
+  const [settings, setSettings] = useState<Setting[]>([])
 
   async function load() {
-    const [o, a, d, b, e, r, m] = await Promise.all([
+    const [o, a, d, b, e, r, m, st] = await Promise.all([
       supabase.from('orders').select('*, restaurants(name)').order('id', { ascending: false }),
       supabase.from('delivery_assignments').select('*, orders(*, restaurants(name)), drivers(*)').order('id', { ascending: false }),
       supabase.from('drivers').select('*').order('id'),
@@ -35,13 +37,15 @@ export default function Admin() {
       supabase.from('driver_earnings').select('*, drivers(name)').order('id', { ascending: false }),
       supabase.from('restaurants').select('*').order('id'),
       supabase.from('menu_items').select('*').order('id'),
+      supabase.from('settings').select('*').order('key'),
     ])
     setOrders(o.data ?? []); setAssignments(a.data ?? []); setDrivers(d.data ?? [])
     setBookings(b.data ?? []); setEarnings(e.data ?? [])
-    setRestaurants(r.data ?? []); setMenu(m.data ?? [])
+    setRestaurants(r.data ?? []); setMenu(m.data ?? []); setSettings(st.data ?? [])
   }
 
   useEffect(() => {
+    askNotificationPermission()
     load()
     const t = setInterval(load, 15000)
     return () => clearInterval(t)
@@ -52,6 +56,13 @@ export default function Admin() {
   const unassigned = orders.filter(o => o.status !== 'Delivered' && o.status !== 'Cancelled' && !assignedOrderIds.has(o.id))
   const active = assignments.filter(a => activeStatuses.includes(a.status))
   const availableDrivers = drivers.filter(d => d.active && d.available && d.status === 'Available')
+  const escalateAfter = Number(settings.find(s => s.key === 'escalate_after_minutes')?.value ?? 15)
+  const isLate = (o: Order) => {
+    const from = o.dispatch_at ? +new Date(o.dispatch_at) : +new Date(o.created_at)
+    return (Date.now() - from) / 60000 > escalateAfter
+  }
+  useEffect(() => { ping('unassigned', unassigned.length, 'طلب غير معيّن', 'في طلب محدش استلمه') },
+    [unassigned.length])
 
   async function assign(order: Order, driver: Driver) {
     const attempts = assignments.filter(a => a.order_id === order.id).length
@@ -82,6 +93,17 @@ export default function Admin() {
 
   async function toggleRestaurant(r: Restaurant) {
     await supabase.from('restaurants').update({ is_open: !r.is_open }).eq('id', r.id)
+    load()
+  }
+
+  async function updateRestaurant(r: Restaurant, patch: Record<string, unknown>) {
+    await supabase.from('restaurants').update(patch).eq('id', r.id)
+    load()
+  }
+
+  async function updateSetting(st: Setting, value: string) {
+    if (value === st.value) return
+    await supabase.from('settings').update({ value }).eq('key', st.key)
     load()
   }
 
@@ -118,11 +140,12 @@ export default function Admin() {
         <div className="space-y-4">
           {unassigned.length === 0 && <div className="card p-6 text-center text-mist">لا توجد طلبات غير معيّنة</div>}
           {unassigned.map(o => (
-            <div key={o.id} className="card p-4">
+            <div key={o.id} className={`card p-4 ${isLate(o) ? 'border-red-400/50' : ''}`}>
               <div className="flex items-start justify-between">
                 <h2 className="font-bold">#{o.id} — {o.restaurants?.name}</h2>
                 <span className="font-bold text-sea">{o.total} ج.م</span>
               </div>
+              {isLate(o) && <p className="text-red-300 text-sm mt-1.5">⚠️ محدش استلم الطلب</p>}
               {customer(o)}
               <button className="btn-sea w-full mt-3" onClick={() => setAssigning(o)}>تعيين مندوب</button>
             </div>
@@ -186,23 +209,6 @@ export default function Admin() {
         </div>
       )}
 
-      {tab === 'bookings' && (
-        <div className="space-y-4">
-          {bookings.length === 0 && <div className="card p-6 text-center text-mist">لا توجد حجوزات</div>}
-          {bookings.map(b => (
-            <div key={b.id} className="card p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h2 className="font-bold">{b.chalets?.name}</h2>
-                  <p className="text-sm text-mist mt-0.5">{b.check_in} ← {b.check_out} · {b.guests} أفراد</p>
-                  <p className="text-sm mt-1.5">👤 {b.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${b.customer_phone}`}>{b.customer_phone}</a></p>
-                </div>
-                <span className="font-bold text-sea">{b.total} ج.م</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
       {tab === 'earnings' && (
         <div>
@@ -237,6 +243,22 @@ export default function Admin() {
                   <button className={r.is_open ? 'badge-open' : 'badge-closed'}
                     onClick={() => toggleRestaurant(r)}>{r.is_open ? 'مفتوح' : 'مغلق'}</button>
                 </div>
+
+                {expanded && (
+                  <div className="flex items-center gap-2 mt-3 text-sm">
+                    <span className="text-mist">وقت التحضير</span>
+                    <input type="number" defaultValue={r.prep_minutes}
+                      className="field !w-20 !py-1.5 text-center"
+                      onBlur={e => updateRestaurant(r, { prep_minutes: Number(e.target.value) })} />
+                    <span className="text-mist">دقيقة</span>
+                    <button className="btn-ghost !py-1.5 text-sm mr-auto"
+                      onClick={() => updateRestaurant(r, {
+                        vendor_type: r.vendor_type === 'supermarket' ? 'restaurant' : 'supermarket'
+                      })}>
+                      {r.vendor_type === 'supermarket' ? '🛒 سوبر ماركت' : '🍽️ مطعم'}
+                    </button>
+                  </div>
+                )}
 
                 {expanded && (
                   <div className="mt-4 space-y-2.5">
@@ -280,6 +302,25 @@ export default function Admin() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {tab === 'settings' && (
+        <div className="space-y-3">
+          {settings.map(st => (
+            <div key={st.key} className="card p-4 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-semibold text-sm">{st.label || st.key}</p>
+                <p className="text-xs text-mist mt-0.5">{st.key}</p>
+              </div>
+              <input defaultValue={st.value} className="field !w-24 !py-1.5 text-center"
+                onBlur={e => updateSetting(st, e.target.value)} />
+            </div>
+          ))}
+          <p className="text-xs text-mist mt-4 leading-relaxed">
+            وقت وصول المندوب بيتحسب قبل ما الأكل يجهز، عشان يوصل المطعم في الوقت المناسب
+            من غير ما يستنى.
+          </p>
         </div>
       )}
 

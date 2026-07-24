@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
+import { ping, askNotificationPermission } from '../lib/notify'
 import type { Order, OrderItem } from '../lib/types'
 
 const KITCHEN = [
@@ -25,6 +26,8 @@ export default function Vendor() {
       .eq('restaurant_id', rid).neq('status', 'Delivered')
       .order('id', { ascending: false }).limit(30)
     setOrders(o ?? [])
+    ping('vendor', (o ?? []).filter(x => (x.kitchen_status || 'new') === 'new').length,
+      'طلب جديد', 'في طلب جديد في انتظار التحضير')
     if (o?.length) {
       const { data: its } = await supabase.from('order_items').select('*')
         .in('order_id', o.map(x => x.id))
@@ -35,14 +38,30 @@ export default function Vendor() {
   }
 
   useEffect(() => {
+    askNotificationPermission()
     load()
     const t = setInterval(load, 10000)
     return () => clearInterval(t)
   }, [rid])
 
   async function advance(o: Order, next: string) {
-    await supabase.from('orders').update({ kitchen_status: next }).eq('id', o.id)
+    if (next === 'ready') {
+      await supabase.rpc('vendor_ready', { p_order_id: o.id })
+    } else {
+      await supabase.from('orders').update({ kitchen_status: next }).eq('id', o.id)
+    }
     load()
+  }
+
+  async function delay(o: Order) {
+    await supabase.rpc('vendor_delay', { p_order_id: o.id, p_minutes: 10 })
+    load()
+  }
+
+  function remaining(o: Order) {
+    if (!o.ready_at) return null
+    const mins = Math.round((+new Date(o.ready_at) - Date.now()) / 60000)
+    return mins
   }
 
   if (!rid) return <p className="text-mist text-center py-10">حسابك غير مرتبط بمطعم. تواصل مع الإدارة.</p>
@@ -73,10 +92,23 @@ export default function Vendor() {
           ))}
         </div>
 
+        {(() => {
+          const m = remaining(o)
+          if (m === null || o.kitchen_status === 'ready') return null
+          return (
+            <p className={`text-sm mt-3 text-center ${m < 0 ? 'text-red-300' : 'text-mist'}`}>
+              {m < 0 ? `متأخر ${Math.abs(m)} دقيقة` : `المفروض يجهز خلال ${m} دقيقة`}
+            </p>
+          )
+        })()}
+
         {stage.next && (
-          <button className="btn-sea w-full mt-3" onClick={() => advance(o, stage.next!)}>
-            {stage.action}
-          </button>
+          <div className="flex gap-2.5 mt-3">
+            <button className="btn-sea flex-1" onClick={() => advance(o, stage.next!)}>
+              {stage.action}
+            </button>
+            <button className="btn-ghost" onClick={() => delay(o)}>+10 دقائق</button>
+          </div>
         )}
         {!stage.next && <p className="text-emerald-300 text-center text-sm mt-3">✅ في انتظار المندوب</p>}
       </div>

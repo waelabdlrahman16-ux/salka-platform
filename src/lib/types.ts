@@ -1,6 +1,7 @@
 export interface Restaurant {
   id: number; name: string; description: string; category: string
   rating: number; delivery_time: string; is_open: boolean
+  vendor_type: string; prep_minutes: number
 }
 export interface MenuItem {
   id: number; restaurant_id: number; name: string; description: string
@@ -13,6 +14,8 @@ export interface Order {
   status: string; kitchen_status: string
   subtotal: number; delivery_fee: number; total: number
   payment_method: string; created_at: string
+  ready_at: string | null; dispatch_at: string | null
+  slot_id: number | null; scheduled_date: string | null
   restaurants?: { name: string }
 }
 export interface OrderItem {
@@ -50,3 +53,9 @@ export interface Earning {
   drivers?: { name: string }
 }
 export interface Zone { id: number; name: string }
+
+export interface Slot {
+  id: number; start_time: string; end_time: string
+  capacity: number; remaining: number; scheduled_date: string
+}
+export interface Setting { key: string; value: string; label: string }

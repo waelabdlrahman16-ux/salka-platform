@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase, DELIVERY_FEE } from '../lib/supabase'
-import type { MenuItem, Restaurant, Zone } from '../lib/types'
+import type { MenuItem, Restaurant, Slot, Zone } from '../lib/types'
 
 export default function RestaurantDetail() {
   const { id } = useParams()
@@ -15,11 +15,15 @@ export default function RestaurantDetail() {
   const [name, setName] = useState(''); const [phone, setPhone] = useState('')
   const [zone, setZone] = useState(''); const [unit, setUnit] = useState('')
   const [notes, setNotes] = useState('')
+  const [slots, setSlots] = useState<Slot[]>([])
+  const [slot, setSlot] = useState<Slot | null>(null)
 
   useEffect(() => {
     supabase.from('restaurants').select('*').eq('id', id).single().then(({ data }) => setRestaurant(data))
     supabase.from('menu_items').select('*').eq('restaurant_id', id).eq('available', true).then(({ data }) => setItems(data ?? []))
     supabase.from('zones').select('*').order('id').then(({ data }) => setZones(data ?? []))
+    supabase.rpc('open_slots', { p_restaurant_id: Number(id) })
+      .then(({ data }) => setSlots((data as Slot[]) ?? []))
   }, [id])
 
   const grouped = useMemo(() => {
@@ -30,7 +34,8 @@ export default function RestaurantDetail() {
 
   const count = Object.values(cart).reduce((a, b) => a + b, 0)
   const subtotal = items.reduce((s, it) => s + (cart[it.id] ?? 0) * it.price, 0)
-  const valid = name.trim() && phone.trim() && zone && unit.trim()
+  const scheduled = restaurant?.vendor_type === 'supermarket'
+  const valid = name.trim() && phone.trim() && zone && unit.trim() && (!scheduled || !!slot)
 
   function add(itemId: number, delta: number) {
     setCart(c => {
@@ -55,9 +60,17 @@ export default function RestaurantDetail() {
       p_unit_number: unit.trim(),
       p_address_notes: notes.trim(),
       p_delivery_fee: DELIVERY_FEE,
-      p_items: payload
+      p_items: payload,
+      p_slot_id: slot?.id ?? null,
+      p_scheduled_date: slot?.scheduled_date ?? null
     })
-    if (error || !data?.token) { setSaving(false); alert('حصل خطأ، جرب تاني'); return }
+    if (error || !data?.token) {
+      setSaving(false)
+      alert(error?.message.includes('slot_full')
+        ? 'الفترة دي اتملت، اختار فترة تانية'
+        : 'حصل خطأ، جرب تاني')
+      return
+    }
     nav(`/track/${data.token}`)
   }
 
@@ -73,7 +86,10 @@ export default function RestaurantDetail() {
         </div>
         <p className="text-mist mt-1.5">{restaurant.description}</p>
         <div className="flex items-center gap-3 mt-2 text-sm text-mist">
-          <span className="text-sand">★ {restaurant.rating}</span><span>⏱ {restaurant.delivery_time}</span>
+          <span className="text-sand">★ {restaurant.rating}</span>
+          <span>⏱ {restaurant.vendor_type === 'supermarket'
+            ? 'توصيل بفترات محددة'
+            : `التحضير حوالي ${restaurant.prep_minutes} دقيقة`}</span>
         </div>
       </div>
 
@@ -128,6 +144,32 @@ export default function RestaurantDetail() {
             </div>
 
             <div className="space-y-3.5">
+              {scheduled && (
+                <div>
+                  <label className="label">فترة التوصيل *</label>
+                  {slots.length === 0 && (
+                    <p className="text-sm text-sand">لا توجد فترات متاحة حالياً</p>
+                  )}
+                  <div className="grid grid-cols-2 gap-2">
+                    {slots.map(sl => {
+                      const on = slot?.id === sl.id && slot?.scheduled_date === sl.scheduled_date
+                      const today = sl.scheduled_date === new Date().toISOString().slice(0, 10)
+                      return (
+                        <button key={`${sl.id}-${sl.scheduled_date}`}
+                          className={`card p-3 text-right ${on ? 'border-sea' : ''}`}
+                          onClick={() => setSlot(sl)}>
+                          <p className="text-sm font-semibold">
+                            {sl.start_time.slice(0,5)} — {sl.end_time.slice(0,5)}
+                          </p>
+                          <p className="text-xs text-mist mt-0.5">
+                            {today ? 'النهاردة' : 'بكرة'} · باقي {sl.remaining}
+                          </p>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
               <div><label className="label">الاسم *</label>
                 <input className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
               <div><label className="label">رقم الموبايل *</label>

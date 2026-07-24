@@ -1,0 +1,56 @@
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
+
+interface Row {
+  id: number; public_token: string; total: number
+  status: string; created_at: string; restaurant_name: string
+}
+
+export default function MyOrders() {
+  const [phone, setPhone] = useState('')
+  const [rows, setRows] = useState<Row[] | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  async function search() {
+    setBusy(true)
+    const { data } = await supabase.rpc('my_orders', { p_phone: phone.trim() })
+    setRows((data as Row[]) ?? [])
+    setBusy(false)
+  }
+
+  return (
+    <div className="max-w-sm mx-auto">
+      <div className="card p-6 mt-4">
+        <h1 className="text-xl font-bold">طلباتي</h1>
+        <p className="text-sm text-mist mt-1.5">اكتب رقم الموبايل اللي طلبت بيه</p>
+        <input className="field mt-4" dir="ltr" value={phone} placeholder="01xxxxxxxxx"
+          onChange={e => setPhone(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && search()} />
+        <button className="btn-sea w-full mt-3" disabled={!phone.trim() || busy} onClick={search}>
+          {busy ? 'جاري البحث…' : 'بحث'}
+        </button>
+      </div>
+
+      {rows && rows.length === 0 && (
+        <p className="text-center text-mist text-sm mt-5">لا توجد طلبات بهذا الرقم</p>
+      )}
+
+      <div className="space-y-3 mt-5">
+        {(rows ?? []).map(r => (
+          <Link key={r.id} to={`/track/${r.public_token}`} className="card p-4 block hover:border-sea/50">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-semibold">#{r.id} — {r.restaurant_name}</p>
+                <p className="text-xs text-mist mt-0.5">
+                  {new Date(r.created_at).toLocaleDateString('ar-EG')} · {r.status}
+                </p>
+              </div>
+              <span className="font-bold text-sea">{r.total} ج.م</span>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}
