@@ -10,7 +10,8 @@ export interface Order {
   id: number; restaurant_id: number
   customer_name: string; customer_phone: string
   zone: string; unit_number: string; address_notes: string
-  status: string; subtotal: number; delivery_fee: number; total: number
+  status: string; kitchen_status: string
+  subtotal: number; delivery_fee: number; total: number
   payment_method: string; created_at: string
   restaurants?: { name: string }
 }

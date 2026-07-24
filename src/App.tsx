@@ -8,11 +8,12 @@ import Track from './pages/Track'
 import Admin from './pages/Admin'
 import DriverPage from './pages/Driver'
 import Login from './pages/Login'
+import Vendor from './pages/Vendor'
 
 function Header() {
   const { pathname } = useLocation()
   const { session, profile, signOut } = useAuth()
-  const isStaff = pathname.startsWith('/admin') || pathname.startsWith('/driver')
+  const isStaff = ['/admin', '/driver', '/vendor'].some(p => pathname.startsWith(p))
 
   return (
     <header className="sticky top-0 z-40 bg-night/90 backdrop-blur border-b border-line">
@@ -52,6 +53,7 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/admin" element={<Protected role="admin"><Admin /></Protected>} />
             <Route path="/driver" element={<Protected role="driver"><DriverPage /></Protected>} />
+            <Route path="/vendor" element={<Protected role="vendor"><Vendor /></Protected>} />
           </Routes>
         </main>
       </div>

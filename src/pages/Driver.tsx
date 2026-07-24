@@ -3,6 +3,11 @@ import { supabase, DELIVERY_FEE, DRIVER_EARNING, ADMIN_AMOUNT } from '../lib/sup
 import { useAuth } from '../lib/auth'
 import type { Assignment, Driver } from '../lib/types'
 
+interface PoolOrder {
+  id: number; total: number; zone: string
+  kitchen_status: string; restaurant_name: string; created_at: string
+}
+
 export default function DriverPage() {
   const { profile } = useAuth()
   const id = profile?.driver_id
@@ -10,6 +15,8 @@ export default function DriverPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [rejecting, setRejecting] = useState<Assignment | null>(null)
   const [reason, setReason] = useState('')
+  const [pool, setPool] = useState<PoolOrder[]>([])
+  const [claiming, setClaiming] = useState<number | null>(null)
 
   async function load() {
     if (!id) return
@@ -20,6 +27,8 @@ export default function DriverPage() {
       .in('status', ['Offered', 'Accepted', 'Picked_Up', 'Out_for_Delivery', 'Delivered'])
       .order('id', { ascending: false }).limit(20)
     setAssignments(a ?? [])
+    const { data: p } = await supabase.rpc('available_orders')
+    setPool((p as PoolOrder[]) ?? [])
   }
 
   useEffect(() => {
@@ -51,6 +60,18 @@ export default function DriverPage() {
     load()
   }
 
+  async function claim(orderId: number) {
+    setClaiming(orderId)
+    const { error } = await supabase.rpc('claim_order', { p_order_id: orderId })
+    setClaiming(null)
+    if (error) {
+      alert(error.message.includes('already_taken')
+        ? 'الطلب اتاخد من مندوب تاني'
+        : 'حصل خطأ، جرب تاني')
+    }
+    load()
+  }
+
   async function reject() {
     if (!rejecting) return
     await supabase.from('delivery_assignments').update({
@@ -75,7 +96,34 @@ export default function DriverPage() {
         <span className={driver.available ? 'badge-open' : 'badge-closed'}>{driver.status}</span>
       </div>
 
-      {assignments.length === 0 && <div className="card p-6 text-center text-mist">لا توجد طلبات حالياً</div>}
+      {pool.length > 0 && (
+        <div className="mb-6">
+          <h2 className="font-bold text-mist mb-3">طلبات متاحة — أول واحد يقبل ياخدها</h2>
+          <div className="space-y-3">
+            {pool.map(o => (
+              <div key={o.id} className="card p-4 border-sea/40">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="font-bold">{o.restaurant_name}</h3>
+                    <p className="text-sm text-mist mt-0.5">📍 {o.zone}</p>
+                    <p className="text-xs text-mist mt-1">
+                      {o.kitchen_status === 'ready' ? '✅ جاهز للاستلام'
+                        : o.kitchen_status === 'preparing' ? '👨‍🍳 قيد التحضير' : '🕐 المطعم لسه ما بدأش'}
+                    </p>
+                  </div>
+                  <span className="font-bold text-sea">{o.total} ج.م</span>
+                </div>
+                <button className="btn-sea w-full mt-3" disabled={claiming === o.id}
+                  onClick={() => claim(o.id)}>
+                  {claiming === o.id ? 'جاري القبول…' : 'أستلم الطلب'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {assignments.length === 0 && pool.length === 0 && <div className="card p-6 text-center text-mist">لا توجد طلبات حالياً</div>}
 
       <div className="space-y-4">
         {assignments.map(a => {

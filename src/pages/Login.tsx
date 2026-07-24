@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Navigate } from 'react-router-dom'
-import { useAuth } from '../lib/auth'
+import { useAuth, homeFor } from '../lib/auth'
 
 export default function Login() {
   const { signIn, session, profile, loading } = useAuth()
@@ -10,7 +10,7 @@ export default function Login() {
   const [busy, setBusy] = useState(false)
 
   if (!loading && session && profile) {
-    return <Navigate to={profile.role === 'admin' ? '/admin' : '/driver'} replace />
+    return <Navigate to={homeFor(profile.role)} replace />
   }
 
   async function submit() {

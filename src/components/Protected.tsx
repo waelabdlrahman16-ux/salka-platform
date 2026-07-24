@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
-import { useAuth } from '../lib/auth'
+import { useAuth, homeFor } from '../lib/auth'
 
-export default function Protected({ role, children }: { role: 'admin' | 'driver'; children: ReactNode }) {
+export default function Protected({ role, children }: { role: 'admin' | 'driver' | 'vendor'; children: ReactNode }) {
   const { session, profile, loading } = useAuth()
 
   if (loading) return <p className="text-mist text-center py-10">جاري التحقق…</p>
@@ -13,6 +13,6 @@ export default function Protected({ role, children }: { role: 'admin' | 'driver'
       <p className="text-sm text-mist mt-2">تواصل مع الإدارة لتفعيل صلاحياتك.</p>
     </div>
   )
-  if (profile.role !== role) return <Navigate to={profile.role === 'admin' ? '/admin' : '/driver'} replace />
+  if (profile.role !== role) return <Navigate to={homeFor(profile.role)} replace />
   return <>{children}</>
 }

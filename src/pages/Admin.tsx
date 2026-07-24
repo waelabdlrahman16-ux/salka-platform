@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import type { Assignment, Booking, Driver, Earning, Order } from '../lib/types'
+import type { Assignment, Booking, Driver, Earning, MenuItem, Order, Restaurant } from '../lib/types'
 
-type Tab = 'unassigned' | 'active' | 'drivers' | 'orders' | 'bookings' | 'earnings'
+type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'bookings' | 'earnings'
 const TABS: { key: Tab; label: string }[] = [
   { key: 'unassigned', label: 'طلبات غير معيّنة' },
   { key: 'active', label: 'توصيلات جارية' },
   { key: 'drivers', label: 'إدارة المندوبين' },
+  { key: 'menu', label: 'المطاعم والمنيو' },
   { key: 'orders', label: 'كل الطلبات' },
   { key: 'bookings', label: 'الحجوزات' },
   { key: 'earnings', label: 'الأرباح' },
@@ -20,17 +21,24 @@ export default function Admin() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [earnings, setEarnings] = useState<Earning[]>([])
   const [assigning, setAssigning] = useState<Order | null>(null)
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([])
+  const [menu, setMenu] = useState<MenuItem[]>([])
+  const [openRest, setOpenRest] = useState<number | null>(null)
+  const [newItem, setNewItem] = useState({ name: '', category: '', price: '' })
 
   async function load() {
-    const [o, a, d, b, e] = await Promise.all([
+    const [o, a, d, b, e, r, m] = await Promise.all([
       supabase.from('orders').select('*, restaurants(name)').order('id', { ascending: false }),
       supabase.from('delivery_assignments').select('*, orders(*, restaurants(name)), drivers(*)').order('id', { ascending: false }),
       supabase.from('drivers').select('*').order('id'),
       supabase.from('bookings').select('*, chalets(name)').order('id', { ascending: false }),
       supabase.from('driver_earnings').select('*, drivers(name)').order('id', { ascending: false }),
+      supabase.from('restaurants').select('*').order('id'),
+      supabase.from('menu_items').select('*').order('id'),
     ])
     setOrders(o.data ?? []); setAssignments(a.data ?? []); setDrivers(d.data ?? [])
     setBookings(b.data ?? []); setEarnings(e.data ?? [])
+    setRestaurants(r.data ?? []); setMenu(m.data ?? [])
   }
 
   useEffect(() => {
@@ -58,6 +66,31 @@ export default function Admin() {
     if (field === 'active' && d.active) patch.status = 'Suspended'
     if (field === 'active' && !d.active) patch.status = 'Available'
     await supabase.from('drivers').update(patch).eq('id', d.id)
+    load()
+  }
+
+  async function updatePrice(it: MenuItem, price: number) {
+    if (!price || price === it.price) return
+    await supabase.from('menu_items').update({ price }).eq('id', it.id)
+    load()
+  }
+
+  async function toggleItem(it: MenuItem) {
+    await supabase.from('menu_items').update({ available: !it.available }).eq('id', it.id)
+    load()
+  }
+
+  async function toggleRestaurant(r: Restaurant) {
+    await supabase.from('restaurants').update({ is_open: !r.is_open }).eq('id', r.id)
+    load()
+  }
+
+  async function addItem(restaurantId: number) {
+    await supabase.from('menu_items').insert({
+      restaurant_id: restaurantId, name: newItem.name.trim(),
+      category: newItem.category.trim() || 'أصناف', price: Number(newItem.price)
+    })
+    setNewItem({ name: '', category: '', price: '' })
     load()
   }
 
@@ -186,6 +219,67 @@ export default function Admin() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {tab === 'menu' && (
+        <div className="space-y-4">
+          {restaurants.map(r => {
+            const its = menu.filter(m => m.restaurant_id === r.id)
+            const expanded = openRest === r.id
+            return (
+              <div key={r.id} className="card p-4">
+                <div className="flex items-start justify-between">
+                  <button className="text-right" onClick={() => setOpenRest(expanded ? null : r.id)}>
+                    <h2 className="font-bold">{r.name}</h2>
+                    <p className="text-sm text-mist mt-0.5">{its.length} صنف · اضغط للتعديل</p>
+                  </button>
+                  <button className={r.is_open ? 'badge-open' : 'badge-closed'}
+                    onClick={() => toggleRestaurant(r)}>{r.is_open ? 'مفتوح' : 'مغلق'}</button>
+                </div>
+
+                {expanded && (
+                  <div className="mt-4 space-y-2.5">
+                    {its.map(it => (
+                      <div key={it.id} className="bg-night border border-line rounded-xl p-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="font-semibold truncate">{it.name}</p>
+                            <p className="text-xs text-mist">{it.category}</p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <input type="number" defaultValue={it.price} className="field !w-24 !py-1.5 text-center"
+                              onBlur={e => updatePrice(it, Number(e.target.value))} />
+                            <span className="text-mist text-sm">ج.م</span>
+                          </div>
+                        </div>
+                        <button className={`mt-2 text-sm ${it.available ? 'text-mist' : 'text-sand'}`}
+                          onClick={() => toggleItem(it)}>
+                          {it.available ? '✓ متاح — اضغط للإخفاء' : '✗ غير متاح — اضغط للإتاحة'}
+                        </button>
+                      </div>
+                    ))}
+
+                    <div className="border-t border-line pt-3 mt-3">
+                      <p className="text-sm text-mist mb-2">إضافة صنف جديد</p>
+                      <div className="space-y-2">
+                        <input className="field" placeholder="اسم الصنف" value={newItem.name}
+                          onChange={e => setNewItem({ ...newItem, name: e.target.value })} />
+                        <div className="flex gap-2">
+                          <input className="field" placeholder="القسم (مشويات…)" value={newItem.category}
+                            onChange={e => setNewItem({ ...newItem, category: e.target.value })} />
+                          <input className="field !w-28" type="number" placeholder="السعر" value={newItem.price}
+                            onChange={e => setNewItem({ ...newItem, price: e.target.value })} />
+                        </div>
+                        <button className="btn-sea w-full" disabled={!newItem.name || !newItem.price}
+                          onClick={() => addItem(r.id)}>إضافة</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 
