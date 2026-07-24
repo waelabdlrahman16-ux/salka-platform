@@ -1,0 +1,157 @@
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { supabase, DELIVERY_FEE } from '../lib/supabase'
+import type { MenuItem, Restaurant, Zone } from '../lib/types'
+
+export default function RestaurantDetail() {
+  const { id } = useParams()
+  const nav = useNavigate()
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
+  const [items, setItems] = useState<MenuItem[]>([])
+  const [zones, setZones] = useState<Zone[]>([])
+  const [cart, setCart] = useState<Record<number, number>>({})
+  const [checkout, setCheckout] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [name, setName] = useState(''); const [phone, setPhone] = useState('')
+  const [zone, setZone] = useState(''); const [unit, setUnit] = useState('')
+  const [notes, setNotes] = useState('')
+
+  useEffect(() => {
+    supabase.from('restaurants').select('*').eq('id', id).single().then(({ data }) => setRestaurant(data))
+    supabase.from('menu_items').select('*').eq('restaurant_id', id).eq('available', true).then(({ data }) => setItems(data ?? []))
+    supabase.from('zones').select('*').order('id').then(({ data }) => setZones(data ?? []))
+  }, [id])
+
+  const grouped = useMemo(() => {
+    const g: Record<string, MenuItem[]> = {}
+    for (const it of items) (g[it.category] ??= []).push(it)
+    return g
+  }, [items])
+
+  const count = Object.values(cart).reduce((a, b) => a + b, 0)
+  const subtotal = items.reduce((s, it) => s + (cart[it.id] ?? 0) * it.price, 0)
+  const valid = name.trim() && phone.trim() && zone && unit.trim()
+
+  function add(itemId: number, delta: number) {
+    setCart(c => {
+      const q = Math.max(0, (c[itemId] ?? 0) + delta)
+      const next = { ...c, [itemId]: q }
+      if (q === 0) delete next[itemId]
+      return next
+    })
+  }
+
+  async function placeOrder() {
+    if (!restaurant || !valid) return
+    setSaving(true)
+    const payload = items.filter(it => cart[it.id]).map(it => ({
+      menu_item_id: it.id, name: it.name, qty: cart[it.id], unit_price: it.price
+    }))
+    const { data, error } = await supabase.rpc('place_order', {
+      p_restaurant_id: restaurant.id,
+      p_customer_name: name.trim(),
+      p_customer_phone: phone.trim(),
+      p_zone: zone,
+      p_unit_number: unit.trim(),
+      p_address_notes: notes.trim(),
+      p_delivery_fee: DELIVERY_FEE,
+      p_items: payload
+    })
+    if (error || !data?.token) { setSaving(false); alert('حصل خطأ، جرب تاني'); return }
+    nav(`/track/${data.token}`)
+  }
+
+  if (!restaurant) return <p className="text-mist">جاري التحميل…</p>
+
+  return (
+    <div>
+      <Link to="/" className="text-sm text-mist hover:text-foam">← العودة للمطاعم</Link>
+      <div className="mt-3 mb-6">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">{restaurant.name}</h1>
+          <span className={restaurant.is_open ? 'badge-open' : 'badge-closed'}>{restaurant.is_open ? 'مفتوح' : 'مغلق'}</span>
+        </div>
+        <p className="text-mist mt-1.5">{restaurant.description}</p>
+        <div className="flex items-center gap-3 mt-2 text-sm text-mist">
+          <span className="text-sand">★ {restaurant.rating}</span><span>⏱ {restaurant.delivery_time}</span>
+        </div>
+      </div>
+
+      {Object.entries(grouped).map(([cat, list]) => (
+        <section key={cat} className="mb-6">
+          <h2 className="font-bold text-mist mb-3">{cat}</h2>
+          <div className="space-y-3">
+            {list.map(it => (
+              <div key={it.id} className="card p-4 flex items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-semibold">{it.name}</h3>
+                  <p className="text-sm text-mist mt-0.5">{it.description}</p>
+                  <p className="text-sea font-bold mt-1.5">{it.price} ج.م</p>
+                </div>
+                {cart[it.id] ? (
+                  <div className="flex items-center gap-2.5">
+                    <button className="btn-ghost !px-3" onClick={() => add(it.id, 1)}>+</button>
+                    <span className="font-bold w-5 text-center">{cart[it.id]}</span>
+                    <button className="btn-ghost !px-3" onClick={() => add(it.id, -1)}>−</button>
+                  </div>
+                ) : (
+                  <button className="btn-sea shrink-0" onClick={() => add(it.id, 1)} disabled={!restaurant.is_open}>إضافة</button>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
+
+      {count > 0 && (
+        <div className="fixed bottom-4 inset-x-4 z-40 max-w-5xl mx-auto">
+          <button className="btn-sea w-full !py-3.5 shadow-lg shadow-sea/20" onClick={() => setCheckout(true)}>
+            طلب ({count}) · {subtotal} ج.م
+          </button>
+        </div>
+      )}
+
+      {checkout && (
+        <div className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" onClick={() => setCheckout(false)}>
+          <div className="card w-full max-w-md p-5 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-lg mb-1">تأكيد الطلب</h3>
+            <p className="text-sm text-mist mb-4">الدفع كاش عند الاستلام + {DELIVERY_FEE} ج.م توصيل</p>
+
+            <div className="space-y-2 mb-4">
+              {items.filter(it => cart[it.id]).map(it => (
+                <div key={it.id} className="flex justify-between text-sm">
+                  <span>{it.name} × {cart[it.id]}</span><span>{cart[it.id] * it.price} ج.م</span>
+                </div>
+              ))}
+              <div className="flex justify-between text-sm text-mist"><span>التوصيل</span><span>{DELIVERY_FEE} ج.م</span></div>
+              <div className="flex justify-between font-bold border-t border-line pt-2"><span>الإجمالي</span><span className="text-sea">{subtotal + DELIVERY_FEE} ج.م</span></div>
+            </div>
+
+            <div className="space-y-3.5">
+              <div><label className="label">الاسم *</label>
+                <input className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
+              <div><label className="label">رقم الموبايل *</label>
+                <input className="field" dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} placeholder="01xxxxxxxxx" /></div>
+              <div><label className="label">المنطقة / المجاورة *</label>
+                <select className="field" value={zone} onChange={e => setZone(e.target.value)}>
+                  <option value="">اختر المنطقة…</option>
+                  {zones.map(z => <option key={z.id} value={z.name}>{z.name}</option>)}
+                </select></div>
+              <div><label className="label">رقم الشاليه / الفيلا *</label>
+                <input className="field" value={unit} onChange={e => setUnit(e.target.value)} placeholder="مثال: B4 - 204" /></div>
+              <div><label className="label">علامة مميزة (اختياري)</label>
+                <input className="field" value={notes} onChange={e => setNotes(e.target.value)} placeholder="مثال: بجوار حمام السباحة" /></div>
+            </div>
+
+            <div className="flex gap-3 mt-5">
+              <button className="btn-ghost flex-1" onClick={() => setCheckout(false)}>إلغاء</button>
+              <button className="btn-sea flex-1" disabled={!valid || saving} onClick={placeOrder}>
+                {saving ? 'جاري الإرسال…' : 'تأكيد الطلب'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

@@ -1,0 +1,211 @@
+import { useEffect, useState } from 'react'
+import { supabase } from '../lib/supabase'
+import type { Assignment, Booking, Driver, Earning, Order } from '../lib/types'
+
+type Tab = 'unassigned' | 'active' | 'drivers' | 'orders' | 'bookings' | 'earnings'
+const TABS: { key: Tab; label: string }[] = [
+  { key: 'unassigned', label: 'طلبات غير معيّنة' },
+  { key: 'active', label: 'توصيلات جارية' },
+  { key: 'drivers', label: 'إدارة المندوبين' },
+  { key: 'orders', label: 'كل الطلبات' },
+  { key: 'bookings', label: 'الحجوزات' },
+  { key: 'earnings', label: 'الأرباح' },
+]
+
+export default function Admin() {
+  const [tab, setTab] = useState<Tab>('unassigned')
+  const [orders, setOrders] = useState<Order[]>([])
+  const [assignments, setAssignments] = useState<Assignment[]>([])
+  const [drivers, setDrivers] = useState<Driver[]>([])
+  const [bookings, setBookings] = useState<Booking[]>([])
+  const [earnings, setEarnings] = useState<Earning[]>([])
+  const [assigning, setAssigning] = useState<Order | null>(null)
+
+  async function load() {
+    const [o, a, d, b, e] = await Promise.all([
+      supabase.from('orders').select('*, restaurants(name)').order('id', { ascending: false }),
+      supabase.from('delivery_assignments').select('*, orders(*, restaurants(name)), drivers(*)').order('id', { ascending: false }),
+      supabase.from('drivers').select('*').order('id'),
+      supabase.from('bookings').select('*, chalets(name)').order('id', { ascending: false }),
+      supabase.from('driver_earnings').select('*, drivers(name)').order('id', { ascending: false }),
+    ])
+    setOrders(o.data ?? []); setAssignments(a.data ?? []); setDrivers(d.data ?? [])
+    setBookings(b.data ?? []); setEarnings(e.data ?? [])
+  }
+
+  useEffect(() => {
+    load()
+    const t = setInterval(load, 15000)
+    return () => clearInterval(t)
+  }, [])
+
+  const activeStatuses = ['Offered', 'Accepted', 'Picked_Up', 'Out_for_Delivery']
+  const assignedOrderIds = new Set(assignments.filter(a => activeStatuses.includes(a.status) || a.status === 'Delivered').map(a => a.order_id))
+  const unassigned = orders.filter(o => o.status !== 'Delivered' && o.status !== 'Cancelled' && !assignedOrderIds.has(o.id))
+  const active = assignments.filter(a => activeStatuses.includes(a.status))
+  const availableDrivers = drivers.filter(d => d.active && d.available && d.status === 'Available')
+
+  async function assign(order: Order, driver: Driver) {
+    const attempts = assignments.filter(a => a.order_id === order.id).length
+    await supabase.from('delivery_assignments').insert({
+      order_id: order.id, driver_id: driver.id, attempt_number: attempts + 1, status: 'Offered'
+    })
+    setAssigning(null); load()
+  }
+
+  async function toggleDriver(d: Driver, field: 'active' | 'available') {
+    const patch: Record<string, unknown> = { [field]: !d[field] }
+    if (field === 'active' && d.active) patch.status = 'Suspended'
+    if (field === 'active' && !d.active) patch.status = 'Available'
+    await supabase.from('drivers').update(patch).eq('id', d.id)
+    load()
+  }
+
+  const totalDriver = earnings.reduce((s, e) => s + Number(e.driver_earning), 0)
+  const totalAdmin = earnings.reduce((s, e) => s + Number(e.admin_amount), 0)
+
+  const addr = (o: Order) => `${o.zone} — وحدة ${o.unit_number}${o.address_notes ? ` — ${o.address_notes}` : ''}`
+  const customer = (o: Order) => (
+    <div className="mt-2.5 bg-night border border-line rounded-xl p-3 text-sm space-y-1">
+      <p>👤 {o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
+      <p>📍 {addr(o)}</p>
+    </div>
+  )
+
+  return (
+    <div>
+      <h1 className="text-2xl font-bold mb-4">لوحة التحكم</h1>
+      <div className="flex gap-1.5 overflow-x-auto pb-2 mb-5 -mx-4 px-4">
+        {TABS.map(t => (
+          <button key={t.key} className={`tab ${tab === t.key ? 'tab-active' : ''}`} onClick={() => setTab(t.key)}>{t.label}</button>
+        ))}
+      </div>
+
+      {tab === 'unassigned' && (
+        <div className="space-y-4">
+          {unassigned.length === 0 && <div className="card p-6 text-center text-mist">لا توجد طلبات غير معيّنة</div>}
+          {unassigned.map(o => (
+            <div key={o.id} className="card p-4">
+              <div className="flex items-start justify-between">
+                <h2 className="font-bold">#{o.id} — {o.restaurants?.name}</h2>
+                <span className="font-bold text-sea">{o.total} ج.م</span>
+              </div>
+              {customer(o)}
+              <button className="btn-sea w-full mt-3" onClick={() => setAssigning(o)}>تعيين مندوب</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'active' && (
+        <div className="space-y-4">
+          {active.length === 0 && <div className="card p-6 text-center text-mist">لا توجد توصيلات جارية</div>}
+          {active.map(a => (
+            <div key={a.id} className="card p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="font-bold">#{a.order_id} — {a.orders?.restaurants?.name}</h2>
+                  <p className="text-sm text-mist mt-0.5">🛵 {a.drivers?.name} · محاولة {a.attempt_number}</p>
+                </div>
+                <span className="text-xs font-semibold bg-shellup rounded-full px-2.5 py-1">{a.status}</span>
+              </div>
+              {a.orders && customer(a.orders)}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'drivers' && (
+        <div className="space-y-4">
+          {drivers.map(d => (
+            <div key={d.id} className="card p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="font-bold">{d.name}</h2>
+                  <p className="text-sm text-mist mt-0.5">★ {d.rating} · {d.total_deliveries} توصيلة · {d.vehicle_type} · {d.vehicle_plate}</p>
+                  <p className="text-sm text-mist mt-0.5" dir="ltr">{d.phone}</p>
+                </div>
+                <span className={d.active ? 'badge-open' : 'badge-closed'}>{d.status}</span>
+              </div>
+              <div className="flex gap-2.5 mt-3">
+                <button className="btn-ghost text-sm flex-1" onClick={() => toggleDriver(d, 'available')}>{d.available ? 'إيقاف مؤقت' : 'إتاحة'}</button>
+                <button className={`text-sm flex-1 ${d.active ? 'btn-danger' : 'btn-sea'}`} onClick={() => toggleDriver(d, 'active')}>{d.active ? 'إيقاف الحساب' : 'تفعيل الحساب'}</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'orders' && (
+        <div className="space-y-4">
+          {orders.map(o => (
+            <div key={o.id} className="card p-4">
+              <div className="flex items-start justify-between">
+                <h2 className="font-bold">#{o.id} — {o.restaurants?.name}</h2>
+                <div className="text-left">
+                  <span className="font-bold text-sea block">{o.total} ج.م</span>
+                  <span className="text-xs text-mist">{o.status}</span>
+                </div>
+              </div>
+              {customer(o)}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'bookings' && (
+        <div className="space-y-4">
+          {bookings.length === 0 && <div className="card p-6 text-center text-mist">لا توجد حجوزات</div>}
+          {bookings.map(b => (
+            <div key={b.id} className="card p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="font-bold">{b.chalets?.name}</h2>
+                  <p className="text-sm text-mist mt-0.5">{b.check_in} ← {b.check_out} · {b.guests} أفراد</p>
+                  <p className="text-sm mt-1.5">👤 {b.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${b.customer_phone}`}>{b.customer_phone}</a></p>
+                </div>
+                <span className="font-bold text-sea">{b.total} ج.م</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'earnings' && (
+        <div>
+          <div className="grid grid-cols-3 gap-3 mb-5">
+            <div className="card p-4 text-center"><p className="text-sm text-mist">إجمالي التوصيلات</p><p className="text-2xl font-bold mt-1">{earnings.length}</p></div>
+            <div className="card p-4 text-center"><p className="text-sm text-mist">أرباح المندوبين</p><p className="text-2xl font-bold mt-1 text-sea">{totalDriver} ج.م</p></div>
+            <div className="card p-4 text-center"><p className="text-sm text-mist">أرباح الإدارة</p><p className="text-2xl font-bold mt-1 text-sand">{totalAdmin} ج.م</p></div>
+          </div>
+          <div className="space-y-2.5">
+            {earnings.map(e => (
+              <div key={e.id} className="card p-3.5 flex items-center justify-between text-sm">
+                <span className="font-semibold">{e.drivers?.name} — طلب #{e.order_id}</span>
+                <span className="text-mist">رسوم: {e.delivery_fee} · <span className="text-sea">مندوب: {e.driver_earning}</span> · <span className="text-sand">إدارة: {e.admin_amount}</span></span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {assigning && (
+        <div className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" onClick={() => setAssigning(null)}>
+          <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold mb-4">اختيار مندوب متاح — طلب #{assigning.id}</h3>
+            {availableDrivers.length === 0 && <p className="text-mist text-sm">لا يوجد مندوبين متاحين حالياً</p>}
+            <div className="space-y-2.5">
+              {availableDrivers.map(d => (
+                <button key={d.id} className="w-full card !bg-night p-3.5 text-right hover:border-sea/50 transition-colors" onClick={() => assign(assigning, d)}>
+                  <p className="font-semibold">{d.name}</p>
+                  <p className="text-sm text-mist mt-0.5">★ {d.rating} · {d.total_deliveries} توصيلة · {d.vehicle_type} · {d.vehicle_plate}</p>
+                </button>
+              ))}
+            </div>
+            <button className="btn-ghost w-full mt-4" onClick={() => setAssigning(null)}>إلغاء</button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

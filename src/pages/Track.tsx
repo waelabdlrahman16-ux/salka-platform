@@ -1,0 +1,105 @@
+import { useEffect, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
+
+const STEPS = [
+  { key: 'pending', label: 'قيد الانتظار' },
+  { key: 'Accepted', label: 'المندوب في الطريق للمطعم' },
+  { key: 'Picked_Up', label: 'تم استلام الطلب' },
+  { key: 'Out_for_Delivery', label: 'في الطريق إليك' },
+  { key: 'Delivered', label: 'تم التوصيل' },
+]
+
+interface TrackData {
+  order: {
+    id: number; status: string; subtotal: number; delivery_fee: number; total: number
+    zone: string; unit_number: string; address_notes: string; restaurant_name: string
+  } | null
+  items: { name: string; qty: number; total: number }[]
+  assignment: { status: string; driver_name: string | null; driver_phone: string | null } | null
+}
+
+export default function Track() {
+  const { token } = useParams()
+  const [data, setData] = useState<TrackData | null>(null)
+  const [notFound, setNotFound] = useState(false)
+
+  async function load() {
+    const { data: res, error } = await supabase.rpc('track_order', { p_token: token })
+    if (error || !res || !(res as TrackData).order) { setNotFound(true); return }
+    setData(res as TrackData)
+  }
+
+  useEffect(() => {
+    load()
+    const t = setInterval(load, 10000)
+    return () => clearInterval(t)
+  }, [token])
+
+  if (notFound) return (
+    <div className="card p-6 text-center max-w-sm mx-auto">
+      <p className="font-semibold">الطلب غير موجود</p>
+      <Link className="text-sea text-sm mt-2 inline-block" to="/">العودة للرئيسية</Link>
+    </div>
+  )
+  if (!data || !data.order) return <p className="text-mist">جاري التحميل…</p>
+
+  const o = data.order
+  const current = data.assignment?.status && data.assignment.status !== 'Offered' ? data.assignment.status : 'pending'
+  const activeIdx = Math.max(0, STEPS.findIndex(s => s.key === current))
+
+  return (
+    <div className="max-w-lg mx-auto">
+      <Link to="/" className="text-sm text-mist hover:text-foam">← العودة للرئيسية</Link>
+      <div className="card p-5 mt-3">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="font-bold text-lg">تتبع الطلب #{o.id}</h1>
+            <p className="text-sm text-mist mt-0.5">من {o.restaurant_name}</p>
+          </div>
+          <span className="font-bold text-sea">{o.total} ج.م</span>
+        </div>
+
+        <div className="mt-5">
+          {STEPS.map((s, i) => (
+            <div key={s.key} className="flex gap-3">
+              <div className="flex flex-col items-center">
+                <div className={`w-4 h-4 rounded-full border-2 ${i <= activeIdx ? 'bg-sea border-sea' : 'border-line'}`} />
+                {i < STEPS.length - 1 && <div className={`w-0.5 h-8 ${i < activeIdx ? 'bg-sea' : 'bg-line'}`} />}
+              </div>
+              <p className={`text-sm -mt-0.5 ${i <= activeIdx ? 'text-foam font-semibold' : 'text-mist'}`}>{s.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {data.assignment?.driver_name && (
+          <div className="mt-4 bg-night border border-line rounded-xl p-4">
+            <p className="text-sm text-mist">المندوب</p>
+            <div className="flex items-center justify-between mt-1">
+              <span className="font-semibold">🛵 {data.assignment.driver_name}</span>
+              {data.assignment.driver_phone && (
+                <a className="text-sea font-semibold" dir="ltr" href={`tel:${data.assignment.driver_phone}`}>
+                  {data.assignment.driver_phone}
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="mt-4 border-t border-line pt-4 space-y-1.5">
+          {data.items.map((it, i) => (
+            <div key={i} className="flex justify-between text-sm">
+              <span>{it.name} × {it.qty}</span><span>{it.total} ج.م</span>
+            </div>
+          ))}
+          <div className="flex justify-between text-sm text-mist"><span>التوصيل</span><span>{o.delivery_fee} ج.م</span></div>
+        </div>
+
+        <div className="mt-4 text-sm text-mist">
+          📍 {o.zone} — وحدة {o.unit_number}{o.address_notes ? ` — ${o.address_notes}` : ''}
+        </div>
+      </div>
+      <p className="text-center text-xs text-mist mt-3">الصفحة بتتحدث تلقائياً كل 10 ثواني</p>
+    </div>
+  )
+}
