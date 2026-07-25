@@ -66,9 +66,11 @@ export default function RestaurantDetail() {
     })
     if (error || !data?.token) {
       setSaving(false)
-      alert(error?.message.includes('slot_full')
-        ? 'الفترة دي اتملت، اختار فترة تانية'
-        : 'حصل خطأ، جرب تاني')
+      alert(
+        error?.message.includes('slot_full') ? 'الفترة دي اتملت، اختار فترة تانية'
+        : error?.message.includes('restaurant_closed') ? 'المطعم قفل قبل ما تأكد الطلب، جرب تاني بعدين'
+        : 'حصل خطأ، جرب تاني'
+      )
       return
     }
     nav(`/track/${data.token}`)

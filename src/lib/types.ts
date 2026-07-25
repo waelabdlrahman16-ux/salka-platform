@@ -69,3 +69,8 @@ export interface SwapRequest {
   shift_id: number; shift_date: string; start_time: string; end_time: string
   requested_by_name: string
 }
+
+export interface DeliverySlotRow {
+  id: number; restaurant_id: number
+  start_time: string; end_time: string; capacity: number; active: boolean
+}

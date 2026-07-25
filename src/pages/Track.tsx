@@ -14,6 +14,7 @@ interface TrackData {
   order: {
     id: number; status: string; subtotal: number; delivery_fee: number; total: number
     zone: string; unit_number: string; address_notes: string; restaurant_name: string
+    ready_at: string | null; scheduled_date: string | null
   } | null
   items: { name: string; qty: number; total: number }[]
   assignment: { status: string; driver_name: string | null; driver_phone: string | null } | null
@@ -59,6 +60,18 @@ export default function Track() {
           </div>
           <span className="font-bold text-sea">{o.total} ج.م</span>
         </div>
+
+        {o.ready_at && current === 'pending' && (
+          <p className="text-sm text-mist mt-2">
+            {(() => {
+              const mins = Math.round((+new Date(o.ready_at) - Date.now()) / 60000)
+              if (o.scheduled_date) {
+                return `⏱ التوصيل خلال الفترة اللي اخترتها`
+              }
+              return mins > 0 ? `⏱ متوقع يجهز خلال ${mins} دقيقة` : '⏱ جاري التحضير الآن'
+            })()}
+          </p>
+        )}
 
         <div className="mt-5">
           {STEPS.map((s, i) => (

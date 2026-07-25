@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import type { Assignment, Booking, Driver, Earning, MenuItem, Order, Restaurant, Setting, Shift } from '../lib/types'
+import type { Assignment, Booking, Driver, DeliverySlotRow, Earning, MenuItem, Order, Restaurant, Setting, Shift } from '../lib/types'
 import { ping, askNotificationPermission } from '../lib/notify'
 
 type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts'
@@ -31,9 +31,12 @@ export default function Admin() {
   const [shifts, setShifts] = useState<Shift[]>([])
   const [escalations, setEscalations] = useState<any[]>([])
   const [newShift, setNewShift] = useState({ driver_id: '', shift_date: '', start_time: '', end_time: '' })
+  const [slots, setSlots] = useState<DeliverySlotRow[]>([])
+  const [newSlot, setNewSlot] = useState({ start_time: '', end_time: '', capacity: '6' })
+  const [reassignFor, setReassignFor] = useState<number | null>(null)
 
   async function load() {
-    const [o, a, d, b, e, r, m, st, sh, esc] = await Promise.all([
+    const [o, a, d, b, e, r, m, st, sh, esc, sl] = await Promise.all([
       supabase.from('orders').select('*, restaurants(name)').order('id', { ascending: false }),
       supabase.from('delivery_assignments').select('*, orders(*, restaurants(name)), drivers(*)').order('id', { ascending: false }),
       supabase.from('drivers').select('*').order('id'),
@@ -45,11 +48,13 @@ export default function Admin() {
       supabase.from('shifts').select('*').order('shift_date', { ascending: false }).limit(40),
       supabase.from('shift_swap_requests').select('*, shifts(*), requester:drivers!shift_swap_requests_requested_by_fkey(name)')
         .eq('status', 'escalated').order('escalated_at', { ascending: false }),
+      supabase.from('delivery_slots').select('*').order('restaurant_id').order('start_time'),
     ])
     setOrders(o.data ?? []); setAssignments(a.data ?? []); setDrivers(d.data ?? [])
     setBookings(b.data ?? []); setEarnings(e.data ?? [])
     setRestaurants(r.data ?? []); setMenu(m.data ?? []); setSettings(st.data ?? [])
     setShifts(sh.data ?? []); setEscalations(esc.data ?? [])
+    setSlots(sl.data ?? [])
     ping('escalated_shifts', (esc.data ?? []).length, 'مندوب محتاج بديل', 'في وردية اتصعّدت للإدارة')
   }
 
@@ -62,7 +67,9 @@ export default function Admin() {
 
   const activeStatuses = ['Offered', 'Accepted', 'Picked_Up', 'Out_for_Delivery']
   const assignedOrderIds = new Set(assignments.filter(a => activeStatuses.includes(a.status) || a.status === 'Delivered').map(a => a.order_id))
-  const unassigned = orders.filter(o => o.status !== 'Delivered' && o.status !== 'Cancelled' && !assignedOrderIds.has(o.id))
+  const unassigned = orders
+    .filter(o => o.status !== 'Delivered' && o.status !== 'Cancelled' && !assignedOrderIds.has(o.id))
+    .sort((a, b) => Number(isCooking(a)) - Number(isCooking(b)))
   const active = assignments.filter(a => activeStatuses.includes(a.status))
   const availableDrivers = drivers.filter(d => d.active && d.available && d.status === 'Available')
   const escalateAfter = Number(settings.find(s => s.key === 'escalate_after_minutes')?.value ?? 15)
@@ -70,6 +77,9 @@ export default function Admin() {
     const from = o.dispatch_at ? +new Date(o.dispatch_at) : +new Date(o.created_at)
     return (Date.now() - from) / 60000 > escalateAfter
   }
+  const isCooking = (o: Order) => !!o.dispatch_at && +new Date(o.dispatch_at) > Date.now()
+  const minsUntilDispatch = (o: Order) =>
+    o.dispatch_at ? Math.max(0, Math.round((+new Date(o.dispatch_at) - Date.now()) / 60000)) : 0
   useEffect(() => { ping('unassigned', unassigned.length, 'طلب غير معيّن', 'في طلب محدش استلمه') },
     [unassigned.length])
 
@@ -102,6 +112,27 @@ export default function Admin() {
 
   async function toggleRestaurant(r: Restaurant) {
     await supabase.from('restaurants').update({ is_open: !r.is_open }).eq('id', r.id)
+    load()
+  }
+
+  async function reassignShift(shiftId: number, driverId: number, requestId: number) {
+    await supabase.from('shifts').update({ driver_id: driverId, status: 'swapped' }).eq('id', shiftId)
+    await supabase.from('shift_swap_requests').update({ status: 'accepted', accepted_by: driverId, accepted_at: new Date().toISOString() }).eq('id', requestId)
+    setReassignFor(null)
+    load()
+  }
+
+  async function addSlot(restaurantId: number) {
+    await supabase.from('delivery_slots').insert({
+      restaurant_id: restaurantId, start_time: newSlot.start_time,
+      end_time: newSlot.end_time, capacity: Number(newSlot.capacity)
+    })
+    setNewSlot({ start_time: '', end_time: '', capacity: '6' })
+    load()
+  }
+
+  async function toggleSlot(slot: DeliverySlotRow) {
+    await supabase.from('delivery_slots').update({ active: !slot.active }).eq('id', slot.id)
     load()
   }
 
@@ -163,9 +194,14 @@ export default function Admin() {
                 <h2 className="font-bold">#{o.id} — {o.restaurants?.name}</h2>
                 <span className="font-bold text-sea">{o.total} ج.م</span>
               </div>
+              {isCooking(o) && (
+                <p className="text-mist text-sm mt-1.5">👨‍🍳 لسه بيتحضر — متاح للمندوبين خلال {minsUntilDispatch(o)} دقيقة</p>
+              )}
               {isLate(o) && <p className="text-red-300 text-sm mt-1.5">⚠️ محدش استلم الطلب</p>}
               {customer(o)}
-              <button className="btn-sea w-full mt-3" onClick={() => setAssigning(o)}>تعيين مندوب</button>
+              <button className="btn-sea w-full mt-3" onClick={() => setAssigning(o)}>
+                {isCooking(o) ? 'تعيين مندوب الآن (تجاوز وقت التحضير)' : 'تعيين مندوب'}
+              </button>
             </div>
           ))}
         </div>
@@ -278,6 +314,39 @@ export default function Admin() {
                   </div>
                 )}
 
+                {expanded && r.vendor_type === 'supermarket' && (
+                  <div className="mt-4 border-t border-line pt-3">
+                    <p className="text-sm text-mist mb-2">فترات التوصيل</p>
+                    <div className="space-y-2">
+                      {slots.filter(sl => sl.restaurant_id === r.id).map(sl => (
+                        <div key={sl.id} className="flex items-center justify-between bg-night border border-line rounded-xl p-2.5 text-sm">
+                          <span>{sl.start_time.slice(0,5)} – {sl.end_time.slice(0,5)} · سعة {sl.capacity}</span>
+                          <button className={sl.active ? 'badge-open' : 'badge-closed'} onClick={() => toggleSlot(sl)}>
+                            {sl.active ? 'فعّالة' : 'موقوفة'}
+                          </button>
+                        </div>
+                      ))}
+                      {slots.filter(sl => sl.restaurant_id === r.id).length === 0 && (
+                        <p className="text-xs text-mist">لسه مفيش فترات — ضيف واحدة تحت</p>
+                      )}
+                    </div>
+                    <div className="flex gap-2 mt-3">
+                      <input type="time" className="field !py-1.5 text-sm" value={newSlot.start_time}
+                        onChange={e => setNewSlot({ ...newSlot, start_time: e.target.value })} />
+                      <input type="time" className="field !py-1.5 text-sm" value={newSlot.end_time}
+                        onChange={e => setNewSlot({ ...newSlot, end_time: e.target.value })} />
+                      <input type="number" className="field !py-1.5 !w-20 text-sm" placeholder="سعة" value={newSlot.capacity}
+                        onChange={e => setNewSlot({ ...newSlot, capacity: e.target.value })} />
+                    </div>
+                    <button className="btn-sea w-full mt-2 text-sm"
+                      disabled={!newSlot.start_time || !newSlot.end_time}
+                      onClick={() => addSlot(r.id)}>إضافة فترة</button>
+                    <p className="text-xs text-mist mt-2 leading-relaxed">
+                      السعة = أقصى عدد طلبات في الفترة دي. اربطها بعدد المندوبين المتاحين وقتها مش بسرعة تجهيز السوبر ماركت.
+                    </p>
+                  </div>
+                )}
+
                 {expanded && (
                   <div className="mt-4 space-y-2.5">
                     {its.map(it => (
@@ -357,6 +426,20 @@ export default function Admin() {
                     </p>
                     {e.reason && <p className="text-sm text-mist mt-1">"{e.reason}"</p>}
                     <p className="text-xs text-red-300 mt-2">محدش من المندوبين وافق يستلم الوردية</p>
+
+                    {reassignFor === e.id ? (
+                      <div className="mt-3 space-y-2">
+                        {drivers.filter(d => d.active && d.id !== e.requested_by).map(d => (
+                          <button key={d.id} className="w-full card !bg-night p-2.5 text-sm text-right"
+                            onClick={() => reassignShift(e.shift_id, d.id, e.id)}>{d.name}</button>
+                        ))}
+                        <button className="btn-ghost w-full text-sm" onClick={() => setReassignFor(null)}>إلغاء</button>
+                      </div>
+                    ) : (
+                      <button className="btn-sea w-full mt-3 text-sm" onClick={() => setReassignFor(e.id)}>
+                        عيّن مندوب تاني للوردية
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>

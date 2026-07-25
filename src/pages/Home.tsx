@@ -26,7 +26,7 @@ export default function Home() {
             <p className="text-sm text-mist mt-1.5 leading-relaxed">{r.description}</p>
             <div className="flex items-center gap-3 mt-3 text-sm text-mist">
               <span className="text-sand">★ {r.rating}</span>
-              <span>⏱ {r.delivery_time}</span>
+              <span>{r.vendor_type === 'supermarket' ? '🛒 فترات توصيل' : `⏱ ${r.prep_minutes} دقيقة`}</span>
               <span>{r.category}</span>
             </div>
           </Link>

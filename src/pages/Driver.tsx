@@ -21,6 +21,7 @@ export default function DriverPage() {
   const [shifts, setShifts] = useState<Shift[]>([])
   const [swaps, setSwaps] = useState<SwapRequest[]>([])
   const [myOpenRequests, setMyOpenRequests] = useState<Map<number, number>>(new Map())
+  const [myEscalated, setMyEscalated] = useState<Set<number>>(new Set())
   const [swapReason, setSwapReason] = useState<Record<number, string>>({})
 
   async function load() {
@@ -47,6 +48,10 @@ export default function DriverPage() {
     const { data: mine } = await supabase.from('shift_swap_requests')
       .select('id, shift_id').eq('requested_by', id).eq('status', 'open')
     setMyOpenRequests(new Map((mine ?? []).map((x: any) => [x.shift_id, x.id])))
+
+    const { data: esc } = await supabase.from('shift_swap_requests')
+      .select('shift_id').eq('requested_by', id).eq('status', 'escalated')
+    setMyEscalated(new Set((esc ?? []).map((x: any) => x.shift_id)))
     ping('pool', ((p as PoolOrder[]) ?? []).length, 'طلب متاح', 'في طلب جديد متاح للاستلام')
   }
 
@@ -154,7 +159,7 @@ export default function DriverPage() {
                     {sh.status === 'swapped' && <span className="badge-closed">اتبدلت</span>}
                   </div>
 
-                  {sh.status === 'scheduled' && !requested && (
+                  {sh.status === 'scheduled' && !requested && !myEscalated.has(sh.id) && (
                     <div className="mt-3 flex gap-2">
                       <input className="field !py-1.5 text-sm" placeholder="سبب الاستبدال (اختياري)"
                         value={swapReason[sh.id] || ''}
@@ -172,6 +177,9 @@ export default function DriverPage() {
                         محدش وافق — بلّغ الإدارة
                       </button>
                     </div>
+                  )}
+                  {myEscalated.has(sh.id) && (
+                    <p className="text-emerald-300 text-sm mt-3">✅ تم إبلاغ الإدارة — في انتظار تعيين مندوب بديل</p>
                   )}
                 </div>
               )
