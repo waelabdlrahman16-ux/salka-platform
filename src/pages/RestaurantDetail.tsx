@@ -42,6 +42,7 @@ export default function RestaurantDetail() {
   const subtotal = items.reduce((s, it) => s + (cart[it.id] ?? 0) * it.price, 0)
   const scheduled = restaurant?.vendor_type === 'supermarket'
   const selectedCompound = compounds.find(c => c.id === compoundId)
+  const totalEta = restaurant && selectedCompound ? restaurant.prep_minutes + selectedCompound.est_travel_minutes : null
   const valid = name.trim() && phone.trim() && compoundId && unit.trim() && (!scheduled || !!slot)
 
   function add(itemId: number, delta: number) {
@@ -100,7 +101,7 @@ export default function RestaurantDetail() {
           <span className="text-sand">★ {restaurant.rating}</span>
           <span>⏱ {restaurant.vendor_type === 'supermarket'
             ? 'توصيل بفترات محددة'
-            : `التحضير حوالي ${restaurant.prep_minutes} دقيقة`}</span>
+            : totalEta ? `يوصلك خلال ${totalEta} دقيقة تقريبًا` : `التحضير حوالي ${restaurant.prep_minutes} دقيقة`}</span>
         </div>
       </div>
 
@@ -131,7 +132,7 @@ export default function RestaurantDetail() {
       ))}
 
       {count > 0 && (
-        <div className="fixed bottom-4 inset-x-4 z-40 max-w-5xl mx-auto">
+        <div className="fixed bottom-20 inset-x-4 z-40 max-w-5xl mx-auto">
           <button className="btn-sea w-full !py-3.5 shadow-lg shadow-sea/20" onClick={() => setCheckout(true)}>
             طلب ({count}) · {subtotal} ج.م
           </button>

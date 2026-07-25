@@ -11,6 +11,7 @@ export default function Home() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [loading, setLoading] = useState(true)
   const [picking, setPicking] = useState(false)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     supabase.from('compounds').select('*').eq('active', true)
@@ -37,8 +38,10 @@ export default function Home() {
   }
 
   const selected = compounds.find(c => c.id === compoundId)
-  const north = compounds.filter(c => c.direction === 'north')
-  const south = compounds.filter(c => c.direction === 'south')
+  const eta = (r: Restaurant) => selected ? r.prep_minutes + selected.est_travel_minutes : r.prep_minutes
+  const filtered = compounds.filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
+  const north = filtered.filter(c => c.direction === 'north')
+  const south = filtered.filter(c => c.direction === 'south')
 
   return (
     <div>
@@ -65,7 +68,7 @@ export default function Home() {
               <p className="text-sm text-mist mt-1.5 leading-relaxed">{r.description}</p>
               <div className="flex items-center gap-3 mt-3 text-sm text-mist">
                 <span className="text-sand">★ {r.rating}</span>
-                <span>{r.vendor_type === 'supermarket' ? '🛒 فترات توصيل' : `⏱ ${r.prep_minutes} دقيقة`}</span>
+                <span>{r.vendor_type === 'supermarket' ? '🛒 فترات توصيل' : `⏱ يوصلك خلال ${eta(r)} دقيقة`}</span>
                 <span>{r.category}</span>
               </div>
             </Link>
@@ -77,9 +80,13 @@ export default function Home() {
         <div className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" onClick={() => selected && setPicking(false)}>
           <div className="card w-full max-w-md p-5 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold text-lg mb-1">فين مكانك؟</h3>
-            <p className="text-sm text-mist mb-4">هنعرض بس المطاعم اللي بتوصل لمنطقتك</p>
+            <p className="text-sm text-mist mb-3">هنعرض بس المطاعم اللي بتوصل لمنطقتك</p>
+            <input className="field mb-4" value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="🔍 دوّر على اسم المكان…" autoFocus />
 
-            <p className="text-sm font-semibold text-mist mb-2">شمال (اتجاه القاهرة)</p>
+            {filtered.length === 0 && <p className="text-sm text-mist text-center py-6">مفيش نتائج</p>}
+
+            {north.length > 0 && <p className="text-sm font-semibold text-mist mb-2">شمال (اتجاه القاهرة)</p>}
             <div className="space-y-2 mb-4">
               {north.map(c => (
                 <button key={c.id} className={`w-full card !bg-night p-3 text-right ${compoundId === c.id ? 'border-sea' : ''}`}
@@ -90,7 +97,7 @@ export default function Home() {
               ))}
             </div>
 
-            <p className="text-sm font-semibold text-mist mb-2">جنوب (اتجاه الزعفرانة)</p>
+            {south.length > 0 && <p className="text-sm font-semibold text-mist mb-2 mt-4">جنوب (اتجاه الزعفرانة)</p>}
             <div className="space-y-2">
               {south.map(c => (
                 <button key={c.id} className={`w-full card !bg-night p-3 text-right ${compoundId === c.id ? 'border-sea' : ''}`}

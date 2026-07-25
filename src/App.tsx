@@ -25,19 +25,42 @@ function Header() {
           <span className="font-bold text-lg">سالكة</span>
         </Link>
 
-        {isStaff && session ? (
+        {isStaff && session && (
           <div className="flex items-center gap-3">
             <span className="text-sm text-mist hidden sm:inline">{profile?.name}</span>
             <button className="tab" onClick={signOut}>خروج</button>
           </div>
-        ) : !isStaff && (
-          <nav className="flex items-center gap-1">
-            <Link className={`tab ${pathname === '/' ? 'tab-active' : ''}`} to="/">المطاعم</Link>
-            <Link className={`tab ${pathname.startsWith('/my-orders') ? 'tab-active' : ''}`} to="/my-orders">طلباتي</Link>
-          </nav>
         )}
       </div>
     </header>
+  )
+}
+
+function BottomNav() {
+  const { pathname } = useLocation()
+  const isStaff = ['/admin', '/driver', '/vendor', '/login'].some(p => pathname.startsWith(p))
+  if (isStaff) return null
+
+  const items = [
+    { to: '/', label: 'المطاعم', icon: '🍽️' },
+    { to: '/my-orders', label: 'طلباتي', icon: '🧾' },
+  ]
+
+  return (
+    <nav className="fixed bottom-0 inset-x-0 z-40 bg-shell/95 backdrop-blur border-t border-line">
+      <div className="max-w-5xl mx-auto grid grid-cols-2">
+        {items.map(it => {
+          const active = it.to === '/' ? pathname === '/' : pathname.startsWith(it.to)
+          return (
+            <Link key={it.to} to={it.to}
+              className={`flex flex-col items-center gap-0.5 py-2.5 text-xs font-semibold ${active ? 'text-sea' : 'text-mist'}`}>
+              <span className="text-xl leading-none">{it.icon}</span>
+              {it.label}
+            </Link>
+          )
+        })}
+      </div>
+    </nav>
   )
 }
 
@@ -46,7 +69,7 @@ export default function App() {
     <AuthProvider>
       <div className="min-h-screen font-arabic">
         <Header />
-        <main className="max-w-5xl mx-auto px-4 py-6 pb-24">
+        <main className="max-w-5xl mx-auto px-4 py-6 pb-28">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/restaurant/:id" element={<RestaurantDetail />} />
@@ -63,6 +86,7 @@ export default function App() {
         <footer className="max-w-5xl mx-auto px-4 pb-8 text-center">
           <Link to="/terms" className="text-xs text-mist hover:text-foam">الشروط وسياسة الخصوصية</Link>
         </footer>
+        <BottomNav />
       </div>
     </AuthProvider>
   )
