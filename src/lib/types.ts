@@ -75,3 +75,10 @@ export interface DeliverySlotRow {
   id: number; restaurant_id: number
   start_time: string; end_time: string; capacity: number; active: boolean
 }
+
+export interface Compound {
+  id: number; region_id: number; name: string
+  distance_km: number; direction: 'north' | 'south'
+  est_travel_minutes: number; active: boolean
+}
+export interface Region { id: number; name: string }

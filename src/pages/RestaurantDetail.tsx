@@ -1,27 +1,32 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase, DELIVERY_FEE } from '../lib/supabase'
-import type { MenuItem, Restaurant, Slot, Zone } from '../lib/types'
+import type { Compound, MenuItem, Restaurant, Slot } from '../lib/types'
 
 export default function RestaurantDetail() {
   const { id } = useParams()
   const nav = useNavigate()
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
   const [items, setItems] = useState<MenuItem[]>([])
-  const [zones, setZones] = useState<Zone[]>([])
   const [cart, setCart] = useState<Record<number, number>>({})
   const [checkout, setCheckout] = useState(false)
   const [saving, setSaving] = useState(false)
   const [name, setName] = useState(''); const [phone, setPhone] = useState('')
-  const [zone, setZone] = useState(''); const [unit, setUnit] = useState('')
+  const [unit, setUnit] = useState('')
   const [notes, setNotes] = useState('')
+  const [compounds, setCompounds] = useState<Compound[]>([])
+  const [compoundId, setCompoundId] = useState<number | null>(() => {
+    const saved = sessionStorage.getItem('talah_compound_id')
+    return saved ? Number(saved) : null
+  })
   const [slots, setSlots] = useState<Slot[]>([])
   const [slot, setSlot] = useState<Slot | null>(null)
 
   useEffect(() => {
     supabase.from('restaurants').select('*').eq('id', id).single().then(({ data }) => setRestaurant(data))
     supabase.from('menu_items').select('*').eq('restaurant_id', id).eq('available', true).then(({ data }) => setItems(data ?? []))
-    supabase.from('zones').select('*').order('id').then(({ data }) => setZones(data ?? []))
+    supabase.from('compounds').select('*').eq('active', true).order('direction').order('distance_km')
+      .then(({ data }) => setCompounds(data ?? []))
     supabase.rpc('open_slots', { p_restaurant_id: Number(id) })
       .then(({ data }) => setSlots((data as Slot[]) ?? []))
   }, [id])
@@ -36,7 +41,8 @@ export default function RestaurantDetail() {
   const hasRx = items.filter(it => cart[it.id]).some(it => it.requires_prescription)
   const subtotal = items.reduce((s, it) => s + (cart[it.id] ?? 0) * it.price, 0)
   const scheduled = restaurant?.vendor_type === 'supermarket'
-  const valid = name.trim() && phone.trim() && zone && unit.trim() && (!scheduled || !!slot)
+  const selectedCompound = compounds.find(c => c.id === compoundId)
+  const valid = name.trim() && phone.trim() && compoundId && unit.trim() && (!scheduled || !!slot)
 
   function add(itemId: number, delta: number) {
     setCart(c => {
@@ -57,19 +63,21 @@ export default function RestaurantDetail() {
       p_restaurant_id: restaurant.id,
       p_customer_name: name.trim(),
       p_customer_phone: phone.trim(),
-      p_zone: zone,
+      p_zone: selectedCompound?.name ?? '',
       p_unit_number: unit.trim(),
       p_address_notes: notes.trim(),
       p_delivery_fee: DELIVERY_FEE,
       p_items: payload,
       p_slot_id: slot?.id ?? null,
-      p_scheduled_date: slot?.scheduled_date ?? null
+      p_scheduled_date: slot?.scheduled_date ?? null,
+      p_compound_id: compoundId
     })
     if (error || !data?.token) {
       setSaving(false)
       alert(
         error?.message.includes('slot_full') ? 'الفترة دي اتملت، اختار فترة تانية'
         : error?.message.includes('restaurant_closed') ? 'المطعم قفل قبل ما تأكد الطلب، جرب تاني بعدين'
+        : error?.message.includes('vendor_not_covering_compound') ? 'المطعم ده مش بيوصل لمنطقتك للأسف'
         : 'حصل خطأ، جرب تاني'
       )
       return
@@ -182,10 +190,10 @@ export default function RestaurantDetail() {
                 <input className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
               <div><label className="label">رقم الموبايل *</label>
                 <input className="field" dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} placeholder="01xxxxxxxxx" /></div>
-              <div><label className="label">المنطقة / المجاورة *</label>
-                <select className="field" value={zone} onChange={e => setZone(e.target.value)}>
-                  <option value="">اختر المنطقة…</option>
-                  {zones.map(z => <option key={z.id} value={z.name}>{z.name}</option>)}
+              <div><label className="label">المكان *</label>
+                <select className="field" value={compoundId ?? ''} onChange={e => setCompoundId(Number(e.target.value) || null)}>
+                  <option value="">اختر مكانك…</option>
+                  {compounds.map(c => <option key={c.id} value={c.id}>{c.name} (~{c.est_travel_minutes} د)</option>)}
                 </select></div>
               <div><label className="label">رقم الشاليه / الفيلا *</label>
                 <input className="field" value={unit} onChange={e => setUnit(e.target.value)} placeholder="مثال: B4 - 204" /></div>
