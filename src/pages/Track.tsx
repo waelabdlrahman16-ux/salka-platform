@@ -26,6 +26,12 @@ export default function Track() {
   const [notFound, setNotFound] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [cancelled, setCancelled] = useState(false)
+  const [driverRating, setDriverRating] = useState(0)
+  const [restaurantRating, setRestaurantRating] = useState(0)
+  const [ratingSent, setRatingSent] = useState(false)
+  const [complaining, setComplaining] = useState(false)
+  const [complaintText, setComplaintText] = useState('')
+  const [complaintSent, setComplaintSent] = useState(false)
 
   async function load() {
     const { data: res, error } = await supabase.rpc('track_order', { p_token: token })
@@ -38,6 +44,20 @@ export default function Track() {
     const t = setInterval(load, 10000)
     return () => clearInterval(t)
   }, [token])
+
+  async function sendRating() {
+    if (!token || (!driverRating && !restaurantRating)) return
+    await supabase.rpc('submit_rating', {
+      p_token: token, p_driver_rating: driverRating || null, p_restaurant_rating: restaurantRating || null
+    })
+    setRatingSent(true)
+  }
+
+  async function sendComplaint() {
+    if (!token || !complaintText.trim()) return
+    await supabase.rpc('submit_complaint', { p_token: token, p_description: complaintText.trim() })
+    setComplaintSent(true); setComplaining(false)
+  }
 
   async function cancelOrder() {
     if (!data?.order || !confirm('تأكيد إلغاء الطلب؟')) return
@@ -121,6 +141,47 @@ export default function Track() {
               )}
             </div>
           </div>
+        )}
+
+        {current === 'Delivered' && !ratingSent && (
+          <div className="mt-4 bg-night border border-line rounded-xl p-4">
+            <p className="text-sm font-semibold mb-3">قيّم تجربتك (اختياري)</p>
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-mist">المندوب</span>
+                <div className="flex gap-1">
+                  {[1,2,3,4,5].map(n => (
+                    <button key={n} onClick={() => setDriverRating(n)} className={n <= driverRating ? 'text-sand' : 'text-line'}>★</button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-mist">المطعم</span>
+                <div className="flex gap-1">
+                  {[1,2,3,4,5].map(n => (
+                    <button key={n} onClick={() => setRestaurantRating(n)} className={n <= restaurantRating ? 'text-sand' : 'text-line'}>★</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <button className="btn-sea w-full mt-3 text-sm" disabled={!driverRating && !restaurantRating} onClick={sendRating}>إرسال التقييم</button>
+          </div>
+        )}
+        {ratingSent && <p className="text-emerald-300 text-sm text-center mt-4">✅ شكرًا لتقييمك</p>}
+
+        {complaintSent ? (
+          <p className="text-sand text-sm text-center mt-4">✅ تم إرسال الشكوى — هنراجعها قريب</p>
+        ) : complaining ? (
+          <div className="mt-4 bg-night border border-line rounded-xl p-4">
+            <p className="text-sm font-semibold mb-2">إيه المشكلة؟</p>
+            <textarea className="field h-20 resize-none" value={complaintText} onChange={e => setComplaintText(e.target.value)} placeholder="مثال: نقص صنف من الطلب" />
+            <div className="flex gap-2.5 mt-2.5">
+              <button className="btn-ghost flex-1 text-sm" onClick={() => setComplaining(false)}>إلغاء</button>
+              <button className="btn-danger flex-1 text-sm" disabled={!complaintText.trim()} onClick={sendComplaint}>إرسال</button>
+            </div>
+          </div>
+        ) : (
+          <button className="text-red-300 text-sm mt-4 underline" onClick={() => setComplaining(true)}>في مشكلة في الطلب؟</button>
         )}
 
         <div className="mt-4 border-t border-line pt-4 space-y-1.5">

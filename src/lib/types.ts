@@ -38,6 +38,7 @@ export interface Driver {
   available: boolean; active: boolean
   vehicle_type: 'motorcycle' | 'van'; vehicle_plate: string
   rating: number; total_deliveries: number; commission_value: number
+  cash_held: number; payout_schedule: 'daily' | 'weekly'
 }
 export interface Assignment {
   id: number; order_id: number; driver_id: number; attempt_number: number
@@ -50,7 +51,7 @@ export interface Assignment {
 export interface Earning {
   id: number; driver_id: number; order_id: number; assignment_id: number
   delivery_fee: number; driver_earning: number; admin_amount: number
-  created_at: string
+  created_at: string; paid: boolean
   drivers?: { name: string }
 }
 export interface Zone { id: number; name: string }
@@ -82,3 +83,15 @@ export interface Compound {
   est_travel_minutes: number; active: boolean
 }
 export interface Region { id: number; name: string }
+
+export interface Complaint {
+  id: number; order_id: number; description: string
+  status: 'open' | 'reviewed' | 'resolved'; created_at: string
+  orders?: { customer_name: string; customer_phone: string; restaurants?: { name: string } }
+}
+export interface SettlementRequest {
+  id: number; driver_id: number; status: string; created_at: string
+  drivers?: { name: string }
+}
+export interface VendorCoverage { id: number; restaurant_id: number; compound_id: number }
+export interface Reliability { avg_accept_minutes: number | null; slow_accepts: number; total_orders: number }

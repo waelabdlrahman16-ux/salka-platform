@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import type { Assignment, Booking, Driver, DeliverySlotRow, Earning, MenuItem, Order, Restaurant, Setting, Shift } from '../lib/types'
+import type { Assignment, Booking, Compound, Complaint, Driver, DeliverySlotRow, Earning, MenuItem, Order, Reliability, Restaurant, Setting, SettlementRequest, Shift, VendorCoverage } from '../lib/types'
 import { ping, askNotificationPermission } from '../lib/notify'
 
-type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts'
+type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage'
 const TABS: { key: Tab; label: string }[] = [
   { key: 'unassigned', label: 'طلبات غير معيّنة' },
   { key: 'active', label: 'توصيلات جارية' },
@@ -13,6 +13,9 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'earnings', label: 'الأرباح' },
   { key: 'settings', label: 'الإعدادات' },
   { key: 'shifts', label: 'الورديات' },
+  { key: 'payouts', label: 'مدفوعات المندوبين' },
+  { key: 'complaints', label: 'الشكاوى' },
+  { key: 'coverage', label: 'تغطية المطاعم' },
 ]
 
 export default function Admin() {
@@ -36,9 +39,19 @@ export default function Admin() {
   const [reassignFor, setReassignFor] = useState<number | null>(null)
   const [bulkDrivers, setBulkDrivers] = useState('')
   const [bulkResult, setBulkResult] = useState<string | null>(null)
+  const [complaints, setComplaints] = useState<Complaint[]>([])
+  const [settlementRequests, setSettlementRequests] = useState<SettlementRequest[]>([])
+  const [compounds, setCompounds] = useState<Compound[]>([])
+  const [coverage, setCoverage] = useState<VendorCoverage[]>([])
+  const [coverageFor, setCoverageFor] = useState<number | null>(null)
+  const [reliability, setReliability] = useState<Record<number, Reliability>>({})
+  const [walletPhone, setWalletPhone] = useState('')
+  const [walletAmount, setWalletAmount] = useState('')
+  const [walletReason, setWalletReason] = useState('')
+  const [walletResult, setWalletResult] = useState<string | null>(null)
 
   async function load() {
-    const [o, a, d, b, e, r, m, st, sh, esc, sl] = await Promise.all([
+    const [o, a, d, b, e, r, m, st, sh, esc, sl, comp, sr, cpd, cov] = await Promise.all([
       supabase.from('orders').select('*, restaurants(name)').order('id', { ascending: false }),
       supabase.from('delivery_assignments').select('*, orders(*, restaurants(name)), drivers(*)').order('id', { ascending: false }),
       supabase.from('drivers').select('*').order('id'),
@@ -51,13 +64,28 @@ export default function Admin() {
       supabase.from('shift_swap_requests').select('*, shifts(*), requester:drivers!shift_swap_requests_requested_by_fkey(name)')
         .eq('status', 'escalated').order('escalated_at', { ascending: false }),
       supabase.from('delivery_slots').select('*').order('restaurant_id').order('start_time'),
+      supabase.from('complaints').select('*, orders(customer_name, customer_phone, restaurants(name))').order('id', { ascending: false }),
+      supabase.from('settlement_requests').select('*, drivers(name)').eq('status', 'pending').order('id', { ascending: false }),
+      supabase.from('compounds').select('*').eq('active', true).order('direction').order('distance_km'),
+      supabase.from('vendor_coverage').select('*'),
     ])
     setOrders(o.data ?? []); setAssignments(a.data ?? []); setDrivers(d.data ?? [])
     setBookings(b.data ?? []); setEarnings(e.data ?? [])
     setRestaurants(r.data ?? []); setMenu(m.data ?? []); setSettings(st.data ?? [])
     setShifts(sh.data ?? []); setEscalations(esc.data ?? [])
     setSlots(sl.data ?? [])
+    setComplaints(comp.data ?? []); setSettlementRequests(sr.data ?? [])
+    setCompounds(cpd.data ?? []); setCoverage(cov.data ?? [])
     ping('escalated_shifts', (esc.data ?? []).length, 'مندوب محتاج بديل', 'في وردية اتصعّدت للإدارة')
+    ping('complaints', (comp.data ?? []).filter((c: Complaint) => c.status === 'open').length, 'شكوى جديدة', 'في عميل بلّغ عن مشكلة')
+    ping('settlement_requests', (sr.data ?? []).length, 'طلب تسوية مبكرة', 'مندوب طالب تسوية قبل ميعاده')
+
+    const rel: Record<number, Reliability> = {}
+    for (const rest of (r.data ?? [])) {
+      const { data } = await supabase.rpc('restaurant_reliability', { p_restaurant_id: rest.id })
+      rel[rest.id] = data as Reliability
+    }
+    setReliability(rel)
   }
 
   useEffect(() => {
@@ -188,6 +216,29 @@ export default function Admin() {
     })
     setNewItem({ name: '', category: '', price: '', requiresRx: false })
     load()
+  }
+
+  async function settleCash(driverId: number) { await supabase.rpc('settle_driver_cash', { p_driver_id: driverId }); load() }
+  async function settleEarnings(driverId: number) { await supabase.rpc('settle_driver_earnings', { p_driver_id: driverId }); load() }
+  async function updatePayoutSchedule(d: Driver, schedule: string) {
+    await supabase.from('drivers').update({ payout_schedule: schedule }).eq('id', d.id); load()
+  }
+  async function updateComplaintStatus(c: Complaint, status: string) {
+    await supabase.from('complaints').update({ status }).eq('id', c.id); load()
+  }
+  async function toggleCoverage(restaurantId: number, compoundId: number) {
+    const existing = coverage.find(c => c.restaurant_id === restaurantId && c.compound_id === compoundId)
+    if (existing) await supabase.from('vendor_coverage').delete().eq('id', existing.id)
+    else await supabase.from('vendor_coverage').insert({ restaurant_id: restaurantId, compound_id: compoundId })
+    load()
+  }
+  async function sendWalletCredit() {
+    if (!walletPhone.trim() || !walletAmount) return
+    const { error } = await supabase.rpc('credit_wallet', {
+      p_phone: walletPhone.trim(), p_amount: Number(walletAmount), p_reason: walletReason.trim() || 'admin credit'
+    })
+    setWalletResult(error ? 'حصل خطأ، جرب تاني' : `تمت إضافة ${walletAmount} ج.م لمحفظة ${walletPhone}`)
+    if (!error) { setWalletPhone(''); setWalletAmount(''); setWalletReason('') }
   }
 
   async function toggleRx(it: MenuItem) {
@@ -340,6 +391,15 @@ export default function Admin() {
                   <button className={r.is_open ? 'badge-open' : 'badge-closed'}
                     onClick={() => toggleRestaurant(r)}>{r.is_open ? 'مفتوح' : 'مغلق'}</button>
                 </div>
+
+                {reliability[r.id] && reliability[r.id].total_orders > 0 && (
+                  <p className="text-xs text-mist mt-2">
+                    ⏱ متوسط وقت القبول: {reliability[r.id].avg_accept_minutes ?? '—'} د ·
+                    {' '}<span className={reliability[r.id].slow_accepts > 2 ? 'text-red-300' : 'text-mist'}>
+                      {reliability[r.id].slow_accepts} طلب اتأخر قبوله (٣٠ يوم)
+                    </span>
+                  </p>
+                )}
 
                 {expanded && (
                   <div className="flex items-center gap-2 mt-3 text-sm">
@@ -537,6 +597,123 @@ export default function Admin() {
               )
             })}
           </div>
+        </div>
+      )}
+
+      {tab === 'payouts' && (
+        <div className="space-y-5">
+          {settlementRequests.length > 0 && (
+            <div>
+              <h2 className="font-bold text-sand mb-3">⏳ طلبات تسوية مبكرة</h2>
+              <div className="space-y-2.5">
+                {settlementRequests.map(sr => (
+                  <div key={sr.id} className="card p-3.5 flex items-center justify-between text-sm">
+                    <span className="font-semibold">{sr.drivers?.name}</span>
+                    <button className="btn-sea !py-1.5 text-sm" onClick={() => settleEarnings(sr.driver_id)}>ادفع دلوقتي</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <h2 className="font-bold text-mist mb-3">كل المندوبين</h2>
+          <div className="space-y-3">
+            {drivers.map(d => {
+              const unpaid = earnings.filter(e => e.driver_id === d.id && !e.paid).reduce((s, e) => s + Number(e.driver_earning), 0)
+              return (
+                <div key={d.id} className="card p-4">
+                  <div className="flex items-start justify-between">
+                    <h3 className="font-bold">{d.name}</h3>
+                    <select className="field !w-auto !py-1 text-xs" value={d.payout_schedule}
+                      onChange={e => updatePayoutSchedule(d, e.target.value)}>
+                      <option value="daily">يومي</option>
+                      <option value="weekly">أسبوعي</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    <div className="bg-night border border-line rounded-xl p-3">
+                      <p className="text-xs text-mist">كاش معاه</p>
+                      <p className="font-bold text-sand mt-0.5">{d.cash_held ?? 0} ج.م</p>
+                      {(d.cash_held ?? 0) >= 3000 && <p className="text-xs text-red-300 mt-1">⚠️ تجاوز حد الأمان</p>}
+                    </div>
+                    <div className="bg-night border border-line rounded-xl p-3">
+                      <p className="text-xs text-mist">أرباح مستحقة</p>
+                      <p className="font-bold text-sea mt-0.5">{unpaid} ج.م</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2.5 mt-3">
+                    <button className="btn-ghost flex-1 text-sm" disabled={!(d.cash_held > 0)} onClick={() => settleCash(d.id)}>استلمت الكاش</button>
+                    <button className="btn-sea flex-1 text-sm" disabled={unpaid === 0} onClick={() => settleEarnings(d.id)}>ادفع الأرباح</button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="card p-4">
+            <p className="font-semibold mb-2">💳 إضافة رصيد لمحفظة عميل</p>
+            <div className="space-y-2">
+              <input className="field" dir="ltr" placeholder="رقم موبايل العميل" value={walletPhone} onChange={e => setWalletPhone(e.target.value)} />
+              <div className="flex gap-2">
+                <input className="field !w-28" type="number" placeholder="المبلغ" value={walletAmount} onChange={e => setWalletAmount(e.target.value)} />
+                <input className="field" placeholder="السبب (اختياري)" value={walletReason} onChange={e => setWalletReason(e.target.value)} />
+              </div>
+              <button className="btn-sea w-full" disabled={!walletPhone.trim() || !walletAmount} onClick={sendWalletCredit}>إضافة الرصيد</button>
+              {walletResult && <p className="text-sm text-mist">{walletResult}</p>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab === 'complaints' && (
+        <div className="space-y-4">
+          {complaints.length === 0 && <div className="card p-6 text-center text-mist">لا توجد شكاوى</div>}
+          {complaints.map(c => (
+            <div key={c.id} className="card p-4">
+              <div className="flex items-start justify-between">
+                <h2 className="font-bold">طلب #{c.order_id} — {c.orders?.restaurants?.name}</h2>
+                <span className={`text-xs font-semibold rounded-full px-2.5 py-1 ${c.status === 'open' ? 'bg-red-500/15 text-red-300' : c.status === 'reviewed' ? 'bg-sand/15 text-sand' : 'bg-emerald-500/15 text-emerald-300'}`}>
+                  {c.status === 'open' ? 'جديدة' : c.status === 'reviewed' ? 'قيد المراجعة' : 'اتحلت'}
+                </span>
+              </div>
+              <p className="text-sm mt-2">{c.description}</p>
+              {c.orders && (
+                <p className="text-sm text-mist mt-2">👤 {c.orders.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${c.orders.customer_phone}`}>{c.orders.customer_phone}</a></p>
+              )}
+              <div className="flex gap-2.5 mt-3">
+                {c.status !== 'reviewed' && <button className="btn-ghost flex-1 text-sm" onClick={() => updateComplaintStatus(c, 'reviewed')}>قيد المراجعة</button>}
+                {c.status !== 'resolved' && <button className="btn-sea flex-1 text-sm" onClick={() => updateComplaintStatus(c, 'resolved')}>اتحلت</button>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'coverage' && (
+        <div className="space-y-4">
+          <p className="text-sm text-mist">مطعم من غير أي تحديد بيغطي كل الأماكن تلقائيًا. اختار أماكن يبقى التغطية محصورة فيها بس.</p>
+          {restaurants.map(r => {
+            const expanded = coverageFor === r.id
+            const covered = new Set(coverage.filter(c => c.restaurant_id === r.id).map(c => c.compound_id))
+            return (
+              <div key={r.id} className="card p-4">
+                <button className="w-full text-right flex items-center justify-between" onClick={() => setCoverageFor(expanded ? null : r.id)}>
+                  <h2 className="font-bold">{r.name}</h2>
+                  <span className="text-sm text-mist">{covered.size === 0 ? 'كل الأماكن' : `${covered.size} مكان`}</span>
+                </button>
+                {expanded && (
+                  <div className="mt-3 grid grid-cols-1 gap-1.5 max-h-72 overflow-y-auto">
+                    {compounds.map(c => (
+                      <label key={c.id} className="flex items-center gap-2 text-sm bg-night border border-line rounded-lg px-3 py-2">
+                        <input type="checkbox" checked={covered.has(c.id)} onChange={() => toggleCoverage(r.id, c.id)} />
+                        {c.name} <span className="text-mist text-xs">(~{c.est_travel_minutes} د)</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 

@@ -23,6 +23,9 @@ export default function DriverPage() {
   const [myOpenRequests, setMyOpenRequests] = useState<Map<number, number>>(new Map())
   const [myEscalated, setMyEscalated] = useState<Set<number>>(new Set())
   const [swapReason, setSwapReason] = useState<Record<number, string>>({})
+  const [requestingSettlement, setRequestingSettlement] = useState(false)
+  const [settlementSent, setSettlementSent] = useState(false)
+  const [unpaidEarnings, setUnpaidEarnings] = useState(0)
 
   async function load() {
     if (!id) return
@@ -53,6 +56,12 @@ export default function DriverPage() {
       .select('shift_id').eq('requested_by', id).eq('status', 'escalated')
     setMyEscalated(new Set((esc ?? []).map((x: any) => x.shift_id)))
     ping('pool', ((p as PoolOrder[]) ?? []).length, 'طلب متاح', 'في طلب جديد متاح للاستلام')
+
+    const { data: earn } = await supabase.from('driver_earnings').select('driver_earning').eq('driver_id', id).eq('paid', false)
+    setUnpaidEarnings((earn ?? []).reduce((s, e) => s + Number(e.driver_earning), 0))
+
+    const { data: reqs } = await supabase.from('settlement_requests').select('id').eq('driver_id', id).eq('status', 'pending').limit(1)
+    setSettlementSent((reqs ?? []).length > 0)
   }
 
   useEffect(() => {
@@ -72,17 +81,16 @@ export default function DriverPage() {
     if (status === 'Picked_Up') await supabase.from('orders').update({ status: 'Picked_Up' }).eq('id', a.order_id)
     if (status === 'Out_for_Delivery') await supabase.from('orders').update({ status: 'Out_for_Delivery' }).eq('id', a.order_id)
     if (status === 'Delivered') {
-      await supabase.from('orders').update({ status: 'Delivered' }).eq('id', a.order_id)
-      await supabase.from('driver_earnings').insert({
-        driver_id: id, order_id: a.order_id, assignment_id: a.id,
-        delivery_fee: DELIVERY_FEE, driver_earning: DRIVER_EARNING, admin_amount: ADMIN_AMOUNT
-      })
-      await supabase.from('drivers').update({
-        status: 'Available', available: true,
-        total_deliveries: (driver?.total_deliveries ?? 0) + 1
-      }).eq('id', id)
+      await supabase.rpc('mark_delivered', { p_assignment_id: a.id, p_order_id: a.order_id })
     }
     load()
+  }
+
+  async function requestSettlement() {
+    setRequestingSettlement(true)
+    await supabase.rpc('request_early_settlement')
+    setRequestingSettlement(false)
+    setSettlementSent(true)
   }
 
   async function requestSwap(shiftId: number) {
@@ -146,6 +154,26 @@ export default function DriverPage() {
           <p className="text-sm text-mist">★ {driver.rating} · {driver.total_deliveries} توصيلة</p>
         </div>
         <span className={driver.available ? 'badge-open' : 'badge-closed'}>{driver.status}</span>
+      </div>
+
+      <div className="card p-4 mb-6">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-xs text-mist">أرباح لسه ما اتصرفتش</p>
+            <p className="text-lg font-bold text-sea mt-0.5">{unpaidEarnings} ج.م</p>
+          </div>
+          <div>
+            <p className="text-xs text-mist">كاش معاك دلوقتي</p>
+            <p className="text-lg font-bold text-sand mt-0.5">{driver.cash_held ?? 0} ج.م</p>
+          </div>
+        </div>
+        {settlementSent ? (
+          <p className="text-emerald-300 text-sm text-center mt-3">✅ طلب التسوية المبكرة وصل للإدارة</p>
+        ) : (
+          <button className="btn-ghost w-full mt-3 text-sm" disabled={requestingSettlement || unpaidEarnings === 0} onClick={requestSettlement}>
+            {requestingSettlement ? 'جاري الإرسال…' : 'اطلب تسوية مبكرة'}
+          </button>
+        )}
       </div>
 
       {shifts.length > 0 && (

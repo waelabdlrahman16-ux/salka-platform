@@ -54,6 +54,8 @@ export default function Vendor() {
   async function advance(o: Order, next: string) {
     if (next === 'ready') {
       await supabase.rpc('vendor_ready', { p_order_id: o.id })
+    } else if (next === 'preparing') {
+      await supabase.rpc('vendor_accept_order', { p_order_id: o.id })
     } else {
       await supabase.from('orders').update({ kitchen_status: next }).eq('id', o.id)
     }
