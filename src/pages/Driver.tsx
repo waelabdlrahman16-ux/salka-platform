@@ -118,6 +118,12 @@ export default function DriverPage() {
     load()
   }
 
+  async function markFailed(a: Assignment) {
+    if (!confirm('العميل ما ردش خلال 5 دقايق؟ هيتسجل الطلب كفاشل وهتاخد أجرة التوصيل كاملة.')) return
+    await supabase.rpc('mark_delivery_failed', { p_assignment_id: a.id })
+    load()
+  }
+
   async function reject() {
     if (!rejecting) return
     await supabase.from('delivery_assignments').update({
@@ -272,7 +278,12 @@ export default function DriverPage() {
                 )}
                 {a.status === 'Accepted' && <button className="btn-sea w-full" onClick={() => setStatus(a, 'Picked_Up', { picked_up_at: new Date().toISOString() })}>استلمت الطلب</button>}
                 {a.status === 'Picked_Up' && <button className="btn-sea w-full" onClick={() => setStatus(a, 'Out_for_Delivery')}>خرجت للتوصيل</button>}
-                {a.status === 'Out_for_Delivery' && <button className="btn-sea w-full" onClick={() => setStatus(a, 'Delivered', { delivered_at: new Date().toISOString() })}>تم التسليم</button>}
+                {a.status === 'Out_for_Delivery' && (
+                  <div className="flex gap-2.5">
+                    <button className="btn-sea flex-1" onClick={() => setStatus(a, 'Delivered', { delivered_at: new Date().toISOString() })}>تم التسليم</button>
+                    <button className="btn-ghost text-sm" onClick={() => markFailed(a)}>العميل ما ردش</button>
+                  </div>
+                )}
                 {a.status === 'Delivered' && <p className="text-emerald-300 font-semibold text-center">✅ اكتمل — +{DRIVER_EARNING} ج.م</p>}
               </div>
 

@@ -24,6 +24,8 @@ export default function Track() {
   const { token } = useParams()
   const [data, setData] = useState<TrackData | null>(null)
   const [notFound, setNotFound] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
+  const [cancelled, setCancelled] = useState(false)
 
   async function load() {
     const { data: res, error } = await supabase.rpc('track_order', { p_token: token })
@@ -37,6 +39,15 @@ export default function Track() {
     return () => clearInterval(t)
   }, [token])
 
+  async function cancelOrder() {
+    if (!data?.order || !confirm('تأكيد إلغاء الطلب؟')) return
+    setCancelling(true)
+    const { error } = await supabase.rpc('cancel_order', { p_order_id: data.order.id, p_reason: 'customer_cancelled' })
+    setCancelling(false)
+    if (error) { alert('الطلب بدأ تجهيزه بالفعل، محدش يقدر يلغيه غير الإدارة'); return }
+    setCancelled(true)
+  }
+
   if (notFound) return (
     <div className="card p-6 text-center max-w-sm mx-auto">
       <p className="font-semibold">الطلب غير موجود</p>
@@ -48,6 +59,7 @@ export default function Track() {
   const o = data.order
   const current = data.assignment?.status && data.assignment.status !== 'Offered' ? data.assignment.status : 'pending'
   const activeIdx = Math.max(0, STEPS.findIndex(s => s.key === current))
+  const canCancel = current === 'pending' && !cancelled
 
   return (
     <div className="max-w-lg mx-auto">
@@ -61,7 +73,19 @@ export default function Track() {
           <span className="font-bold text-sea">{o.total} ج.م</span>
         </div>
 
-        {o.ready_at && current === 'pending' && (
+        {cancelled && (
+          <div className="mt-4 bg-red-500/10 border border-red-400/30 rounded-xl p-3 text-center text-red-300 text-sm">
+            تم إلغاء الطلب
+          </div>
+        )}
+
+        {canCancel && (
+          <button className="btn-danger w-full mt-4" disabled={cancelling} onClick={cancelOrder}>
+            {cancelling ? 'جاري الإلغاء…' : 'إلغاء الطلب'}
+          </button>
+        )}
+
+        {o.ready_at && current === 'pending' && !cancelled && (
           <p className="text-sm text-mist mt-2">
             {(() => {
               const mins = Math.round((+new Date(o.ready_at) - Date.now()) / 60000)
