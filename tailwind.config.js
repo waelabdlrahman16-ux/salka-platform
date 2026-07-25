@@ -4,9 +4,16 @@ export default {
   theme: {
     extend: {
       colors: {
-        night: '#0A1020', shell: '#111A2E', shellup: '#18233C',
-        line: '#243250', sea: '#2DD4BF', seadeep: '#0F766E',
-        sand: '#F3B94D', foam: '#E6ECF7', mist: '#8CA0C3'
+        // Salka — warm, appetite-driven palette (Breadfast-style light theme)
+        night: '#FFFAF5',     // page background — warm cream, not stark white
+        shell: '#FFFFFF',     // card background
+        shellup: '#FFF1E6',   // elevated surface (header, active tab)
+        line: '#F0DFCB',      // borders — warm sand line
+        sea: '#FF6B47',       // brand primary — coral/appetite orange
+        seadeep: '#E5502F',   // primary hover/pressed
+        sand: '#E9A23B',      // accent — amber (ratings, highlights)
+        foam: '#2B1D12',      // primary text — warm dark brown, not pure black
+        mist: '#8A7561'       // secondary/muted text — warm taupe
       },
       fontFamily: { arabic: ['"IBM Plex Sans Arabic"', 'system-ui', 'sans-serif'] }
     }

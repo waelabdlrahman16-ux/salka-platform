@@ -94,7 +94,7 @@ export default function Track() {
         </div>
 
         {cancelled && (
-          <div className="mt-4 bg-red-500/10 border border-red-400/30 rounded-xl p-3 text-center text-red-300 text-sm">
+          <div className="mt-4 bg-red-500/10 border border-red-400/40 rounded-xl p-3 text-center text-red-600 text-sm">
             تم إلغاء الطلب
           </div>
         )}
@@ -167,7 +167,7 @@ export default function Track() {
             <button className="btn-sea w-full mt-3 text-sm" disabled={!driverRating && !restaurantRating} onClick={sendRating}>إرسال التقييم</button>
           </div>
         )}
-        {ratingSent && <p className="text-emerald-300 text-sm text-center mt-4">✅ شكرًا لتقييمك</p>}
+        {ratingSent && <p className="text-emerald-700 text-sm text-center mt-4">✅ شكرًا لتقييمك</p>}
 
         {complaintSent ? (
           <p className="text-sand text-sm text-center mt-4">✅ تم إرسال الشكوى — هنراجعها قريب</p>
@@ -181,7 +181,7 @@ export default function Track() {
             </div>
           </div>
         ) : (
-          <button className="text-red-300 text-sm mt-4 underline" onClick={() => setComplaining(true)}>في مشكلة في الطلب؟</button>
+          <button className="text-red-600 text-sm mt-4 underline" onClick={() => setComplaining(true)}>في مشكلة في الطلب؟</button>
         )}
 
         <div className="mt-4 border-t border-line pt-4 space-y-1.5">

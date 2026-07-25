@@ -21,8 +21,8 @@ function Header() {
     <header className="sticky top-0 z-40 bg-night/90 backdrop-blur border-b border-line">
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <span className="w-8 h-8 rounded-xl bg-sea/15 text-sea grid place-items-center font-bold">ت</span>
-          <span className="font-bold text-lg">تلال السخنة</span>
+          <span className="w-8 h-8 rounded-xl bg-sea/15 text-sea grid place-items-center font-bold">س</span>
+          <span className="font-bold text-lg">سالكة</span>
         </Link>
 
         {isStaff && session ? (

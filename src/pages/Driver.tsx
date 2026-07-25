@@ -168,7 +168,7 @@ export default function DriverPage() {
           </div>
         </div>
         {settlementSent ? (
-          <p className="text-emerald-300 text-sm text-center mt-3">✅ طلب التسوية المبكرة وصل للإدارة</p>
+          <p className="text-emerald-700 text-sm text-center mt-3">✅ طلب التسوية المبكرة وصل للإدارة</p>
         ) : (
           <button className="btn-ghost w-full mt-3 text-sm" disabled={requestingSettlement || unpaidEarnings === 0} onClick={requestSettlement}>
             {requestingSettlement ? 'جاري الإرسال…' : 'اطلب تسوية مبكرة'}
@@ -215,7 +215,7 @@ export default function DriverPage() {
                     </div>
                   )}
                   {myEscalated.has(sh.id) && (
-                    <p className="text-emerald-300 text-sm mt-3">✅ تم إبلاغ الإدارة — في انتظار تعيين مندوب بديل</p>
+                    <p className="text-emerald-700 text-sm mt-3">✅ تم إبلاغ الإدارة — في انتظار تعيين مندوب بديل</p>
                   )}
                 </div>
               )
@@ -312,7 +312,7 @@ export default function DriverPage() {
                     <button className="btn-ghost text-sm" onClick={() => markFailed(a)}>العميل ما ردش</button>
                   </div>
                 )}
-                {a.status === 'Delivered' && <p className="text-emerald-300 font-semibold text-center">✅ اكتمل — +{DRIVER_EARNING} ج.م</p>}
+                {a.status === 'Delivered' && <p className="text-emerald-700 font-semibold text-center">✅ اكتمل — +{DRIVER_EARNING} ج.م</p>}
               </div>
 
               <div className="mt-2.5 text-xs text-mist flex flex-wrap gap-x-4 gap-y-1">

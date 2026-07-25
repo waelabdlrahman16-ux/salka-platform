@@ -113,7 +113,7 @@ export default function Vendor() {
         )}
 
         {remaining(o) !== null && o.kitchen_status !== 'ready' && (
-          <p className={`text-sm mt-2 ${remaining(o)! < 0 ? 'text-red-300' : 'text-mist'}`}>
+          <p className={`text-sm mt-2 ${remaining(o)! < 0 ? 'text-red-600' : 'text-mist'}`}>
             {remaining(o)! < 0 ? `متأخر ${Math.abs(remaining(o)!)} دقيقة` : `المفروض يجهز خلال ${remaining(o)} دقيقة`}
           </p>
         )}
@@ -133,7 +133,7 @@ export default function Vendor() {
                 <button className="btn-ghost" onClick={() => delay(o)}>+10 دقائق</button>
               </div>
             )}
-            {!stage.next && <p className="text-emerald-300 text-center text-sm mt-3">✅ في انتظار المندوب</p>}
+            {!stage.next && <p className="text-emerald-700 text-center text-sm mt-3">✅ في انتظار المندوب</p>}
           </>
         )}
       </div>

@@ -272,7 +272,7 @@ export default function Admin() {
         <div className="space-y-4">
           {unassigned.length === 0 && <div className="card p-6 text-center text-mist">لا توجد طلبات غير معيّنة</div>}
           {unassigned.map(o => (
-            <div key={o.id} className={`card p-4 ${isLate(o) ? 'border-red-400/50' : ''}`}>
+            <div key={o.id} className={`card p-4 ${isLate(o) ? 'border-red-400/60' : ''}`}>
               <div className="flex items-start justify-between">
                 <h2 className="font-bold">#{o.id} — {o.restaurants?.name}</h2>
                 <span className="font-bold text-sea">{o.total} ج.م</span>
@@ -280,7 +280,7 @@ export default function Admin() {
               {isCooking(o) && (
                 <p className="text-mist text-sm mt-1.5">👨‍🍳 لسه بيتحضر — متاح للمندوبين خلال {minsUntilDispatch(o)} دقيقة</p>
               )}
-              {isLate(o) && <p className="text-red-300 text-sm mt-1.5">⚠️ محدش استلم الطلب</p>}
+              {isLate(o) && <p className="text-red-600 text-sm mt-1.5">⚠️ محدش استلم الطلب</p>}
               {customer(o)}
               <button className="btn-sea w-full mt-3" onClick={() => setAssigning(o)}>
                 {isCooking(o) ? 'تعيين مندوب الآن (تجاوز وقت التحضير)' : 'تعيين مندوب'}
@@ -395,7 +395,7 @@ export default function Admin() {
                 {reliability[r.id] && reliability[r.id].total_orders > 0 && (
                   <p className="text-xs text-mist mt-2">
                     ⏱ متوسط وقت القبول: {reliability[r.id].avg_accept_minutes ?? '—'} د ·
-                    {' '}<span className={reliability[r.id].slow_accepts > 2 ? 'text-red-300' : 'text-mist'}>
+                    {' '}<span className={reliability[r.id].slow_accepts > 2 ? 'text-red-600' : 'text-mist'}>
                       {reliability[r.id].slow_accepts} طلب اتأخر قبوله (٣٠ يوم)
                     </span>
                   </p>
@@ -531,17 +531,17 @@ export default function Admin() {
         <div>
           {escalations.length > 0 && (
             <div className="mb-6">
-              <h2 className="font-bold text-red-300 mb-3">⚠️ محتاجين تدخل الإدارة</h2>
+              <h2 className="font-bold text-red-600 mb-3">⚠️ محتاجين تدخل الإدارة</h2>
               <div className="space-y-3">
                 {escalations.map((e: any) => (
-                  <div key={e.id} className="card p-4 border-red-400/50">
+                  <div key={e.id} className="card p-4 border-red-400/60">
                     <p className="font-semibold">{e.requester?.name}</p>
                     <p className="text-sm text-mist mt-0.5">
                       {e.shifts && new Date(e.shifts.shift_date).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'numeric' })}
                       {' '}· {e.shifts?.start_time?.slice(0,5)}–{e.shifts?.end_time?.slice(0,5)}
                     </p>
                     {e.reason && <p className="text-sm text-mist mt-1">"{e.reason}"</p>}
-                    <p className="text-xs text-red-300 mt-2">محدش من المندوبين وافق يستلم الوردية</p>
+                    <p className="text-xs text-red-600 mt-2">محدش من المندوبين وافق يستلم الوردية</p>
 
                     {reassignFor === e.id ? (
                       <div className="mt-3 space-y-2">
@@ -634,7 +634,7 @@ export default function Admin() {
                     <div className="bg-night border border-line rounded-xl p-3">
                       <p className="text-xs text-mist">كاش معاه</p>
                       <p className="font-bold text-sand mt-0.5">{d.cash_held ?? 0} ج.م</p>
-                      {(d.cash_held ?? 0) >= 3000 && <p className="text-xs text-red-300 mt-1">⚠️ تجاوز حد الأمان</p>}
+                      {(d.cash_held ?? 0) >= 3000 && <p className="text-xs text-red-600 mt-1">⚠️ تجاوز حد الأمان</p>}
                     </div>
                     <div className="bg-night border border-line rounded-xl p-3">
                       <p className="text-xs text-mist">أرباح مستحقة</p>
@@ -672,7 +672,7 @@ export default function Admin() {
             <div key={c.id} className="card p-4">
               <div className="flex items-start justify-between">
                 <h2 className="font-bold">طلب #{c.order_id} — {c.orders?.restaurants?.name}</h2>
-                <span className={`text-xs font-semibold rounded-full px-2.5 py-1 ${c.status === 'open' ? 'bg-red-500/15 text-red-300' : c.status === 'reviewed' ? 'bg-sand/15 text-sand' : 'bg-emerald-500/15 text-emerald-300'}`}>
+                <span className={`text-xs font-semibold rounded-full px-2.5 py-1 ${c.status === 'open' ? 'bg-red-500/15 text-red-600' : c.status === 'reviewed' ? 'bg-sand/15 text-sand' : 'bg-emerald-500/15 text-emerald-700'}`}>
                   {c.status === 'open' ? 'جديدة' : c.status === 'reviewed' ? 'قيد المراجعة' : 'اتحلت'}
                 </span>
               </div>

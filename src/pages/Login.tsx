@@ -24,7 +24,7 @@ export default function Login() {
     <div className="max-w-sm mx-auto">
       <div className="card p-6 mt-6">
         <h1 className="text-xl font-bold">تسجيل الدخول</h1>
-        <p className="text-sm text-mist mt-1.5">للمندوبين والإدارة فقط</p>
+        <p className="text-sm text-mist mt-1.5">للمندوبين والمطاعم والإدارة</p>
 
         <div className="space-y-3.5 mt-5">
           <div>
@@ -41,7 +41,7 @@ export default function Login() {
           </div>
         </div>
 
-        {error && <p className="text-red-300 text-sm mt-3">{error}</p>}
+        {error && <p className="text-red-600 text-sm mt-3">{error}</p>}
 
         <button className="btn-sea w-full mt-5" disabled={busy || !email || !password} onClick={submit}>
           {busy ? 'جاري الدخول…' : 'دخول'}

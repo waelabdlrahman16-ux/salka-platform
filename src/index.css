@@ -7,12 +7,12 @@ body { @apply bg-night text-foam antialiased; }
 
 .card { @apply bg-shell border border-line rounded-2xl; }
 .btn { @apply rounded-xl px-4 py-2.5 font-semibold transition-colors disabled:opacity-40 disabled:pointer-events-none; }
-.btn-sea { @apply btn bg-sea text-night hover:bg-teal-300; }
+.btn-sea { @apply btn bg-sea text-white hover:bg-seadeep; }
 .btn-ghost { @apply btn bg-shellup text-foam hover:bg-line; }
-.btn-danger { @apply btn bg-red-500/15 text-red-300 hover:bg-red-500/25; }
+.btn-danger { @apply btn bg-red-500/15 text-red-600 hover:bg-red-500/25; }
 .field { @apply w-full rounded-xl bg-night border border-line px-3.5 py-2.5 text-foam placeholder:text-mist/60 focus:outline-none focus:border-sea; }
 .label { @apply block text-sm text-mist mb-1.5; }
-.badge-open { @apply text-xs font-semibold bg-emerald-500/15 text-emerald-300 rounded-full px-2.5 py-1; }
-.badge-closed { @apply text-xs font-semibold bg-red-500/15 text-red-300 rounded-full px-2.5 py-1; }
+.badge-open { @apply text-xs font-semibold bg-emerald-500/15 text-emerald-700 rounded-full px-2.5 py-1; }
+.badge-closed { @apply text-xs font-semibold bg-red-500/15 text-red-600 rounded-full px-2.5 py-1; }
 .tab { @apply px-3.5 py-2 rounded-xl text-sm font-semibold text-mist hover:text-foam transition-colors whitespace-nowrap; }
 .tab-active { @apply bg-shellup text-foam; }
