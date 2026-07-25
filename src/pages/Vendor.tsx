@@ -84,10 +84,15 @@ export default function Vendor() {
           </div>
         </div>
 
+        {(items[o.id] ?? []).some(it => it.requires_prescription) && (
+          <p className="text-sand text-sm mt-2">💊 الطلب فيه صنف يحتاج روشتة — أكّد مع العميل قبل التجهيز</p>
+        )}
+
         <div className="mt-3 bg-night border border-line rounded-xl p-3.5 text-sm space-y-1">
           {(items[o.id] ?? []).map(it => (
             <div key={it.id} className="flex justify-between">
-              <span>{it.name} × {it.qty}</span><span className="text-mist">{it.total} ج.م</span>
+              <span>{it.name} × {it.qty}{it.requires_prescription ? ' 💊' : ''}</span>
+              <span className="text-mist">{it.total} ج.م</span>
             </div>
           ))}
         </div>

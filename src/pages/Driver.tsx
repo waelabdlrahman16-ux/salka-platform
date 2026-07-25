@@ -109,9 +109,11 @@ export default function DriverPage() {
     const { error } = await supabase.rpc('claim_order', { p_order_id: orderId })
     setClaiming(null)
     if (error) {
-      alert(error.message.includes('already_taken')
-        ? 'الطلب اتاخد من مندوب تاني'
-        : 'حصل خطأ، جرب تاني')
+      alert(
+        error.message.includes('already_taken') ? 'الطلب اتاخد من مندوب تاني'
+        : error.message.includes('wrong_vehicle_type') ? 'الطلب ده لسوبر ماركت — محتاج فان'
+        : 'حصل خطأ، جرب تاني'
+      )
     }
     load()
   }

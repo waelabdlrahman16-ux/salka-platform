@@ -26,7 +26,7 @@ export default function Admin() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [menu, setMenu] = useState<MenuItem[]>([])
   const [openRest, setOpenRest] = useState<number | null>(null)
-  const [newItem, setNewItem] = useState({ name: '', category: '', price: '' })
+  const [newItem, setNewItem] = useState({ name: '', category: '', price: '', requiresRx: false })
   const [settings, setSettings] = useState<Setting[]>([])
   const [shifts, setShifts] = useState<Shift[]>([])
   const [escalations, setEscalations] = useState<any[]>([])
@@ -34,6 +34,8 @@ export default function Admin() {
   const [slots, setSlots] = useState<DeliverySlotRow[]>([])
   const [newSlot, setNewSlot] = useState({ start_time: '', end_time: '', capacity: '6' })
   const [reassignFor, setReassignFor] = useState<number | null>(null)
+  const [bulkDrivers, setBulkDrivers] = useState('')
+  const [bulkResult, setBulkResult] = useState<string | null>(null)
 
   async function load() {
     const [o, a, d, b, e, r, m, st, sh, esc, sl] = await Promise.all([
@@ -72,6 +74,12 @@ export default function Admin() {
     .sort((a, b) => Number(isCooking(a)) - Number(isCooking(b)))
   const active = assignments.filter(a => activeStatuses.includes(a.status))
   const availableDrivers = drivers.filter(d => d.active && d.available && d.status === 'Available')
+  const assigningIsSupermarket = assigning
+    ? restaurants.find(r => r.id === assigning.restaurant_id)?.vendor_type === 'supermarket'
+    : false
+  const assignableDrivers = assigningIsSupermarket
+    ? availableDrivers.filter(d => d.vehicle_type === 'van')
+    : availableDrivers
   const escalateAfter = Number(settings.find(s => s.key === 'escalate_after_minutes')?.value ?? 15)
   const isLate = (o: Order) => {
     const from = o.dispatch_at ? +new Date(o.dispatch_at) : +new Date(o.created_at)
@@ -136,6 +144,22 @@ export default function Admin() {
     load()
   }
 
+  async function importDrivers() {
+    const lines = bulkDrivers.split('\n').map(l => l.trim()).filter(Boolean)
+    const rows = lines.map(line => {
+      const [name, phone, type] = line.split(',').map(s => s.trim())
+      const vehicle_type = /van|فان/i.test(type || '') ? 'van' : 'motorcycle'
+      return { name, phone, vehicle_type }
+    }).filter(r => r.name && r.phone)
+
+    if (rows.length === 0) { setBulkResult('مفيش سطور صحيحة — لازم اسم,رقم موبايل على الأقل'); return }
+
+    const { error } = await supabase.from('drivers').insert(rows)
+    setBulkResult(error ? 'حصل خطأ، جرب تاني' : `تمت إضافة ${rows.length} مندوب`)
+    if (!error) setBulkDrivers('')
+    load()
+  }
+
   async function addShift() {
     await supabase.from('shifts').insert({
       driver_id: Number(newShift.driver_id), shift_date: newShift.shift_date,
@@ -159,11 +183,19 @@ export default function Admin() {
   async function addItem(restaurantId: number) {
     await supabase.from('menu_items').insert({
       restaurant_id: restaurantId, name: newItem.name.trim(),
-      category: newItem.category.trim() || 'أصناف', price: Number(newItem.price)
+      category: newItem.category.trim() || 'أصناف', price: Number(newItem.price),
+      requires_prescription: newItem.requiresRx
     })
-    setNewItem({ name: '', category: '', price: '' })
+    setNewItem({ name: '', category: '', price: '', requiresRx: false })
     load()
   }
+
+  async function toggleRx(it: MenuItem) {
+    await supabase.from('menu_items').update({ requires_prescription: !it.requires_prescription }).eq('id', it.id)
+    load()
+  }
+
+  const vehicleLabel = (v: string) => v === 'van' ? '🚐 فان' : '🏍️ موتوسيكل'
 
   const totalDriver = earnings.reduce((s, e) => s + Number(e.driver_earning), 0)
   const totalAdmin = earnings.reduce((s, e) => s + Number(e.admin_amount), 0)
@@ -227,12 +259,23 @@ export default function Admin() {
 
       {tab === 'drivers' && (
         <div className="space-y-4">
+          <div className="card p-4">
+            <p className="font-semibold mb-1">إضافة مندوبين بالجملة</p>
+            <p className="text-xs text-mist mb-2">سطر لكل مندوب: الاسم, رقم الموبايل, النوع (اكتب فان لو فان، سيبها فاضية أو اكتب موتوسيكل)</p>
+            <textarea className="field h-28 resize-none" placeholder={"أحمد علي, 01012345678, موتوسيكل\nمحمد سعيد, 01098765432, فان"}
+              value={bulkDrivers} onChange={e => setBulkDrivers(e.target.value)} />
+            <button className="btn-sea w-full mt-2" disabled={!bulkDrivers.trim()} onClick={importDrivers}>
+              استيراد
+            </button>
+            {bulkResult && <p className="text-sm text-mist mt-2">{bulkResult}</p>}
+          </div>
+
           {drivers.map(d => (
             <div key={d.id} className="card p-4">
               <div className="flex items-start justify-between">
                 <div>
                   <h2 className="font-bold">{d.name}</h2>
-                  <p className="text-sm text-mist mt-0.5">★ {d.rating} · {d.total_deliveries} توصيلة · {d.vehicle_type} · {d.vehicle_plate}</p>
+                  <p className="text-sm text-mist mt-0.5">★ {d.rating} · {d.total_deliveries} توصيلة · {vehicleLabel(d.vehicle_type)} · {d.vehicle_plate}</p>
                   <p className="text-sm text-mist mt-0.5" dir="ltr">{d.phone}</p>
                 </div>
                 <span className={d.active ? 'badge-open' : 'badge-closed'}>{d.status}</span>
@@ -305,12 +348,12 @@ export default function Admin() {
                       className="field !w-20 !py-1.5 text-center"
                       onBlur={e => updateRestaurant(r, { prep_minutes: Number(e.target.value) })} />
                     <span className="text-mist">دقيقة</span>
-                    <button className="btn-ghost !py-1.5 text-sm mr-auto"
-                      onClick={() => updateRestaurant(r, {
-                        vendor_type: r.vendor_type === 'supermarket' ? 'restaurant' : 'supermarket'
-                      })}>
-                      {r.vendor_type === 'supermarket' ? '🛒 سوبر ماركت' : '🍽️ مطعم'}
-                    </button>
+                    <select className="field !w-auto !py-1.5 text-sm mr-auto" value={r.vendor_type}
+                      onChange={e => updateRestaurant(r, { vendor_type: e.target.value })}>
+                      <option value="restaurant">🍽️ مطعم</option>
+                      <option value="supermarket">🛒 سوبر ماركت</option>
+                      <option value="pharmacy">💊 صيدلية</option>
+                    </select>
                   </div>
                 )}
 
@@ -362,10 +405,16 @@ export default function Admin() {
                             <span className="text-mist text-sm">ج.م</span>
                           </div>
                         </div>
-                        <button className={`mt-2 text-sm ${it.available ? 'text-mist' : 'text-sand'}`}
-                          onClick={() => toggleItem(it)}>
-                          {it.available ? '✓ متاح — اضغط للإخفاء' : '✗ غير متاح — اضغط للإتاحة'}
-                        </button>
+                        <div className="flex items-center gap-3 mt-2">
+                          <button className={`text-sm ${it.available ? 'text-mist' : 'text-sand'}`}
+                            onClick={() => toggleItem(it)}>
+                            {it.available ? '✓ متاح' : '✗ غير متاح'}
+                          </button>
+                          <button className={`text-sm ${it.requires_prescription ? 'text-sand' : 'text-mist'}`}
+                            onClick={() => toggleRx(it)}>
+                            {it.requires_prescription ? '💊 يحتاج روشتة' : 'بدون روشتة'}
+                          </button>
+                        </div>
                       </div>
                     ))}
 
@@ -380,6 +429,13 @@ export default function Admin() {
                           <input className="field !w-28" type="number" placeholder="السعر" value={newItem.price}
                             onChange={e => setNewItem({ ...newItem, price: e.target.value })} />
                         </div>
+                        {r.vendor_type === 'pharmacy' && (
+                          <label className="flex items-center gap-2 text-sm text-mist">
+                            <input type="checkbox" checked={newItem.requiresRx}
+                              onChange={e => setNewItem({ ...newItem, requiresRx: e.target.checked })} />
+                            يحتاج روشتة طبية
+                          </label>
+                        )}
                         <button className="btn-sea w-full" disabled={!newItem.name || !newItem.price}
                           onClick={() => addItem(r.id)}>إضافة</button>
                       </div>
@@ -488,12 +544,19 @@ export default function Admin() {
         <div className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" onClick={() => setAssigning(null)}>
           <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold mb-4">اختيار مندوب متاح — طلب #{assigning.id}</h3>
-            {availableDrivers.length === 0 && <p className="text-mist text-sm">لا يوجد مندوبين متاحين حالياً</p>}
+            {assigningIsSupermarket && (
+              <p className="text-sand text-sm mb-3">🚐 طلب سوبر ماركت — فانات بس</p>
+            )}
+            {assignableDrivers.length === 0 && (
+              <p className="text-mist text-sm">
+                {assigningIsSupermarket ? 'لا يوجد فان متاح حالياً' : 'لا يوجد مندوبين متاحين حالياً'}
+              </p>
+            )}
             <div className="space-y-2.5">
-              {availableDrivers.map(d => (
+              {assignableDrivers.map(d => (
                 <button key={d.id} className="w-full card !bg-night p-3.5 text-right hover:border-sea/50 transition-colors" onClick={() => assign(assigning, d)}>
                   <p className="font-semibold">{d.name}</p>
-                  <p className="text-sm text-mist mt-0.5">★ {d.rating} · {d.total_deliveries} توصيلة · {d.vehicle_type} · {d.vehicle_plate}</p>
+                  <p className="text-sm text-mist mt-0.5">★ {d.rating} · {d.total_deliveries} توصيلة · {vehicleLabel(d.vehicle_type)} · {d.vehicle_plate}</p>
                 </button>
               ))}
             </div>

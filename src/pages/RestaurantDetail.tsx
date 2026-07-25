@@ -33,6 +33,7 @@ export default function RestaurantDetail() {
   }, [items])
 
   const count = Object.values(cart).reduce((a, b) => a + b, 0)
+  const hasRx = items.filter(it => cart[it.id]).some(it => it.requires_prescription)
   const subtotal = items.reduce((s, it) => s + (cart[it.id] ?? 0) * it.price, 0)
   const scheduled = restaurant?.vendor_type === 'supermarket'
   const valid = name.trim() && phone.trim() && zone && unit.trim() && (!scheduled || !!slot)
@@ -104,7 +105,7 @@ export default function RestaurantDetail() {
                 <div>
                   <h3 className="font-semibold">{it.name}</h3>
                   <p className="text-sm text-mist mt-0.5">{it.description}</p>
-                  <p className="text-sea font-bold mt-1.5">{it.price} ج.م</p>
+                  <p className="text-sea font-bold mt-1.5">{it.price} ج.م{it.requires_prescription ? ' · 💊 يحتاج روشتة' : ''}</p>
                 </div>
                 {cart[it.id] ? (
                   <div className="flex items-center gap-2.5">
@@ -134,6 +135,11 @@ export default function RestaurantDetail() {
           <div className="card w-full max-w-md p-5 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold text-lg mb-1">تأكيد الطلب</h3>
             <p className="text-sm text-mist mb-4">الدفع كاش عند الاستلام + {DELIVERY_FEE} ج.م توصيل</p>
+            {hasRx && (
+              <p className="text-sand text-sm mb-4 bg-sand/10 rounded-xl p-3">
+                💊 في صنف محتاج روشتة طبية — الصيدلية هتتواصل معاك تليفونيًا للتأكيد قبل التجهيز
+              </p>
+            )}
 
             <div className="space-y-2 mb-4">
               {items.filter(it => cart[it.id]).map(it => (

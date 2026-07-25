@@ -5,7 +5,7 @@ export interface Restaurant {
 }
 export interface MenuItem {
   id: number; restaurant_id: number; name: string; description: string
-  category: string; price: number; available: boolean
+  category: string; price: number; available: boolean; requires_prescription: boolean
 }
 export interface Order {
   id: number; restaurant_id: number
@@ -21,6 +21,7 @@ export interface Order {
 export interface OrderItem {
   id: number; order_id: number; menu_item_id: number
   name: string; qty: number; unit_price: number; total: number
+  requires_prescription: boolean
 }
 export interface Chalet {
   id: number; name: string; description: string; property_type: string
@@ -35,7 +36,7 @@ export interface Booking {
 export interface Driver {
   id: number; name: string; phone: string; status: string
   available: boolean; active: boolean
-  vehicle_type: string; vehicle_plate: string
+  vehicle_type: 'motorcycle' | 'van'; vehicle_plate: string
   rating: number; total_deliveries: number; commission_value: number
 }
 export interface Assignment {
