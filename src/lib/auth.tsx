@@ -38,9 +38,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(data.session)
       if (!data.session) setLoading(false)
     })
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      // Only an explicit sign-out should clear the session. TOKEN_REFRESHED fires
+      // routinely (e.g. when a backgrounded tab regains focus) and must not be
+      // treated as a logout.
+      if (event === 'SIGNED_OUT') {
+        setSession(null)
+        setProfile(null)
+        setLoading(false)
+        return
+      }
       setSession(s)
-      if (!s) { setProfile(null); setLoading(false) }
     })
     return () => sub.subscription.unsubscribe()
   }, [])
@@ -56,7 +64,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false)
       })
     return () => { cancelled = true }
-  }, [session])
+    // Re-fetch only when the logged-in user actually changes, not on every
+    // TOKEN_REFRESHED event (which produces a new session object for the same user).
+  }, [session?.user.id])
 
   async function signIn(email: string, password: string) {
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
