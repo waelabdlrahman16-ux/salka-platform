@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import type { Assignment, Booking, Compound, Complaint, Driver, DeliverySlotRow, Earning, MenuItem, Order, Reliability, Restaurant, Setting, SettlementRequest, Shift, VendorCoverage } from '../lib/types'
+import type { Assignment, Compound, Complaint, Driver, DeliverySlotRow, Earning, MenuItem, Order, Reliability, Restaurant, Setting, SettlementRequest, Shift, VendorCoverage } from '../lib/types'
 import { ping, askNotificationPermission } from '../lib/notify'
 
 type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage'
@@ -23,7 +23,6 @@ export default function Admin() {
   const [orders, setOrders] = useState<Order[]>([])
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [drivers, setDrivers] = useState<Driver[]>([])
-  const [bookings, setBookings] = useState<Booking[]>([])
   const [earnings, setEarnings] = useState<Earning[]>([])
   const [assigning, setAssigning] = useState<Order | null>(null)
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
@@ -51,11 +50,10 @@ export default function Admin() {
   const [walletResult, setWalletResult] = useState<string | null>(null)
 
   async function load() {
-    const [o, a, d, b, e, r, m, st, sh, esc, sl, comp, sr, cpd, cov] = await Promise.all([
+    const [o, a, d, e, r, m, st, sh, esc, sl, comp, sr, cpd, cov] = await Promise.all([
       supabase.from('orders').select('*, restaurants(name)').order('id', { ascending: false }),
       supabase.from('delivery_assignments').select('*, orders(*, restaurants(name)), drivers(*)').order('id', { ascending: false }),
       supabase.from('drivers').select('*').order('id'),
-      supabase.from('bookings').select('*, chalets(name)').order('id', { ascending: false }),
       supabase.from('driver_earnings').select('*, drivers(name)').order('id', { ascending: false }),
       supabase.from('restaurants').select('*').order('id'),
       supabase.from('menu_items').select('*').order('id'),
@@ -70,7 +68,7 @@ export default function Admin() {
       supabase.from('vendor_coverage').select('*'),
     ])
     setOrders(o.data ?? []); setAssignments(a.data ?? []); setDrivers(d.data ?? [])
-    setBookings(b.data ?? []); setEarnings(e.data ?? [])
+    setEarnings(e.data ?? [])
     setRestaurants(r.data ?? []); setMenu(m.data ?? []); setSettings(st.data ?? [])
     setShifts(sh.data ?? []); setEscalations(esc.data ?? [])
     setSlots(sl.data ?? [])

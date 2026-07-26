@@ -31,16 +31,6 @@ export interface OrderItem {
   name: string; qty: number; unit_price: number; total: number
   requires_prescription: boolean
 }
-export interface Chalet {
-  id: number; name: string; description: string; property_type: string
-  price_per_night: number; bedrooms: number; guests: number; available: boolean
-}
-export interface Booking {
-  id: number; chalet_id: number; customer_name: string; customer_phone: string
-  check_in: string; check_out: string; guests: number; total: number
-  status: string; created_at: string
-  chalets?: { name: string }
-}
 export interface Driver {
   id: number; name: string; phone: string; status: string
   available: boolean; active: boolean
