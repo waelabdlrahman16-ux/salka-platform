@@ -1,8 +1,11 @@
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/auth'
+import { CartProvider, useCart } from './lib/cart'
 import Protected from './components/Protected'
 import Home from './pages/Home'
 import RestaurantDetail from './pages/RestaurantDetail'
+import CartPage from './pages/CartPage'
+import CheckoutPage from './pages/CheckoutPage'
 import Chalets from './pages/Chalets'
 import Track from './pages/Track'
 import Admin from './pages/Admin'
@@ -38,23 +41,32 @@ function Header() {
 
 function BottomNav() {
   const { pathname } = useLocation()
+  const cart = useCart()
   const isStaff = ['/admin', '/driver', '/vendor', '/login'].some(p => pathname.startsWith(p))
   if (isStaff) return null
 
   const items = [
     { to: '/', label: 'المطاعم', icon: '🍽️' },
+    { to: '/cart', label: 'عربتي', icon: '🛒', badge: cart.count },
     { to: '/my-orders', label: 'طلباتي', icon: '🧾' },
   ]
 
   return (
     <nav className="fixed bottom-0 inset-x-0 z-40 bg-shell/95 backdrop-blur border-t border-line">
-      <div className="max-w-5xl mx-auto grid grid-cols-2">
+      <div className="max-w-5xl mx-auto grid grid-cols-3">
         {items.map(it => {
           const active = it.to === '/' ? pathname === '/' : pathname.startsWith(it.to)
           return (
             <Link key={it.to} to={it.to}
-              className={`flex flex-col items-center gap-0.5 py-2.5 text-xs font-semibold ${active ? 'text-sea' : 'text-mist'}`}>
-              <span className="text-xl leading-none">{it.icon}</span>
+              className={`relative flex flex-col items-center gap-0.5 py-2.5 text-xs font-semibold ${active ? 'text-sea' : 'text-mist'}`}>
+              <span className="relative text-xl leading-none">
+                {it.icon}
+                {!!it.badge && (
+                  <span className="absolute -top-1.5 -left-2.5 bg-sea text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 grid place-items-center px-1">
+                    {it.badge}
+                  </span>
+                )}
+              </span>
               {it.label}
             </Link>
           )
@@ -67,27 +79,31 @@ function BottomNav() {
 export default function App() {
   return (
     <AuthProvider>
-      <div className="min-h-screen font-arabic">
-        <Header />
-        <main className="max-w-5xl mx-auto px-4 py-6 pb-28">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/restaurant/:id" element={<RestaurantDetail />} />
-            <Route path="/chalets" element={<Chalets />} />
-            <Route path="/my-orders" element={<MyOrders />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/track/:token" element={<Track />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/admin" element={<Protected role="admin"><Admin /></Protected>} />
-            <Route path="/driver" element={<Protected role="driver"><DriverPage /></Protected>} />
-            <Route path="/vendor" element={<Protected role="vendor"><Vendor /></Protected>} />
-          </Routes>
-        </main>
-        <footer className="max-w-5xl mx-auto px-4 pb-8 text-center">
-          <Link to="/terms" className="text-xs text-mist hover:text-foam">الشروط وسياسة الخصوصية</Link>
-        </footer>
-        <BottomNav />
-      </div>
+      <CartProvider>
+        <div className="min-h-screen font-arabic">
+          <Header />
+          <main className="max-w-5xl mx-auto px-4 py-6 pb-28">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/restaurant/:id" element={<RestaurantDetail />} />
+              <Route path="/cart" element={<CartPage />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/chalets" element={<Chalets />} />
+              <Route path="/my-orders" element={<MyOrders />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/track/:token" element={<Track />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/admin" element={<Protected role="admin"><Admin /></Protected>} />
+              <Route path="/driver" element={<Protected role="driver"><DriverPage /></Protected>} />
+              <Route path="/vendor" element={<Protected role="vendor"><Vendor /></Protected>} />
+            </Routes>
+          </main>
+          <footer className="max-w-5xl mx-auto px-4 pb-8 text-center">
+            <Link to="/terms" className="text-xs text-mist hover:text-foam">الشروط وسياسة الخصوصية</Link>
+          </footer>
+          <BottomNav />
+        </div>
+      </CartProvider>
     </AuthProvider>
   )
 }
