@@ -3,7 +3,6 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useCart } from '../lib/cart'
 import ProductCard from '../components/ProductCard'
-import { artFor } from '../lib/categoryArt'
 import type { Compound, MenuItem, Restaurant } from '../lib/types'
 
 export default function RestaurantDetail() {
@@ -75,35 +74,51 @@ export default function RestaurantDetail() {
         )}
       </div>
 
-      {/* category pills */}
-      <div className="flex gap-2 overflow-x-auto pb-1 mb-5 -mx-4 px-4 scrollbar-none">
-        {categories.map(cat => (
-          <button key={cat}
-            className={`tab shrink-0 ${activeCat === cat ? 'tab-active' : 'bg-shellup/60'}`}
-            onClick={() => setActiveCat(cat)}>{cat}</button>
-        ))}
-      </div>
-
-      {activeCat && (
-        <section>
-          <h2 className="font-bold text-lg mb-3">{activeCat}</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {shown.map(it => (
-              restaurant.order_mode === 'pickup_request' ? (
-                <BrowseOnlyCard key={it.id} item={it} />
-              ) : (
-                <ProductCard
-                  key={it.id}
-                  item={it}
-                  qty={cart.qty[it.id] ?? 0}
-                  disabled={!restaurant.is_open}
-                  onAdd={() => cart.add(it, 1)}
-                  onRemove={() => cart.add(it, -1)}
-                />
-              )
+      {restaurant.order_mode === 'pickup_request' ? (
+        <div className="space-y-5">
+          {categories.map(cat => (
+            <div key={cat}>
+              <h2 className="font-bold text-sm text-mist mb-2">{cat}</h2>
+              <div className="card divide-y divide-line">
+                {items.filter(it => it.category === cat).map(it => (
+                  <div key={it.id} className="flex items-center justify-between px-4 py-3">
+                    <span className="text-sm">{it.name}</span>
+                    <span className="text-sm text-mist">{it.price} ج.م</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <>
+          {/* category pills */}
+          <div className="flex gap-2 overflow-x-auto pb-1 mb-5 -mx-4 px-4 scrollbar-none">
+            {categories.map(cat => (
+              <button key={cat}
+                className={`tab shrink-0 ${activeCat === cat ? 'tab-active' : 'bg-shellup/60'}`}
+                onClick={() => setActiveCat(cat)}>{cat}</button>
             ))}
           </div>
-        </section>
+
+          {activeCat && (
+            <section>
+              <h2 className="font-bold text-lg mb-3">{activeCat}</h2>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {shown.map(it => (
+                  <ProductCard
+                    key={it.id}
+                    item={it}
+                    qty={cart.qty[it.id] ?? 0}
+                    disabled={!restaurant.is_open}
+                    onAdd={() => cart.add(it, 1)}
+                    onRemove={() => cart.add(it, -1)}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+        </>
       )}
 
       {restaurant.order_mode === 'catalog' && count > 0 && (
@@ -124,19 +139,6 @@ export default function RestaurantDetail() {
           </button>
         </div>
       )}
-    </div>
-  )
-}
-
-function BrowseOnlyCard({ item }: { item: MenuItem }) {
-  const art = artFor(item.category)
-  return (
-    <div className="card p-3 flex flex-col">
-      <div className="rounded-xl aspect-square grid place-items-center text-4xl mb-3" style={{ background: art.tint }}>
-        {art.emoji}
-      </div>
-      <h3 className="font-semibold text-sm leading-snug line-clamp-2 min-h-[2.5em]">{item.name}</h3>
-      <p className="text-sea font-bold mt-1.5">{item.price} ج.م</p>
     </div>
   )
 }

@@ -10,7 +10,14 @@ body { @apply bg-night text-foam antialiased; }
 .btn-sea { @apply btn bg-sea text-white hover:bg-seadeep; }
 .btn-ghost { @apply btn bg-shellup text-foam hover:bg-line; }
 .btn-danger { @apply btn bg-red-500/15 text-red-600 hover:bg-red-500/25; }
-.field { @apply w-full rounded-xl bg-night border border-line px-3.5 py-2.5 text-foam placeholder:text-mist/60 focus:outline-none focus:border-sea; }
+.field { @apply w-full h-12 rounded-xl bg-night border border-line px-3.5 text-foam placeholder:text-mist/60 focus:outline-none focus:border-sea; }
+select.field {
+  @apply appearance-none bg-no-repeat pr-3.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%238A7561'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z' clip-rule='evenodd'/%3E%3C/svg%3E");
+  background-position: left 0.9rem center;
+  background-size: 1.1em;
+  padding-left: 2.5rem;
+}
 .label { @apply block text-sm text-mist mb-1.5; }
 .badge-open { @apply text-xs font-semibold bg-emerald-500/15 text-emerald-700 rounded-full px-2.5 py-1; }
 .badge-closed { @apply text-xs font-semibold bg-red-500/15 text-red-600 rounded-full px-2.5 py-1; }

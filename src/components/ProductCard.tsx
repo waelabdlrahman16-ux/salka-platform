@@ -22,27 +22,26 @@ export default function ProductCard({
             💊 روشتة
           </span>
         )}
-
-        {qty === 0 ? (
-          <button
-            className="absolute -bottom-2 -left-2 w-9 h-9 rounded-full bg-sea text-white text-xl font-bold grid place-items-center shadow-md shadow-sea/30 disabled:opacity-40"
-            disabled={disabled}
-            onClick={onAdd}
-            aria-label="إضافة">+</button>
-        ) : (
-          <div className="absolute -bottom-2 inset-x-2 bg-white rounded-full shadow-md shadow-black/10 flex items-center justify-between px-1 py-1">
-            <button className="w-7 h-7 rounded-full grid place-items-center text-seadeep font-bold hover:bg-shellup"
-              onClick={onRemove} aria-label="تقليل">−</button>
-            <span className="font-bold text-sm w-5 text-center">{qty}</span>
-            <button className="w-7 h-7 rounded-full grid place-items-center text-white bg-sea font-bold hover:bg-seadeep"
-              onClick={onAdd} aria-label="زيادة">+</button>
-          </div>
-        )}
       </div>
 
       <h3 className="font-semibold text-sm leading-snug line-clamp-2 min-h-[2.5em]">{item.name}</h3>
       {item.description && <p className="text-xs text-mist mt-0.5 line-clamp-1">{item.description}</p>}
-      <p className="text-sea font-bold mt-1.5">{item.price} ج.م</p>
+      <p className="text-sea font-bold mt-1.5 mb-3">{item.price} ج.م</p>
+
+      {qty === 0 ? (
+        <button
+          className="w-full h-10 rounded-full bg-sea text-white font-bold text-sm grid place-items-center hover:bg-seadeep transition-colors disabled:opacity-40 disabled:pointer-events-none"
+          disabled={disabled}
+          onClick={onAdd}>+ إضافة</button>
+      ) : (
+        <div className="w-full h-10 rounded-full bg-shellup flex items-center justify-between px-1.5">
+          <button className="w-7 h-7 rounded-full grid place-items-center text-foam font-bold hover:bg-white transition-colors"
+            onClick={onRemove} aria-label="تقليل">−</button>
+          <span className="font-bold text-sm">{qty}</span>
+          <button className="w-7 h-7 rounded-full grid place-items-center text-white bg-sea font-bold hover:bg-seadeep transition-colors"
+            onClick={onAdd} aria-label="زيادة">+</button>
+        </div>
+      )}
     </div>
   )
 }

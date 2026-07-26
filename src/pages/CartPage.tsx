@@ -48,11 +48,11 @@ export default function CartPage() {
       </div>
       {restaurant && <p className="text-mist text-sm mb-5">من {restaurant.name}</p>}
 
-      <div className="space-y-3 mb-6">
+      <div className="space-y-4 mb-6">
         {lines.map(it => {
           const art = artFor(it.category)
           return (
-            <div key={it.id} className="card p-3 flex items-center gap-3">
+            <div key={it.id} className="card p-4 flex items-center gap-4">
               <div className="w-16 h-16 rounded-xl grid place-items-center text-2xl shrink-0" style={{ background: art.tint }}>
                 {art.emoji}
               </div>

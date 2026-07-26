@@ -24,7 +24,7 @@ export default function CheckoutPage() {
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('cod')
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'card' | 'wallet' | 'instapay' | 'applepay'>('cod')
 
   useEffect(() => {
     if (!cart.restaurantId) return
@@ -43,6 +43,8 @@ export default function CheckoutPage() {
   const deliveryFee = selectedCompound ? estimateDeliveryFee(selectedCompound.distance_km) : 0
   const valid = name.trim() && phone.trim() && compoundId && unit.trim() && (!scheduled || !!slot)
 
+  const isOnline = paymentMethod !== 'cod'
+
   async function placeOrder() {
     if (!restaurant || !valid) return
     setSaving(true)
@@ -60,7 +62,7 @@ export default function CheckoutPage() {
       p_slot_id: slot?.id ?? null,
       p_scheduled_date: slot?.scheduled_date ?? null,
       p_compound_id: compoundId,
-      p_payment_method: paymentMethod
+      p_payment_method: isOnline ? 'online' : 'cod'
     })
     if (err || !data?.token) {
       setSaving(false)
@@ -73,9 +75,9 @@ export default function CheckoutPage() {
       return
     }
 
-    if (paymentMethod === 'online') {
+    if (isOnline) {
       const { data: fw, error: fwErr } = await supabase.functions.invoke('fawaterak-create-invoice', {
-        body: { order_id: data.id }
+        body: { order_id: data.id, preferred_method: paymentMethod }
       })
       if (fwErr || !fw?.url) {
         setSaving(false)
@@ -154,10 +156,25 @@ export default function CheckoutPage() {
             <span className="text-xl">💵</span>
             <span className="font-semibold flex-1">كاش عند الاستلام</span>
           </label>
-          <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${paymentMethod === 'online' ? 'border-sea bg-sea/5' : 'border-line'}`}>
-            <input type="radio" checked={paymentMethod === 'online'} onChange={() => setPaymentMethod('online')} className="accent-sea w-4 h-4" />
+          <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${paymentMethod === 'card' ? 'border-sea bg-sea/5' : 'border-line'}`}>
+            <input type="radio" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} className="accent-sea w-4 h-4" />
             <span className="text-xl">💳</span>
-            <span className="font-semibold flex-1">فوترة أونلاين (فيزا / فوري / ميزة)</span>
+            <span className="font-semibold flex-1">بطاقات (فيزا / ماستركارد)</span>
+          </label>
+          <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${paymentMethod === 'wallet' ? 'border-sea bg-sea/5' : 'border-line'}`}>
+            <input type="radio" checked={paymentMethod === 'wallet'} onChange={() => setPaymentMethod('wallet')} className="accent-sea w-4 h-4" />
+            <span className="text-xl">👛</span>
+            <span className="font-semibold flex-1">محفظة إلكترونية</span>
+          </label>
+          <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${paymentMethod === 'instapay' ? 'border-sea bg-sea/5' : 'border-line'}`}>
+            <input type="radio" checked={paymentMethod === 'instapay'} onChange={() => setPaymentMethod('instapay')} className="accent-sea w-4 h-4" />
+            <span className="text-xl">🏦</span>
+            <span className="font-semibold flex-1">InstaPay</span>
+          </label>
+          <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${paymentMethod === 'applepay' ? 'border-sea bg-sea/5' : 'border-line'}`}>
+            <input type="radio" checked={paymentMethod === 'applepay'} onChange={() => setPaymentMethod('applepay')} className="accent-sea w-4 h-4" />
+            <span className="text-xl">🍎</span>
+            <span className="font-semibold flex-1">Apple Pay</span>
           </label>
         </div>
       </div>
@@ -176,7 +193,7 @@ export default function CheckoutPage() {
       {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">{error}</p>}
 
       <button className="btn-sea w-full !py-3.5" disabled={!valid || saving} onClick={placeOrder}>
-        {saving ? 'جاري التجهيز…' : paymentMethod === 'online' ? `تأكيد والدفع الآن · ${subtotal + deliveryFee} ج.م` : `تأكيد الطلب · ${subtotal + deliveryFee} ج.م`}
+        {saving ? 'جاري التجهيز…' : isOnline ? `تأكيد والدفع الآن · ${subtotal + deliveryFee} ج.م` : `تأكيد الطلب · ${subtotal + deliveryFee} ج.م`}
       </button>
     </div>
   )
