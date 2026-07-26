@@ -39,6 +39,7 @@ export default function Home() {
 
   const selected = compounds.find(c => c.id === compoundId)
   const eta = (r: Restaurant) => selected ? r.prep_minutes + selected.est_travel_minutes : r.prep_minutes
+  const catalogRestaurants = restaurants.filter(r => r.order_mode !== 'custom_request')
   const filtered = compounds.filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
   const north = filtered.filter(c => c.direction === 'north')
   const south = filtered.filter(c => c.direction === 'south')
@@ -55,24 +56,35 @@ export default function Home() {
       {!picking && loading && <p className="text-mist">جاري التحميل…</p>}
 
       {!picking && !loading && compoundId && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {restaurants.length === 0 && (
-            <p className="text-mist col-span-full">لا يوجد مطاعم بتوصل لمكانك حاليًا</p>
-          )}
-          {restaurants.map(r => (
-            <Link key={r.id} to={`/restaurant/${r.id}`} className="card p-4 hover:border-sea/50 transition-colors">
-              <div className="flex items-start justify-between gap-2">
-                <h2 className="font-bold">{r.name}</h2>
-                <span className={r.is_open ? 'badge-open' : 'badge-closed'}>{r.is_open ? 'مفتوح' : 'مغلق'}</span>
-              </div>
-              <p className="text-sm text-mist mt-1.5 leading-relaxed">{r.description}</p>
-              <div className="flex items-center gap-3 mt-3 text-sm text-mist">
-                <span className="text-sand">★ {r.rating}</span>
-                <span>{r.vendor_type === 'supermarket' ? '🛒 فترات توصيل' : `⏱ يوصلك خلال ${eta(r)} دقيقة`}</span>
-                <span>{r.category}</span>
-              </div>
-            </Link>
-          ))}
+        <div>
+          <Link to="/custom-order"
+            className="card p-4 mb-4 flex items-center gap-4 hover:border-sea/50 transition-colors">
+            <span className="w-12 h-12 rounded-xl bg-sand/15 grid place-items-center text-2xl shrink-0">🧾</span>
+            <div>
+              <h2 className="font-bold">طلب خاص (صيدلية / سوبر ماركت)</h2>
+              <p className="text-sm text-mist mt-0.5">اكتب اللي محتاجه، وهنقولك السعر بمكالمة</p>
+            </div>
+          </Link>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {catalogRestaurants.length === 0 && (
+              <p className="text-mist col-span-full">لا يوجد مطاعم بتوصل لمكانك حاليًا</p>
+            )}
+            {catalogRestaurants.map(r => (
+              <Link key={r.id} to={`/restaurant/${r.id}`} className="card p-4 hover:border-sea/50 transition-colors">
+                <div className="flex items-start justify-between gap-2">
+                  <h2 className="font-bold">{r.name}</h2>
+                  <span className={r.is_open ? 'badge-open' : 'badge-closed'}>{r.is_open ? 'مفتوح' : 'مغلق'}</span>
+                </div>
+                <p className="text-sm text-mist mt-1.5 leading-relaxed">{r.description}</p>
+                <div className="flex items-center gap-3 mt-3 text-sm text-mist">
+                  <span className="text-sand">★ {r.rating}</span>
+                  <span>{r.order_mode === 'pickup_request' ? '🛵 اطلب مندوب توصيل' : `⏱ يوصلك خلال ${eta(r)} دقيقة`}</span>
+                  <span>{r.category}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
       )}
 

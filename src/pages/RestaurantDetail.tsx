@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { supabase, DELIVERY_FEE } from '../lib/supabase'
 import { useCart } from '../lib/cart'
 import ProductCard from '../components/ProductCard'
+import { artFor } from '../lib/categoryArt'
 import type { Compound, MenuItem, Restaurant } from '../lib/types'
 
 export default function RestaurantDetail() {
@@ -22,7 +23,7 @@ export default function RestaurantDetail() {
   }, [id])
 
   useEffect(() => {
-    if (restaurant) cart.setForRestaurant(restaurant)
+    if (restaurant && restaurant.order_mode === 'catalog') cart.setForRestaurant(restaurant)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurant?.id])
 
@@ -47,6 +48,12 @@ export default function RestaurantDetail() {
 
   if (!restaurant) return <p className="text-mist">جاري التحميل…</p>
 
+  if (restaurant.order_mode === 'custom_request') {
+    // pharmacy/supermarket now go through the Custom Order flow instead
+    nav('/custom-order', { replace: true })
+    return null
+  }
+
   return (
     <div>
       <Link to="/" className="text-sm text-mist hover:text-foam">← العودة للمطاعم</Link>
@@ -59,10 +66,13 @@ export default function RestaurantDetail() {
         <p className="text-mist mt-1.5">{restaurant.description}</p>
         <div className="flex items-center gap-3 mt-2 text-sm text-mist">
           <span className="text-sand">★ {restaurant.rating}</span>
-          <span>⏱ {restaurant.vendor_type === 'supermarket'
-            ? 'توصيل بفترات محددة'
-            : totalEta ? `يوصلك خلال ${totalEta} دقيقة تقريبًا` : `التحضير حوالي ${restaurant.prep_minutes} دقيقة`}</span>
+          <span>⏱ {totalEta ? `يوصلك خلال ${totalEta} دقيقة تقريبًا` : `التحضير حوالي ${restaurant.prep_minutes} دقيقة`}</span>
         </div>
+        {restaurant.order_mode === 'pickup_request' && (
+          <p className="text-sm bg-shellup/60 rounded-xl p-3 mt-3">
+            📋 القايمة دي للعرض بس — اطلب من {restaurant.name} على طول (تطبيقهم أو التليفون)، وبعدين اطلب مندوب توصيل من هنا
+          </p>
+        )}
       </div>
 
       {/* category pills */}
@@ -79,20 +89,24 @@ export default function RestaurantDetail() {
           <h2 className="font-bold text-lg mb-3">{activeCat}</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {shown.map(it => (
-              <ProductCard
-                key={it.id}
-                item={it}
-                qty={cart.qty[it.id] ?? 0}
-                disabled={!restaurant.is_open}
-                onAdd={() => cart.add(it, 1)}
-                onRemove={() => cart.add(it, -1)}
-              />
+              restaurant.order_mode === 'pickup_request' ? (
+                <BrowseOnlyCard key={it.id} item={it} />
+              ) : (
+                <ProductCard
+                  key={it.id}
+                  item={it}
+                  qty={cart.qty[it.id] ?? 0}
+                  disabled={!restaurant.is_open}
+                  onAdd={() => cart.add(it, 1)}
+                  onRemove={() => cart.add(it, -1)}
+                />
+              )
             ))}
           </div>
         </section>
       )}
 
-      {count > 0 && (
+      {restaurant.order_mode === 'catalog' && count > 0 && (
         <div className="fixed bottom-20 inset-x-4 z-40 max-w-5xl mx-auto">
           <button className="btn-sea w-full !py-3.5 shadow-lg shadow-sea/20 flex items-center justify-between px-5"
             onClick={() => nav('/cart')}>
@@ -101,6 +115,28 @@ export default function RestaurantDetail() {
           </button>
         </div>
       )}
+
+      {restaurant.order_mode === 'pickup_request' && (
+        <div className="fixed bottom-20 inset-x-4 z-40 max-w-5xl mx-auto">
+          <button className="btn-sea w-full !py-3.5 shadow-lg shadow-sea/20"
+            onClick={() => nav(`/request-driver/${restaurant.id}`)}>
+            🛵 اطلب مندوب توصيل
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function BrowseOnlyCard({ item }: { item: MenuItem }) {
+  const art = artFor(item.category)
+  return (
+    <div className="card p-3 flex flex-col">
+      <div className="rounded-xl aspect-square grid place-items-center text-4xl mb-3" style={{ background: art.tint }}>
+        {art.emoji}
+      </div>
+      <h3 className="font-semibold text-sm leading-snug line-clamp-2 min-h-[2.5em]">{item.name}</h3>
+      <p className="text-sea font-bold mt-1.5">{item.price} ج.م</p>
     </div>
   )
 }

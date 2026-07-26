@@ -2,11 +2,13 @@ export interface Restaurant {
   id: number; name: string; description: string; category: string
   rating: number; delivery_time: string; is_open: boolean
   vendor_type: string; prep_minutes: number
+  order_mode: 'catalog' | 'custom_request' | 'pickup_request'
 }
 export interface MenuItem {
   id: number; restaurant_id: number; name: string; description: string
   category: string; price: number; available: boolean; requires_prescription: boolean
 }
+export interface RequestItem { name: string; qty: number }
 export interface Order {
   id: number; restaurant_id: number
   customer_name: string; customer_phone: string
@@ -16,6 +18,12 @@ export interface Order {
   payment_method: string; created_at: string
   ready_at: string | null; dispatch_at: string | null
   slot_id: number | null; scheduled_date: string | null
+  order_type: 'catalog' | 'custom_request' | 'pickup_request'
+  request_items: RequestItem[] | null
+  request_notes: string | null
+  pricing_status: 'n/a' | 'pending_quote' | 'confirmed'
+  payment_mode: 'prepaid' | 'driver_pays' | null
+  collect_amount: number | null
   restaurants?: { name: string }
 }
 export interface OrderItem {

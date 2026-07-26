@@ -15,6 +15,12 @@ interface TrackData {
     id: number; status: string; subtotal: number; delivery_fee: number; total: number
     zone: string; unit_number: string; address_notes: string; restaurant_name: string
     ready_at: string | null; scheduled_date: string | null
+    order_type: 'catalog' | 'custom_request' | 'pickup_request'
+    request_items: { name: string; qty: number }[] | null
+    request_notes: string | null
+    pricing_status: 'n/a' | 'pending_quote' | 'confirmed'
+    payment_mode: 'prepaid' | 'driver_pays' | null
+    collect_amount: number | null
   } | null
   items: { name: string; qty: number; total: number }[]
   assignment: { status: string; driver_name: string | null; driver_phone: string | null } | null
@@ -90,8 +96,24 @@ export default function Track() {
             <h1 className="font-bold text-lg">تتبع الطلب #{o.id}</h1>
             <p className="text-sm text-mist mt-0.5">من {o.restaurant_name}</p>
           </div>
-          <span className="font-bold text-sea">{o.total} ج.م</span>
+          <span className="font-bold text-sea">
+            {o.pricing_status === 'pending_quote' ? 'قيد التسعير' : `${o.total} ج.م`}
+          </span>
         </div>
+
+        {o.order_type === 'custom_request' && o.pricing_status === 'pending_quote' && (
+          <p className="text-sm text-sand bg-sand/10 rounded-xl p-3 mt-3">
+            💬 هنتصل بيك قريب نأكد السعر النهائي قبل ما نجهز الطلب
+          </p>
+        )}
+
+        {o.order_type === 'pickup_request' && (
+          <p className="text-sm bg-shellup/60 rounded-xl p-3 mt-3">
+            {o.payment_mode === 'driver_pays'
+              ? `💵 المندوب هيدفع ${o.collect_amount} ج.م للمطعم، ويحصلها منك كاش عند التوصيل`
+              : '✅ الأوردر متدفوع بالفعل — هتدفع رسوم التوصيل بس'}
+          </p>
+        )}
 
         {cancelled && (
           <div className="mt-4 bg-red-500/10 border border-red-400/40 rounded-xl p-3 text-center text-red-600 text-sm">
@@ -185,11 +207,24 @@ export default function Track() {
         )}
 
         <div className="mt-4 border-t border-line pt-4 space-y-1.5">
-          {data.items.map((it, i) => (
-            <div key={i} className="flex justify-between text-sm">
-              <span>{it.name} × {it.qty}</span><span>{it.total} ج.م</span>
-            </div>
-          ))}
+          {o.order_type === 'custom_request' ? (
+            <>
+              {(o.request_items ?? []).map((it, i) => (
+                <div key={i} className="flex justify-between text-sm">
+                  <span>{it.name}</span><span>× {it.qty}</span>
+                </div>
+              ))}
+              {o.request_notes && <p className="text-sm text-mist italic mt-1">"{o.request_notes}"</p>}
+            </>
+          ) : o.order_type === 'pickup_request' ? (
+            o.request_notes && <p className="text-sm text-mist italic">"{o.request_notes}"</p>
+          ) : (
+            data.items.map((it, i) => (
+              <div key={i} className="flex justify-between text-sm">
+                <span>{it.name} × {it.qty}</span><span>{it.total} ج.م</span>
+              </div>
+            ))
+          )}
           <div className="flex justify-between text-sm text-mist"><span>التوصيل</span><span>{o.delivery_fee} ج.م</span></div>
         </div>
 

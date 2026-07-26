@@ -202,6 +202,12 @@ export default function Admin() {
     load()
   }
 
+  async function confirmCustomOrderPrice(orderId: number, subtotal: number) {
+    if (!subtotal || subtotal <= 0) return
+    await supabase.rpc('confirm_custom_order_price', { p_order_id: orderId, p_subtotal: subtotal })
+    load()
+  }
+
   async function updateSetting(st: Setting, value: string) {
     if (value === st.value) return
     await supabase.from('settings').update({ value }).eq('key', st.key)
@@ -275,8 +281,16 @@ export default function Admin() {
             <div key={o.id} className={`card p-4 ${isLate(o) ? 'border-red-400/60' : ''}`}>
               <div className="flex items-start justify-between">
                 <h2 className="font-bold">#{o.id} — {o.restaurants?.name}</h2>
-                <span className="font-bold text-sea">{o.total} ج.م</span>
+                <span className="font-bold text-sea">
+                  {o.pricing_status === 'pending_quote' ? 'قيد التسعير' : `${o.total} ج.م`}
+                </span>
               </div>
+              {o.order_type === 'custom_request' && (
+                <p className="text-sand text-sm mt-1.5">🧾 طلب خاص{o.pricing_status === 'pending_quote' ? ' — لسه محتاج تسعير من تبويب الطلبات' : ''}</p>
+              )}
+              {o.order_type === 'pickup_request' && (
+                <p className="text-sm mt-1.5">🛵 طلب مندوب بس{o.payment_mode === 'driver_pays' ? ` — المندوب يدفع ${o.collect_amount} ج.م` : ''}</p>
+              )}
               {isCooking(o) && (
                 <p className="text-mist text-sm mt-1.5">👨‍🍳 لسه بيتحضر — متاح للمندوبين خلال {minsUntilDispatch(o)} دقيقة</p>
               )}
@@ -347,11 +361,41 @@ export default function Admin() {
               <div className="flex items-start justify-between">
                 <h2 className="font-bold">#{o.id} — {o.restaurants?.name}</h2>
                 <div className="text-left">
-                  <span className="font-bold text-sea block">{o.total} ج.م</span>
+                  <span className="font-bold text-sea block">
+                    {o.pricing_status === 'pending_quote' ? 'قيد التسعير' : `${o.total} ج.م`}
+                  </span>
                   <span className="text-xs text-mist">{o.status}</span>
                 </div>
               </div>
+
+              {o.order_type === 'custom_request' && (
+                <div className="mt-2.5 bg-sand/10 border border-sand/30 rounded-xl p-3 text-sm space-y-1">
+                  <p className="font-semibold">🧾 طلب خاص</p>
+                  {(o.request_items ?? []).map((it, i) => <p key={i}>• {it.name} × {it.qty}</p>)}
+                  {o.request_notes && <p className="italic">"{o.request_notes}"</p>}
+                </div>
+              )}
+
+              {o.order_type === 'pickup_request' && (
+                <div className="mt-2.5 bg-shellup/60 rounded-xl p-3 text-sm space-y-1">
+                  <p className="font-semibold">🛵 طلب مندوب بس</p>
+                  <p>{o.payment_mode === 'driver_pays' ? `المندوب يدفع ${o.collect_amount} ج.م ويحصلها كاش` : 'الأوردر متدفوع بالفعل'}</p>
+                  {o.request_notes && <p className="italic">"{o.request_notes}"</p>}
+                </div>
+              )}
+
               {customer(o)}
+
+              {o.order_type === 'custom_request' && o.pricing_status === 'pending_quote' && (
+                <div className="flex items-center gap-2 mt-3">
+                  <input type="number" inputMode="decimal" placeholder="السعر بعد المكالمة"
+                    className="field !py-1.5 text-sm" id={`quote-${o.id}`} />
+                  <button className="btn-sea shrink-0 !py-1.5 text-sm" onClick={() => {
+                    const el = document.getElementById(`quote-${o.id}`) as HTMLInputElement
+                    confirmCustomOrderPrice(o.id, Number(el.value))
+                  }}>تأكيد السعر</button>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -413,6 +457,12 @@ export default function Admin() {
                       <option value="restaurant">🍽️ مطعم</option>
                       <option value="supermarket">🛒 سوبر ماركت</option>
                       <option value="pharmacy">💊 صيدلية</option>
+                    </select>
+                    <select className="field !w-auto !py-1.5 text-sm" value={r.order_mode}
+                      onChange={e => updateRestaurant(r, { order_mode: e.target.value })}>
+                      <option value="catalog">📋 طلب من القايمة</option>
+                      <option value="custom_request">🧾 طلب خاص (نص حر)</option>
+                      <option value="pickup_request">🛵 طلب مندوب بس (نظامهم الخاص)</option>
                     </select>
                   </div>
                 )}
