@@ -7,7 +7,6 @@ import RestaurantDetail from './pages/RestaurantDetail'
 import CartPage from './pages/CartPage'
 import CheckoutPage from './pages/CheckoutPage'
 import CustomOrder from './pages/CustomOrder'
-import RequestDriver from './pages/RequestDriver'
 import Chalets from './pages/Chalets'
 import Track from './pages/Track'
 import Admin from './pages/Admin'
@@ -92,7 +91,6 @@ export default function App() {
               <Route path="/cart" element={<CartPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/custom-order" element={<CustomOrder />} />
-              <Route path="/request-driver/:id" element={<RequestDriver />} />
               <Route path="/chalets" element={<Chalets />} />
               <Route path="/my-orders" element={<MyOrders />} />
               <Route path="/terms" element={<Terms />} />

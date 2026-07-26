@@ -69,7 +69,7 @@ export default function RestaurantDetail() {
         </div>
         {restaurant.order_mode === 'pickup_request' && (
           <p className="text-sm bg-shellup/60 rounded-xl p-3 mt-3">
-            📋 القايمة دي للعرض بس — اطلب من {restaurant.name} على طول (تطبيقهم أو التليفون)، وبعدين اطلب مندوب توصيل من هنا
+            📋 القايمة دي للعرض بس — اطلب من {restaurant.name} على طول (تطبيقهم أو التليفون)، وهما هيتصرفوا في التوصيل
           </p>
         )}
       </div>
@@ -131,14 +131,6 @@ export default function RestaurantDetail() {
         </div>
       )}
 
-      {restaurant.order_mode === 'pickup_request' && (
-        <div className="fixed bottom-20 inset-x-4 z-40 max-w-5xl mx-auto">
-          <button className="btn-sea w-full !py-3.5 shadow-lg shadow-sea/20"
-            onClick={() => nav(`/request-driver/${restaurant.id}`)}>
-            🛵 اطلب مندوب توصيل
-          </button>
-        </div>
-      )}
     </div>
   )
 }

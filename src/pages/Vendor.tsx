@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { startRinging, stopRinging } from '../lib/ring'
-import type { Order, OrderItem } from '../lib/types'
+import { estimateDeliveryFee } from '../lib/deliveryFee'
+import type { Compound, Order, OrderItem, Restaurant } from '../lib/types'
 
 const KITCHEN = [
   { key: 'new', label: 'طلب جديد', next: 'preparing', action: 'قبول وبدء التحضير' },
@@ -13,6 +14,174 @@ const KITCHEN = [
 export default function Vendor() {
   const { profile } = useAuth()
   const rid = profile?.restaurant_id
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
+
+  useEffect(() => {
+    if (!rid) return
+    supabase.from('restaurants').select('*').eq('id', rid).single().then(({ data }) => setRestaurant(data))
+  }, [rid])
+
+  if (!rid) return <p className="text-mist text-center py-10">حسابك غير مرتبط بمطعم. تواصل مع الإدارة.</p>
+  if (!restaurant) return <p className="text-mist text-center py-10">جاري التحميل…</p>
+
+  return restaurant.order_mode === 'pickup_request'
+    ? <PickupRequestVendor restaurant={restaurant} />
+    : <KitchenVendor rid={rid} />
+}
+
+// ── Own-system vendors (McDonald's/KFC/Pizza Hut style): staff request a
+//    driver themselves once a customer has ordered directly with them.
+//    Customers never see or trigger this — it's vendor-only.
+function PickupRequestVendor({ restaurant }: { restaurant: Restaurant }) {
+  const [compounds, setCompounds] = useState<Compound[]>([])
+  const [recent, setRecent] = useState<Order[]>([])
+
+  const [name, setName] = useState(''); const [phone, setPhone] = useState('')
+  const [unit, setUnit] = useState('')
+  const [addrNotes, setAddrNotes] = useState('')
+  const [compoundId, setCompoundId] = useState<number | null>(null)
+  const [paymentMode, setPaymentMode] = useState<'prepaid' | 'driver_pays'>('prepaid')
+  const [collectAmount, setCollectAmount] = useState('')
+  const [orderNotes, setOrderNotes] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [sent, setSent] = useState(false)
+
+  async function loadRecent() {
+    const { data } = await supabase.from('orders').select('*')
+      .eq('restaurant_id', restaurant.id).eq('order_type', 'pickup_request')
+      .order('id', { ascending: false }).limit(10)
+    setRecent(data ?? [])
+  }
+
+  useEffect(() => {
+    supabase.from('compounds').select('*').eq('active', true).order('direction').order('distance_km')
+      .then(({ data }) => setCompounds(data ?? []))
+    loadRecent()
+    const t = setInterval(loadRecent, 10000)
+    return () => clearInterval(t)
+  }, [restaurant.id])
+
+  const selectedCompound = compounds.find(c => c.id === compoundId)
+  const deliveryFee = selectedCompound ? estimateDeliveryFee(selectedCompound.distance_km) : 0
+  const amount = Number(collectAmount) || 0
+  const valid = name.trim() && phone.trim() && compoundId && unit.trim()
+    && (paymentMode === 'prepaid' || amount > 0)
+
+  async function submit() {
+    if (!valid) return
+    setSaving(true); setError('')
+    const { error: err } = await supabase.rpc('request_pickup', {
+      p_restaurant_id: restaurant.id,
+      p_customer_name: name.trim(),
+      p_customer_phone: phone.trim(),
+      p_zone: selectedCompound?.name ?? '',
+      p_unit_number: unit.trim(),
+      p_address_notes: addrNotes.trim(),
+      p_delivery_fee: deliveryFee,
+      p_payment_mode: paymentMode,
+      p_collect_amount: paymentMode === 'driver_pays' ? amount : null,
+      p_request_notes: orderNotes.trim(),
+      p_compound_id: compoundId
+    })
+    setSaving(false)
+    if (err) { setError('حصل خطأ، جرب تاني'); return }
+    setName(''); setPhone(''); setUnit(''); setAddrNotes(''); setCompoundId(null)
+    setCollectAmount(''); setOrderNotes(''); setPaymentMode('prepaid')
+    setSent(true); loadRecent()
+    setTimeout(() => setSent(false), 3000)
+  }
+
+  return (
+    <div className="max-w-lg mx-auto pb-6">
+      <h1 className="text-xl font-bold mb-1">🛵 {restaurant.name} — طلب مندوب</h1>
+      <p className="text-mist text-sm mb-5">
+        لما عميل يطلب عندك مباشرة (من التطبيق بتاعكم أو تليفونيًا)، سجّل بياناته هنا عشان نبعتلكم مندوب
+      </p>
+
+      {sent && <p className="bg-emerald-50 text-emerald-700 rounded-xl p-3 text-sm mb-4 text-center">✅ تم إرسال الطلب للمندوبين</p>}
+
+      <div className="card p-4 mb-5">
+        <h2 className="font-bold mb-3">هل العميل دفع بالفعل؟</h2>
+        <div className="space-y-2.5">
+          <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${paymentMode === 'prepaid' ? 'border-sea bg-sea/5' : 'border-line'}`}>
+            <input type="radio" checked={paymentMode === 'prepaid'} onChange={() => setPaymentMode('prepaid')} className="accent-sea w-4 h-4" />
+            <span className="font-semibold flex-1">أيوه، دفع خلاص</span>
+          </label>
+          <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${paymentMode === 'driver_pays' ? 'border-sea bg-sea/5' : 'border-line'}`}>
+            <input type="radio" checked={paymentMode === 'driver_pays'} onChange={() => setPaymentMode('driver_pays')} className="accent-sea w-4 h-4" />
+            <span className="font-semibold flex-1">لأ، المندوب يدفع ويحصلها من العميل كاش</span>
+          </label>
+        </div>
+        {paymentMode === 'driver_pays' && (
+          <div className="mt-3">
+            <label className="label">قيمة الأوردر اللي المندوب هيدفعها *</label>
+            <input className="field" type="number" inputMode="decimal" value={collectAmount}
+              onChange={e => setCollectAmount(e.target.value)} placeholder="مثال: 250" />
+          </div>
+        )}
+      </div>
+
+      <div className="mb-5">
+        <label className="label">تفاصيل الأوردر (رقمه، أي حاجة تفيد المندوب)</label>
+        <textarea className="field min-h-[70px]" value={orderNotes} onChange={e => setOrderNotes(e.target.value)}
+          placeholder="مثال: أوردر رقم 1234" />
+      </div>
+
+      <div className="card p-4 mb-5 space-y-3.5">
+        <h2 className="font-bold">عنوان العميل</h2>
+        <div><label className="label">اسم العميل *</label>
+          <input className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
+        <div><label className="label">رقم موبايل العميل *</label>
+          <input className="field" dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} placeholder="01xxxxxxxxx" /></div>
+        <div><label className="label">المكان *</label>
+          <select className="field" value={compoundId ?? ''} onChange={e => setCompoundId(Number(e.target.value) || null)}>
+            <option value="">اختر المكان…</option>
+            {compounds.map(c => <option key={c.id} value={c.id}>{c.name} (~{c.est_travel_minutes} د)</option>)}
+          </select></div>
+        <div><label className="label">رقم الشاليه / الفيلا *</label>
+          <input className="field" value={unit} onChange={e => setUnit(e.target.value)} placeholder="مثال: B4 - 204" /></div>
+        <div><label className="label">علامة مميزة (اختياري)</label>
+          <input className="field" value={addrNotes} onChange={e => setAddrNotes(e.target.value)} placeholder="مثال: بجوار حمام السباحة" /></div>
+      </div>
+
+      {deliveryFee > 0 && (
+        <div className="card p-4 mb-5 space-y-2">
+          <div className="flex justify-between text-sm"><span>رسوم التوصيل{selectedCompound ? ` (${selectedCompound.distance_km} كم)` : ''}</span><span>{deliveryFee} ج.م</span></div>
+          {paymentMode === 'driver_pays' && (
+            <div className="flex justify-between text-sm"><span>قيمة الأوردر (كاش للمندوب)</span><span>{amount || 0} ج.م</span></div>
+          )}
+        </div>
+      )}
+
+      {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">{error}</p>}
+
+      <button className="btn-sea w-full !py-3.5 mb-6" disabled={!valid || saving} onClick={submit}>
+        {saving ? 'جاري الإرسال…' : 'اطلب مندوب الآن'}
+      </button>
+
+      {recent.length > 0 && (
+        <>
+          <h2 className="font-bold text-mist mb-3">آخر الطلبات</h2>
+          <div className="space-y-2.5">
+            {recent.map(o => (
+              <div key={o.id} className="card p-3.5 flex items-center justify-between text-sm">
+                <div>
+                  <p className="font-semibold">#{o.id} — {o.customer_name}</p>
+                  <p className="text-mist text-xs mt-0.5">{o.zone} — وحدة {o.unit_number}</p>
+                </div>
+                <span className="text-xs font-semibold text-mist">{o.status}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ── Normal catalog vendors: kitchen ticket flow (accept/prepare/ready)
+function KitchenVendor({ rid }: { rid: number }) {
   const [orders, setOrders] = useState<Order[]>([])
   const [items, setItems] = useState<Record<number, OrderItem[]>>({})
   const [isOpen, setIsOpen] = useState(true)
@@ -42,7 +211,6 @@ export default function Vendor() {
   }
 
   useEffect(() => {
-    // audio needs a user gesture to unlock on most mobile browsers
     const unlock = () => { audioUnlocked.current = true; document.removeEventListener('touchstart', unlock); document.removeEventListener('click', unlock) }
     document.addEventListener('touchstart', unlock, { once: true })
     document.addEventListener('click', unlock, { once: true })
@@ -77,8 +245,6 @@ export default function Vendor() {
     if (!o.ready_at) return null
     return Math.round((+new Date(o.ready_at) - Date.now()) / 60000)
   }
-
-  if (!rid) return <p className="text-mist text-center py-10">حسابك غير مرتبط بمطعم. تواصل مع الإدارة.</p>
 
   const newOrders = orders.filter(o => (o.kitchen_status || 'new') === 'new')
   const active = orders.filter(o => (o.kitchen_status || 'new') === 'preparing')
