@@ -2,12 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
-const STEPS = [
-  { key: 'pending', label: 'قيد الانتظار' },
-  { key: 'Accepted', label: 'المندوب في الطريق للمطعم' },
-  { key: 'Picked_Up', label: 'تم استلام الطلب' },
-  { key: 'Out_for_Delivery', label: 'في الطريق إليك' },
-  { key: 'Delivered', label: 'تم التوصيل' },
+const STAGES = [
+  { key: 'placed', label: 'قيد التجهيز', statuses: ['pending', 'Accepted'] },
+  { key: 'onway', label: 'في الطريق إليك', statuses: ['Picked_Up', 'Out_for_Delivery'] },
+  { key: 'delivered', label: 'تم التوصيل', statuses: ['Delivered'] },
 ]
 
 interface TrackData {
@@ -28,6 +26,10 @@ interface TrackData {
   assignment: { status: string; driver_name: string | null; driver_phone: string | null } | null
 }
 
+function fmtTime(iso: string) {
+  return new Date(iso).toLocaleTimeString('ar-EG', { hour: 'numeric', minute: '2-digit' })
+}
+
 export default function Track() {
   const { token } = useParams()
   const [data, setData] = useState<TrackData | null>(null)
@@ -41,6 +43,7 @@ export default function Track() {
   const [complaintText, setComplaintText] = useState('')
   const [complaintSent, setComplaintSent] = useState(false)
   const [repaying, setRepaying] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   async function retryPayment() {
     if (!data?.order) return
@@ -88,6 +91,13 @@ export default function Track() {
     setCancelled(true)
   }
 
+  function copyOrderNumber() {
+    if (!data?.order) return
+    navigator.clipboard?.writeText(`#${data.order.id}`)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
+
   if (notFound) return (
     <div className="card p-6 text-center max-w-sm mx-auto">
       <p className="font-semibold">الطلب غير موجود</p>
@@ -114,161 +124,188 @@ export default function Track() {
             {repaying ? 'جاري الفتح…' : 'كمّل الدفع'}
           </button>
         </div>
-        <p className="text-center text-xs text-mist mt-3">الصفحة بتتحدث تلقائياً كل 10 ثواني</p>
       </div>
     )
   }
 
   const current = data.assignment?.status && data.assignment.status !== 'Offered' ? data.assignment.status : 'pending'
-  const activeIdx = Math.max(0, STEPS.findIndex(s => s.key === current))
-  const canCancel = current === 'pending' && !cancelled
+  const stageIdx = Math.max(0, STAGES.findIndex(s => s.statuses.includes(current)))
+  const canCancel = current === 'pending' && !cancelled && !isCancelled(o.status)
 
   return (
-    <div className="max-w-lg mx-auto">
-      <Link to="/" className="text-sm text-mist hover:text-foam">← العودة للرئيسية</Link>
-      <div className="card p-5 mt-3">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="font-bold text-lg">تتبع الطلب #{o.id}</h1>
-            <p className="text-sm text-mist mt-0.5">من {o.restaurant_name}</p>
-          </div>
-          <span className="font-bold text-sea">
-            {o.pricing_status === 'pending_quote' ? 'قيد التسعير' : `${o.total} ج.م`}
-          </span>
+    <div className="max-w-lg mx-auto pb-6">
+      <div className="flex items-center justify-between mb-3">
+        <Link to="/" className="text-sm text-mist hover:text-foam">← العودة</Link>
+        <span className="text-sm font-semibold text-mist">طلب #{o.id}</span>
+      </div>
+
+      {isCancelled(o.status) || cancelled ? (
+        <div className="card p-5 text-center mb-4">
+          <p className="text-4xl mb-2">📦</p>
+          <h1 className="font-bold text-lg">تم إلغاء الطلب</h1>
         </div>
-
-        {o.order_type === 'custom_request' && o.pricing_status === 'pending_quote' && (
-          <p className="text-sm text-sand bg-sand/10 rounded-xl p-3 mt-3">
-            💬 هنتصل بيك قريب نأكد السعر النهائي قبل ما نجهز الطلب
-          </p>
-        )}
-
-        {o.order_type === 'pickup_request' && (
-          <p className="text-sm bg-shellup/60 rounded-xl p-3 mt-3">
-            {o.payment_mode === 'driver_pays'
-              ? `💵 المندوب هيدفع ${o.collect_amount} ج.م للمطعم، ويحصلها منك كاش عند التوصيل`
-              : '✅ الأوردر متدفوع بالفعل — هتدفع رسوم التوصيل بس'}
-          </p>
-        )}
-
-        {cancelled && (
-          <div className="mt-4 bg-red-500/10 border border-red-400/40 rounded-xl p-3 text-center text-red-600 text-sm">
-            تم إلغاء الطلب
-          </div>
-        )}
-
-        {canCancel && (
-          <button className="btn-danger w-full mt-4" disabled={cancelling} onClick={cancelOrder}>
-            {cancelling ? 'جاري الإلغاء…' : 'إلغاء الطلب'}
-          </button>
-        )}
-
-        {o.ready_at && current === 'pending' && !cancelled && (
-          <p className="text-sm text-mist mt-2">
-            {(() => {
-              const mins = Math.round((+new Date(o.ready_at) - Date.now()) / 60000)
-              if (o.scheduled_date) {
-                return `⏱ التوصيل خلال الفترة اللي اخترتها`
-              }
-              return mins > 0 ? `⏱ متوقع يجهز خلال ${mins} دقيقة` : '⏱ جاري التحضير الآن'
-            })()}
-          </p>
-        )}
-
-        <div className="mt-5">
-          {STEPS.map((s, i) => (
-            <div key={s.key} className="flex gap-3">
-              <div className="flex flex-col items-center">
-                <div className={`w-4 h-4 rounded-full border-2 ${i <= activeIdx ? 'bg-sea border-sea' : 'border-line'}`} />
-                {i < STEPS.length - 1 && <div className={`w-0.5 h-8 ${i < activeIdx ? 'bg-sea' : 'bg-line'}`} />}
-              </div>
-              <p className={`text-sm -mt-0.5 ${i <= activeIdx ? 'text-foam font-semibold' : 'text-mist'}`}>{s.label}</p>
-            </div>
-          ))}
-        </div>
-
-        {data.assignment?.driver_name && (
-          <div className="mt-4 bg-night border border-line rounded-xl p-4">
-            <p className="text-sm text-mist">المندوب</p>
-            <div className="flex items-center justify-between mt-1">
-              <span className="font-semibold">🛵 {data.assignment.driver_name}</span>
-              {data.assignment.driver_phone && (
-                <a className="text-sea font-semibold" dir="ltr" href={`tel:${data.assignment.driver_phone}`}>
-                  {data.assignment.driver_phone}
-                </a>
-              )}
-            </div>
-          </div>
-        )}
-
-        {current === 'Delivered' && !ratingSent && (
-          <div className="mt-4 bg-night border border-line rounded-xl p-4">
-            <p className="text-sm font-semibold mb-3">قيّم تجربتك (اختياري)</p>
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-mist">المندوب</span>
-                <div className="flex gap-1">
-                  {[1,2,3,4,5].map(n => (
-                    <button key={n} onClick={() => setDriverRating(n)} className={n <= driverRating ? 'text-sand' : 'text-line'}>★</button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-mist">المطعم</span>
-                <div className="flex gap-1">
-                  {[1,2,3,4,5].map(n => (
-                    <button key={n} onClick={() => setRestaurantRating(n)} className={n <= restaurantRating ? 'text-sand' : 'text-line'}>★</button>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <button className="btn-sea w-full mt-3 text-sm" disabled={!driverRating && !restaurantRating} onClick={sendRating}>إرسال التقييم</button>
-          </div>
-        )}
-        {ratingSent && <p className="text-emerald-700 text-sm text-center mt-4">✅ شكرًا لتقييمك</p>}
-
-        {complaintSent ? (
-          <p className="text-sand text-sm text-center mt-4">✅ تم إرسال الشكوى — هنراجعها قريب</p>
-        ) : complaining ? (
-          <div className="mt-4 bg-night border border-line rounded-xl p-4">
-            <p className="text-sm font-semibold mb-2">إيه المشكلة؟</p>
-            <textarea className="field h-20 resize-none" value={complaintText} onChange={e => setComplaintText(e.target.value)} placeholder="مثال: نقص صنف من الطلب" />
-            <div className="flex gap-2.5 mt-2.5">
-              <button className="btn-ghost flex-1 text-sm" onClick={() => setComplaining(false)}>إلغاء</button>
-              <button className="btn-danger flex-1 text-sm" disabled={!complaintText.trim()} onClick={sendComplaint}>إرسال</button>
-            </div>
-          </div>
-        ) : (
-          <button className="text-red-600 text-sm mt-4 underline" onClick={() => setComplaining(true)}>في مشكلة في الطلب؟</button>
-        )}
-
-        <div className="mt-4 border-t border-line pt-4 space-y-1.5">
-          {o.order_type === 'custom_request' ? (
-            <>
-              {(o.request_items ?? []).map((it, i) => (
-                <div key={i} className="flex justify-between text-sm">
-                  <span>{it.name}</span><span>× {it.qty}</span>
-                </div>
-              ))}
-              {o.request_notes && <p className="text-sm text-mist italic mt-1">"{o.request_notes}"</p>}
-            </>
-          ) : o.order_type === 'pickup_request' ? (
-            o.request_notes && <p className="text-sm text-mist italic">"{o.request_notes}"</p>
-          ) : (
-            data.items.map((it, i) => (
-              <div key={i} className="flex justify-between text-sm">
-                <span>{it.name} × {it.qty}</span><span>{it.total} ج.م</span>
-              </div>
-            ))
+      ) : (
+        <div className="card p-5 mb-4">
+          <p className="text-xs text-mist mb-1">الحالة</p>
+          <h1 className="font-bold text-xl mb-1">
+            {current === 'Delivered' ? '✅ تم التوصيل' : STAGES[stageIdx]?.label ?? 'قيد التجهيز'}
+          </h1>
+          {o.ready_at && current === 'pending' && !o.scheduled_date && (
+            <p className="text-sm text-mist">الوصول المتوقع {fmtTime(o.ready_at)}</p>
           )}
-          <div className="flex justify-between text-sm text-mist"><span>التوصيل</span><span>{o.delivery_fee} ج.م</span></div>
-        </div>
+          {o.scheduled_date && <p className="text-sm text-mist">التوصيل خلال الفترة اللي اخترتها</p>}
 
-        <div className="mt-4 text-sm text-mist">
-          📍 {o.zone} — وحدة {o.unit_number}{o.address_notes ? ` — ${o.address_notes}` : ''}
+          <div className="flex gap-1.5 mt-4">
+            {STAGES.map((s, i) => (
+              <div key={s.key} className={`h-1.5 flex-1 rounded-full ${i <= stageIdx ? 'bg-sea' : 'bg-line'}`} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {o.order_type === 'custom_request' && o.pricing_status === 'pending_quote' && (
+        <p className="text-sm text-sand bg-sand/10 rounded-xl p-3 mb-4">
+          💬 هنتصل بيك قريب نأكد السعر النهائي قبل ما نجهز الطلب
+        </p>
+      )}
+      {o.order_type === 'pickup_request' && (
+        <p className="text-sm bg-shellup/60 rounded-xl p-3 mb-4">
+          {o.payment_mode === 'driver_pays'
+            ? `💵 المندوب هيدفع ${o.collect_amount} ج.م للمطعم، ويحصلها منك كاش عند التوصيل`
+            : '✅ الأوردر متدفوع بالفعل — هتدفع رسوم التوصيل بس'}
+        </p>
+      )}
+
+      {/* address */}
+      <div className="card p-4 mb-4 flex items-start gap-3">
+        <span className="text-xl">📍</span>
+        <div>
+          <p className="font-semibold text-sm">{o.zone}</p>
+          <p className="text-sm text-mist">وحدة {o.unit_number}{o.address_notes ? ` — ${o.address_notes}` : ''}</p>
         </div>
       </div>
-      <p className="text-center text-xs text-mist mt-3">الصفحة بتتحدث تلقائياً كل 10 ثواني</p>
+
+      {/* payment */}
+      <div className="card p-4 mb-4 flex items-center gap-3">
+        <span className="text-xl">{o.payment_method === 'online' ? '💳' : '💵'}</span>
+        <div>
+          <p className="font-semibold text-sm">{o.total} ج.م</p>
+          <p className="text-sm text-mist">{o.payment_method === 'online' ? 'مدفوع أونلاين' : 'كاش عند الاستلام'}</p>
+        </div>
+      </div>
+
+      {data.assignment?.driver_name && (
+        <div className="card p-4 mb-4 flex items-center justify-between">
+          <div>
+            <p className="text-xs text-mist mb-0.5">المندوب</p>
+            <span className="font-semibold text-sm">🛵 {data.assignment.driver_name}</span>
+          </div>
+          {data.assignment.driver_phone && (
+            <a className="btn-ghost !py-1.5 !px-3 text-sm" dir="ltr" href={`tel:${data.assignment.driver_phone}`}>
+              اتصال
+            </a>
+          )}
+        </div>
+      )}
+
+      {/* items */}
+      <div className="card p-4 mb-4">
+        {o.order_type === 'custom_request' ? (
+          <div className="space-y-2">
+            {(o.request_items ?? []).map((it, i) => (
+              <div key={i} className="flex items-center gap-3 text-sm">
+                <span className="w-6 h-6 rounded-full bg-shellup grid place-items-center text-xs font-bold shrink-0">{it.qty}</span>
+                <span>{it.name}</span>
+              </div>
+            ))}
+            {o.request_notes && <p className="text-sm text-mist italic mt-1">"{o.request_notes}"</p>}
+          </div>
+        ) : o.order_type === 'pickup_request' ? (
+          o.request_notes && <p className="text-sm text-mist italic">"{o.request_notes}"</p>
+        ) : (
+          <div className="space-y-2">
+            {data.items.map((it, i) => (
+              <div key={i} className="flex items-center gap-3 text-sm">
+                <span className="w-6 h-6 rounded-full bg-shellup grid place-items-center text-xs font-bold shrink-0">{it.qty}</span>
+                <span className="flex-1">{it.name}</span>
+                <span className="text-mist">{it.total} ج.م</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* order summary */}
+      <div className="card p-4 mb-4 space-y-2">
+        <div className="flex items-center justify-between text-sm pb-2 border-b border-line">
+          <span className="text-mist">رقم الطلب</span>
+          <button className="font-semibold flex items-center gap-1.5" onClick={copyOrderNumber}>
+            #{o.id} <span className="text-xs text-mist">{copied ? '✅ اتنسخ' : '📋'}</span>
+          </button>
+        </div>
+        {o.pricing_status !== 'pending_quote' && (
+          <div className="flex justify-between text-sm"><span className="text-mist">المنتجات</span><span>{o.subtotal} ج.م</span></div>
+        )}
+        <div className="flex justify-between text-sm"><span className="text-mist">التوصيل</span><span>{o.delivery_fee} ج.م</span></div>
+        <div className="flex justify-between font-bold pt-2 border-t border-line">
+          <span>الإجمالي</span>
+          <span className="text-sea">{o.pricing_status === 'pending_quote' ? 'قيد التسعير' : `${o.total} ج.م`}</span>
+        </div>
+      </div>
+
+      {current === 'Delivered' && !ratingSent && (
+        <div className="card p-4 mb-4">
+          <p className="text-sm font-semibold mb-3">قيّم تجربتك (اختياري)</p>
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-mist">المندوب</span>
+              <div className="flex gap-1">
+                {[1,2,3,4,5].map(n => (
+                  <button key={n} onClick={() => setDriverRating(n)} className={n <= driverRating ? 'text-sand' : 'text-line'}>★</button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-mist">المطعم</span>
+              <div className="flex gap-1">
+                {[1,2,3,4,5].map(n => (
+                  <button key={n} onClick={() => setRestaurantRating(n)} className={n <= restaurantRating ? 'text-sand' : 'text-line'}>★</button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <button className="btn-sea w-full mt-3 text-sm" disabled={!driverRating && !restaurantRating} onClick={sendRating}>إرسال التقييم</button>
+        </div>
+      )}
+      {ratingSent && <p className="text-emerald-700 text-sm text-center mb-4">✅ شكرًا لتقييمك</p>}
+
+      {canCancel && (
+        <button className="btn-danger w-full mb-2" disabled={cancelling} onClick={cancelOrder}>
+          {cancelling ? 'جاري الإلغاء…' : 'إلغاء الطلب'}
+        </button>
+      )}
+      {canCancel && <p className="text-center text-xs text-mist mb-4">تقدر تلغي الطلب طول ما لسه قيد الانتظار</p>}
+
+      {complaintSent ? (
+        <p className="text-sand text-sm text-center mb-4">✅ تم إرسال الشكوى — هنراجعها قريب</p>
+      ) : complaining ? (
+        <div className="card p-4 mb-4">
+          <p className="text-sm font-semibold mb-2">إيه المشكلة؟</p>
+          <textarea className="field h-20 resize-none" value={complaintText} onChange={e => setComplaintText(e.target.value)} placeholder="مثال: نقص صنف من الطلب" />
+          <div className="flex gap-2.5 mt-2.5">
+            <button className="btn-ghost flex-1 text-sm" onClick={() => setComplaining(false)}>إلغاء</button>
+            <button className="btn-danger flex-1 text-sm" disabled={!complaintText.trim()} onClick={sendComplaint}>إرسال</button>
+          </div>
+        </div>
+      ) : (
+        <button className="text-red-600 text-sm underline block mx-auto mb-4" onClick={() => setComplaining(true)}>في مشكلة في الطلب؟</button>
+      )}
+
+      <p className="text-center text-xs text-mist">الصفحة بتتحدث تلقائياً كل 10 ثواني</p>
     </div>
   )
+}
+
+function isCancelled(status: string) {
+  return status === 'Cancelled'
 }
