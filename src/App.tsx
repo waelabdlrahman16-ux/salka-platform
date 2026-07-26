@@ -49,13 +49,14 @@ function BottomNav() {
 
   const items = [
     { to: '/', label: 'المطاعم', icon: '🍽️' },
+    { to: '/custom-order', label: 'طلب خاص', icon: '🧾' },
     { to: '/cart', label: 'عربتي', icon: '🛒', badge: cart.count },
-    { to: '/my-orders', label: 'طلباتي', icon: '🧾' },
+    { to: '/my-orders', label: 'طلباتي', icon: '📋' },
   ]
 
   return (
     <nav className="fixed bottom-0 inset-x-0 z-40 bg-shell/95 backdrop-blur border-t border-line">
-      <div className="max-w-5xl mx-auto grid grid-cols-3">
+      <div className="max-w-5xl mx-auto grid grid-cols-4">
         {items.map(it => {
           const active = it.to === '/' ? pathname === '/' : pathname.startsWith(it.to)
           return (

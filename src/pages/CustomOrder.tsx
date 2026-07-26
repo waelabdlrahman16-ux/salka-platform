@@ -1,17 +1,15 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase, DELIVERY_FEE } from '../lib/supabase'
 import { artFor } from '../lib/categoryArt'
-import type { Compound, MenuItem, RequestItem, Restaurant } from '../lib/types'
+import type { Compound, MenuItem, Restaurant } from '../lib/types'
 
 export default function CustomOrder() {
   const nav = useNavigate()
   const [vendors, setVendors] = useState<Restaurant[]>([])
   const [vendor, setVendor] = useState<Restaurant | null>(null)
-  const [catalog, setCatalog] = useState<MenuItem[]>([])
-  const [search, setSearch] = useState('')
-  const [picked, setPicked] = useState<RequestItem[]>([])
-  const [notes, setNotes] = useState('')
+  const [categories, setCategories] = useState<string[]>([])
+  const [list, setList] = useState('')
 
   const [compounds, setCompounds] = useState<Compound[]>([])
   const [name, setName] = useState(''); const [phone, setPhone] = useState('')
@@ -34,34 +32,21 @@ export default function CustomOrder() {
   useEffect(() => {
     if (!vendor) return
     supabase.from('menu_items').select('*').eq('restaurant_id', vendor.id).eq('available', true)
-      .then(({ data }) => setCatalog(data ?? []))
+      .then(({ data }) => {
+        const items = (data as MenuItem[]) ?? []
+        const seen = new Set<string>()
+        const cats: string[] = []
+        for (const it of items) if (!seen.has(it.category)) { seen.add(it.category); cats.push(it.category) }
+        setCategories(cats)
+      })
   }, [vendor])
 
-  const suggestions = useMemo(() => {
-    if (!search.trim()) return []
-    const q = search.trim().toLowerCase()
-    return catalog.filter(it => it.name.toLowerCase().includes(q) && !picked.some(p => p.name === it.name)).slice(0, 6)
-  }, [search, catalog, picked])
-
-  function addSuggestion(it: MenuItem) {
-    setPicked(p => [...p, { name: it.name, qty: 1 }])
-    setSearch('')
-  }
-  function addFreeText() {
-    const q = search.trim()
-    if (!q) return
-    setPicked(p => [...p, { name: q, qty: 1 }])
-    setSearch('')
-  }
-  function changeQty(i: number, delta: number) {
-    setPicked(p => p.map((it, idx) => idx === i ? { ...it, qty: Math.max(1, it.qty + delta) } : it))
-  }
-  function removeItem(i: number) {
-    setPicked(p => p.filter((_, idx) => idx !== i))
+  function addLine(text: string) {
+    setList(l => l.trim() ? `${l.trim()}\n${text}` : text)
   }
 
   const selectedCompound = compounds.find(c => c.id === compoundId)
-  const valid = vendor && name.trim() && phone.trim() && compoundId && unit.trim() && (picked.length > 0 || notes.trim())
+  const valid = vendor && name.trim() && phone.trim() && compoundId && unit.trim() && list.trim()
 
   async function submit() {
     if (!vendor || !valid) return
@@ -74,8 +59,8 @@ export default function CustomOrder() {
       p_unit_number: unit.trim(),
       p_address_notes: addrNotes.trim(),
       p_delivery_fee: DELIVERY_FEE,
-      p_request_items: picked,
-      p_request_notes: notes.trim()
+      p_request_items: [],
+      p_request_notes: list.trim()
     })
     if (err || !data?.token) {
       setSaving(false)
@@ -110,55 +95,28 @@ export default function CustomOrder() {
     )
   }
 
-  // Step 2 — build the request
+  // Step 2 — one simple list, no fake matching
   return (
     <div className="pb-6">
       <button className="text-sm text-mist hover:text-foam mb-3" onClick={() => setVendor(null)}>← رجوع</button>
       <h1 className="text-2xl font-bold mb-1">{vendor.name}</h1>
-      <p className="text-mist text-sm mb-5">
-        اكتب اللي محتاجه، وهنقولك السعر النهائي بمكالمة قبل ما نجهز الطلب
-      </p>
+      <p className="text-mist text-sm mb-5">اكتب اللي محتاجه، وهنقولك السعر النهائي بمكالمة قبل ما نجهز الطلب</p>
 
-      <div className="mb-5">
-        <label className="label">دور على صنف (اختياري، بيساعدك تكتب صح)</label>
-        <input className="field" value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="مثال: بنادول، لبن، خبز…" />
-        {suggestions.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-2">
-            {suggestions.map(it => (
-              <button key={it.id} className="tab bg-shellup/60" onClick={() => addSuggestion(it)}>+ {it.name}</button>
+      {categories.length > 0 && (
+        <div className="mb-3">
+          <p className="text-sm text-mist mb-2">من عندنا (اضغط عشان تضيفها لقايمتك)</p>
+          <div className="flex flex-wrap gap-2">
+            {categories.map(cat => (
+              <button key={cat} className="tab bg-shellup/60" onClick={() => addLine(cat)}>+ {cat}</button>
             ))}
           </div>
-        )}
-        {search.trim() && suggestions.length === 0 && (
-          <button className="text-sm text-seadeep font-semibold mt-2" onClick={addFreeText}>
-            + إضافة "{search.trim()}" كصنف مش في القايمة
-          </button>
-        )}
-      </div>
-
-      {picked.length > 0 && (
-        <div className="space-y-2 mb-5">
-          {picked.map((it, i) => (
-            <div key={i} className="card p-3 flex items-center justify-between gap-3">
-              <span className="font-semibold text-sm">{it.name}</span>
-              <div className="flex items-center gap-2">
-                <button className="btn-ghost !px-2 !py-1" onClick={() => removeItem(i)}>🗑</button>
-                <div className="flex items-center gap-2 bg-shellup rounded-full px-1 py-1">
-                  <button className="w-7 h-7 rounded-full grid place-items-center font-bold" onClick={() => changeQty(i, -1)}>−</button>
-                  <span className="font-bold text-sm w-4 text-center">{it.qty}</span>
-                  <button className="w-7 h-7 rounded-full grid place-items-center font-bold bg-sea text-white" onClick={() => changeQty(i, 1)}>+</button>
-                </div>
-              </div>
-            </div>
-          ))}
         </div>
       )}
 
       <div className="mb-5">
-        <label className="label">أي ملاحظات تانية (اختياري)</label>
-        <textarea className="field min-h-[80px]" value={notes} onChange={e => setNotes(e.target.value)}
-          placeholder="مثال: أي نوع متوفر من نفس الصنف، أو تفاصيل زيادة" />
+        <label className="label">قايمة طلبك *</label>
+        <textarea className="field min-h-[160px]" value={list} onChange={e => setList(e.target.value)}
+          placeholder={'اكتب كل حاجة عايزها، سطر لكل صنف\nمثال:\nبنادول اكسترا\nشامبو أطفال\nخبز توست'} />
       </div>
 
       <div className="card p-4 mb-5 space-y-3.5">

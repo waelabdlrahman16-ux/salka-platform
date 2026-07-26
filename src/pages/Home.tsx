@@ -58,15 +58,6 @@ export default function Home() {
 
       {!picking && !loading && compoundId && (
         <div>
-          <Link to="/custom-order"
-            className="card p-4 mb-4 flex items-center gap-4 hover:border-sea/50 transition-colors">
-            <span className="w-12 h-12 rounded-xl bg-sand/15 grid place-items-center text-2xl shrink-0">🧾</span>
-            <div>
-              <h2 className="font-bold">طلب خاص (صيدلية / سوبر ماركت)</h2>
-              <p className="text-sm text-mist mt-0.5">اكتب اللي محتاجه، وهنقولك السعر بمكالمة</p>
-            </div>
-          </Link>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {catalogRestaurants.length === 0 && (
               <p className="text-mist col-span-full">لا يوجد مطاعم بتوصل لمكانك حاليًا</p>
