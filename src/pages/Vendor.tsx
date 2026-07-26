@@ -15,6 +15,7 @@ export default function Vendor() {
   const { profile } = useAuth()
   const rid = profile?.restaurant_id
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
+  const [showDriverRequest, setShowDriverRequest] = useState(false)
 
   useEffect(() => {
     if (!rid) return
@@ -24,15 +25,36 @@ export default function Vendor() {
   if (!rid) return <p className="text-mist text-center py-10">حسابك غير مرتبط بمطعم. تواصل مع الإدارة.</p>
   if (!restaurant) return <p className="text-mist text-center py-10">جاري التحميل…</p>
 
-  return restaurant.order_mode === 'pickup_request'
-    ? <PickupRequestVendor restaurant={restaurant} />
-    : <KitchenVendor rid={rid} />
+  // "Own system" vendors (McDonald's/KFC/Pizza Hut style) have no menu ordering
+  // through Salka at all — requesting a driver IS their whole workflow.
+  if (restaurant.order_mode === 'pickup_request') {
+    return <DriverRequestPanel restaurant={restaurant} standalone />
+  }
+
+  // Every other vendor: normal kitchen-ticket flow is primary, but they can
+  // also request a driver as a secondary action for an order that came in
+  // through a channel other than Salka (walk-in, phone, etc).
+  return (
+    <div className="max-w-lg mx-auto">
+      {!showDriverRequest ? (
+        <>
+          <div className="flex items-center justify-between mb-4">
+            <button className="btn-ghost text-sm" onClick={() => setShowDriverRequest(true)}>
+              🛵 طلب مندوب لأوردر مش من سالكة
+            </button>
+          </div>
+          <KitchenVendor rid={rid} />
+        </>
+      ) : (
+        <DriverRequestPanel restaurant={restaurant} onClose={() => setShowDriverRequest(false)} />
+      )}
+    </div>
+  )
 }
 
-// ── Own-system vendors (McDonald's/KFC/Pizza Hut style): staff request a
-//    driver themselves once a customer has ordered directly with them.
-//    Customers never see or trigger this — it's vendor-only.
-function PickupRequestVendor({ restaurant }: { restaurant: Restaurant }) {
+// ── Shared "request a driver" form — used as the whole screen for own-system
+//    vendors, and as a secondary panel for regular vendors with an off-platform order.
+function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: Restaurant; standalone?: boolean; onClose?: () => void }) {
   const [compounds, setCompounds] = useState<Compound[]>([])
   const [recent, setRecent] = useState<Order[]>([])
 
@@ -94,9 +116,14 @@ function PickupRequestVendor({ restaurant }: { restaurant: Restaurant }) {
 
   return (
     <div className="max-w-lg mx-auto pb-6">
-      <h1 className="text-xl font-bold mb-1">🛵 {restaurant.name} — طلب مندوب</h1>
+      <div className="flex items-center justify-between mb-1">
+        <h1 className="text-xl font-bold">🛵 {restaurant.name} — طلب مندوب</h1>
+        {!standalone && <button className="text-sm text-mist hover:text-foam" onClick={onClose}>إغلاق ✕</button>}
+      </div>
       <p className="text-mist text-sm mb-5">
-        لما عميل يطلب عندك مباشرة (من التطبيق بتاعكم أو تليفونيًا)، سجّل بياناته هنا عشان نبعتلكم مندوب
+        {standalone
+          ? 'لما عميل يطلب عندك مباشرة (من التطبيق بتاعكم أو تليفونيًا)، سجّل بياناته هنا عشان نبعتلكم مندوب'
+          : 'لأوردر جالك من غير سالكة (تليفون أو عميل حاضر)، سجّل بياناته هنا وهنبعتلك مندوب'}
       </p>
 
       {sent && <p className="bg-emerald-50 text-emerald-700 rounded-xl p-3 text-sm mb-4 text-center">✅ تم إرسال الطلب للمندوبين</p>}
@@ -307,7 +334,7 @@ function KitchenVendor({ rid }: { rid: number }) {
   }
 
   return (
-    <div className="max-w-lg mx-auto">
+    <div>
       <div className="flex items-center justify-between mb-5">
         <h1 className="text-xl font-bold">🍽️ {name}</h1>
         <span className={isOpen ? 'badge-open' : 'badge-closed'}>{isOpen ? 'مفتوح' : 'مغلق'}</span>
