@@ -21,6 +21,8 @@ interface TrackData {
     pricing_status: 'n/a' | 'pending_quote' | 'confirmed'
     payment_mode: 'prepaid' | 'driver_pays' | null
     collect_amount: number | null
+    payment_method: 'cod' | 'online' | null
+    online_payment_status: 'pending' | 'paid' | 'failed' | null
   } | null
   items: { name: string; qty: number; total: number }[]
   assignment: { status: string; driver_name: string | null; driver_phone: string | null } | null
@@ -38,6 +40,18 @@ export default function Track() {
   const [complaining, setComplaining] = useState(false)
   const [complaintText, setComplaintText] = useState('')
   const [complaintSent, setComplaintSent] = useState(false)
+  const [repaying, setRepaying] = useState(false)
+
+  async function retryPayment() {
+    if (!data?.order) return
+    setRepaying(true)
+    const { data: fw, error } = await supabase.functions.invoke('fawaterak-create-invoice', {
+      body: { order_id: data.order.id }
+    })
+    setRepaying(false)
+    if (error || !fw?.url) { alert('حصل خطأ، جرب تاني'); return }
+    window.location.href = fw.url
+  }
 
   async function load() {
     const { data: res, error } = await supabase.rpc('track_order', { p_token: token })
@@ -83,6 +97,28 @@ export default function Track() {
   if (!data || !data.order) return <p className="text-mist">جاري التحميل…</p>
 
   const o = data.order
+
+  if (o.status === 'awaiting_payment') {
+    return (
+      <div className="max-w-lg mx-auto">
+        <Link to="/" className="text-sm text-mist hover:text-foam">← العودة للرئيسية</Link>
+        <div className="card p-5 mt-3 text-center">
+          <p className="text-4xl mb-3">💳</p>
+          <h1 className="font-bold text-lg mb-1">بننتظر تأكيد الدفع</h1>
+          <p className="text-mist text-sm mb-1">طلب #{o.id} من {o.restaurant_name}</p>
+          <p className="text-sea font-bold text-xl my-3">{o.total} ج.م</p>
+          <p className="text-mist text-sm mb-4">
+            لو خرجت من صفحة الدفع قبل ما تكمل، اضغط تحت وكمّل الدفع
+          </p>
+          <button className="btn-sea w-full" disabled={repaying} onClick={retryPayment}>
+            {repaying ? 'جاري الفتح…' : 'كمّل الدفع'}
+          </button>
+        </div>
+        <p className="text-center text-xs text-mist mt-3">الصفحة بتتحدث تلقائياً كل 10 ثواني</p>
+      </div>
+    )
+  }
+
   const current = data.assignment?.status && data.assignment.status !== 'Offered' ? data.assignment.status : 'pending'
   const activeIdx = Math.max(0, STEPS.findIndex(s => s.key === current))
   const canCancel = current === 'pending' && !cancelled
