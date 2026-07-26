@@ -39,7 +39,8 @@ export default function Home() {
 
   const selected = compounds.find(c => c.id === compoundId)
   const eta = (r: Restaurant) => selected ? r.prep_minutes + selected.est_travel_minutes : r.prep_minutes
-  const catalogRestaurants = restaurants.filter(r => r.order_mode !== 'custom_request')
+  const catalogRestaurants = restaurants.filter(r =>
+    r.order_mode !== 'custom_request' && r.vendor_type !== 'pharmacy' && r.vendor_type !== 'supermarket')
   const filtered = compounds.filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
   const north = filtered.filter(c => c.direction === 'north')
   const south = filtered.filter(c => c.direction === 'south')

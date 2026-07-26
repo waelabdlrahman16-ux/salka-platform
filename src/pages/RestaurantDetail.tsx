@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { supabase, DELIVERY_FEE } from '../lib/supabase'
+import { supabase } from '../lib/supabase'
 import { useCart } from '../lib/cart'
 import ProductCard from '../components/ProductCard'
 import { artFor } from '../lib/categoryArt'
