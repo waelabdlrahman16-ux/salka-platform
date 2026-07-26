@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { supabase, DELIVERY_FEE } from '../lib/supabase'
+import { supabase } from '../lib/supabase'
+import { estimateDeliveryFee } from '../lib/deliveryFee'
 import type { Compound, Restaurant } from '../lib/types'
 
 export default function RequestDriver() {
@@ -29,6 +30,7 @@ export default function RequestDriver() {
   }, [id])
 
   const selectedCompound = compounds.find(c => c.id === compoundId)
+  const deliveryFee = selectedCompound ? estimateDeliveryFee(selectedCompound.distance_km) : 0
   const amount = Number(collectAmount) || 0
   const valid = name.trim() && phone.trim() && compoundId && unit.trim()
     && (paymentMode === 'prepaid' || amount > 0)
@@ -43,10 +45,11 @@ export default function RequestDriver() {
       p_zone: selectedCompound?.name ?? '',
       p_unit_number: unit.trim(),
       p_address_notes: addrNotes.trim(),
-      p_delivery_fee: DELIVERY_FEE,
+      p_delivery_fee: deliveryFee,
       p_payment_mode: paymentMode,
       p_collect_amount: paymentMode === 'driver_pays' ? amount : null,
-      p_request_notes: orderNotes.trim()
+      p_request_notes: orderNotes.trim(),
+      p_compound_id: compoundId
     })
     if (err || !data?.token) {
       setSaving(false)
@@ -111,12 +114,12 @@ export default function RequestDriver() {
 
       <div className="card p-4 mb-5 space-y-2">
         <h2 className="font-bold mb-1">هتدفع</h2>
-        <div className="flex justify-between text-sm"><span>توصيل</span><span>{DELIVERY_FEE} ج.م</span></div>
+        <div className="flex justify-between text-sm"><span>توصيل{selectedCompound ? ` (${selectedCompound.distance_km} كم)` : ''}</span><span>{deliveryFee} ج.م</span></div>
         {paymentMode === 'driver_pays' && (
           <div className="flex justify-between text-sm"><span>قيمة الأوردر (كاش للمندوب)</span><span>{amount || 0} ج.م</span></div>
         )}
         <div className="flex justify-between font-bold border-t border-line pt-2">
-          <span>الإجمالي</span><span className="text-sea">{DELIVERY_FEE + (paymentMode === 'driver_pays' ? amount : 0)} ج.م</span>
+          <span>الإجمالي</span><span className="text-sea">{deliveryFee + (paymentMode === 'driver_pays' ? amount : 0)} ج.م</span>
         </div>
       </div>
 

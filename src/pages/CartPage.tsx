@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase, DELIVERY_FEE } from '../lib/supabase'
+import { supabase } from '../lib/supabase'
 import { useCart } from '../lib/cart'
 import { artFor } from '../lib/categoryArt'
-import type { MenuItem, Restaurant } from '../lib/types'
+import { estimateDeliveryFee } from '../lib/deliveryFee'
+import type { Compound, MenuItem, Restaurant } from '../lib/types'
 
 export default function CartPage() {
   const nav = useNavigate()
   const cart = useCart()
   const [items, setItems] = useState<MenuItem[]>([])
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
+  const [compound, setCompound] = useState<Compound | null>(null)
 
   useEffect(() => {
     if (!cart.restaurantId) return
@@ -17,8 +19,15 @@ export default function CartPage() {
     supabase.from('restaurants').select('*').eq('id', cart.restaurantId).single().then(({ data }) => setRestaurant(data))
   }, [cart.restaurantId])
 
+  useEffect(() => {
+    const compoundId = sessionStorage.getItem('talah_compound_id')
+    if (!compoundId) return
+    supabase.from('compounds').select('*').eq('id', Number(compoundId)).single().then(({ data }) => setCompound(data))
+  }, [])
+
   const lines = items.filter(it => cart.qty[it.id])
   const subtotal = lines.reduce((s, it) => s + it.price * cart.qty[it.id], 0)
+  const deliveryFee = compound ? estimateDeliveryFee(compound.distance_km) : null
 
   if (!cart.restaurantId || lines.length === 0) {
     return (
@@ -69,8 +78,10 @@ export default function CartPage() {
           onClick={() => nav('/checkout')}>
           <span>روح للدفع</span>
           <span className="text-left">
-            {subtotal + DELIVERY_FEE} ج.م
-            <span className="block text-[11px] opacity-80 font-normal">شامل {DELIVERY_FEE} ج.م توصيل</span>
+            {deliveryFee !== null ? subtotal + deliveryFee : subtotal} ج.م
+            <span className="block text-[11px] opacity-80 font-normal">
+              {deliveryFee !== null ? `شامل ${deliveryFee} ج.م توصيل (حسب المسافة)` : 'التوصيل بيتحسب حسب مكانك'}
+            </span>
           </span>
         </button>
       </div>

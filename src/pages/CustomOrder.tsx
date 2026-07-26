@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase, DELIVERY_FEE } from '../lib/supabase'
+import { supabase } from '../lib/supabase'
+import { estimateDeliveryFee } from '../lib/deliveryFee'
 import { artFor } from '../lib/categoryArt'
 import type { Compound, MenuItem, Restaurant } from '../lib/types'
 
@@ -46,6 +47,7 @@ export default function CustomOrder() {
   }
 
   const selectedCompound = compounds.find(c => c.id === compoundId)
+  const deliveryFee = selectedCompound ? estimateDeliveryFee(selectedCompound.distance_km) : 0
   const valid = vendor && name.trim() && phone.trim() && compoundId && unit.trim() && list.trim()
 
   async function submit() {
@@ -58,9 +60,10 @@ export default function CustomOrder() {
       p_zone: selectedCompound?.name ?? '',
       p_unit_number: unit.trim(),
       p_address_notes: addrNotes.trim(),
-      p_delivery_fee: DELIVERY_FEE,
+      p_delivery_fee: deliveryFee,
       p_request_items: [],
-      p_request_notes: list.trim()
+      p_request_notes: list.trim(),
+      p_compound_id: compoundId
     })
     if (err || !data?.token) {
       setSaving(false)

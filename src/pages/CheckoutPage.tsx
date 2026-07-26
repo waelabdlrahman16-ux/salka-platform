@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase, DELIVERY_FEE } from '../lib/supabase'
+import { supabase } from '../lib/supabase'
 import { useCart } from '../lib/cart'
+import { estimateDeliveryFee } from '../lib/deliveryFee'
 import type { Compound, MenuItem, Restaurant, Slot } from '../lib/types'
 
 export default function CheckoutPage() {
@@ -38,6 +39,7 @@ export default function CheckoutPage() {
   const scheduled = restaurant?.vendor_type === 'supermarket'
   const hasRx = lines.some(it => it.requires_prescription)
   const selectedCompound = compounds.find(c => c.id === compoundId)
+  const deliveryFee = selectedCompound ? estimateDeliveryFee(selectedCompound.distance_km) : 0
   const valid = name.trim() && phone.trim() && compoundId && unit.trim() && (!scheduled || !!slot)
 
   async function placeOrder() {
@@ -52,7 +54,7 @@ export default function CheckoutPage() {
       p_zone: selectedCompound?.name ?? '',
       p_unit_number: unit.trim(),
       p_address_notes: notes.trim(),
-      p_delivery_fee: DELIVERY_FEE,
+      p_delivery_fee: deliveryFee,
       p_items: payload,
       p_slot_id: slot?.id ?? null,
       p_scheduled_date: slot?.scheduled_date ?? null,
@@ -151,14 +153,14 @@ export default function CheckoutPage() {
             <span>{it.name} × {cart.qty[it.id]}</span><span>{cart.qty[it.id] * it.price} ج.م</span>
           </div>
         ))}
-        <div className="flex justify-between text-sm text-mist"><span>التوصيل</span><span>{DELIVERY_FEE} ج.م</span></div>
-        <div className="flex justify-between font-bold border-t border-line pt-2"><span>الإجمالي</span><span className="text-sea">{subtotal + DELIVERY_FEE} ج.م</span></div>
+        <div className="flex justify-between text-sm text-mist"><span>التوصيل{selectedCompound ? ` (${selectedCompound.distance_km} كم)` : ''}</span><span>{deliveryFee} ج.م</span></div>
+        <div className="flex justify-between font-bold border-t border-line pt-2"><span>الإجمالي</span><span className="text-sea">{subtotal + deliveryFee} ج.م</span></div>
       </div>
 
       {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">{error}</p>}
 
       <button className="btn-sea w-full !py-3.5" disabled={!valid || saving} onClick={placeOrder}>
-        {saving ? 'جاري الإرسال…' : `تأكيد الطلب · ${subtotal + DELIVERY_FEE} ج.م`}
+        {saving ? 'جاري الإرسال…' : `تأكيد الطلب · ${subtotal + deliveryFee} ج.م`}
       </button>
     </div>
   )

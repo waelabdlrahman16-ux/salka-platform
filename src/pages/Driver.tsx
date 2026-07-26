@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase, DELIVERY_FEE, DRIVER_EARNING, ADMIN_AMOUNT } from '../lib/supabase'
+import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { ping, askNotificationPermission } from '../lib/notify'
 import type { Assignment, Driver, Shift, SwapRequest } from '../lib/types'
@@ -312,7 +312,7 @@ export default function DriverPage() {
                     <button className="btn-ghost text-sm" onClick={() => markFailed(a)}>العميل ما ردش</button>
                   </div>
                 )}
-                {a.status === 'Delivered' && <p className="text-emerald-700 font-semibold text-center">✅ اكتمل — +{DRIVER_EARNING} ج.م</p>}
+                {a.status === 'Delivered' && <p className="text-emerald-700 font-semibold text-center">✅ اكتمل</p>}
               </div>
 
               <div className="mt-2.5 text-xs text-mist flex flex-wrap gap-x-4 gap-y-1">
