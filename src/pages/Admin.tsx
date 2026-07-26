@@ -518,10 +518,12 @@ export default function Admin() {
                             onClick={() => toggleItem(it)}>
                             {it.available ? '✓ متاح' : '✗ غير متاح'}
                           </button>
-                          <button className={`text-sm ${it.requires_prescription ? 'text-sand' : 'text-mist'}`}
-                            onClick={() => toggleRx(it)}>
-                            {it.requires_prescription ? '💊 يحتاج روشتة' : 'بدون روشتة'}
-                          </button>
+                          {r.vendor_type === 'pharmacy' && (
+                            <button className={`text-sm ${it.requires_prescription ? 'text-sand' : 'text-mist'}`}
+                              onClick={() => toggleRx(it)}>
+                              {it.requires_prescription ? '💊 يحتاج روشتة' : 'بدون روشتة'}
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}

@@ -14,8 +14,8 @@ export default function Home() {
   const [search, setSearch] = useState('')
 
   useEffect(() => {
-    supabase.from('compounds').select('*').eq('active', true)
-      .order('direction').order('distance_km')
+    supabase.from('compounds').select('*').eq('active', true).lte('distance_km', 30)
+      .order('distance_km')
       .then(({ data }) => {
         setCompounds(data ?? [])
         const saved = sessionStorage.getItem(STORAGE_KEY)
@@ -41,9 +41,7 @@ export default function Home() {
   const eta = (r: Restaurant) => selected ? r.prep_minutes + selected.est_travel_minutes : r.prep_minutes
   const catalogRestaurants = restaurants.filter(r =>
     r.order_mode !== 'custom_request' && r.vendor_type !== 'pharmacy' && r.vendor_type !== 'supermarket')
-  const filtered = compounds.filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
-  const north = filtered.filter(c => c.direction === 'north')
-  const south = filtered.filter(c => c.direction === 'south')
+  const filtered = search.trim() ? compounds.filter(c => c.name.toLowerCase().includes(search.toLowerCase())) : []
 
   return (
     <div>
@@ -88,22 +86,15 @@ export default function Home() {
             <input className="field mb-4" value={search} onChange={e => setSearch(e.target.value)}
               placeholder="🔍 دوّر على اسم المكان…" autoFocus />
 
-            {filtered.length === 0 && <p className="text-sm text-mist text-center py-6">مفيش نتائج</p>}
+            {!search.trim() && (
+              <p className="text-sm text-mist text-center py-6">اكتب اسم الكمبوند أو الفندق للبحث</p>
+            )}
+            {search.trim() && filtered.length === 0 && (
+              <p className="text-sm text-mist text-center py-6">مفيش نتائج</p>
+            )}
 
-            {north.length > 0 && <p className="text-sm font-semibold text-mist mb-2">شمال (اتجاه القاهرة)</p>}
-            <div className="space-y-2 mb-4">
-              {north.map(c => (
-                <button key={c.id} className={`w-full card !bg-night p-3 text-right ${compoundId === c.id ? 'border-sea' : ''}`}
-                  onClick={() => choose(c.id)}>
-                  <span className="font-semibold">{c.name}</span>
-                  <span className="text-mist text-xs block mt-0.5">~{c.est_travel_minutes} دقيقة توصيل</span>
-                </button>
-              ))}
-            </div>
-
-            {south.length > 0 && <p className="text-sm font-semibold text-mist mb-2 mt-4">جنوب (اتجاه الزعفرانة)</p>}
             <div className="space-y-2">
-              {south.map(c => (
+              {filtered.map(c => (
                 <button key={c.id} className={`w-full card !bg-night p-3 text-right ${compoundId === c.id ? 'border-sea' : ''}`}
                   onClick={() => choose(c.id)}>
                   <span className="font-semibold">{c.name}</span>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { useCart } from '../lib/cart'
 import { estimateDeliveryFee } from '../lib/deliveryFee'
 import type { Compound, MenuItem, Restaurant, Slot } from '../lib/types'
@@ -15,7 +16,7 @@ export default function CheckoutPage() {
   const [slot, setSlot] = useState<Slot | null>(null)
 
   const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
+  const [phone, setPhone] = useState(() => localStorage.getItem('salka_phone') ?? '')
   const [unit, setUnit] = useState('')
   const [notes, setNotes] = useState('')
   const [compoundId, setCompoundId] = useState<number | null>(() => {
@@ -24,7 +25,24 @@ export default function CheckoutPage() {
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'card' | 'wallet' | 'instapay' | 'applepay'>('cod')
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'card' | 'applepay'>('cod')
+  const [addressLoaded, setAddressLoaded] = useState(false)
+
+  useEffect(() => {
+    if (!isValidEgyptPhone(phone) || addressLoaded) return
+    const t = setTimeout(async () => {
+      const { data } = await supabase.rpc('last_address_for_phone', { p_phone: phone })
+      if (data) {
+        setAddressLoaded(true)
+        if (!name.trim() && data.customer_name) setName(data.customer_name)
+        if (!unit.trim() && data.unit_number) setUnit(data.unit_number)
+        if (!notes.trim() && data.address_notes) setNotes(data.address_notes)
+        if (!compoundId && data.compound_id) setCompoundId(data.compound_id)
+      }
+    }, 500)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phone])
 
   useEffect(() => {
     if (!cart.restaurantId) return
@@ -41,7 +59,7 @@ export default function CheckoutPage() {
   const hasRx = lines.some(it => it.requires_prescription)
   const selectedCompound = compounds.find(c => c.id === compoundId)
   const deliveryFee = selectedCompound ? estimateDeliveryFee(selectedCompound.distance_km) : 0
-  const valid = name.trim() && phone.trim() && compoundId && unit.trim() && (!scheduled || !!slot)
+  const valid = name.trim() && isValidEgyptPhone(phone) && compoundId && unit.trim() && (!scheduled || !!slot)
 
   const isOnline = paymentMethod !== 'cod'
 
@@ -74,6 +92,8 @@ export default function CheckoutPage() {
       )
       return
     }
+
+    localStorage.setItem('salka_phone', phone.trim())
 
     if (isOnline) {
       const { data: fw, error: fwErr } = await supabase.functions.invoke('fawaterak-create-invoice', {
@@ -133,10 +153,16 @@ export default function CheckoutPage() {
 
       <div className="card p-4 mb-5 space-y-3.5">
         <h2 className="font-bold">عنوان التوصيل</h2>
+        {addressLoaded && <p className="text-xs text-emerald-700 -mt-2">✓ عبينالك بياناتك من آخر طلب، عدّل أي حاجة لو محتاج</p>}
         <div><label className="label">الاسم *</label>
           <input className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
         <div><label className="label">رقم الموبايل *</label>
-          <input className="field" dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} placeholder="01xxxxxxxxx" /></div>
+          <input className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-red-400' : ''}`}
+            dir="ltr" value={phone} onChange={e => setPhone(e.target.value)}
+            placeholder="01xxxxxxxxx" maxLength={13} />
+          {phone.trim() && !isValidEgyptPhone(phone) && (
+            <p className="text-xs text-red-600 mt-1">{PHONE_HINT}</p>
+          )}</div>
         <div><label className="label">المكان *</label>
           <select className="field" value={compoundId ?? ''} onChange={e => setCompoundId(Number(e.target.value) || null)}>
             <option value="">اختر مكانك…</option>
@@ -160,16 +186,6 @@ export default function CheckoutPage() {
             <input type="radio" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} className="accent-sea w-4 h-4" />
             <span className="text-xl">💳</span>
             <span className="font-semibold flex-1">بطاقات (فيزا / ماستركارد)</span>
-          </label>
-          <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${paymentMethod === 'wallet' ? 'border-sea bg-sea/5' : 'border-line'}`}>
-            <input type="radio" checked={paymentMethod === 'wallet'} onChange={() => setPaymentMethod('wallet')} className="accent-sea w-4 h-4" />
-            <span className="text-xl">👛</span>
-            <span className="font-semibold flex-1">محفظة إلكترونية</span>
-          </label>
-          <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${paymentMethod === 'instapay' ? 'border-sea bg-sea/5' : 'border-line'}`}>
-            <input type="radio" checked={paymentMethod === 'instapay'} onChange={() => setPaymentMethod('instapay')} className="accent-sea w-4 h-4" />
-            <span className="text-xl">🏦</span>
-            <span className="font-semibold flex-1">InstaPay</span>
           </label>
           <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${paymentMethod === 'applepay' ? 'border-sea bg-sea/5' : 'border-line'}`}>
             <input type="radio" checked={paymentMethod === 'applepay'} onChange={() => setPaymentMethod('applepay')} className="accent-sea w-4 h-4" />

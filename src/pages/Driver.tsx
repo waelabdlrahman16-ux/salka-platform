@@ -26,11 +26,14 @@ export default function DriverPage() {
   const [requestingSettlement, setRequestingSettlement] = useState(false)
   const [settlementSent, setSettlementSent] = useState(false)
   const [unpaidEarnings, setUnpaidEarnings] = useState(0)
+  const [streakDays, setStreakDays] = useState(0)
 
   async function load() {
     if (!id) return
     const { data: d } = await supabase.from('drivers').select('*').eq('id', id).single()
     setDriver(d)
+    const { data: stats } = await supabase.rpc('my_driver_stats')
+    setStreakDays(stats?.streak_days ?? 0)
     const { data: a } = await supabase.from('delivery_assignments')
       .select('*, orders(*, restaurants(name))').eq('driver_id', id)
       .in('status', ['Offered', 'Accepted', 'Picked_Up', 'Out_for_Delivery', 'Delivered'])
@@ -151,7 +154,7 @@ export default function DriverPage() {
       <div className="flex items-center justify-between mb-5">
         <div>
           <h1 className="text-xl font-bold">🛵 {driver.name}</h1>
-          <p className="text-sm text-mist">★ {driver.rating} · {driver.total_deliveries} توصيلة</p>
+          <p className="text-sm text-mist">★ {driver.rating} · {driver.total_deliveries} توصيلة{streakDays >= 2 ? ` · 🔥 ${streakDays} أيام متتالية` : ''}</p>
         </div>
         <span className={driver.available ? 'badge-open' : 'badge-closed'}>{driver.status}</span>
       </div>

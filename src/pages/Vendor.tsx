@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { startRinging, stopRinging } from '../lib/ring'
 import { estimateDeliveryFee } from '../lib/deliveryFee'
+import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import type { Compound, Order, OrderItem, Restaurant } from '../lib/types'
 
 const KITCHEN = [
@@ -15,7 +16,7 @@ export default function Vendor() {
   const { profile } = useAuth()
   const rid = profile?.restaurant_id
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
-  const [showDriverRequest, setShowDriverRequest] = useState(false)
+  const [view, setView] = useState<'main' | 'request' | 'history'>('main')
 
   useEffect(() => {
     if (!rid) return
@@ -26,28 +27,88 @@ export default function Vendor() {
   if (!restaurant) return <p className="text-mist text-center py-10">جاري التحميل…</p>
 
   // "Own system" vendors (McDonald's/KFC/Pizza Hut style) have no menu ordering
-  // through Salka at all — requesting a driver IS their whole workflow.
+  // through Salka at all — requesting a driver IS their whole workflow, with
+  // history as a secondary tab.
   if (restaurant.order_mode === 'pickup_request') {
-    return <DriverRequestPanel restaurant={restaurant} standalone />
+    return (
+      <div className="max-w-lg mx-auto">
+        <div className="flex gap-2 mb-5">
+          <button className={`tab ${view !== 'history' ? 'tab-active' : 'bg-shellup/60'}`} onClick={() => setView('main')}>🛵 طلب مندوب</button>
+          <button className={`tab ${view === 'history' ? 'tab-active' : 'bg-shellup/60'}`} onClick={() => setView('history')}>🧾 السجل</button>
+        </div>
+        {view === 'history'
+          ? <RideHistoryPanel restaurantId={restaurant.id} />
+          : <DriverRequestPanel restaurant={restaurant} standalone />}
+      </div>
+    )
   }
 
   // Every other vendor: normal kitchen-ticket flow is primary, but they can
   // also request a driver as a secondary action for an order that came in
-  // through a channel other than Salka (walk-in, phone, etc).
+  // through a channel other than Salka (walk-in, phone, etc), plus see their
+  // ride history.
   return (
     <div className="max-w-lg mx-auto">
-      {!showDriverRequest ? (
+      {view === 'main' && (
         <>
-          <div className="flex items-center justify-between mb-4">
-            <button className="btn-ghost text-sm" onClick={() => setShowDriverRequest(true)}>
+          <div className="flex items-center gap-2 mb-4">
+            <button className="btn-ghost text-sm" onClick={() => setView('request')}>
               🛵 طلب مندوب لأوردر مش من سالكة
+            </button>
+            <button className="btn-ghost text-sm" onClick={() => setView('history')}>
+              🧾 سجل طلبات المندوب
             </button>
           </div>
           <KitchenVendor rid={rid} />
         </>
-      ) : (
-        <DriverRequestPanel restaurant={restaurant} onClose={() => setShowDriverRequest(false)} />
       )}
+      {view === 'request' && <DriverRequestPanel restaurant={restaurant} onClose={() => setView('main')} />}
+      {view === 'history' && (
+        <div>
+          <button className="text-sm text-mist hover:text-foam mb-4" onClick={() => setView('main')}>← رجوع</button>
+          <RideHistoryPanel restaurantId={restaurant.id} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Full history of driver requests for this vendor (both own-system and
+//    off-platform-order requests), not just the last few.
+function RideHistoryPanel({ restaurantId }: { restaurantId: number }) {
+  const [rides, setRides] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    supabase.from('orders').select('*')
+      .eq('restaurant_id', restaurantId).eq('order_type', 'pickup_request')
+      .order('id', { ascending: false }).limit(100)
+      .then(({ data }) => { setRides(data ?? []); setLoading(false) })
+  }, [restaurantId])
+
+  const STATUS_LABEL: Record<string, string> = {
+    pending: 'قيد الانتظار', Accepted: 'المندوب في الطريق', Picked_Up: 'استلم الطلب',
+    Out_for_Delivery: 'في الطريق للعميل', Delivered: 'تم التوصيل', Cancelled: 'ملغي'
+  }
+
+  if (loading) return <p className="text-mist text-center py-8">جاري التحميل…</p>
+  if (rides.length === 0) return <p className="text-mist text-center py-8">لسه مفيش طلبات مندوب</p>
+
+  return (
+    <div className="space-y-2.5">
+      {rides.map(o => (
+        <div key={o.id} className="card p-3.5">
+          <div className="flex items-center justify-between">
+            <p className="font-semibold text-sm">#{o.id} — {o.customer_name}</p>
+            <span className="text-xs font-semibold text-mist">{STATUS_LABEL[o.status] ?? o.status}</span>
+          </div>
+          <p className="text-mist text-xs mt-0.5">{o.zone} — وحدة {o.unit_number}</p>
+          <p className="text-xs text-mist mt-1">
+            {new Date(o.created_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })}
+            {o.payment_mode === 'driver_pays' ? ` · المندوب دفع ${o.collect_amount} ج.م` : ' · مدفوع مقدمًا'}
+          </p>
+        </div>
+      ))}
     </div>
   )
 }
@@ -87,7 +148,7 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
   const selectedCompound = compounds.find(c => c.id === compoundId)
   const deliveryFee = selectedCompound ? estimateDeliveryFee(selectedCompound.distance_km) : 0
   const amount = Number(collectAmount) || 0
-  const valid = name.trim() && phone.trim() && compoundId && unit.trim()
+  const valid = name.trim() && isValidEgyptPhone(phone) && compoundId && unit.trim()
     && (paymentMode === 'prepaid' || amount > 0)
 
   async function submit() {
@@ -160,7 +221,9 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
         <div><label className="label">اسم العميل *</label>
           <input className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
         <div><label className="label">رقم موبايل العميل *</label>
-          <input className="field" dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} placeholder="01xxxxxxxxx" /></div>
+          <input className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-red-400' : ''}`}
+            dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} placeholder="01xxxxxxxxx" maxLength={13} />
+          {phone.trim() && !isValidEgyptPhone(phone) && <p className="text-xs text-red-600 mt-1">{PHONE_HINT}</p>}</div>
         <div><label className="label">المكان *</label>
           <select className="field" value={compoundId ?? ''} onChange={e => setCompoundId(Number(e.target.value) || null)}>
             <option value="">اختر المكان…</option>
@@ -214,12 +277,15 @@ function KitchenVendor({ rid }: { rid: number }) {
   const [isOpen, setIsOpen] = useState(true)
   const [name, setName] = useState('')
   const [declining, setDeclining] = useState<Order | null>(null)
+  const [reliability, setReliability] = useState<{ avg_accept_minutes: number | null; total_orders: number } | null>(null)
   const audioUnlocked = useRef(false)
 
   async function load() {
     if (!rid) return
     const { data: r } = await supabase.from('restaurants').select('name, is_open').eq('id', rid).single()
     if (r) { setIsOpen(r.is_open); setName(r.name) }
+    const { data: rel } = await supabase.rpc('restaurant_reliability', { p_restaurant_id: rid })
+    setReliability(rel)
     const { data: o } = await supabase.from('orders').select('*')
       .eq('restaurant_id', rid).not('status', 'in', '("Delivered","Cancelled","Failed_Delivery")')
       .order('id', { ascending: false }).limit(30)
@@ -335,10 +401,17 @@ function KitchenVendor({ rid }: { rid: number }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-2">
         <h1 className="text-xl font-bold">🍽️ {name}</h1>
         <span className={isOpen ? 'badge-open' : 'badge-closed'}>{isOpen ? 'مفتوح' : 'مغلق'}</span>
       </div>
+      {reliability && reliability.total_orders > 0 && (
+        <p className="text-xs text-mist mb-5">
+          آخر 30 يوم: {reliability.total_orders} طلب
+          {reliability.avg_accept_minutes !== null && ` · متوسط وقت القبول ${reliability.avg_accept_minutes} دقيقة`}
+        </p>
+      )}
+      {(!reliability || reliability.total_orders === 0) && <div className="mb-5" />}
 
       {orders.length === 0 && <div className="card p-6 text-center text-mist">لا توجد طلبات حالياً</div>}
 
