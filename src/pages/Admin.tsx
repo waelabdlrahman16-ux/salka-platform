@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import type { Assignment, Compound, Complaint, Driver, DeliverySlotRow, Earning, MenuItem, Order, Reliability, Restaurant, Setting, SettlementRequest, Shift, VendorCoverage } from '../lib/types'
 import { ping, askNotificationPermission } from '../lib/notify'
 
-type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage'
+type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts'
 const TABS: { key: Tab; label: string }[] = [
   { key: 'unassigned', label: 'طلبات غير معيّنة' },
   { key: 'active', label: 'توصيلات جارية' },
@@ -16,6 +16,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'payouts', label: 'مدفوعات المندوبين' },
   { key: 'complaints', label: 'الشكاوى' },
   { key: 'coverage', label: 'تغطية المطاعم' },
+  { key: 'accounts', label: 'حسابات الدخول' },
 ]
 
 export default function Admin() {
@@ -48,6 +49,11 @@ export default function Admin() {
   const [walletAmount, setWalletAmount] = useState('')
   const [walletReason, setWalletReason] = useState('')
   const [walletResult, setWalletResult] = useState<string | null>(null)
+  const [vendorAccounts, setVendorAccounts] = useState<{ profile_id: string; restaurant_id: number; email: string }[]>([])
+  const [driverAccounts, setDriverAccounts] = useState<{ profile_id: string; driver_id: number; email: string }[]>([])
+  const [accountBusy, setAccountBusy] = useState<string | null>(null)
+  const [newCreds, setNewCreds] = useState<{ email: string; password: string } | null>(null)
+  const [newRestaurant, setNewRestaurant] = useState({ name: '', description: '', category: '', vendor_type: 'restaurant', prep_minutes: '20' })
 
   async function load() {
     const [o, a, d, e, r, m, st, sh, esc, sl, comp, sr, cpd, cov] = await Promise.all([
@@ -74,6 +80,8 @@ export default function Admin() {
     setSlots(sl.data ?? [])
     setComplaints(comp.data ?? []); setSettlementRequests(sr.data ?? [])
     setCompounds(cpd.data ?? []); setCoverage(cov.data ?? [])
+    const { data: accounts } = await supabase.rpc('admin_list_accounts')
+    setVendorAccounts(accounts?.vendors ?? []); setDriverAccounts(accounts?.drivers ?? [])
     ping('escalated_shifts', (esc.data ?? []).length, 'مندوب محتاج بديل', 'في وردية اتصعّدت للإدارة')
     ping('complaints', (comp.data ?? []).filter((c: Complaint) => c.status === 'open').length, 'شكوى جديدة', 'في عميل بلّغ عن مشكلة')
     ping('settlement_requests', (sr.data ?? []).length, 'طلب تسوية مبكرة', 'مندوب طالب تسوية قبل ميعاده')
@@ -197,6 +205,67 @@ export default function Admin() {
 
   async function updateRestaurant(r: Restaurant, patch: Record<string, unknown>) {
     await supabase.from('restaurants').update(patch).eq('id', r.id)
+    load()
+  }
+
+  async function callAccountsFn(body: Record<string, unknown>) {
+    const { data, error } = await supabase.functions.invoke('admin-accounts', { body })
+    if (error) return { error: error.message }
+    return data
+  }
+
+  async function createVendorLogin(restaurantId: number) {
+    setAccountBusy(`vendor-${restaurantId}`)
+    const result = await callAccountsFn({ action: 'create_vendor_login', restaurant_id: restaurantId })
+    setAccountBusy(null)
+    if (result.error) { alert('حصل خطأ: ' + result.error); return }
+    setNewCreds({ email: result.email, password: result.password })
+    load()
+  }
+
+  async function createDriverLogin(driverId: number) {
+    setAccountBusy(`driver-${driverId}`)
+    const result = await callAccountsFn({ action: 'create_driver_login', driver_id: driverId })
+    setAccountBusy(null)
+    if (result.error) { alert('حصل خطأ: ' + result.error); return }
+    setNewCreds({ email: result.email, password: result.password })
+    load()
+  }
+
+  async function removeLogin(profileId: string) {
+    if (!confirm('تأكيد إلغاء الحساب؟ مش هيقدر يدخل تاني.')) return
+    setAccountBusy(profileId)
+    const result = await callAccountsFn({ action: 'remove_login', profile_id: profileId })
+    setAccountBusy(null)
+    if (result.error) { alert('حصل خطأ: ' + result.error); return }
+    load()
+  }
+
+  async function resetPassword(profileId: string) {
+    setAccountBusy(profileId)
+    const result = await callAccountsFn({ action: 'reset_password', profile_id: profileId })
+    setAccountBusy(null)
+    if (result.error) { alert('حصل خطأ: ' + result.error); return }
+    setNewCreds({ email: '(نفس الإيميل)', password: result.password })
+  }
+
+  async function addRestaurant() {
+    if (!newRestaurant.name.trim()) return
+    await supabase.from('restaurants').insert({
+      name: newRestaurant.name.trim(),
+      description: newRestaurant.description.trim(),
+      category: newRestaurant.category.trim() || 'أصناف',
+      vendor_type: newRestaurant.vendor_type,
+      prep_minutes: Number(newRestaurant.prep_minutes) || 20,
+      rating: 5, is_open: true, order_mode: 'catalog'
+    })
+    setNewRestaurant({ name: '', description: '', category: '', vendor_type: 'restaurant', prep_minutes: '20' })
+    load()
+  }
+
+  async function archiveRestaurant(r: Restaurant, archived: boolean) {
+    if (archived && !confirm(`تأكيد إخفاء ${r.name}؟ هيختفي من التطبيق للعملاء بس بياناته وطلباته القديمة هتفضل موجودة.`)) return
+    await supabase.from('restaurants').update({ archived }).eq('id', r.id)
     load()
   }
 
@@ -739,31 +808,113 @@ export default function Admin() {
         </div>
       )}
 
-      {tab === 'coverage' && (
-        <div className="space-y-4">
-          <p className="text-sm text-mist">مطعم من غير أي تحديد بيغطي كل الأماكن تلقائيًا. اختار أماكن يبقى التغطية محصورة فيها بس.</p>
-          {restaurants.map(r => {
-            const expanded = coverageFor === r.id
-            const covered = new Set(coverage.filter(c => c.restaurant_id === r.id).map(c => c.compound_id))
-            return (
-              <div key={r.id} className="card p-4">
-                <button className="w-full text-right flex items-center justify-between" onClick={() => setCoverageFor(expanded ? null : r.id)}>
-                  <h2 className="font-bold">{r.name}</h2>
-                  <span className="text-sm text-mist">{covered.size === 0 ? 'كل الأماكن' : `${covered.size} مكان`}</span>
-                </button>
-                {expanded && (
-                  <div className="mt-3 grid grid-cols-1 gap-1.5 max-h-72 overflow-y-auto">
-                    {compounds.map(c => (
-                      <label key={c.id} className="flex items-center gap-2 text-sm bg-night border border-line rounded-lg px-3 py-2">
-                        <input type="checkbox" checked={covered.has(c.id)} onChange={() => toggleCoverage(r.id, c.id)} />
-                        {c.name} <span className="text-mist text-xs">(~{c.est_travel_minutes} د)</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
+      {tab === 'accounts' && (
+        <div className="space-y-6">
+          <div className="card p-4">
+            <p className="font-semibold mb-3">إضافة مطعم/متجر جديد</p>
+            <div className="space-y-2.5">
+              <input className="field" placeholder="الاسم" value={newRestaurant.name}
+                onChange={e => setNewRestaurant({ ...newRestaurant, name: e.target.value })} />
+              <input className="field" placeholder="وصف قصير" value={newRestaurant.description}
+                onChange={e => setNewRestaurant({ ...newRestaurant, description: e.target.value })} />
+              <div className="flex gap-2">
+                <input className="field" placeholder="التصنيف (مثال: فاست فود)" value={newRestaurant.category}
+                  onChange={e => setNewRestaurant({ ...newRestaurant, category: e.target.value })} />
+                <select className="field !w-auto" value={newRestaurant.vendor_type}
+                  onChange={e => setNewRestaurant({ ...newRestaurant, vendor_type: e.target.value })}>
+                  <option value="restaurant">🍽️ مطعم</option>
+                  <option value="supermarket">🛒 سوبر ماركت</option>
+                  <option value="pharmacy">💊 صيدلية</option>
+                </select>
               </div>
-            )
-          })}
+              <button className="btn-sea w-full" disabled={!newRestaurant.name.trim()} onClick={addRestaurant}>
+                إضافة
+              </button>
+              <p className="text-xs text-mist">تقدر بعد كده تظبط وقت التحضير ونوع الطلب (طلب من القايمة / طلب خاص / طلب مندوب بس) من تبويب "المطاعم والمنيو"</p>
+            </div>
+          </div>
+
+          <div>
+            <p className="font-semibold mb-3">حسابات المطاعم والمتاجر</p>
+            <div className="space-y-2.5">
+              {restaurants.map(r => {
+                const acc = vendorAccounts.find(a => a.restaurant_id === r.id)
+                return (
+                  <div key={r.id} className="card p-3.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">{r.name}{r.archived ? ' (مخفي)' : ''}</p>
+                        {acc ? <p className="text-xs text-mist truncate" dir="ltr">{acc.email}</p>
+                          : <p className="text-xs text-mist">مفيش حساب دخول</p>}
+                      </div>
+                      <div className="flex gap-1.5 shrink-0">
+                        {acc ? (
+                          <>
+                            <button className="btn-ghost !py-1.5 !px-2.5 text-xs" disabled={accountBusy === acc.profile_id}
+                              onClick={() => resetPassword(acc.profile_id)}>تغيير كلمة السر</button>
+                            <button className="btn-danger !py-1.5 !px-2.5 text-xs" disabled={accountBusy === acc.profile_id}
+                              onClick={() => removeLogin(acc.profile_id)}>إلغاء الحساب</button>
+                          </>
+                        ) : (
+                          <button className="btn-sea !py-1.5 !px-3 text-xs" disabled={accountBusy === `vendor-${r.id}`}
+                            onClick={() => createVendorLogin(r.id)}>إنشاء حساب</button>
+                        )}
+                        <button className={`!py-1.5 !px-2.5 text-xs ${r.archived ? 'btn-sea' : 'btn-ghost'}`}
+                          onClick={() => archiveRestaurant(r, !r.archived)}>{r.archived ? 'إظهار' : 'إخفاء'}</button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <div>
+            <p className="font-semibold mb-3">حسابات المندوبين</p>
+            <div className="space-y-2.5">
+              {drivers.map(d => {
+                const acc = driverAccounts.find(a => a.driver_id === d.id)
+                return (
+                  <div key={d.id} className="card p-3.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">{d.name}</p>
+                        {acc ? <p className="text-xs text-mist truncate" dir="ltr">{acc.email}</p>
+                          : <p className="text-xs text-mist">مفيش حساب دخول (بيانات مؤقتة)</p>}
+                      </div>
+                      <div className="flex gap-1.5 shrink-0">
+                        {acc ? (
+                          <>
+                            <button className="btn-ghost !py-1.5 !px-2.5 text-xs" disabled={accountBusy === acc.profile_id}
+                              onClick={() => resetPassword(acc.profile_id)}>تغيير كلمة السر</button>
+                            <button className="btn-danger !py-1.5 !px-2.5 text-xs" disabled={accountBusy === acc.profile_id}
+                              onClick={() => removeLogin(acc.profile_id)}>إلغاء الحساب</button>
+                          </>
+                        ) : (
+                          <button className="btn-sea !py-1.5 !px-3 text-xs" disabled={accountBusy === `driver-${d.id}`}
+                            onClick={() => createDriverLogin(d.id)}>إنشاء حساب</button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {newCreds && (
+        <div className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" onClick={() => setNewCreds(null)}>
+          <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold mb-3">بيانات الدخول</h3>
+            <p className="text-sm text-mist mb-1">الإيميل</p>
+            <p className="font-mono text-sm bg-night border border-line rounded-lg p-2.5 mb-3" dir="ltr">{newCreds.email}</p>
+            <p className="text-sm text-mist mb-1">كلمة السر</p>
+            <p className="font-mono text-sm bg-night border border-line rounded-lg p-2.5 mb-4" dir="ltr">{newCreds.password}</p>
+            <p className="text-xs text-sand mb-4">⚠️ ده ظاهر مرة واحدة بس — انسخه وابعته دلوقتي</p>
+            <button className="btn-sea w-full" onClick={() => setNewCreds(null)}>تمام</button>
+          </div>
         </div>
       )}
 

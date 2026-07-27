@@ -3,6 +3,7 @@ export interface Restaurant {
   rating: number; delivery_time: string; is_open: boolean
   vendor_type: string; prep_minutes: number
   order_mode: 'catalog' | 'custom_request' | 'pickup_request'
+  archived: boolean
 }
 export interface MenuItem {
   id: number; restaurant_id: number; name: string; description: string

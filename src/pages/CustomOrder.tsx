@@ -42,7 +42,7 @@ export default function CustomOrder() {
   }, [phone])
 
   useEffect(() => {
-    supabase.from('restaurants').select('*').eq('order_mode', 'custom_request').eq('is_open', true)
+    supabase.from('restaurants').select('*').eq('order_mode', 'custom_request').eq('is_open', true).eq('archived', false)
       .then(({ data }) => setVendors((data as Restaurant[]) ?? []))
     supabase.from('compounds').select('*').eq('active', true).order('direction').order('distance_km')
       .then(({ data }) => setCompounds(data ?? []))
