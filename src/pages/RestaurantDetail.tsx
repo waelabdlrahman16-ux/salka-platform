@@ -38,7 +38,7 @@ export default function RestaurantDetail() {
   }, [categories, activeCat])
 
   const shown = items.filter(it => it.category === activeCat)
-  const compoundId = sessionStorage.getItem('talah_compound_id')
+  const compoundId = sessionStorage.getItem('salka_compound_id')
   const selectedCompound = compounds.find(c => String(c.id) === compoundId)
   const totalEta = restaurant && selectedCompound ? restaurant.prep_minutes + selectedCompound.est_travel_minutes : null
 

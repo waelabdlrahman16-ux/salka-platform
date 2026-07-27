@@ -20,7 +20,7 @@ export default function CheckoutPage() {
   const [unit, setUnit] = useState('')
   const [notes, setNotes] = useState('')
   const [compoundId, setCompoundId] = useState<number | null>(() => {
-    const saved = sessionStorage.getItem('talah_compound_id')
+    const saved = sessionStorage.getItem('salka_compound_id')
     return saved ? Number(saved) : null
   })
   const [saving, setSaving] = useState(false)

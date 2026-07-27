@@ -77,11 +77,10 @@ Deno.serve(async (req) => {
   const first_name = nameParts[0] || "Customer"
   const last_name = nameParts.slice(1).join(" ") || first_name
 
-  // NOTE: SITE_URL must be set in Supabase project secrets (Edge Functions ->
-  // Secrets). The fallback below is a stale pre-migration Vercel URL kept
-  // only so this never throws — if you see track links pointing here in
-  // production, SITE_URL is missing and needs to be set to https://app.gosalka.com
-  const siteUrl = Deno.env.get("SITE_URL") ?? "https://talah-platform-eddy.vercel.app"
+  // NOTE: SITE_URL should be set in Supabase project secrets (Edge Functions ->
+  // Secrets) to https://app.gosalka.com. The fallback below is just a safety
+  // net so this never throws if that secret is missing.
+  const siteUrl = Deno.env.get("SITE_URL") ?? "https://app.gosalka.com"
   const trackUrl = `${siteUrl}/track/${order.public_token}`
 
   const fwRes = await fetch("https://app.fawaterk.com/api/v2/createInvoiceLink", {

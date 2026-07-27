@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { haversineKm } from '../lib/geo'
 import type { Compound, Restaurant } from '../lib/types'
 
-const STORAGE_KEY = 'talah_compound_id'
+const STORAGE_KEY = 'salka_compound_id'
 
 export default function Home() {
   const [compounds, setCompounds] = useState<Compound[]>([])

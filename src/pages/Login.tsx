@@ -31,7 +31,7 @@ export default function Login() {
             <label className="label">البريد الإلكتروني</label>
             <input className="field" dir="ltr" type="email" value={email}
               onChange={e => setEmail(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && submit()} placeholder="you@talah.app" />
+              onKeyDown={e => e.key === 'Enter' && submit()} placeholder="you@salka.app" />
           </div>
           <div>
             <label className="label">كلمة المرور</label>

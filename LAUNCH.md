@@ -1,4 +1,4 @@
-# دليل الإطلاق — Talah Platform
+# دليل الإطلاق — Salka Platform
 
 ## ترتيب التشغيل
 

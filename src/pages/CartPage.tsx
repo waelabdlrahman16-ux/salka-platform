@@ -20,7 +20,7 @@ export default function CartPage() {
   }, [cart.restaurantId])
 
   useEffect(() => {
-    const compoundId = sessionStorage.getItem('talah_compound_id')
+    const compoundId = sessionStorage.getItem('salka_compound_id')
     if (!compoundId) return
     supabase.from('compounds').select('*').eq('id', Number(compoundId)).single().then(({ data }) => setCompound(data))
   }, [])

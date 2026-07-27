@@ -1,4 +1,4 @@
-# تلال السخنة — Talah Platform (Pilot)
+# سالكة — Salka Platform (Pilot)
 
 Village marketplace for Telal El Sokhna: restaurant delivery + chalet bookings + full driver system.
 Your code, your data — free hosting (Vercel + Supabase free tiers).
