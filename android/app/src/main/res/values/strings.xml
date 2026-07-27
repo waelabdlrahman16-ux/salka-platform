@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">سالكة</string>
+    <string name="title_activity_main">سالكة</string>
+    <string name="package_name">com.gosalka.app</string>
+    <string name="custom_url_scheme">com.gosalka.app</string>
+</resources>
