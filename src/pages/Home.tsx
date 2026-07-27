@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { haversineKm } from '../lib/geo'
 import type { Compound, Restaurant } from '../lib/types'
 
 const STORAGE_KEY = 'talah_compound_id'
@@ -12,6 +13,9 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [picking, setPicking] = useState(false)
   const [search, setSearch] = useState('')
+  const [nearby, setNearby] = useState<Compound[] | null>(null)
+  const [locating, setLocating] = useState(false)
+  const [locationError, setLocationError] = useState('')
 
   useEffect(() => {
     supabase.from('compounds').select('*').eq('active', true).lte('distance_km', 30)
@@ -35,6 +39,27 @@ export default function Home() {
     setCompoundId(id)
     sessionStorage.setItem(STORAGE_KEY, String(id))
     setPicking(false)
+  }
+
+  function useMyLocation() {
+    if (!navigator.geolocation) { setLocationError('المتصفح ده مش بيدعم تحديد الموقع'); return }
+    setLocating(true); setLocationError('')
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const { latitude, longitude } = pos.coords
+        const withCoords = compounds.filter(c => c.latitude != null && c.longitude != null)
+        const ranked = [...withCoords].sort((a, b) =>
+          haversineKm(latitude, longitude, a.latitude!, a.longitude!) -
+          haversineKm(latitude, longitude, b.latitude!, b.longitude!))
+        setNearby(ranked.slice(0, 3))
+        setLocating(false)
+      },
+      () => {
+        setLocationError('مش قادرين نوصل لموقعك — دوّر على اسم مكانك تحت')
+        setLocating(false)
+      },
+      { timeout: 8000 }
+    )
   }
 
   const selected = compounds.find(c => c.id === compoundId)
@@ -83,8 +108,29 @@ export default function Home() {
           <div className="card w-full max-w-md p-5 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold text-lg mb-1">فين مكانك؟</h3>
             <p className="text-sm text-mist mb-3">هنعرض بس المطاعم اللي بتوصل لمنطقتك</p>
+
+            <button className="btn-ghost w-full mb-3 !justify-center" disabled={locating} onClick={useMyLocation}>
+              {locating ? 'بنحدد موقعك…' : '📍 استخدم موقعي الحالي'}
+            </button>
+            {locationError && <p className="text-xs text-sand mb-3 text-center">{locationError}</p>}
+
+            {nearby && (
+              <div className="mb-4">
+                <p className="text-sm text-mist mb-2">أقرب الأماكن ليك</p>
+                <div className="space-y-2">
+                  {nearby.map(c => (
+                    <button key={c.id} className={`w-full card !bg-night p-3 text-right border-sea/40 ${compoundId === c.id ? 'border-sea' : ''}`}
+                      onClick={() => choose(c.id)}>
+                      <span className="font-semibold">{c.name}</span>
+                      <span className="text-mist text-xs block mt-0.5">~{c.est_travel_minutes} دقيقة توصيل</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <input className="field mb-4" value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="🔍 دوّر على اسم المكان…" autoFocus />
+              placeholder="🔍 دوّر على اسم المكان…" />
 
             {!search.trim() && (
               <p className="text-sm text-mist text-center py-6">اكتب اسم الكمبوند أو الفندق للبحث</p>

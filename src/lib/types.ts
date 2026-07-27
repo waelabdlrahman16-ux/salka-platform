@@ -80,6 +80,7 @@ export interface Compound {
   id: number; region_id: number; name: string
   distance_km: number; direction: 'north' | 'south'
   est_travel_minutes: number; active: boolean
+  latitude: number | null; longitude: number | null
 }
 export interface Region { id: number; name: string }
 
