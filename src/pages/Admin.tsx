@@ -101,6 +101,15 @@ export default function Admin() {
     return () => clearInterval(t)
   }, [])
 
+  const escalateAfter = Number(settings.find(s => s.key === 'escalate_after_minutes')?.value ?? 15)
+  const isLate = (o: Order) => {
+    const from = o.dispatch_at ? +new Date(o.dispatch_at) : +new Date(o.created_at)
+    return (Date.now() - from) / 60000 > escalateAfter
+  }
+  const isCooking = (o: Order) => !!o.dispatch_at && +new Date(o.dispatch_at) > Date.now()
+  const minsUntilDispatch = (o: Order) =>
+    o.dispatch_at ? Math.max(0, Math.round((+new Date(o.dispatch_at) - Date.now()) / 60000)) : 0
+
   const activeStatuses = ['Offered', 'Accepted', 'Picked_Up', 'Out_for_Delivery']
   const assignedOrderIds = new Set(assignments.filter(a => activeStatuses.includes(a.status) || a.status === 'Delivered').map(a => a.order_id))
   const unassigned = orders
@@ -114,14 +123,6 @@ export default function Admin() {
   const assignableDrivers = assigningIsSupermarket
     ? availableDrivers.filter(d => d.vehicle_type === 'van')
     : availableDrivers
-  const escalateAfter = Number(settings.find(s => s.key === 'escalate_after_minutes')?.value ?? 15)
-  const isLate = (o: Order) => {
-    const from = o.dispatch_at ? +new Date(o.dispatch_at) : +new Date(o.created_at)
-    return (Date.now() - from) / 60000 > escalateAfter
-  }
-  const isCooking = (o: Order) => !!o.dispatch_at && +new Date(o.dispatch_at) > Date.now()
-  const minsUntilDispatch = (o: Order) =>
-    o.dispatch_at ? Math.max(0, Math.round((+new Date(o.dispatch_at) - Date.now()) / 60000)) : 0
   useEffect(() => { ping('unassigned', unassigned.length, 'طلب غير معيّن', 'في طلب محدش استلمه') },
     [unassigned.length])
 
