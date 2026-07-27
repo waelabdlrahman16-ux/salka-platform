@@ -14,9 +14,11 @@ export default function ProductCard({
 
   return (
     <div className="card p-3 flex flex-col">
-      <div className="relative rounded-xl aspect-square grid place-items-center text-4xl mb-3"
+      <div className="relative rounded-xl aspect-square grid place-items-center text-4xl mb-3 overflow-hidden"
         style={{ background: art.tint }}>
-        {art.emoji}
+        {item.image_url
+          ? <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+          : art.emoji}
         {item.requires_prescription && (
           <span className="absolute top-2 right-2 bg-white/90 rounded-full px-2 py-0.5 text-[10px] font-bold text-seadeep">
             💊 روشتة

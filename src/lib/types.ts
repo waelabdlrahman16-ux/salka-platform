@@ -3,11 +3,12 @@ export interface Restaurant {
   rating: number; delivery_time: string; is_open: boolean
   vendor_type: string; prep_minutes: number
   order_mode: 'catalog' | 'custom_request' | 'pickup_request'
-  archived: boolean
+  archived: boolean; logo_url: string | null
 }
 export interface MenuItem {
   id: number; restaurant_id: number; name: string; description: string
   category: string; price: number; available: boolean; requires_prescription: boolean
+  image_url: string | null
 }
 export interface RequestItem { name: string; qty: number }
 export interface Order {

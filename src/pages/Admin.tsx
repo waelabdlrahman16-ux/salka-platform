@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Assignment, Compound, Complaint, Driver, DeliverySlotRow, Earning, MenuItem, Order, Reliability, Restaurant, Setting, SettlementRequest, Shift, VendorCoverage } from '../lib/types'
 import { ping, askNotificationPermission } from '../lib/notify'
+import { uploadVendorImage } from '../lib/upload'
 
 type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts'
 const TABS: { key: Tab; label: string }[] = [
@@ -54,6 +55,8 @@ export default function Admin() {
   const [accountBusy, setAccountBusy] = useState<string | null>(null)
   const [newCreds, setNewCreds] = useState<{ email: string; password: string } | null>(null)
   const [newRestaurant, setNewRestaurant] = useState({ name: '', description: '', category: '', vendor_type: 'restaurant', prep_minutes: '20' })
+  const [uploadingImage, setUploadingImage] = useState<string | null>(null)
+  const [imageError, setImageError] = useState<string | null>(null)
 
   async function load() {
     const [o, a, d, e, r, m, st, sh, esc, sl, comp, sr, cpd, cov] = await Promise.all([
@@ -248,6 +251,24 @@ export default function Admin() {
     setAccountBusy(null)
     if (result.error) { alert('حصل خطأ: ' + result.error); return }
     setNewCreds({ email: '(نفس الإيميل)', password: result.password })
+  }
+
+  async function uploadLogo(r: Restaurant, file: File) {
+    setUploadingImage(`r${r.id}`); setImageError(null)
+    const { url, error } = await uploadVendorImage(file, `restaurants/${r.id}/logo`)
+    setUploadingImage(null)
+    if (error) { setImageError(error); return }
+    await supabase.from('restaurants').update({ logo_url: url }).eq('id', r.id)
+    load()
+  }
+
+  async function uploadItemImage(it: MenuItem, file: File) {
+    setUploadingImage(`i${it.id}`); setImageError(null)
+    const { url, error } = await uploadVendorImage(file, `menu-items/${it.id}/image`)
+    setUploadingImage(null)
+    if (error) { setImageError(error); return }
+    await supabase.from('menu_items').update({ image_url: url }).eq('id', it.id)
+    load()
   }
 
   async function addRestaurant() {
@@ -496,13 +517,27 @@ export default function Admin() {
             return (
               <div key={r.id} className="card p-4">
                 <div className="flex items-start justify-between">
-                  <button className="text-right" onClick={() => setOpenRest(expanded ? null : r.id)}>
-                    <h2 className="font-bold">{r.name}</h2>
-                    <p className="text-sm text-mist mt-0.5">{its.length} صنف · اضغط للتعديل</p>
+                  <button className="text-right flex items-center gap-3" onClick={() => setOpenRest(expanded ? null : r.id)}>
+                    {r.logo_url
+                      ? <img src={r.logo_url} alt="" className="w-11 h-11 rounded-xl object-cover shrink-0 border border-line" />
+                      : <div className="w-11 h-11 rounded-xl bg-shellup grid place-items-center shrink-0 text-lg font-bold text-mist">{r.name.charAt(0)}</div>}
+                    <div>
+                      <h2 className="font-bold">{r.name}</h2>
+                      <p className="text-sm text-mist mt-0.5">{its.length} صنف · اضغط للتعديل</p>
+                    </div>
                   </button>
                   <button className={r.is_open ? 'badge-open' : 'badge-closed'}
                     onClick={() => toggleRestaurant(r)}>{r.is_open ? 'مفتوح' : 'مغلق'}</button>
                 </div>
+
+                {expanded && (
+                  <label className="flex items-center gap-2 mt-3 text-sm text-sea cursor-pointer w-fit">
+                    <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
+                      onChange={e => e.target.files?.[0] && uploadLogo(r, e.target.files[0])} />
+                    {uploadingImage === `r${r.id}` ? 'جاري رفع الشعار…' : (r.logo_url ? '🖼️ تغيير شعار المطعم' : '🖼️ إضافة شعار للمطعم')}
+                  </label>
+                )}
+                {imageError && expanded && <p className="text-xs text-sand mt-1">{imageError}</p>}
 
                 {reliability[r.id] && reliability[r.id].total_orders > 0 && (
                   <p className="text-xs text-mist mt-2">
@@ -573,9 +608,14 @@ export default function Admin() {
                     {its.map(it => (
                       <div key={it.id} className="bg-night border border-line rounded-xl p-3">
                         <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="font-semibold truncate">{it.name}</p>
-                            <p className="text-xs text-mist">{it.category}</p>
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            {it.image_url
+                              ? <img src={it.image_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0 border border-line" />
+                              : <div className="w-10 h-10 rounded-lg bg-shellup shrink-0" />}
+                            <div className="min-w-0">
+                              <p className="font-semibold truncate">{it.name}</p>
+                              <p className="text-xs text-mist">{it.category}</p>
+                            </div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <input type="number" defaultValue={it.price} className="field !w-24 !py-1.5 text-center"
@@ -583,7 +623,7 @@ export default function Admin() {
                             <span className="text-mist text-sm">ج.م</span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3 mt-2">
+                        <div className="flex items-center gap-3 mt-2 flex-wrap">
                           <button className={`text-sm ${it.available ? 'text-mist' : 'text-sand'}`}
                             onClick={() => toggleItem(it)}>
                             {it.available ? '✓ متاح' : '✗ غير متاح'}
@@ -594,6 +634,11 @@ export default function Admin() {
                               {it.requires_prescription ? '💊 يحتاج روشتة' : 'بدون روشتة'}
                             </button>
                           )}
+                          <label className="text-sm text-sea cursor-pointer">
+                            <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
+                              onChange={e => e.target.files?.[0] && uploadItemImage(it, e.target.files[0])} />
+                            {uploadingImage === `i${it.id}` ? 'جاري الرفع…' : (it.image_url ? '🖼️ تغيير الصورة' : '🖼️ إضافة صورة')}
+                          </label>
                         </div>
                       </div>
                     ))}

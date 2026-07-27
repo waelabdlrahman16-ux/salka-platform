@@ -59,6 +59,9 @@ export default function RestaurantDetail() {
 
       <div className="mt-3 mb-5">
         <div className="flex items-center gap-3">
+          {restaurant.logo_url
+            ? <img src={restaurant.logo_url} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0 border border-line" />
+            : <div className="w-12 h-12 rounded-xl bg-shellup grid place-items-center shrink-0 text-xl font-bold text-mist">{restaurant.name.charAt(0)}</div>}
           <h1 className="text-2xl font-bold">{restaurant.name}</h1>
           <span className={restaurant.is_open ? 'badge-open' : 'badge-closed'}>{restaurant.is_open ? 'مفتوح' : 'مغلق'}</span>
         </div>

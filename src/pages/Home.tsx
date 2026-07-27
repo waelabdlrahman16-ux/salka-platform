@@ -88,7 +88,12 @@ export default function Home() {
             {catalogRestaurants.map(r => (
               <Link key={r.id} to={`/restaurant/${r.id}`} className="card p-4 hover:border-sea/50 transition-colors">
                 <div className="flex items-start justify-between gap-2">
-                  <h2 className="font-bold">{r.name}</h2>
+                  <div className="flex items-center gap-3 min-w-0">
+                    {r.logo_url
+                      ? <img src={r.logo_url} alt="" className="w-11 h-11 rounded-xl object-cover shrink-0 border border-line" />
+                      : <div className="w-11 h-11 rounded-xl bg-shellup grid place-items-center shrink-0 text-lg font-bold text-mist">{r.name.charAt(0)}</div>}
+                    <h2 className="font-bold truncate">{r.name}</h2>
+                  </div>
                   <span className={r.is_open ? 'badge-open' : 'badge-closed'}>{r.is_open ? 'مفتوح' : 'مغلق'}</span>
                 </div>
                 <p className="text-sm text-mist mt-1.5 leading-relaxed">{r.description}</p>
