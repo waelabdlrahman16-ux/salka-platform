@@ -55,8 +55,8 @@ npm run dev
 
 1. **SQL Editor** → paste `supabase/auth.sql` → Run
 2. **Authentication → Users → Add user** (tick *Auto Confirm User*) for each:
-   - `admin@talah.app` — you
-   - `driver1@talah.app`, `driver2@talah.app`, `driver3@talah.app`
+   - `admin@salka.app` — you
+   - `driver1@salka.app`, `driver2@salka.app`, `driver3@salka.app`
 3. **SQL Editor** → paste `supabase/link-users.sql` → Run (gives each user their role + driver link)
 
 ### How access works now
