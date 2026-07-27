@@ -85,7 +85,7 @@ export default function Track() {
   async function cancelOrder() {
     if (!data?.order || !confirm('تأكيد إلغاء الطلب؟')) return
     setCancelling(true)
-    const { error } = await supabase.rpc('cancel_order', { p_order_id: data.order.id, p_reason: 'customer_cancelled' })
+    const { error } = await supabase.rpc('cancel_order', { p_order_id: data.order.id, p_reason: 'customer_cancelled', p_token: token })
     setCancelling(false)
     if (error) { alert('الطلب بدأ تجهيزه بالفعل، محدش يقدر يلغيه غير الإدارة'); return }
     setCancelled(true)
