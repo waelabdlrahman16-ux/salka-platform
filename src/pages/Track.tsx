@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { registerPush } from '../lib/push'
 
 const STAGES = [
   { key: 'placed', label: 'قيد التجهيز', statuses: ['pending', 'Accepted'] },
@@ -66,6 +67,13 @@ export default function Track() {
     load()
     const t = setInterval(load, 10000)
     return () => clearInterval(t)
+  }, [token])
+
+  useEffect(() => {
+    if (!token) return
+    registerPush(pushToken => {
+      supabase.rpc('save_customer_push_token', { p_token: token, p_push_token: pushToken })
+    })
   }, [token])
 
   async function sendRating() {

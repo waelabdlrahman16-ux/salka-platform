@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth'
 import { startRinging, stopRinging } from '../lib/ring'
 import { estimateDeliveryFee } from '../lib/deliveryFee'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
+import { registerPush } from '../lib/push'
 import type { Compound, Order, OrderItem, Restaurant } from '../lib/types'
 
 const KITCHEN = [
@@ -21,6 +22,11 @@ export default function Vendor() {
   useEffect(() => {
     if (!rid) return
     supabase.from('restaurants').select('*').eq('id', rid).single().then(({ data }) => setRestaurant(data))
+  }, [rid])
+
+  useEffect(() => {
+    if (!rid) return
+    registerPush(pushToken => { supabase.rpc('save_my_push_token', { p_push_token: pushToken }) })
   }, [rid])
 
   if (!rid) return <p className="text-mist text-center py-10">حسابك غير مرتبط بمطعم. تواصل مع الإدارة.</p>

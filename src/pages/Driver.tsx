@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { ping, askNotificationPermission } from '../lib/notify'
+import { registerPush } from '../lib/push'
 import type { Assignment, Driver, Shift, SwapRequest } from '../lib/types'
 
 interface PoolOrder {
@@ -72,6 +73,11 @@ export default function DriverPage() {
     load()
     const t = setInterval(load, 10000)
     return () => clearInterval(t)
+  }, [id])
+
+  useEffect(() => {
+    if (!id) return
+    registerPush(pushToken => { supabase.rpc('save_my_push_token', { p_push_token: pushToken }) })
   }, [id])
 
   async function setStatus(a: Assignment, status: string, extra: Record<string, unknown> = {}) {
