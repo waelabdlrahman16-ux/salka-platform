@@ -14,6 +14,7 @@ import Login from './pages/Login'
 import Vendor from './pages/Vendor'
 import MyOrders from './pages/MyOrders'
 import Terms from './pages/Terms'
+import InstallPrompt from './components/InstallPrompt'
 
 function Header() {
   const { pathname } = useLocation()
@@ -78,11 +79,15 @@ function BottomNav() {
 }
 
 export default function App() {
+  const { pathname } = useLocation()
+  const isStaff = ['/admin', '/driver', '/vendor', '/login'].some(p => pathname.startsWith(p))
+
   return (
     <AuthProvider>
       <CartProvider>
         <div className="min-h-screen font-arabic">
           <Header />
+          {!isStaff && <InstallPrompt />}
           <main className="max-w-5xl mx-auto px-4 py-6 pb-28">
             <Routes>
               <Route path="/" element={<Home />} />
