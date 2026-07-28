@@ -221,8 +221,36 @@ export default function Admin() {
 
   async function callAccountsFn(body: Record<string, unknown>) {
     const { data, error } = await supabase.functions.invoke('admin-accounts', { body })
-    if (error) return { error: error.message }
+    if (error) {
+      // supabase-js's error.message for a non-2xx response is always the
+      // same generic wrapper text ("Edge Function returned a non-2xx
+      // status code"), regardless of what actually went wrong -- the real
+      // reason is in the response body, which needs to be read separately.
+      let reason = error.message
+      try {
+        const body = await (error as any).context?.json?.()
+        if (body?.error) reason = body.error
+      } catch { /* body wasn't JSON or already consumed -- fall back to generic message */ }
+      return { error: accountsErrorLabel(reason) }
+    }
     return data
+  }
+
+  function accountsErrorLabel(code: string): string {
+    const labels: Record<string, string> = {
+      admin_only: 'الحساب ده مش أدمن',
+      missing_auth: 'محتاج تسجل دخول تاني',
+      invalid_session: 'الجلسة انتهت، سجل دخول تاني',
+      login_already_exists: 'في حساب دخول موجود بالفعل لده',
+      restaurant_not_found: 'المطعم/المتجر ده مش موجود',
+      driver_not_found: 'المندوب ده مش موجود',
+      create_user_failed: 'حصل خطأ في إنشاء الحساب، جرب تاني',
+      profile_insert_failed: 'حصل خطأ في حفظ البيانات، جرب تاني',
+      delete_failed: 'حصل خطأ في إلغاء الحساب، جرب تاني',
+      reset_failed: 'حصل خطأ في تغيير كلمة السر، جرب تاني',
+      unknown_action: 'حصل خطأ غير متوقع',
+    }
+    return labels[code] ?? code
   }
 
   async function createVendorLogin(restaurantId: number) {
