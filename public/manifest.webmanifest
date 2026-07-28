@@ -5,8 +5,8 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#0A1020",
-  "theme_color": "#0A1020",
+  "background_color": "#1B422C",
+  "theme_color": "#1B422C",
   "dir": "rtl",
   "lang": "ar",
   "icons": [
