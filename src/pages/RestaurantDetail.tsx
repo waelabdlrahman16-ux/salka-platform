@@ -42,9 +42,6 @@ export default function RestaurantDetail() {
   const selectedCompound = compounds.find(c => String(c.id) === compoundId)
   const totalEta = restaurant && selectedCompound ? restaurant.prep_minutes + selectedCompound.est_travel_minutes : null
 
-  const count = cart.count
-  const subtotal = items.reduce((s, it) => s + (cart.qty[it.id] ?? 0) * it.price, 0)
-
   if (!restaurant) return <p className="text-mist">جاري التحميل…</p>
 
   if (restaurant.order_mode === 'custom_request') {
@@ -122,16 +119,6 @@ export default function RestaurantDetail() {
             </section>
           )}
         </>
-      )}
-
-      {restaurant.order_mode === 'catalog' && count > 0 && (
-        <div className="fixed bottom-20 inset-x-4 z-40 max-w-5xl mx-auto">
-          <button className="btn-sea w-full !py-3.5 shadow-lg shadow-sea/20 flex items-center justify-between px-5"
-            onClick={() => nav('/cart')}>
-            <span>عربتك ({count})</span>
-            <span>{subtotal} ج.م</span>
-          </button>
-        </div>
       )}
 
     </div>

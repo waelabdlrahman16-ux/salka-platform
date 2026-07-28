@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { registerPush } from '../lib/push'
-import { INSTAPAY_HANDLE, INSTAPAY_QR_URL, INSTAPAY_LINK } from '../lib/instapay'
+import { INSTAPAY_QR_URL, INSTAPAY_LINK } from '../lib/instapay'
 
 const STAGES = [
   { key: 'placed', label: 'قيد التجهيز', statuses: ['pending', 'Accepted'] },
@@ -132,35 +132,26 @@ export default function Track() {
       <div className="max-w-lg mx-auto">
         <Link to="/" className="text-sm text-mist hover:text-foam">← العودة للرئيسية</Link>
         <div className="card p-5 mt-3 text-center">
-          <p className="text-4xl mb-3">📲</p>
           <h1 className="font-bold text-lg mb-1">حوّل المبلغ على InstaPay</h1>
-          <p className="text-mist text-sm mb-1">طلب #{o.id} من {o.restaurant_name}</p>
-          <p className="text-sea font-bold text-2xl my-3">{o.total} ج.م</p>
+          <p className="text-mist text-sm mb-3">طلب #{o.id} من {o.restaurant_name}</p>
+          <p className="text-sea font-bold text-2xl mb-4">{o.total} ج.م</p>
 
           {INSTAPAY_QR_URL && (
-            <img src={INSTAPAY_QR_URL} alt="InstaPay QR" className="w-40 h-40 mx-auto mb-3 rounded-xl border border-line" />
+            <img src={INSTAPAY_QR_URL} alt="InstaPay QR" className="w-44 h-44 mx-auto mb-4 rounded-xl border border-line" />
           )}
 
-          <a href={INSTAPAY_LINK} target="_blank" rel="noreferrer" className="btn-sea w-full !flex mb-3">
+          <a href={INSTAPAY_LINK} target="_blank" rel="noreferrer" className="btn-sea w-full !flex mb-5">
             افتح InstaPay وحوّل مباشرة
           </a>
-
-          <div className="bg-shellup rounded-xl px-4 py-3 mb-4">
-            <p className="text-xs text-mist mb-1">أو حوّل يدويًا على</p>
-            <p className="font-mono font-bold" dir="ltr">{INSTAPAY_HANDLE}</p>
-          </div>
 
           {o.instapay_claimed ? (
             <p className="text-sm text-mist">
               تمام، إحنا بنراجع التحويل دلوقتي. الطلب هيتأكد خلال دقايق.
             </p>
           ) : (
-            <>
-              <p className="text-mist text-sm mb-4">بعد ما تحوّل، اضغط تحت</p>
-              <button className="btn-sea w-full" disabled={claimingPayment} onClick={claimInstapayPayment}>
-                {claimingPayment ? 'جاري التأكيد…' : 'حوّلت المبلغ ✓'}
-              </button>
-            </>
+            <button className="btn-sea w-full" disabled={claimingPayment} onClick={claimInstapayPayment}>
+              {claimingPayment ? 'جاري التأكيد…' : 'حوّلت المبلغ ✓'}
+            </button>
           )}
         </div>
       </div>

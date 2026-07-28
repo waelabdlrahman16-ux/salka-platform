@@ -53,20 +53,17 @@ export default function CartPage() {
           const art = artFor(it.category)
           return (
             <div key={it.id} className="card p-4 flex items-center gap-4">
-              <div className="w-16 h-16 rounded-xl grid place-items-center text-2xl shrink-0" style={{ background: art.tint }}>
+              <div className="w-12 h-12 rounded-xl grid place-items-center text-xl shrink-0" style={{ background: art.tint }}>
                 {art.emoji}
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm truncate">{it.name}</h3>
                 <p className="text-sea font-bold text-sm mt-0.5">{it.price} ج.م</p>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <button className="btn-ghost !px-3 !py-1.5 text-red-600" onClick={() => cart.remove(it.id)} aria-label="حذف">🗑</button>
-                <div className="flex items-center gap-2 bg-shellup rounded-full px-1 py-1">
-                  <button className="w-7 h-7 rounded-full grid place-items-center font-bold hover:bg-white" onClick={() => cart.add(it, -1)}>−</button>
-                  <span className="font-bold text-sm w-4 text-center">{cart.qty[it.id]}</span>
-                  <button className="w-7 h-7 rounded-full grid place-items-center font-bold bg-sea text-white" onClick={() => cart.add(it, 1)}>+</button>
-                </div>
+              <div className="flex items-center gap-2 bg-shellup rounded-full px-1 py-1 shrink-0">
+                <button className="w-7 h-7 rounded-full grid place-items-center font-bold hover:bg-white" onClick={() => cart.add(it, -1)}>−</button>
+                <span className="font-bold text-sm w-4 text-center">{cart.qty[it.id]}</span>
+                <button className="w-7 h-7 rounded-full grid place-items-center font-bold bg-sea text-white" onClick={() => cart.add(it, 1)}>+</button>
               </div>
             </div>
           )

@@ -551,19 +551,24 @@ export default function Admin() {
             const its = menu.filter(m => m.restaurant_id === r.id)
             const expanded = openRest === r.id
             return (
-              <div key={r.id} className="card p-4">
+              <div key={r.id} className={`card p-4 ${r.archived ? 'opacity-60' : ''}`}>
                 <div className="flex items-start justify-between">
-                  <button className="text-right flex items-center gap-3" onClick={() => setOpenRest(expanded ? null : r.id)}>
+                  <button className="text-right flex items-center gap-3 flex-1 min-w-0" onClick={() => setOpenRest(expanded ? null : r.id)}>
                     {r.logo_url
                       ? <img src={r.logo_url} alt="" className="w-11 h-11 rounded-xl object-cover shrink-0 border border-line" />
                       : <div className="w-11 h-11 rounded-xl bg-shellup grid place-items-center shrink-0 text-lg font-bold text-mist">{r.name.charAt(0)}</div>}
-                    <div>
-                      <h2 className="font-bold">{r.name}</h2>
+                    <div className="min-w-0">
+                      <h2 className="font-bold truncate">{r.name}{r.archived ? ' (متوقف)' : ''}</h2>
                       <p className="text-sm text-mist mt-0.5">{its.length} صنف · اضغط للتعديل</p>
                     </div>
+                    <span className="text-mist shrink-0 mr-1">{expanded ? '▲' : '▼'}</span>
                   </button>
-                  <button className={r.is_open ? 'badge-open' : 'badge-closed'}
-                    onClick={() => toggleRestaurant(r)}>{r.is_open ? 'مفتوح' : 'مغلق'}</button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button className={r.is_open ? 'badge-open' : 'badge-closed'}
+                      onClick={() => toggleRestaurant(r)}>{r.is_open ? 'مفتوح' : 'مغلق'}</button>
+                    <button className={`text-xs font-semibold rounded-full px-2.5 py-1 ${r.archived ? 'bg-emerald-500/15 text-emerald-700' : 'bg-red-500/15 text-red-600'}`}
+                      onClick={() => archiveRestaurant(r, !r.archived)}>{r.archived ? 'تفعيل' : 'إيقاف'}</button>
+                  </div>
                 </div>
 
                 {expanded && (
