@@ -71,9 +71,12 @@ export default function Home() {
   return (
     <div>
       <div className="flex items-center justify-between mb-5 gap-3">
-        <h1 className="text-2xl font-bold">🍽️ توصيل المطاعم</h1>
-        <button className="btn-ghost text-sm shrink-0" onClick={() => setPicking(true)}>
-          📍 {selected ? selected.name : 'اختر مكانك'}
+        <h1 className="text-2xl font-bold shrink-0">🍽️ المطاعم</h1>
+        <button className="btn-ghost text-sm shrink-0 max-w-[55%]" onClick={() => setPicking(true)}>
+          <span className="flex items-center gap-1">
+            <span className="shrink-0">📍</span>
+            <span className="truncate">{selected ? selected.name : 'اختر مكانك'}</span>
+          </span>
         </button>
       </div>
 
@@ -92,15 +95,17 @@ export default function Home() {
                     {r.logo_url
                       ? <img src={r.logo_url} alt="" className="w-11 h-11 rounded-xl object-cover shrink-0 border border-line" />
                       : <div className="w-11 h-11 rounded-xl bg-shellup grid place-items-center shrink-0 text-lg font-bold text-mist">{r.name.charAt(0)}</div>}
-                    <h2 className="font-bold truncate">{r.name}</h2>
+                    <div className="min-w-0">
+                      <h2 className="font-bold truncate">{r.name}</h2>
+                      <p className="text-xs text-mist truncate">{r.category}</p>
+                    </div>
                   </div>
                   <span className={r.is_open ? 'badge-open' : 'badge-closed'}>{r.is_open ? 'مفتوح' : 'مغلق'}</span>
                 </div>
                 <p className="text-sm text-mist mt-1.5 leading-relaxed">{r.description}</p>
                 <div className="flex items-center gap-3 mt-3 text-sm text-mist">
                   <span className="text-sand">★ {r.rating}</span>
-                  <span>{r.order_mode === 'pickup_request' ? '🛵 اطلب مندوب توصيل' : `⏱ يوصلك خلال ${eta(r)} دقيقة`}</span>
-                  <span>{r.category}</span>
+                  <span>{r.order_mode === 'pickup_request' ? '🛵 اطلب مندوب توصيل' : `⏱ ${eta(r)} دقيقة`}</span>
                 </div>
               </Link>
             ))}
@@ -114,9 +119,6 @@ export default function Home() {
             <h3 className="font-bold text-lg mb-1">فين مكانك؟</h3>
             <p className="text-sm text-mist mb-3">هنعرض بس المطاعم اللي بتوصل لمنطقتك</p>
 
-            <button className="btn-ghost w-full mb-3 !justify-center" disabled={locating} onClick={useMyLocation}>
-              {locating ? 'بنحدد موقعك…' : '📍 استخدم موقعي الحالي'}
-            </button>
             {locationError && <p className="text-xs text-sand mb-3 text-center">{locationError}</p>}
 
             {nearby && (
@@ -126,7 +128,7 @@ export default function Home() {
                   {nearby.map(c => (
                     <button key={c.id} className={`w-full card !bg-night p-3 text-right border-sea/40 ${compoundId === c.id ? 'border-sea' : ''}`}
                       onClick={() => choose(c.id)}>
-                      <span className="font-semibold">{c.name}</span>
+                      <span className="font-semibold block truncate">{c.name}</span>
                       <span className="text-mist text-xs block mt-0.5">~{c.est_travel_minutes} دقيقة توصيل</span>
                     </button>
                   ))}
@@ -134,12 +136,15 @@ export default function Home() {
               </div>
             )}
 
-            <input className="field mb-4" value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="🔍 دوّر على اسم المكان…" />
+            <div className="flex items-center gap-2 mb-4">
+              <input className="field flex-1" value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="🔍 دوّر على اسم المكان…" />
+              <button className="btn-ghost !px-3.5 shrink-0" disabled={locating} onClick={useMyLocation}
+                title="استخدم موقعي الحالي" aria-label="استخدم موقعي الحالي">
+                {locating ? '…' : '📍'}
+              </button>
+            </div>
 
-            {!search.trim() && (
-              <p className="text-sm text-mist text-center py-6">اكتب اسم الكمبوند أو الفندق للبحث</p>
-            )}
             {search.trim() && filtered.length === 0 && (
               <p className="text-sm text-mist text-center py-6">مفيش نتائج</p>
             )}
@@ -148,7 +153,7 @@ export default function Home() {
               {filtered.map(c => (
                 <button key={c.id} className={`w-full card !bg-night p-3 text-right ${compoundId === c.id ? 'border-sea' : ''}`}
                   onClick={() => choose(c.id)}>
-                  <span className="font-semibold">{c.name}</span>
+                  <span className="font-semibold block truncate">{c.name}</span>
                   <span className="text-mist text-xs block mt-0.5">~{c.est_travel_minutes} دقيقة توصيل</span>
                 </button>
               ))}

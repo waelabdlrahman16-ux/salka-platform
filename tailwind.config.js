@@ -9,8 +9,8 @@ export default {
         shell: '#FFFFFF',     // card background
         shellup: '#FFF1E6',   // elevated surface (header, active tab)
         line: '#F0DFCB',      // borders — warm sand line
-        sea: '#D9694E',       // brand primary — softer terracotta (was a much brighter #FF6B47)
-        seadeep: '#B8503A',   // primary hover/pressed
+        sea: '#0A5F5E',       // brand primary — matches the real logo teal exactly
+        seadeep: '#063A39',   // primary hover/pressed
         sand: '#E9A23B',      // accent — amber (ratings, highlights)
         foam: '#2B1D12',      // primary text — warm dark brown, not pure black
         mist: '#8A7561'       // secondary/muted text — warm taupe

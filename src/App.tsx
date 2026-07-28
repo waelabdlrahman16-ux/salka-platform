@@ -86,7 +86,7 @@ export default function App() {
     <AuthProvider>
       <CartProvider>
         <div className="min-h-screen font-arabic">
-          <Header />
+          {isStaff && <Header />}
           {!isStaff && <InstallPrompt />}
           <main className="max-w-5xl mx-auto px-4 py-6 pb-28">
             <Routes>
@@ -104,9 +104,11 @@ export default function App() {
               <Route path="/vendor" element={<Protected role="vendor"><Vendor /></Protected>} />
             </Routes>
           </main>
-          <footer className="max-w-5xl mx-auto px-4 pb-8 text-center">
-            <Link to="/terms" className="text-xs text-mist hover:text-foam">الشروط وسياسة الخصوصية</Link>
-          </footer>
+          {pathname === '/my-orders' && (
+            <footer className="max-w-5xl mx-auto px-4 pb-8 text-center">
+              <Link to="/terms" className="text-xs text-mist hover:text-foam">الشروط وسياسة الخصوصية</Link>
+            </footer>
+          )}
           <BottomNav />
         </div>
       </CartProvider>

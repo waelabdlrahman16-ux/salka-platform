@@ -26,6 +26,7 @@ export interface Order {
   pricing_status: 'n/a' | 'pending_quote' | 'confirmed'
   payment_mode: 'prepaid' | 'driver_pays' | null
   collect_amount: number | null
+  instapay_claimed_at: string | null
   restaurants?: { name: string }
 }
 export interface OrderItem {

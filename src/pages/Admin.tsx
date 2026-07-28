@@ -343,6 +343,16 @@ export default function Admin() {
 
   const vehicleLabel = (v: string) => v === 'van' ? '🚐 فان' : '🏍️ موتوسيكل'
 
+  const pendingInstapay = orders.filter(o => o.payment_method === 'instapay' && o.status === 'awaiting_payment')
+
+  async function confirmInstapayPayment(orderId: number) {
+    setAccountBusy(`instapay-${orderId}`)
+    const { error } = await supabase.rpc('admin_confirm_instapay_payment', { p_order_id: orderId })
+    setAccountBusy(null)
+    if (error) { alert('حصل خطأ، جرب تاني'); return }
+    load()
+  }
+
   const totalDriver = earnings.reduce((s, e) => s + Number(e.driver_earning), 0)
   const totalAdmin = earnings.reduce((s, e) => s + Number(e.admin_amount), 0)
 
@@ -357,6 +367,32 @@ export default function Admin() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-4">لوحة التحكم</h1>
+
+      {pendingInstapay.length > 0 && (
+        <div className="card p-4 mb-5 border-sand/50 bg-sand/5">
+          <p className="font-bold mb-3">📲 تحويلات InstaPay بانتظار التأكيد ({pendingInstapay.length})</p>
+          <div className="space-y-2.5">
+            {pendingInstapay.map(o => (
+              <div key={o.id} className="bg-night border border-line rounded-xl p-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm">#{o.id} — {o.restaurants?.name} — {o.total} ج.م</p>
+                  <p className="text-xs text-mist" dir="ltr">{o.customer_phone}</p>
+                  <p className="text-xs mt-0.5">
+                    {o.instapay_claimed_at
+                      ? <span className="text-emerald-700">✓ العميل قال إنه حوّل</span>
+                      : <span className="text-mist">لسه ماقالش إنه حوّل</span>}
+                  </p>
+                </div>
+                <button className="btn-sea !py-1.5 !px-3.5 text-sm shrink-0" disabled={accountBusy === `instapay-${o.id}`}
+                  onClick={() => confirmInstapayPayment(o.id)}>
+                  {accountBusy === `instapay-${o.id}` ? '...' : 'تأكيد الاستلام'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-1.5 overflow-x-auto pb-2 mb-5 -mx-4 px-4">
         {TABS.map(t => (
           <button key={t.key} className={`tab ${tab === t.key ? 'tab-active' : ''}`} onClick={() => setTab(t.key)}>{t.label}</button>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { registerPush } from '../lib/push'
+import { INSTAPAY_HANDLE, INSTAPAY_QR_URL } from '../lib/instapay'
 
 const STAGES = [
   { key: 'placed', label: 'قيد التجهيز', statuses: ['pending', 'Accepted'] },
@@ -20,8 +21,9 @@ interface TrackData {
     pricing_status: 'n/a' | 'pending_quote' | 'confirmed'
     payment_mode: 'prepaid' | 'driver_pays' | null
     collect_amount: number | null
-    payment_method: 'cod' | 'online' | null
+    payment_method: 'cod' | 'online' | 'instapay' | null
     online_payment_status: 'pending' | 'paid' | 'failed' | null
+    instapay_claimed: boolean
   } | null
   items: { name: string; qty: number; total: number }[]
   assignment: { status: string; driver_name: string | null; driver_phone: string | null } | null
@@ -44,6 +46,7 @@ export default function Track() {
   const [complaintText, setComplaintText] = useState('')
   const [complaintSent, setComplaintSent] = useState(false)
   const [repaying, setRepaying] = useState(false)
+  const [claimingPayment, setClaimingPayment] = useState(false)
   const [copied, setCopied] = useState(false)
 
   async function retryPayment() {
@@ -55,6 +58,14 @@ export default function Track() {
     setRepaying(false)
     if (error || !fw?.url) { alert('حصل خطأ، جرب تاني'); return }
     window.location.href = fw.url
+  }
+
+  async function claimInstapayPayment() {
+    if (!token) return
+    setClaimingPayment(true)
+    await supabase.rpc('mark_instapay_claimed', { p_token: token })
+    setClaimingPayment(false)
+    load()
   }
 
   async function load() {
@@ -115,6 +126,42 @@ export default function Track() {
   if (!data || !data.order) return <p className="text-mist">جاري التحميل…</p>
 
   const o = data.order
+
+  if (o.status === 'awaiting_payment' && o.payment_method === 'instapay') {
+    return (
+      <div className="max-w-lg mx-auto">
+        <Link to="/" className="text-sm text-mist hover:text-foam">← العودة للرئيسية</Link>
+        <div className="card p-5 mt-3 text-center">
+          <p className="text-4xl mb-3">📲</p>
+          <h1 className="font-bold text-lg mb-1">حوّل المبلغ على InstaPay</h1>
+          <p className="text-mist text-sm mb-1">طلب #{o.id} من {o.restaurant_name}</p>
+          <p className="text-sea font-bold text-2xl my-3">{o.total} ج.م</p>
+
+          {INSTAPAY_QR_URL && (
+            <img src={INSTAPAY_QR_URL} alt="InstaPay QR" className="w-40 h-40 mx-auto mb-3 rounded-xl border border-line" />
+          )}
+
+          <div className="bg-shellup rounded-xl px-4 py-3 mb-4">
+            <p className="text-xs text-mist mb-1">حوّل على</p>
+            <p className="font-mono font-bold" dir="ltr">{INSTAPAY_HANDLE}</p>
+          </div>
+
+          {o.instapay_claimed ? (
+            <p className="text-sm text-mist">
+              تمام، إحنا بنراجع التحويل دلوقتي. الطلب هيتأكد خلال دقايق.
+            </p>
+          ) : (
+            <>
+              <p className="text-mist text-sm mb-4">بعد ما تحوّل، اضغط تحت</p>
+              <button className="btn-sea w-full" disabled={claimingPayment} onClick={claimInstapayPayment}>
+                {claimingPayment ? 'جاري التأكيد…' : 'حوّلت المبلغ ✓'}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   if (o.status === 'awaiting_payment') {
     return (
@@ -195,10 +242,14 @@ export default function Track() {
 
       {/* payment */}
       <div className="card p-4 mb-4 flex items-center gap-3">
-        <span className="text-xl">{o.payment_method === 'online' ? '💳' : '💵'}</span>
+        <span className="text-xl">{o.payment_method === 'online' ? '💳' : o.payment_method === 'instapay' ? '📲' : '💵'}</span>
         <div>
           <p className="font-semibold text-sm">{o.total} ج.م</p>
-          <p className="text-sm text-mist">{o.payment_method === 'online' ? 'مدفوع أونلاين' : 'كاش عند الاستلام'}</p>
+          <p className="text-sm text-mist">
+            {o.payment_method === 'online' ? 'مدفوع أونلاين'
+              : o.payment_method === 'instapay' ? 'مدفوع InstaPay'
+              : 'كاش عند الاستلام'}
+          </p>
         </div>
       </div>
 
