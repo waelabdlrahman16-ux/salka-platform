@@ -55,7 +55,7 @@ export default function InstallPrompt() {
   return (
     <div className="bg-sea/10 border-b border-sea/20">
       <div className="max-w-5xl mx-auto px-4 py-2.5 flex items-center gap-3">
-        <img src="/icon.svg" alt="" className="w-8 h-8 rounded-lg shrink-0" />
+        <img src="/icon-192.png" alt="" className="w-8 h-8 rounded-lg shrink-0" />
         <div className="flex-1 min-w-0 text-xs sm:text-sm">
           {showIOSHelp ? (
             <p>

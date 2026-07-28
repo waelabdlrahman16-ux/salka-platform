@@ -25,7 +25,7 @@ function Header() {
     <header className="sticky top-0 z-40 bg-night/90 backdrop-blur border-b border-line">
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <img src="/icon.svg" alt="سالكة" className="w-8 h-8 rounded-xl" />
+          <img src="/icon-192.png" alt="سالكة" className="w-8 h-8 rounded-xl" />
           <span className="font-bold text-lg">سالكة</span>
         </Link>
 
