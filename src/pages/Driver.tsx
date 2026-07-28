@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { ping, askNotificationPermission } from '../lib/notify'
 import { registerPush } from '../lib/push'
+import { startLocationReporting, stopLocationReporting } from '../lib/geolocation'
 import type { Assignment, Driver, Shift, SwapRequest } from '../lib/types'
 
 interface PoolOrder {
@@ -79,6 +80,13 @@ export default function DriverPage() {
     if (!id) return
     registerPush(pushToken => { supabase.rpc('save_my_push_token', { p_push_token: pushToken }) })
   }, [id])
+
+  useEffect(() => {
+    const isOutDelivering = assignments.some(a => a.status === 'Picked_Up' || a.status === 'Out_for_Delivery')
+    if (isOutDelivering) startLocationReporting()
+    else stopLocationReporting()
+    return () => stopLocationReporting()
+  }, [assignments])
 
   async function setStatus(a: Assignment, status: string, extra: Record<string, unknown> = {}) {
     if (!id) return

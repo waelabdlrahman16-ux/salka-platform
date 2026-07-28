@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { registerPush } from '../lib/push'
 import { INSTAPAY_QR_URL, INSTAPAY_LINK } from '../lib/instapay'
+import LiveMap from '../components/LiveMap'
 
 const STAGES = [
   { key: 'placed', label: 'قيد التجهيز', statuses: ['pending', 'Accepted'] },
@@ -15,6 +16,8 @@ interface TrackData {
     id: number; status: string; subtotal: number; delivery_fee: number; total: number
     zone: string; unit_number: string; address_notes: string; restaurant_name: string
     ready_at: string | null; scheduled_date: string | null
+    created_at: string; sla_minutes: number | null
+    dest_lat: number | null; dest_lng: number | null
     order_type: 'catalog' | 'custom_request' | 'pickup_request'
     request_items: { name: string; qty: number }[] | null
     request_notes: string | null
@@ -26,7 +29,10 @@ interface TrackData {
     instapay_claimed: boolean
   } | null
   items: { name: string; qty: number; total: number }[]
-  assignment: { status: string; driver_name: string | null; driver_phone: string | null } | null
+  assignment: {
+    status: string; driver_name: string | null; driver_phone: string | null
+    driver_lat: number | null; driver_lng: number | null; driver_location_updated_at: string | null
+  } | null
 }
 
 function fmtTime(iso: string) {
@@ -204,6 +210,15 @@ export default function Track() {
             <p className="text-sm text-mist">الوصول المتوقع {fmtTime(o.ready_at)}</p>
           )}
           {o.scheduled_date && <p className="text-sm text-mist">التوصيل خلال الفترة اللي اخترتها</p>}
+          {o.sla_minutes && current !== 'Delivered' && !o.scheduled_date && (() => {
+            const target = new Date(new Date(o.created_at).getTime() + o.sla_minutes * 60000)
+            const isLate = Date.now() > target.getTime()
+            return (
+              <p className={`text-sm mt-1 ${isLate ? 'text-sand' : 'text-mist'}`}>
+                {isLate ? '⏱ اتأخر شوية عن الوقت المستهدف' : `⏱ الهدف: يوصلك قبل ${fmtTime(target.toISOString())}`}
+              </p>
+            )
+          })()}
 
           <div className="flex gap-1.5 mt-4">
             {STAGES.map((s, i) => (
@@ -247,6 +262,19 @@ export default function Track() {
           </p>
         </div>
       </div>
+
+      {o.status !== 'Cancelled' && data.assignment
+        && (data.assignment.status === 'Picked_Up' || data.assignment.status === 'Out_for_Delivery')
+        && data.assignment.driver_lat != null && data.assignment.driver_lng != null
+        && o.dest_lat != null && o.dest_lng != null && (
+        <div className="mb-4">
+          <LiveMap
+            driverLat={data.assignment.driver_lat} driverLng={data.assignment.driver_lng}
+            destLat={o.dest_lat} destLng={o.dest_lng}
+            driverUpdatedAt={data.assignment.driver_location_updated_at}
+          />
+        </div>
+      )}
 
       {o.status !== 'Cancelled' && data.assignment?.driver_name && (
         <div className="card p-4 mb-4 flex items-center justify-between">

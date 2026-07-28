@@ -47,5 +47,7 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>محتاجين موقعك عشان العميل يشوف مكانك وانت في الطريق للتوصيل</string>
 </dict>
 </plist>
