@@ -540,8 +540,20 @@ export default function Admin() {
       )}
 
       {tab === 'orders' && (
-        <div className="space-y-4">
-          {orders.map(o => (
+        <div className="space-y-6">
+          {(() => {
+            const groups: { label: string; items: typeof orders }[] = []
+            for (const o of orders) {
+              const label = new Date(o.created_at).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' })
+              const last = groups[groups.length - 1]
+              if (last && last.label === label) last.items.push(o)
+              else groups.push({ label, items: [o] })
+            }
+            return groups.map(group => (
+              <div key={group.label}>
+                <h3 className="font-bold text-mist text-sm mb-2.5">{group.label} ({group.items.length})</h3>
+                <div className="space-y-4">
+                  {group.items.map(o => (
             <div key={o.id} className="card p-4">
               <div className="flex items-start justify-between">
                 <h2 className="font-bold">#{o.id} — {o.restaurants?.name}</h2>
@@ -604,7 +616,11 @@ export default function Admin() {
                 </div>
               )}
             </div>
-          ))}
+                  ))}
+                </div>
+              </div>
+            ))
+          })()}
         </div>
       )}
 
