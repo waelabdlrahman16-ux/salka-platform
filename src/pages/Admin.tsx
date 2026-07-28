@@ -5,7 +5,7 @@ import { ping, askNotificationPermission } from '../lib/notify'
 import { uploadVendorImage } from '../lib/upload'
 import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel } from '../lib/statusLabels'
 
-type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts'
+type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet'
 const TABS: { key: Tab; label: string }[] = [
   { key: 'unassigned', label: 'طلبات غير معيّنة' },
   { key: 'active', label: 'توصيلات جارية' },
@@ -16,6 +16,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'settings', label: 'الإعدادات' },
   { key: 'shifts', label: 'الورديات' },
   { key: 'payouts', label: 'مدفوعات المندوبين' },
+  { key: 'wallet', label: 'محفظة العميل' },
   { key: 'complaints', label: 'الشكاوى' },
   { key: 'coverage', label: 'تغطية المطاعم' },
   { key: 'accounts', label: 'حسابات الدخول' },
@@ -51,6 +52,8 @@ export default function Admin() {
   const [walletAmount, setWalletAmount] = useState('')
   const [walletReason, setWalletReason] = useState('')
   const [walletResult, setWalletResult] = useState<string | null>(null)
+  const [showResolvedComplaints, setShowResolvedComplaints] = useState(false)
+  const [openHistory, setOpenHistory] = useState<number | null>(null)
   const [vendorAccounts, setVendorAccounts] = useState<{ profile_id: string; restaurant_id: number; email: string }[]>([])
   const [driverAccounts, setDriverAccounts] = useState<{ profile_id: string; driver_id: number; email: string }[]>([])
   const [accountBusy, setAccountBusy] = useState<string | null>(null)
@@ -325,6 +328,11 @@ export default function Admin() {
   async function updateComplaintStatus(c: Complaint, status: string) {
     await supabase.from('complaints').update({ status }).eq('id', c.id); load()
   }
+  function compensateFromComplaint(c: Complaint) {
+    setWalletPhone(c.orders?.customer_phone ?? '')
+    setWalletReason(`تعويض شكوى طلب #${c.order_id}`)
+    setTab('wallet')
+  }
   async function toggleCoverage(restaurantId: number, compoundId: number) {
     const existing = coverage.find(c => c.restaurant_id === restaurantId && c.compound_id === compoundId)
     if (existing) await supabase.from('vendor_coverage').delete().eq('id', existing.id)
@@ -346,6 +354,7 @@ export default function Admin() {
   }
 
   const vehicleLabel = (v: string) => v === 'van' ? '🚐 فان' : '🏍️ موتوسيكل'
+  const fmtTime = (iso: string | null) => iso ? new Date(iso).toLocaleString('ar-EG', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : null
 
   const pendingInstapay = orders.filter(o => o.payment_method === 'instapay' && o.status === 'awaiting_payment')
 
@@ -424,6 +433,14 @@ export default function Admin() {
                 <p className="text-mist text-sm mt-1.5">👨‍🍳 لسه بيتحضر — متاح للمندوبين خلال {minsUntilDispatch(o)} دقيقة</p>
               )}
               {isLate(o) && <p className="text-red-600 text-sm mt-1.5">⚠️ محدش استلم الطلب</p>}
+              {(() => {
+                const priorAttempts = assignments.filter(a => a.order_id === o.id && a.status !== 'Offered')
+                return priorAttempts.length > 0 ? (
+                  <p className="text-xs text-sand mt-1.5">
+                    ⚠️ اتعرض قبل كده على {priorAttempts.length} مندوب ({priorAttempts.map(a => a.drivers?.name).filter(Boolean).join('، ')})
+                  </p>
+                ) : null
+              })()}
               {customer(o)}
               <button className="btn-sea w-full mt-3" onClick={() => setAssigning(o)}>
                 {isCooking(o) ? 'تعيين مندوب الآن (تجاوز وقت التحضير)' : 'تعيين مندوب'}
@@ -434,20 +451,31 @@ export default function Admin() {
       )}
 
       {tab === 'active' && (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {active.length === 0 && <div className="card p-6 text-center text-mist">لا توجد توصيلات جارية</div>}
-          {active.map(a => (
-            <div key={a.id} className="card p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h2 className="font-bold">#{a.order_id} — {a.orders?.restaurants?.name}</h2>
-                  <p className="text-sm text-mist mt-0.5">🛵 {a.drivers?.name} · محاولة {a.attempt_number}</p>
+          {(['Offered', 'Accepted', 'Picked_Up', 'Out_for_Delivery'] as const).map(statusGroup => {
+            const group = active.filter(a => a.status === statusGroup)
+            if (group.length === 0) return null
+            return (
+              <div key={statusGroup}>
+                <h3 className="font-bold text-mist text-sm mb-2.5">{assignmentStatusLabel(statusGroup)} ({group.length})</h3>
+                <div className="space-y-3">
+                  {group.map(a => (
+                    <div key={a.id} className="card p-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h2 className="font-bold">#{a.order_id} — {a.orders?.restaurants?.name}</h2>
+                          <p className="text-sm text-mist mt-0.5">🛵 {a.drivers?.name} · محاولة {a.attempt_number}</p>
+                        </div>
+                        <span className="text-xs font-semibold bg-shellup rounded-full px-2.5 py-1">{assignmentStatusLabel(a.status)}</span>
+                      </div>
+                      {a.orders && customer(a.orders)}
+                    </div>
+                  ))}
                 </div>
-                <span className="text-xs font-semibold bg-shellup rounded-full px-2.5 py-1">{assignmentStatusLabel(a.status)}</span>
               </div>
-              {a.orders && customer(a.orders)}
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
@@ -523,6 +551,28 @@ export default function Admin() {
                     const el = document.getElementById(`quote-${o.id}`) as HTMLInputElement
                     confirmCustomOrderPrice(o.id, Number(el.value))
                   }}>تأكيد السعر</button>
+                </div>
+              )}
+
+              <button className="text-xs text-sea font-semibold mt-3" onClick={() => setOpenHistory(openHistory === o.id ? null : o.id)}>
+                {openHistory === o.id ? 'إخفاء السجل الزمني ▲' : 'عرض السجل الزمني ▼'}
+              </button>
+              {openHistory === o.id && (
+                <div className="mt-2 bg-night border border-line rounded-xl p-3 text-xs space-y-1.5">
+                  <p>🕐 الطلب اتعمل: {fmtTime(o.created_at)}</p>
+                  {assignments.filter(a => a.order_id === o.id).map(a => (
+                    <div key={a.id} className="border-t border-line pt-1.5 mt-1.5 first:border-t-0 first:pt-0 first:mt-0">
+                      <p className="font-semibold">محاولة {a.attempt_number} — {a.drivers?.name} ({assignmentStatusLabel(a.status)})</p>
+                      {a.offered_at && <p>عُرض عليه: {fmtTime(a.offered_at)}</p>}
+                      {a.responded_at && <p>رد: {fmtTime(a.responded_at)}</p>}
+                      {a.picked_up_at && <p>استلم من المطعم: {fmtTime(a.picked_up_at)}</p>}
+                      {a.delivered_at && <p>سلّم: {fmtTime(a.delivered_at)}</p>}
+                      {a.rejection_reason && <p className="text-sand">سبب: {a.rejection_reason}</p>}
+                    </div>
+                  ))}
+                  {assignments.filter(a => a.order_id === o.id).length === 0 && (
+                    <p className="text-mist">محدش اتعين على الطلب ده لسه</p>
+                  )}
                 </div>
               )}
             </div>
@@ -858,26 +908,40 @@ export default function Admin() {
               )
             })}
           </div>
+        </div>
+      )}
 
-          <div className="card p-4">
-            <p className="font-semibold mb-2">💳 إضافة رصيد لمحفظة عميل</p>
-            <div className="space-y-2">
-              <input className="field" dir="ltr" placeholder="رقم موبايل العميل" value={walletPhone} onChange={e => setWalletPhone(e.target.value)} />
-              <div className="flex gap-2">
-                <input className="field !w-28" type="number" placeholder="المبلغ" value={walletAmount} onChange={e => setWalletAmount(e.target.value)} />
-                <input className="field" placeholder="السبب (اختياري)" value={walletReason} onChange={e => setWalletReason(e.target.value)} />
-              </div>
-              <button className="btn-sea w-full" disabled={!walletPhone.trim() || !walletAmount} onClick={sendWalletCredit}>إضافة الرصيد</button>
-              {walletResult && <p className="text-sm text-mist">{walletResult}</p>}
+      {tab === 'wallet' && (
+        <div className="card p-4">
+          <p className="font-semibold mb-2">💳 إضافة رصيد لمحفظة عميل</p>
+          <p className="text-xs text-mist mb-3">مفيد لتعويض عميل بعد شكوى، أو أي حالة تانية محتاجة رصيد</p>
+          <div className="space-y-2">
+            <input className="field" dir="ltr" placeholder="رقم موبايل العميل" value={walletPhone} onChange={e => setWalletPhone(e.target.value)} />
+            <div className="flex gap-2">
+              <input className="field !w-28" type="number" placeholder="المبلغ" value={walletAmount} onChange={e => setWalletAmount(e.target.value)} />
+              <input className="field" placeholder="السبب (اختياري)" value={walletReason} onChange={e => setWalletReason(e.target.value)} />
             </div>
+            <button className="btn-sea w-full" disabled={!walletPhone.trim() || !walletAmount} onClick={sendWalletCredit}>إضافة الرصيد</button>
+            {walletResult && <p className="text-sm text-mist">{walletResult}</p>}
           </div>
         </div>
       )}
 
       {tab === 'complaints' && (
         <div className="space-y-4">
-          {complaints.length === 0 && <div className="card p-6 text-center text-mist">لا توجد شكاوى</div>}
-          {complaints.map(c => (
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-mist">
+              {showResolvedComplaints ? 'كل الشكاوى' : 'الشكاوى المفتوحة'}
+            </p>
+            <button className="text-sm text-sea font-semibold" onClick={() => setShowResolvedComplaints(v => !v)}>
+              {showResolvedComplaints ? 'إخفاء المتحلة' : 'عرض كل الشكاوى (حتى المتحلة)'}
+            </button>
+          </div>
+
+          {complaints.filter(c => showResolvedComplaints || c.status !== 'resolved').length === 0 && (
+            <div className="card p-6 text-center text-mist">لا توجد شكاوى</div>
+          )}
+          {complaints.filter(c => showResolvedComplaints || c.status !== 'resolved').map(c => (
             <div key={c.id} className="card p-4">
               <div className="flex items-start justify-between">
                 <h2 className="font-bold">طلب #{c.order_id} — {c.orders?.restaurants?.name}</h2>
@@ -889,9 +953,10 @@ export default function Admin() {
               {c.orders && (
                 <p className="text-sm text-mist mt-2">👤 {c.orders.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${c.orders.customer_phone}`}>{c.orders.customer_phone}</a></p>
               )}
-              <div className="flex gap-2.5 mt-3">
+              <div className="flex gap-2.5 mt-3 flex-wrap">
                 {c.status !== 'reviewed' && <button className="btn-ghost flex-1 text-sm" onClick={() => updateComplaintStatus(c, 'reviewed')}>قيد المراجعة</button>}
                 {c.status !== 'resolved' && <button className="btn-sea flex-1 text-sm" onClick={() => updateComplaintStatus(c, 'resolved')}>اتحلت</button>}
+                <button className="btn-ghost flex-1 text-sm" onClick={() => compensateFromComplaint(c)}>💳 تعويض العميل</button>
               </div>
             </div>
           ))}

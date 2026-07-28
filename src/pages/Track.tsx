@@ -248,7 +248,7 @@ export default function Track() {
         </div>
       </div>
 
-      {data.assignment?.driver_name && (
+      {o.status !== 'Cancelled' && data.assignment?.driver_name && (
         <div className="card p-4 mb-4 flex items-center justify-between">
           <div>
             <p className="text-xs text-mist mb-0.5">المندوب</p>
