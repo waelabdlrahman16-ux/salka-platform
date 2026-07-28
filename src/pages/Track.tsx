@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { registerPush } from '../lib/push'
-import { INSTAPAY_HANDLE, INSTAPAY_QR_URL } from '../lib/instapay'
+import { INSTAPAY_HANDLE, INSTAPAY_QR_URL, INSTAPAY_LINK } from '../lib/instapay'
 
 const STAGES = [
   { key: 'placed', label: 'قيد التجهيز', statuses: ['pending', 'Accepted'] },
@@ -141,8 +141,12 @@ export default function Track() {
             <img src={INSTAPAY_QR_URL} alt="InstaPay QR" className="w-40 h-40 mx-auto mb-3 rounded-xl border border-line" />
           )}
 
+          <a href={INSTAPAY_LINK} target="_blank" rel="noreferrer" className="btn-sea w-full !flex mb-3">
+            افتح InstaPay وحوّل مباشرة
+          </a>
+
           <div className="bg-shellup rounded-xl px-4 py-3 mb-4">
-            <p className="text-xs text-mist mb-1">حوّل على</p>
+            <p className="text-xs text-mist mb-1">أو حوّل يدويًا على</p>
             <p className="font-mono font-bold" dir="ltr">{INSTAPAY_HANDLE}</p>
           </div>
 
