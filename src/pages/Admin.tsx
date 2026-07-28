@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import type { Assignment, Compound, Complaint, Driver, DeliverySlotRow, Earning, MenuItem, Order, Reliability, Restaurant, Setting, SettlementRequest, Shift, VendorCoverage } from '../lib/types'
 import { ping, askNotificationPermission } from '../lib/notify'
 import { uploadVendorImage } from '../lib/upload'
+import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel } from '../lib/statusLabels'
 
 type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts'
 const TABS: { key: Tab; label: string }[] = [
@@ -442,7 +443,7 @@ export default function Admin() {
                   <h2 className="font-bold">#{a.order_id} — {a.orders?.restaurants?.name}</h2>
                   <p className="text-sm text-mist mt-0.5">🛵 {a.drivers?.name} · محاولة {a.attempt_number}</p>
                 </div>
-                <span className="text-xs font-semibold bg-shellup rounded-full px-2.5 py-1">{a.status}</span>
+                <span className="text-xs font-semibold bg-shellup rounded-full px-2.5 py-1">{assignmentStatusLabel(a.status)}</span>
               </div>
               {a.orders && customer(a.orders)}
             </div>
@@ -471,7 +472,7 @@ export default function Admin() {
                   <p className="text-sm text-mist mt-0.5">★ {d.rating} · {d.total_deliveries} توصيلة · {vehicleLabel(d.vehicle_type)} · {d.vehicle_plate}</p>
                   <p className="text-sm text-mist mt-0.5" dir="ltr">{d.phone}</p>
                 </div>
-                <span className={d.active ? 'badge-open' : 'badge-closed'}>{d.status}</span>
+                <span className={d.active ? 'badge-open' : 'badge-closed'}>{driverStatusLabel(d.status)}</span>
               </div>
               <div className="flex gap-2.5 mt-3">
                 <button className="btn-ghost text-sm flex-1" onClick={() => toggleDriver(d, 'available')}>{d.available ? 'إيقاف مؤقت' : 'إتاحة'}</button>
@@ -492,7 +493,7 @@ export default function Admin() {
                   <span className="font-bold text-sea block">
                     {o.pricing_status === 'pending_quote' ? 'قيد التسعير' : `${o.total} ج.م`}
                   </span>
-                  <span className="text-xs text-mist">{o.status}</span>
+                  <span className="text-xs text-mist">{orderStatusLabel(o.status)}</span>
                 </div>
               </div>
 
@@ -723,7 +724,6 @@ export default function Admin() {
             <div key={st.key} className="card p-4 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="font-semibold text-sm">{st.label || st.key}</p>
-                <p className="text-xs text-mist mt-0.5">{st.key}</p>
               </div>
               <input defaultValue={st.value} className="field !w-24 !py-1.5 text-center"
                 onBlur={e => updateSetting(st, e.target.value)} />

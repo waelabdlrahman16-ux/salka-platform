@@ -5,6 +5,7 @@ import { startRinging, stopRinging } from '../lib/ring'
 import { estimateDeliveryFee } from '../lib/deliveryFee'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { registerPush } from '../lib/push'
+import { orderStatusLabel } from '../lib/statusLabels'
 import type { Compound, Order, OrderItem, Restaurant } from '../lib/types'
 
 const KITCHEN = [
@@ -266,7 +267,7 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
                   <p className="font-semibold">#{o.id} — {o.customer_name}</p>
                   <p className="text-mist text-xs mt-0.5">{o.zone} — وحدة {o.unit_number}</p>
                 </div>
-                <span className="text-xs font-semibold text-mist">{o.status}</span>
+                <span className="text-xs font-semibold text-mist">{orderStatusLabel(o.status)}</span>
               </div>
             ))}
           </div>
