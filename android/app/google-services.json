@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "298864964514",
+    "project_id": "salka-38d81",
+    "storage_bucket": "salka-38d81.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:298864964514:android:12eb18c0537fe004c538fb",
+        "android_client_info": {
+          "package_name": "com.gosalka.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA0x0pUi-4kJZmEspStjjS5sRohdECMyy4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
