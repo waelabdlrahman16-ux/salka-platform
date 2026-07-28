@@ -6,8 +6,17 @@ import { createClient } from "jsr:@supabase/supabase-js@2"
 // raw SQL inserts into auth.users, so Supabase's own identity bookkeeping
 // stays consistent.
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS"
+}
+
 function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } })
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json", ...CORS_HEADERS }
+  })
 }
 
 function genPassword(): string {
@@ -18,12 +27,15 @@ function genPassword(): string {
 }
 
 function slugify(name: string): string {
-  // best-effort ascii slug for auto-generated emails; falls back to a short id
   const ascii = name.replace(/[^\x00-\x7F]/g, "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "")
   return ascii || Math.random().toString(36).slice(2, 8)
 }
 
 Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS })
+  }
+
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405)
 
   const authHeader = req.headers.get("Authorization") ?? ""

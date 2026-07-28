@@ -11,10 +11,16 @@ import { createClient } from "jsr:@supabase/supabase-js@2"
 // FAWATERAK_CLIENT_ID/SECRET at the token URL for a short-lived access token,
 // then use that as the Bearer token for the invoice-creation call.
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS"
+}
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json" }
+    headers: { "Content-Type": "application/json", ...CORS_HEADERS }
   })
 }
 
@@ -41,6 +47,10 @@ async function getAccessToken(): Promise<string> {
 }
 
 Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS })
+  }
+
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405)
 
   let order_id: number
