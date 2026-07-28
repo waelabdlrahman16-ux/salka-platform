@@ -119,7 +119,7 @@ export default function Admin() {
     .filter(o => o.status !== 'Delivered' && o.status !== 'Cancelled' && !assignedOrderIds.has(o.id))
     .sort((a, b) => Number(isCooking(a)) - Number(isCooking(b)))
   const active = assignments.filter(a => activeStatuses.includes(a.status))
-  const availableDrivers = drivers.filter(d => d.active && d.available && d.status === 'Available')
+  const availableDrivers = drivers.filter(d => d.active && d.available)
   const assigningIsSupermarket = assigning
     ? restaurants.find(r => r.id === assigning.restaurant_id)?.vendor_type === 'supermarket'
     : false
@@ -130,10 +130,13 @@ export default function Admin() {
     [unassigned.length])
 
   async function assign(order: Order, driver: Driver) {
-    const attempts = assignments.filter(a => a.order_id === order.id).length
-    await supabase.from('delivery_assignments').insert({
-      order_id: order.id, driver_id: driver.id, attempt_number: attempts + 1, status: 'Offered'
-    })
+    const { error } = await supabase.rpc('admin_assign_order', { p_order_id: order.id, p_driver_id: driver.id })
+    if (error) {
+      alert(error.message.includes('dispatch_rule_blocked')
+        ? 'المندوب ده وصل للحد الأقصى (٣ طلبات) أو شغال في اتجاه مختلف'
+        : 'حصل خطأ، جرب تاني')
+      return
+    }
     setAssigning(null); load()
   }
 
@@ -1018,12 +1021,18 @@ export default function Admin() {
               </p>
             )}
             <div className="space-y-2.5">
-              {assignableDrivers.map(d => (
-                <button key={d.id} className="w-full card !bg-night p-3.5 text-right hover:border-sea/50 transition-colors" onClick={() => assign(assigning, d)}>
-                  <p className="font-semibold">{d.name}</p>
-                  <p className="text-sm text-mist mt-0.5">★ {d.rating} · {d.total_deliveries} توصيلة · {vehicleLabel(d.vehicle_type)} · {d.vehicle_plate}</p>
-                </button>
-              ))}
+              {assignableDrivers.map(d => {
+                const driverActiveCount = active.filter(a => a.driver_id === d.id).length
+                return (
+                  <button key={d.id} className="w-full card !bg-night p-3.5 text-right hover:border-sea/50 transition-colors" onClick={() => assign(assigning, d)}>
+                    <p className="font-semibold">{d.name}</p>
+                    <p className="text-sm text-mist mt-0.5">★ {d.rating} · {d.total_deliveries} توصيلة · {vehicleLabel(d.vehicle_type)} · {d.vehicle_plate}</p>
+                    {driverActiveCount > 0 && (
+                      <p className="text-xs text-sand mt-1">شغال دلوقتي على {driverActiveCount} طلب</p>
+                    )}
+                  </button>
+                )
+              })}
             </div>
             <button className="btn-ghost w-full mt-4" onClick={() => setAssigning(null)}>إلغاء</button>
           </div>

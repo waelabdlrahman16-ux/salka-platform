@@ -82,11 +82,18 @@ export default function DriverPage() {
 
   async function setStatus(a: Assignment, status: string, extra: Record<string, unknown> = {}) {
     if (!id) return
-    await supabase.from('delivery_assignments').update({ status, ...extra }).eq('id', a.id)
     if (status === 'Accepted') {
-      await supabase.from('drivers').update({ status: 'On_Delivery', available: false }).eq('id', id)
-      await supabase.from('orders').update({ status: 'Accepted' }).eq('id', a.order_id)
+      const { error } = await supabase.rpc('driver_accept_assignment', { p_assignment_id: a.id, p_order_id: a.order_id })
+      if (error) {
+        alert(error.message.includes('dispatch_rule_blocked')
+          ? 'وصلت للحد الأقصى (٣ طلبات) أو الطلب ده في اتجاه مختلف عن طلباتك الحالية'
+          : 'حصل خطأ، جرب تاني')
+        return
+      }
+      load()
+      return
     }
+    await supabase.from('delivery_assignments').update({ status, ...extra }).eq('id', a.id)
     if (status === 'Picked_Up') await supabase.from('orders').update({ status: 'Picked_Up' }).eq('id', a.order_id)
     if (status === 'Out_for_Delivery') await supabase.from('orders').update({ status: 'Out_for_Delivery' }).eq('id', a.order_id)
     if (status === 'Delivered') {
