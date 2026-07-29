@@ -1355,6 +1355,7 @@ export default function Admin() {
           item={editingItem}
           onClose={() => setEditingItem(null)}
           onSaved={() => { setEditingItem(null); load() }}
+          onDeleted={() => { setEditingItem(null); load() }}
         />
       )}
     </div>
