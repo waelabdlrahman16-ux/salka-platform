@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
 
     const code = Math.floor(100000 + Math.random() * 900000).toString()
 
-    const { error: insertErr } = await admin.from("wallet_otp").insert({
+    const { error: insertErr } = await admin.from("customer_otp_codes").insert({
       phone: cleanPhone, code, expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString()
     })
     if (insertErr) return json({ error: "otp_store_failed", detail: insertErr.message }, 500)
@@ -118,13 +118,13 @@ Deno.serve(async (req) => {
     const { code, name } = body
     if (!code) return json({ error: "code_required" }, 400)
 
-    const { data: otpRow } = await admin.from("wallet_otp").select("id")
+    const { data: otpRow } = await admin.from("customer_otp_codes").select("id")
       .eq("phone", cleanPhone).eq("code", code).eq("used", false)
       .gt("expires_at", new Date().toISOString())
       .order("id", { ascending: false }).limit(1).maybeSingle()
     if (!otpRow) return json({ error: "invalid_or_expired_code" }, 400)
 
-    await admin.from("wallet_otp").update({ used: true }).eq("id", otpRow.id)
+    await admin.from("customer_otp_codes").update({ used: true }).eq("id", otpRow.id)
 
     let { data: customer } = await admin.from("customers").select("*").eq("phone", cleanPhone).maybeSingle()
     if (!customer) {
