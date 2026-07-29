@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { useCart } from '../lib/cart'
@@ -226,6 +226,10 @@ export default function CheckoutPage() {
       <button className="btn-sea w-full !py-3.5" disabled={!valid || saving} onClick={placeOrder}>
         {saving ? 'جاري التجهيز…' : `تأكيد الطلب · ${finalTotal} ج.م`}
       </button>
+
+      <p className="text-xs text-mist text-center mt-3">
+        بضغطك على "تأكيد الطلب" إنت موافق على <Link to="/terms" className="text-sea underline">الشروط والأحكام</Link>
+      </p>
     </div>
   )
 }

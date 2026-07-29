@@ -16,6 +16,8 @@ import Vendor from './pages/Vendor'
 import MyOrders from './pages/MyOrders'
 import Terms from './pages/Terms'
 import InstallPrompt from './components/InstallPrompt'
+import Onboarding from './components/Onboarding'
+import { useState } from 'react'
 
 function Header() {
   const { pathname } = useLocation()
@@ -82,6 +84,9 @@ function BottomNav() {
 export default function App() {
   const { pathname } = useLocation()
   const isStaff = ['/admin', '/driver', '/vendor', '/login'].some(p => pathname.startsWith(p))
+  const [showOnboarding, setShowOnboarding] = useState(
+    () => !isStaff && !localStorage.getItem('salka_onboarded')
+  )
 
   return (
     <AuthProvider>
@@ -89,6 +94,7 @@ export default function App() {
         <div className="min-h-screen font-arabic">
           {isStaff && <Header />}
           {!isStaff && <InstallPrompt />}
+          {showOnboarding && <Onboarding onDone={() => setShowOnboarding(false)} />}
           <main
             className="max-w-5xl mx-auto px-4 pb-28"
             style={{ paddingTop: isStaff ? '1.5rem' : 'max(1.5rem, calc(env(safe-area-inset-top) + 0.75rem))' }}
@@ -108,7 +114,7 @@ export default function App() {
               <Route path="/vendor" element={<Protected role="vendor"><Vendor /></Protected>} />
             </Routes>
           </main>
-          {pathname === '/my-orders' && (
+          {!isStaff && (
             <footer className="max-w-5xl mx-auto px-4 pb-8 text-center">
               <Link to="/terms" className="text-xs text-mist hover:text-foam">الشروط وسياسة الخصوصية</Link>
             </footer>
