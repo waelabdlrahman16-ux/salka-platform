@@ -34,13 +34,13 @@ export default function MenuItemEditor({ item, onClose, onSaved }: {
   }, [])
 
   async function loadOptions() {
-    const { data: sz } = await supabase.from('menu_item_sizes').select('*').eq('menu_item_id', item.id).order('display_order')
+    const { data: sz } = await supabase.from('menu_item_sizes').select('*').eq('menu_item_id', item.id).order('display_order').order('id')
     setSizes(sz ?? [])
-    const { data: gr } = await supabase.from('menu_item_addon_groups').select('*').eq('menu_item_id', item.id).order('display_order')
+    const { data: gr } = await supabase.from('menu_item_addon_groups').select('*').eq('menu_item_id', item.id).order('display_order').order('id')
     setGroups(gr ?? [])
     const groupIds = (gr ?? []).map(g => g.id)
     if (groupIds.length) {
-      const { data: ad } = await supabase.from('menu_item_addons').select('*').in('group_id', groupIds).order('display_order')
+      const { data: ad } = await supabase.from('menu_item_addons').select('*').in('group_id', groupIds).order('display_order').order('id')
       setAddons(ad ?? [])
     } else {
       setAddons([])
@@ -78,6 +78,7 @@ export default function MenuItemEditor({ item, onClose, onSaved }: {
     loadOptions()
   }
   async function removeSize(id: number) {
+    if (!confirm('حذف الحجم ده؟')) return
     await supabase.from('menu_item_sizes').delete().eq('id', id)
     loadOptions()
   }

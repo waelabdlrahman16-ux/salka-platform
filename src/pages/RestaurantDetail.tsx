@@ -29,14 +29,14 @@ export default function RestaurantDetail() {
       if (list.length) {
         const ids = list.map(it => it.id)
         const [{ data: sz }, { data: gr }] = await Promise.all([
-          supabase.from('menu_item_sizes').select('*').in('menu_item_id', ids).eq('available', true).order('display_order'),
-          supabase.from('menu_item_addon_groups').select('*').in('menu_item_id', ids).order('display_order')
+          supabase.from('menu_item_sizes').select('*').in('menu_item_id', ids).eq('available', true).order('display_order').order('id'),
+          supabase.from('menu_item_addon_groups').select('*').in('menu_item_id', ids).order('display_order').order('id')
         ])
         setSizes(sz ?? [])
         setAddonGroups(gr ?? [])
         const groupIds = (gr ?? []).map(g => g.id)
         if (groupIds.length) {
-          const { data: ad } = await supabase.from('menu_item_addons').select('*').in('group_id', groupIds).order('display_order')
+          const { data: ad } = await supabase.from('menu_item_addons').select('*').in('group_id', groupIds).order('display_order').order('id')
           setAddons(ad ?? [])
         }
       }

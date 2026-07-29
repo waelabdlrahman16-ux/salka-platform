@@ -5,6 +5,7 @@ import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { useCart } from '../lib/cart'
 import { estimateDeliveryFee } from '../lib/deliveryFee'
 import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
+import { isItemAvailableNow } from '../lib/itemAvailability'
 import type { Compound, MenuItem, MenuItemAddon, MenuItemSize, Restaurant, Slot } from '../lib/types'
 
 export default function CheckoutPage() {
@@ -67,16 +68,31 @@ export default function CheckoutPage() {
     ;(async () => {
       const ids = (await supabase.from('menu_items').select('id').eq('restaurant_id', cart.restaurantId)).data?.map(x => x.id) ?? []
       if (!ids.length) return
-      const { data: sz } = await supabase.from('menu_item_sizes').select('*').in('menu_item_id', ids)
+      const { data: sz } = await supabase.from('menu_item_sizes').select('*').in('menu_item_id', ids).eq('available', true)
       setSizes(sz ?? [])
       const { data: gr } = await supabase.from('menu_item_addon_groups').select('id').in('menu_item_id', ids)
       const groupIds = (gr ?? []).map(g => g.id)
       if (groupIds.length) {
-        const { data: ad } = await supabase.from('menu_item_addons').select('*').in('group_id', groupIds)
+        const { data: ad } = await supabase.from('menu_item_addons').select('*').in('group_id', groupIds).eq('available', true)
         setAddons(ad ?? [])
       }
     })()
   }, [cart.restaurantId])
+
+  const [removedNotice, setRemovedNotice] = useState('')
+
+  useEffect(() => {
+    if (!items.length) return
+    const stale = cart.lines.filter(l => {
+      const item = items.find(i => i.id === l.menuItemId)
+      return !item || !item.available || !isItemAvailableNow(item.available_from, item.available_until)
+    })
+    if (stale.length > 0) {
+      setRemovedNotice(stale.length === 1 ? 'شلنا صنف من عربتك لأنه بقى مش متاح دلوقتي' : `شلنا ${stale.length} أصناف من عربتك لأنها بقت مش متاحة دلوقتي`)
+      for (const l of stale) cart.removeLine(l.key)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items])
 
   function priceFor(menuItemId: number, sizeId: number | null, addonIds: number[]) {
     const item = items.find(i => i.id === menuItemId)
@@ -147,6 +163,7 @@ export default function CheckoutPage() {
   if (!cart.restaurantId || lines.length === 0) {
     return (
       <div className="text-center py-16">
+        {removedNotice && <p className="text-sand text-sm mb-4 bg-sand/10 rounded-xl p-3 mx-4">{removedNotice}</p>}
         <p className="font-bold text-lg mb-1">مفيش حاجة في العربة</p>
         <button className="btn-sea mt-4" onClick={() => nav('/')}>تصفح المطاعم</button>
       </div>
@@ -156,6 +173,10 @@ export default function CheckoutPage() {
   return (
     <div className="pb-6">
       <h1 className="text-2xl font-bold mb-4">تأكيد الطلب</h1>
+
+      {removedNotice && (
+        <p className="text-sand text-sm mb-4 bg-sand/10 rounded-xl p-3">{removedNotice}</p>
+      )}
 
       {hasRx && (
         <p className="text-sand text-sm mb-4 bg-sand/10 rounded-xl p-3">
