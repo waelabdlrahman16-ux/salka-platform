@@ -27,6 +27,7 @@ export interface Order {
   payment_mode: 'prepaid' | 'driver_pays' | null
   collect_amount: number | null
   instapay_claimed_at: string | null
+  refund_status: 'pending' | 'refunded' | null
   restaurants?: { name: string }
 }
 export interface OrderItem {

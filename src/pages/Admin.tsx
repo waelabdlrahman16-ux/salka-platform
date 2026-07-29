@@ -404,6 +404,12 @@ export default function Admin() {
     setWalletReason(`تعويض تقييم منخفض طلب #${rt.order_id}`)
     setTab('wallet')
   }
+  async function markRefunded(orderId: number) {
+    if (!confirm('تأكيد إنك حوّلت المبلغ فعلاً للعميل؟')) return
+    const { error } = await supabase.rpc('mark_refunded', { p_order_id: orderId })
+    if (error) { alert('حصل خطأ: ' + error.message); return }
+    load()
+  }
   async function toggleCoverage(restaurantId: number, compoundId: number) {
     const existing = coverage.find(c => c.restaurant_id === restaurantId && c.compound_id === compoundId)
     if (existing) await supabase.from('vendor_coverage').delete().eq('id', existing.id)
@@ -1016,6 +1022,20 @@ export default function Admin() {
 
       {tab === 'complaints' && (
         <div className="space-y-3">
+          {orders.filter(o => o.refund_status === 'pending').length > 0 && (
+            <div className="space-y-2 mb-1">
+              <p className="text-sm font-semibold">💸 مبالغ محتاجة استرداد يدوي (InstaPay/أونلاين)</p>
+              {orders.filter(o => o.refund_status === 'pending').map(o => (
+                <div key={o.id} className="card p-3.5 flex items-center justify-between gap-2 border-sand/40">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm truncate">طلب #{o.id} — {o.restaurants?.name} — {o.total} ج.م</p>
+                    <p className="text-xs text-mist truncate">{o.customer_name} · {o.customer_phone}</p>
+                  </div>
+                  <button className="btn-sea !py-1.5 !px-2.5 text-xs shrink-0" onClick={() => markRefunded(o.id)}>حوّلت المبلغ ✓</button>
+                </div>
+              ))}
+            </div>
+          )}
           {lowRatings.length > 0 && (
             <div className="space-y-2 mb-1">
               <p className="text-sm font-semibold">⭐ تقييمات منخفضة (نجمتين أو أقل)</p>
