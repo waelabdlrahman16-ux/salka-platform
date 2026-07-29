@@ -280,6 +280,7 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
 // ── Normal catalog vendors: kitchen ticket flow (accept/prepare/ready)
 function KitchenVendor({ rid }: { rid: number }) {
   const [orders, setOrders] = useState<Order[]>([])
+  const [completedToday, setCompletedToday] = useState<Order[]>([])
   const [items, setItems] = useState<Record<number, OrderItem[]>>({})
   const [isOpen, setIsOpen] = useState(true)
   const [name, setName] = useState('')
@@ -298,12 +299,20 @@ function KitchenVendor({ rid }: { rid: number }) {
       .order('id', { ascending: false }).limit(30)
     setOrders(o ?? [])
 
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
+    const { data: done } = await supabase.from('orders').select('*')
+      .eq('restaurant_id', rid).in('status', ['Delivered', 'Cancelled', 'Failed_Delivery'])
+      .gte('created_at', todayStart.toISOString())
+      .order('id', { ascending: false }).limit(50)
+    setCompletedToday(done ?? [])
+
     const hasNew = (o ?? []).some(x => (x.kitchen_status || 'new') === 'new')
     if (hasNew) startRinging(); else stopRinging()
 
-    if (o?.length) {
+    const allIds = [...(o ?? []), ...(done ?? [])].map(x => x.id)
+    if (allIds.length) {
       const { data: its } = await supabase.from('order_items').select('*')
-        .in('order_id', o.map(x => x.id))
+        .in('order_id', allIds)
       const grouped: Record<number, OrderItem[]> = {}
       for (const it of its ?? []) (grouped[it.order_id] ??= []).push(it)
       setItems(grouped)
@@ -350,8 +359,13 @@ function KitchenVendor({ rid }: { rid: number }) {
   const active = orders.filter(o => (o.kitchen_status || 'new') === 'preparing')
   const ready = orders.filter(o => o.kitchen_status === 'ready')
 
+  const COMPLETED_LABEL: Record<string, string> = {
+    Delivered: '✅ تم التوصيل', Cancelled: '✗ ملغي', Failed_Delivery: '⚠️ فشل التوصيل'
+  }
+
   const card = (o: Order, big = false) => {
     const stage = KITCHEN.find(k => k.key === (o.kitchen_status || 'new'))!
+    const completed = COMPLETED_LABEL[o.status]
     return (
       <div key={o.id} className={`card p-4 ${big ? 'border-sand ring-2 ring-sand/50' : ''}`}>
         <div className="flex items-start justify-between">
@@ -361,7 +375,7 @@ function KitchenVendor({ rid }: { rid: number }) {
           </div>
           <div className="text-left">
             <span className="font-bold text-sea block text-lg">{o.subtotal} ج.م</span>
-            <span className="text-xs text-mist">{stage.label}</span>
+            <span className="text-xs text-mist">{completed ?? stage.label}</span>
           </div>
         </div>
 
@@ -378,13 +392,17 @@ function KitchenVendor({ rid }: { rid: number }) {
           <p className="text-sand text-sm mt-2">💊 الطلب فيه صنف يحتاج روشتة — أكّد مع العميل قبل التجهيز</p>
         )}
 
-        {remaining(o) !== null && o.kitchen_status !== 'ready' && (
+        {!completed && remaining(o) !== null && o.kitchen_status !== 'ready' && (
           <p className={`text-sm mt-2 ${remaining(o)! < 0 ? 'text-red-600' : 'text-mist'}`}>
             {remaining(o)! < 0 ? `متأخر ${Math.abs(remaining(o)!)} دقيقة` : `المفروض يجهز خلال ${remaining(o)} دقيقة`}
           </p>
         )}
 
-        {big ? (
+        {completed ? (
+          <p className={`text-center text-sm mt-3 font-semibold ${o.status === 'Delivered' ? 'text-emerald-700' : 'text-mist'}`}>
+            {completed}
+          </p>
+        ) : big ? (
           <div className="flex gap-2.5 mt-4">
             <button className="btn-sea flex-1 !text-lg !py-4" onClick={() => advance(o, stage.next!)}>
               ✅ {stage.action}
@@ -435,6 +453,13 @@ function KitchenVendor({ rid }: { rid: number }) {
         <>
           <h2 className="font-bold text-mist mt-6 mb-3">جاهز للاستلام</h2>
           <div className="space-y-3">{ready.map(o => card(o))}</div>
+        </>
+      )}
+
+      {completedToday.length > 0 && (
+        <>
+          <h2 className="font-bold text-mist mt-6 mb-3">✅ طلبات مكتملة النهاردة ({completedToday.length})</h2>
+          <div className="space-y-3">{completedToday.map(o => card(o))}</div>
         </>
       )}
 
