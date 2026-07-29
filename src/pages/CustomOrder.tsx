@@ -97,7 +97,7 @@ export default function CustomOrder() {
     return (
       <div>
         <h1 className="text-2xl font-bold mb-1">طلب خاص</h1>
-        <p className="text-mist text-sm mb-5">قول لنا اللي محتاجه، وإحنا هنجهزه معاك — من غير ما تدور في قايمة طويلة</p>
+        <p className="text-mist text-sm mb-4">قول لنا اللي محتاجه، وإحنا هنجهزه معاك — من غير ما تدور في قايمة طويلة</p>
         <div className="grid grid-cols-2 gap-4">
           {vendors.map(v => {
             const art = artFor(v.vendor_type === 'pharmacy' ? 'أدوية' : 'خضار وفاكهة')
@@ -122,7 +122,7 @@ export default function CustomOrder() {
     <div className="pb-6">
       <button className="text-sm text-mist hover:text-foam mb-3" onClick={() => setVendor(null)}>← رجوع</button>
       <h1 className="text-2xl font-bold mb-1">{vendor.name}</h1>
-      <p className="text-mist text-sm mb-5">اكتب اللي محتاجه، وهنقولك السعر النهائي بمكالمة قبل ما نجهز الطلب</p>
+      <p className="text-mist text-sm mb-4">اكتب اللي محتاجه، وهنقولك السعر النهائي بمكالمة قبل ما نجهز الطلب</p>
 
       {categories.length > 0 && (
         <div className="mb-3">
@@ -135,13 +135,13 @@ export default function CustomOrder() {
         </div>
       )}
 
-      <div className="mb-5">
+      <div className="mb-4">
         <label className="label">قايمة طلبك *</label>
         <textarea className="field min-h-[160px]" value={list} onChange={e => setList(e.target.value)}
           placeholder={'اكتب كل حاجة عايزها، سطر لكل صنف\nمثال:\nبنادول اكسترا\nشامبو أطفال\nخبز توست'} />
       </div>
 
-      <div className="card p-4 mb-5 space-y-3.5">
+      <div className="card p-4 mb-4 space-y-3">
         <h2 className="font-bold">عنوان التوصيل</h2>
         {addressLoaded && <p className="text-xs text-emerald-700 -mt-2">✓ عبينالك بياناتك من آخر طلب، عدّل أي حاجة لو محتاج</p>}
         <div><label className="label">الاسم *</label>

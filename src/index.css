@@ -5,7 +5,7 @@
 html { font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif; }
 body { @apply bg-night text-foam antialiased; }
 
-.card { @apply bg-shell border border-line rounded-2xl; }
+.card { @apply bg-shell border border-line rounded-xl; }
 .btn { @apply rounded-xl px-4 py-2.5 font-semibold transition-colors disabled:opacity-40 disabled:pointer-events-none; }
 .btn-sea { @apply btn bg-sea text-white hover:bg-seadeep; }
 .btn-ghost { @apply btn bg-shellup text-foam hover:bg-line; }

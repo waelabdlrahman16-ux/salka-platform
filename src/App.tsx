@@ -22,7 +22,7 @@ function Header() {
   const isStaff = ['/admin', '/driver', '/vendor'].some(p => pathname.startsWith(p))
 
   return (
-    <header className="sticky top-0 z-40 bg-night/90 backdrop-blur border-b border-line">
+    <header className="sticky top-0 z-40 bg-night/90 backdrop-blur border-b border-line" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <img src="/icon-192.png" alt="سالكة" className="w-8 h-8 rounded-xl" />
@@ -54,7 +54,7 @@ function BottomNav() {
   ]
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-40 bg-shell/95 backdrop-blur border-t border-line">
+    <nav className="fixed bottom-0 inset-x-0 z-40 bg-shell/95 backdrop-blur border-t border-line" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div className="max-w-5xl mx-auto grid grid-cols-4">
         {items.map(it => {
           const active = it.to === '/' ? pathname === '/' : pathname.startsWith(it.to)
@@ -88,7 +88,10 @@ export default function App() {
         <div className="min-h-screen font-arabic">
           {isStaff && <Header />}
           {!isStaff && <InstallPrompt />}
-          <main className="max-w-5xl mx-auto px-4 py-6 pb-28">
+          <main
+            className="max-w-5xl mx-auto px-4 pb-28"
+            style={{ paddingTop: isStaff ? '1.5rem' : 'max(1.5rem, calc(env(safe-area-inset-top) + 0.75rem))' }}
+          >
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/restaurant/:id" element={<RestaurantDetail />} />

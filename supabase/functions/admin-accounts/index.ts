@@ -127,14 +127,29 @@ Deno.serve(async (req) => {
   }
 
   if (action === "reset_password") {
-    const { profile_id } = body
+    const { profile_id, custom_password } = body
     if (!profile_id) return json({ error: "profile_id_required" }, 400)
 
-    const password = genPassword()
+    const password = (typeof custom_password === "string" && custom_password.length >= 8)
+      ? custom_password
+      : genPassword()
     const { error: updErr } = await admin.auth.admin.updateUserById(profile_id, { password })
     if (updErr) return json({ error: "reset_failed", detail: updErr.message }, 500)
 
     return json({ password })
+  }
+
+  if (action === "update_email") {
+    const { profile_id, new_email } = body
+    if (!profile_id || !new_email) return json({ error: "profile_id_and_email_required" }, 400)
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(new_email)) return json({ error: "invalid_email" }, 400)
+
+    const { error: updErr } = await admin.auth.admin.updateUserById(profile_id, {
+      email: new_email, email_confirm: true
+    })
+    if (updErr) return json({ error: "email_update_failed", detail: updErr.message }, 500)
+
+    return json({ email: new_email })
   }
 
   return json({ error: "unknown_action" }, 400)

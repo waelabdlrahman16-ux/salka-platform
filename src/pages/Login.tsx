@@ -26,7 +26,7 @@ export default function Login() {
         <h1 className="text-xl font-bold">تسجيل الدخول</h1>
         <p className="text-sm text-mist mt-1.5">للمندوبين والمطاعم والإدارة</p>
 
-        <div className="space-y-3.5 mt-5">
+        <div className="space-y-3 mt-5">
           <div>
             <label className="label">البريد الإلكتروني</label>
             <input className="field" dir="ltr" type="email" value={email}

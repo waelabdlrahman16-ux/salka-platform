@@ -70,7 +70,7 @@ export default function Home() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-5 gap-3">
+      <div className="flex items-center justify-between mb-4 gap-3">
         <h1 className="text-2xl font-bold shrink-0">🍽️ المطاعم</h1>
         <button className="btn-ghost text-sm shrink-0 max-w-[55%]" onClick={() => setPicking(true)}>
           <span className="flex items-center gap-1">

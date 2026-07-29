@@ -23,6 +23,7 @@ export default function CheckoutPage() {
     const saved = sessionStorage.getItem('salka_compound_id')
     return saved ? Number(saved) : null
   })
+  const [showLandmark, setShowLandmark] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'instapay'>('cod')
@@ -59,6 +60,7 @@ export default function CheckoutPage() {
   const hasRx = lines.some(it => it.requires_prescription)
   const selectedCompound = compounds.find(c => c.id === compoundId)
   const deliveryFee = selectedCompound ? estimateDeliveryFee(selectedCompound.distance_km) : 0
+  const serviceFee = Math.round(subtotal * 0.02)
   const valid = name.trim() && isValidEgyptPhone(phone) && compoundId && unit.trim() && (!scheduled || !!slot)
 
   const isInstapay = paymentMethod === 'instapay'
@@ -110,16 +112,16 @@ export default function CheckoutPage() {
 
   return (
     <div className="pb-6">
-      <h1 className="text-2xl font-bold mb-5">تأكيد الطلب</h1>
+      <h1 className="text-2xl font-bold mb-4">تأكيد الطلب</h1>
 
       {hasRx && (
-        <p className="text-sand text-sm mb-5 bg-sand/10 rounded-xl p-3">
+        <p className="text-sand text-sm mb-4 bg-sand/10 rounded-xl p-3">
           💊 في صنف محتاج روشتة طبية — الصيدلية هتتواصل معاك تليفونيًا للتأكيد قبل التجهيز
         </p>
       )}
 
       {scheduled && (
-        <div className="mb-5">
+        <div className="mb-4">
           <h2 className="font-bold mb-2">فترة التوصيل</h2>
           {slots.length === 0 && <p className="text-sm text-sand">لا توجد فترات متاحة حالياً</p>}
           <div className="grid grid-cols-2 gap-2">
@@ -137,7 +139,7 @@ export default function CheckoutPage() {
         </div>
       )}
 
-      <div className="card p-4 mb-5 space-y-3.5">
+      <div className="card p-4 mb-4 space-y-3">
         <h2 className="font-bold">عنوان التوصيل</h2>
         {addressLoaded && <p className="text-xs text-emerald-700 -mt-2">✓ عبينالك بياناتك من آخر طلب، عدّل أي حاجة لو محتاج</p>}
         <div><label className="label">الاسم *</label>
@@ -156,11 +158,17 @@ export default function CheckoutPage() {
           </select></div>
         <div><label className="label">رقم الشاليه / الفيلا *</label>
           <input className="field" value={unit} onChange={e => setUnit(e.target.value)} placeholder="مثال: B4 - 204" /></div>
-        <div><label className="label">علامة مميزة (اختياري)</label>
-          <input className="field" value={notes} onChange={e => setNotes(e.target.value)} placeholder="مثال: بجوار حمام السباحة" /></div>
+        {showLandmark || notes.trim() ? (
+          <div><label className="label">علامة مميزة (اختياري)</label>
+            <input className="field" value={notes} onChange={e => setNotes(e.target.value)} placeholder="مثال: بجوار حمام السباحة" autoFocus /></div>
+        ) : (
+          <button type="button" className="text-sea text-sm font-semibold" onClick={() => setShowLandmark(true)}>
+            + إضافة علامة مميزة (اختياري)
+          </button>
+        )}
       </div>
 
-      <div className="card p-4 mb-5">
+      <div className="card p-4 mb-4">
         <h2 className="font-bold mb-3">الدفع</h2>
         <div className="space-y-2.5">
           <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${paymentMethod === 'cod' ? 'border-sea bg-sea/5' : 'border-line'}`}>
@@ -176,7 +184,7 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      <div className="card p-4 mb-6 space-y-2">
+      <div className="card p-4 mb-5 space-y-2">
         <h2 className="font-bold mb-1">ملخص الطلب</h2>
         {lines.map(it => (
           <div key={it.id} className="flex justify-between text-sm">
@@ -184,13 +192,14 @@ export default function CheckoutPage() {
           </div>
         ))}
         <div className="flex justify-between text-sm text-mist"><span>التوصيل{selectedCompound ? ` (${selectedCompound.distance_km} كم)` : ''}</span><span>{deliveryFee} ج.م</span></div>
-        <div className="flex justify-between font-bold border-t border-line pt-2"><span>الإجمالي</span><span className="text-sea">{subtotal + deliveryFee} ج.م</span></div>
+        <div className="flex justify-between text-sm text-mist"><span>رسوم الخدمة</span><span>{serviceFee} ج.م</span></div>
+        <div className="flex justify-between font-bold border-t border-line pt-2"><span>الإجمالي</span><span className="text-sea">{subtotal + deliveryFee + serviceFee} ج.م</span></div>
       </div>
 
       {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">{error}</p>}
 
       <button className="btn-sea w-full !py-3.5" disabled={!valid || saving} onClick={placeOrder}>
-        {saving ? 'جاري التجهيز…' : `تأكيد الطلب · ${subtotal + deliveryFee} ج.م`}
+        {saving ? 'جاري التجهيز…' : `تأكيد الطلب · ${subtotal + deliveryFee + serviceFee} ج.م`}
       </button>
     </div>
   )

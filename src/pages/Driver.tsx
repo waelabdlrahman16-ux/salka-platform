@@ -172,7 +172,7 @@ export default function DriverPage() {
 
   return (
     <div className="max-w-lg mx-auto">
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-xl font-bold">🛵 {driver.name}</h1>
           <p className="text-sm text-mist">★ {driver.rating} · {driver.total_deliveries} توصيلة{streakDays >= 2 ? ` · 🔥 ${streakDays} أيام متتالية` : ''}</p>
@@ -180,7 +180,7 @@ export default function DriverPage() {
         <span className={driver.available ? 'badge-open' : 'badge-closed'}>{driver.status}</span>
       </div>
 
-      <div className="card p-4 mb-6">
+      <div className="card p-4 mb-5">
         <div className="grid grid-cols-2 gap-3">
           <div>
             <p className="text-xs text-mist">أرباح لسه ما اتصرفتش</p>
@@ -201,7 +201,7 @@ export default function DriverPage() {
       </div>
 
       {shifts.length > 0 && (
-        <div className="mb-6">
+        <div className="mb-5">
           <h2 className="font-bold text-mist mb-3">ورديتك القادمة</h2>
           <div className="space-y-3">
             {shifts.map(sh => {
@@ -249,7 +249,7 @@ export default function DriverPage() {
       )}
 
       {swaps.filter(s => !myOpenRequests.has(s.shift_id)).length > 0 && (
-        <div className="mb-6">
+        <div className="mb-5">
           <h2 className="font-bold text-mist mb-3">ورديات محتاجة مندوب بديل</h2>
           <div className="space-y-3">
             {swaps.filter(s => !myOpenRequests.has(s.shift_id)).map(sw => (
@@ -270,7 +270,7 @@ export default function DriverPage() {
       )}
 
       {pool.length > 0 && (
-        <div className="mb-6">
+        <div className="mb-5">
           <h2 className="font-bold text-mist mb-3">طلبات متاحة — أول واحد يقبل ياخدها</h2>
           <div className="space-y-3">
             {pool.map(o => (
@@ -298,7 +298,7 @@ export default function DriverPage() {
 
       {assignments.length === 0 && pool.length === 0 && <div className="card p-6 text-center text-mist">لا توجد طلبات حالياً</div>}
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {assignments.map(a => {
           const o = a.orders
           if (!o) return null

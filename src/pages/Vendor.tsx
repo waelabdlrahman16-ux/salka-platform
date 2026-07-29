@@ -39,7 +39,7 @@ export default function Vendor() {
   if (restaurant.order_mode === 'pickup_request') {
     return (
       <div className="max-w-lg mx-auto">
-        <div className="flex gap-2 mb-5">
+        <div className="flex gap-2 mb-4">
           <button className={`tab ${view !== 'history' ? 'tab-active' : 'bg-shellup/60'}`} onClick={() => setView('main')}>🛵 طلب مندوب</button>
           <button className={`tab ${view === 'history' ? 'tab-active' : 'bg-shellup/60'}`} onClick={() => setView('history')}>🧾 السجل</button>
         </div>
@@ -188,7 +188,7 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
         <h1 className="text-xl font-bold">🛵 {restaurant.name} — طلب مندوب</h1>
         {!standalone && <button className="text-sm text-mist hover:text-foam" onClick={onClose}>إغلاق ✕</button>}
       </div>
-      <p className="text-mist text-sm mb-5">
+      <p className="text-mist text-sm mb-4">
         {standalone
           ? 'لما عميل يطلب عندك مباشرة (من التطبيق بتاعكم أو تليفونيًا)، سجّل بياناته هنا عشان نبعتلكم مندوب'
           : 'لأوردر جالك من غير سالكة (تليفون أو عميل حاضر)، سجّل بياناته هنا وهنبعتلك مندوب'}
@@ -196,7 +196,7 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
 
       {sent && <p className="bg-emerald-50 text-emerald-700 rounded-xl p-3 text-sm mb-4 text-center">✅ تم إرسال الطلب للمندوبين</p>}
 
-      <div className="card p-4 mb-5">
+      <div className="card p-4 mb-4">
         <h2 className="font-bold mb-3">هل العميل دفع بالفعل؟</h2>
         <div className="space-y-2.5">
           <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${paymentMode === 'prepaid' ? 'border-sea bg-sea/5' : 'border-line'}`}>
@@ -217,13 +217,13 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
         )}
       </div>
 
-      <div className="mb-5">
+      <div className="mb-4">
         <label className="label">تفاصيل الأوردر (رقمه، أي حاجة تفيد المندوب)</label>
         <textarea className="field min-h-[70px]" value={orderNotes} onChange={e => setOrderNotes(e.target.value)}
           placeholder="مثال: أوردر رقم 1234" />
       </div>
 
-      <div className="card p-4 mb-5 space-y-3.5">
+      <div className="card p-4 mb-4 space-y-3">
         <h2 className="font-bold">عنوان العميل</h2>
         <div><label className="label">اسم العميل *</label>
           <input className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
@@ -243,7 +243,7 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
       </div>
 
       {deliveryFee > 0 && (
-        <div className="card p-4 mb-5 space-y-2">
+        <div className="card p-4 mb-4 space-y-2">
           <div className="flex justify-between text-sm"><span>رسوم التوصيل{selectedCompound ? ` (${selectedCompound.distance_km} كم)` : ''}</span><span>{deliveryFee} ج.م</span></div>
           {paymentMode === 'driver_pays' && (
             <div className="flex justify-between text-sm"><span>قيمة الأوردر (كاش للمندوب)</span><span>{amount || 0} ج.م</span></div>
@@ -253,7 +253,7 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
 
       {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">{error}</p>}
 
-      <button className="btn-sea w-full !py-3.5 mb-6" disabled={!valid || saving} onClick={submit}>
+      <button className="btn-sea w-full !py-3.5 mb-5" disabled={!valid || saving} onClick={submit}>
         {saving ? 'جاري الإرسال…' : 'اطلب مندوب الآن'}
       </button>
 
@@ -413,28 +413,28 @@ function KitchenVendor({ rid }: { rid: number }) {
         <span className={isOpen ? 'badge-open' : 'badge-closed'}>{isOpen ? 'مفتوح' : 'مغلق'}</span>
       </div>
       {reliability && reliability.total_orders > 0 && (
-        <p className="text-xs text-mist mb-5">
+        <p className="text-xs text-mist mb-4">
           آخر 30 يوم: {reliability.total_orders} طلب
           {reliability.avg_accept_minutes !== null && ` · متوسط وقت القبول ${reliability.avg_accept_minutes} دقيقة`}
         </p>
       )}
-      {(!reliability || reliability.total_orders === 0) && <div className="mb-5" />}
+      {(!reliability || reliability.total_orders === 0) && <div className="mb-4" />}
 
       {orders.length === 0 && <div className="card p-6 text-center text-mist">لا توجد طلبات حالياً</div>}
 
       {newOrders.length > 0 && (
-        <div className="mb-6 space-y-4">
+        <div className="mb-5 space-y-3">
           <p className="text-sand font-bold animate-pulse">🔔 طلب جديد — {newOrders.length}</p>
           {newOrders.map(o => card(o, true))}
         </div>
       )}
 
-      <div className="space-y-4">{active.map(o => card(o))}</div>
+      <div className="space-y-3">{active.map(o => card(o))}</div>
 
       {ready.length > 0 && (
         <>
           <h2 className="font-bold text-mist mt-6 mb-3">جاهز للاستلام</h2>
-          <div className="space-y-4">{ready.map(o => card(o))}</div>
+          <div className="space-y-3">{ready.map(o => card(o))}</div>
         </>
       )}
 

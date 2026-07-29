@@ -54,7 +54,7 @@ export default function RestaurantDetail() {
     <div>
       <Link to="/" className="text-sm text-mist hover:text-foam">← العودة للمطاعم</Link>
 
-      <div className="mt-3 mb-5">
+      <div className="mt-3 mb-4">
         <div className="flex items-center gap-3">
           {restaurant.logo_url
             ? <img src={restaurant.logo_url} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0 border border-line" />
@@ -93,7 +93,7 @@ export default function RestaurantDetail() {
       ) : (
         <>
           {/* category pills */}
-          <div className="flex gap-2 overflow-x-auto pb-1 mb-5 -mx-4 px-4 scrollbar-none">
+          <div className="flex gap-2 overflow-x-auto pb-1 mb-4 -mx-4 px-4 scrollbar-none">
             {categories.map(cat => (
               <button key={cat}
                 className={`tab shrink-0 ${activeCat === cat ? 'tab-active' : 'bg-shellup/60'}`}

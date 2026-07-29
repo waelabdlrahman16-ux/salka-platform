@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import type { Assignment, Compound, Complaint, Driver, DeliverySlotRow, Earning, MenuItem, Order, Reliability, Restaurant, Setting, SettlementRequest, Shift, VendorCoverage } from '../lib/types'
+import type { Assignment, Compound, Complaint, Driver, DeliverySlotRow, Earning, MenuItem, Order, OrderRating, Reliability, Restaurant, Setting, SettlementRequest, Shift, VendorCoverage } from '../lib/types'
 import { ping, askNotificationPermission } from '../lib/notify'
 import { uploadVendorImage } from '../lib/upload'
 import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel } from '../lib/statusLabels'
@@ -46,6 +46,7 @@ export default function Admin() {
   const [settlementRequests, setSettlementRequests] = useState<SettlementRequest[]>([])
   const [compounds, setCompounds] = useState<Compound[]>([])
   const [coverage, setCoverage] = useState<VendorCoverage[]>([])
+  const [lowRatings, setLowRatings] = useState<OrderRating[]>([])
   const [coverageFor, setCoverageFor] = useState<number | null>(null)
   const [reliability, setReliability] = useState<Record<number, Reliability>>({})
   const [walletPhone, setWalletPhone] = useState('')
@@ -63,7 +64,7 @@ export default function Admin() {
   const [imageError, setImageError] = useState<string | null>(null)
 
   async function load() {
-    const [o, a, d, e, r, m, st, sh, esc, sl, comp, sr, cpd, cov] = await Promise.all([
+    const [o, a, d, e, r, m, st, sh, esc, sl, comp, sr, cpd, cov, lr] = await Promise.all([
       supabase.from('orders').select('*, restaurants(name)').order('id', { ascending: false }),
       supabase.from('delivery_assignments').select('*, orders(*, restaurants(name)), drivers(*)').order('id', { ascending: false }),
       supabase.from('drivers').select('*').order('id'),
@@ -79,6 +80,8 @@ export default function Admin() {
       supabase.from('settlement_requests').select('*, drivers(name)').eq('status', 'pending').order('id', { ascending: false }),
       supabase.from('compounds').select('*').eq('active', true).order('direction').order('distance_km'),
       supabase.from('vendor_coverage').select('*'),
+      supabase.from('order_ratings').select('*, orders(customer_name, customer_phone, restaurants(name))')
+        .or('driver_rating.lte.2,restaurant_rating.lte.2').order('id', { ascending: false }).limit(30),
     ])
     setOrders(o.data ?? []); setAssignments(a.data ?? []); setDrivers(d.data ?? [])
     setEarnings(e.data ?? [])
@@ -87,6 +90,7 @@ export default function Admin() {
     setSlots(sl.data ?? [])
     setComplaints(comp.data ?? []); setSettlementRequests(sr.data ?? [])
     setCompounds(cpd.data ?? []); setCoverage(cov.data ?? [])
+    setLowRatings(lr.data ?? [])
     const { data: accounts } = await supabase.rpc('admin_list_accounts')
     setVendorAccounts(accounts?.vendors ?? []); setDriverAccounts(accounts?.drivers ?? [])
     ping('escalated_shifts', (esc.data ?? []).length, 'مندوب محتاج بديل', 'في وردية اتصعّدت للإدارة')
@@ -248,6 +252,9 @@ export default function Admin() {
       profile_insert_failed: 'حصل خطأ في حفظ البيانات، جرب تاني',
       delete_failed: 'حصل خطأ في إلغاء الحساب، جرب تاني',
       reset_failed: 'حصل خطأ في تغيير كلمة السر، جرب تاني',
+      profile_id_and_email_required: 'محتاج تحدد الحساب والإيميل الجديد',
+      invalid_email: 'الإيميل ده مش شكله صح',
+      email_update_failed: 'حصل خطأ في تغيير الإيميل، جرب تاني',
       unknown_action: 'حصل خطأ غير متوقع',
     }
     return labels[code] ?? code
@@ -286,6 +293,28 @@ export default function Admin() {
     setAccountBusy(null)
     if (result.error) { alert('حصل خطأ: ' + result.error); return }
     setNewCreds({ email: '(نفس الإيميل)', password: result.password })
+  }
+
+  async function setCustomPassword(profileId: string) {
+    const pw = prompt('اكتب كلمة السر الجديدة (8 أحرف على الأقل):')
+    if (!pw) return
+    if (pw.length < 8) { alert('كلمة السر لازم تكون 8 أحرف على الأقل'); return }
+    setAccountBusy(profileId)
+    const result = await callAccountsFn({ action: 'reset_password', profile_id: profileId, custom_password: pw })
+    setAccountBusy(null)
+    if (result.error) { alert('حصل خطأ: ' + result.error); return }
+    alert('تم تغيير كلمة السر')
+  }
+
+  async function changeEmail(profileId: string, currentEmail: string) {
+    const newEmail = prompt('اكتب الإيميل الجديد:', currentEmail)
+    if (!newEmail || newEmail.trim() === currentEmail) return
+    setAccountBusy(profileId)
+    const result = await callAccountsFn({ action: 'update_email', profile_id: profileId, new_email: newEmail.trim() })
+    setAccountBusy(null)
+    if (result.error) { alert('حصل خطأ: ' + result.error); return }
+    alert('تم تغيير الإيميل')
+    load()
   }
 
   async function uploadLogo(r: Restaurant, file: File) {
@@ -361,6 +390,11 @@ export default function Admin() {
     setWalletReason(`تعويض شكوى طلب #${c.order_id}`)
     setTab('wallet')
   }
+  function compensateFromRating(rt: OrderRating) {
+    setWalletPhone(rt.orders?.customer_phone ?? '')
+    setWalletReason(`تعويض تقييم منخفض طلب #${rt.order_id}`)
+    setTab('wallet')
+  }
   async function toggleCoverage(restaurantId: number, compoundId: number) {
     const existing = coverage.find(c => c.restaurant_id === restaurantId && c.compound_id === compoundId)
     if (existing) await supabase.from('vendor_coverage').delete().eq('id', existing.id)
@@ -410,7 +444,7 @@ export default function Admin() {
       <h1 className="text-2xl font-bold mb-4">لوحة التحكم</h1>
 
       {pendingInstapay.length > 0 && (
-        <div className="card p-4 mb-5 border-sand/50 bg-sand/5">
+        <div className="card p-4 mb-4 border-sand/50 bg-sand/5">
           <p className="font-bold mb-3">📲 تحويلات InstaPay بانتظار التأكيد ({pendingInstapay.length})</p>
           <div className="space-y-2.5">
             {pendingInstapay.map(o => (
@@ -434,14 +468,14 @@ export default function Admin() {
         </div>
       )}
 
-      <div className="flex gap-1.5 overflow-x-auto pb-2 mb-5 -mx-4 px-4">
+      <div className="flex gap-1.5 overflow-x-auto pb-2 mb-4 -mx-4 px-4">
         {TABS.map(t => (
           <button key={t.key} className={`tab ${tab === t.key ? 'tab-active' : ''}`} onClick={() => setTab(t.key)}>{t.label}</button>
         ))}
       </div>
 
       {tab === 'unassigned' && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {unassigned.length === 0 && <div className="card p-6 text-center text-mist">لا توجد طلبات غير معيّنة</div>}
           {unassigned.map(o => (
             <div key={o.id} className={`card p-4 ${isLate(o) ? 'border-red-400/60' : ''}`}>
@@ -508,7 +542,7 @@ export default function Admin() {
       )}
 
       {tab === 'drivers' && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="card p-4">
             <p className="font-semibold mb-1">إضافة مندوبين بالجملة</p>
             <p className="text-xs text-mist mb-2">سطر لكل مندوب: الاسم, رقم الموبايل, النوع (اكتب فان لو فان، سيبها فاضية أو اكتب موتوسيكل)</p>
@@ -552,7 +586,7 @@ export default function Admin() {
             return groups.map(group => (
               <div key={group.label}>
                 <h3 className="font-bold text-mist text-sm mb-2.5">{group.label} ({group.items.length})</h3>
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {group.items.map(o => (
             <div key={o.id} className="card p-4">
               <div className="flex items-start justify-between">
@@ -627,7 +661,7 @@ export default function Admin() {
 
       {tab === 'earnings' && (
         <div>
-          <div className="grid grid-cols-3 gap-3 mb-5">
+          <div className="grid grid-cols-3 gap-3 mb-4">
             <div className="card p-4 text-center"><p className="text-sm text-mist">إجمالي التوصيلات</p><p className="text-2xl font-bold mt-1">{earnings.length}</p></div>
             <div className="card p-4 text-center"><p className="text-sm text-mist">أرباح المندوبين</p><p className="text-2xl font-bold mt-1 text-sea">{totalDriver} ج.م</p></div>
             <div className="card p-4 text-center"><p className="text-sm text-mist">أرباح الإدارة</p><p className="text-2xl font-bold mt-1 text-sand">{totalAdmin} ج.م</p></div>
@@ -644,7 +678,7 @@ export default function Admin() {
       )}
 
       {tab === 'menu' && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {restaurants.map(r => {
             const its = menu.filter(m => m.restaurant_id === r.id)
             const expanded = openRest === r.id
@@ -833,7 +867,7 @@ export default function Admin() {
       {tab === 'shifts' && (
         <div>
           {escalations.length > 0 && (
-            <div className="mb-6">
+            <div className="mb-5">
               <h2 className="font-bold text-red-600 mb-3">⚠️ محتاجين تدخل الإدارة</h2>
               <div className="space-y-3">
                 {escalations.map((e: any) => (
@@ -972,7 +1006,25 @@ export default function Admin() {
       )}
 
       {tab === 'complaints' && (
-        <div className="space-y-4">
+        <div className="space-y-3">
+          {lowRatings.length > 0 && (
+            <div className="space-y-2 mb-1">
+              <p className="text-sm font-semibold">⭐ تقييمات منخفضة (نجمتين أو أقل)</p>
+              {lowRatings.map(rt => (
+                <div key={rt.id} className="card p-3.5 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm truncate">طلب #{rt.order_id} — {rt.orders?.restaurants?.name}</p>
+                    <p className="text-xs text-mist truncate">
+                      {rt.orders?.customer_name} · {rt.orders?.customer_phone}
+                      {rt.driver_rating != null && ` · المندوب ${'★'.repeat(rt.driver_rating)}${'☆'.repeat(5 - rt.driver_rating)}`}
+                      {rt.restaurant_rating != null && ` · المطعم ${'★'.repeat(rt.restaurant_rating)}${'☆'.repeat(5 - rt.restaurant_rating)}`}
+                    </p>
+                  </div>
+                  <button className="btn-ghost !py-1.5 !px-2.5 text-xs shrink-0" onClick={() => compensateFromRating(rt)}>💳 تعويض العميل</button>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="flex items-center justify-between">
             <p className="text-sm text-mist">
               {showResolvedComplaints ? 'كل الشكاوى' : 'الشكاوى المفتوحة'}
@@ -1050,7 +1102,11 @@ export default function Admin() {
                         {acc ? (
                           <>
                             <button className="btn-ghost !py-1.5 !px-2.5 text-xs" disabled={accountBusy === acc.profile_id}
+                              onClick={() => changeEmail(acc.profile_id, acc.email)}>تغيير الإيميل</button>
+                            <button className="btn-ghost !py-1.5 !px-2.5 text-xs" disabled={accountBusy === acc.profile_id}
                               onClick={() => resetPassword(acc.profile_id)}>تغيير كلمة السر</button>
+                            <button className="btn-ghost !py-1.5 !px-2.5 text-xs" disabled={accountBusy === acc.profile_id}
+                              onClick={() => setCustomPassword(acc.profile_id)}>كلمة سر مخصصة</button>
                             <button className="btn-danger !py-1.5 !px-2.5 text-xs" disabled={accountBusy === acc.profile_id}
                               onClick={() => removeLogin(acc.profile_id)}>إلغاء الحساب</button>
                           </>
@@ -1085,7 +1141,11 @@ export default function Admin() {
                         {acc ? (
                           <>
                             <button className="btn-ghost !py-1.5 !px-2.5 text-xs" disabled={accountBusy === acc.profile_id}
+                              onClick={() => changeEmail(acc.profile_id, acc.email)}>تغيير الإيميل</button>
+                            <button className="btn-ghost !py-1.5 !px-2.5 text-xs" disabled={accountBusy === acc.profile_id}
                               onClick={() => resetPassword(acc.profile_id)}>تغيير كلمة السر</button>
+                            <button className="btn-ghost !py-1.5 !px-2.5 text-xs" disabled={accountBusy === acc.profile_id}
+                              onClick={() => setCustomPassword(acc.profile_id)}>كلمة سر مخصصة</button>
                             <button className="btn-danger !py-1.5 !px-2.5 text-xs" disabled={accountBusy === acc.profile_id}
                               onClick={() => removeLogin(acc.profile_id)}>إلغاء الحساب</button>
                           </>
@@ -1100,6 +1160,56 @@ export default function Admin() {
               })}
             </div>
           </div>
+        </div>
+      )}
+
+      {tab === 'coverage' && (
+        <div className="space-y-2.5">
+          <p className="text-sm text-mist bg-shellup/60 rounded-xl p-3">
+            كل مطعم بيوصل لكل الأماكن افتراضيًا. تقدر تحدد له مسافة قصوى (كم)، أو لو عايز تحدد أماكن بعينها بالظبط دوس "أماكن محددة" — لو حددت أماكن، هتتجاهل المسافة القصوى وهيوصل بس للأماكن المختارة.
+          </p>
+          {restaurants.filter(r => !r.archived).map(r => {
+            const explicit = coverage.filter(c => c.restaurant_id === r.id)
+            const open = coverageFor === r.id
+            return (
+              <div key={r.id} className="card p-3.5">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-semibold">{r.name}</p>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <input
+                      type="number" min={1} placeholder="بلا حد أقصى"
+                      className="field !h-9 !w-28 text-sm"
+                      value={r.max_delivery_km ?? ''}
+                      onChange={e => updateRestaurant(r, { max_delivery_km: e.target.value ? Number(e.target.value) : null })}
+                    />
+                    <span className="text-xs text-mist">كم</span>
+                    <button className="btn-ghost !py-1.5 !px-2.5 text-xs" onClick={() => setCoverageFor(open ? null : r.id)}>
+                      {explicit.length > 0 ? `أماكن محددة (${explicit.length})` : 'أماكن محددة'}
+                    </button>
+                  </div>
+                </div>
+
+                {open && (
+                  <div className="mt-3 pt-3 border-t border-line">
+                    {explicit.length > 0 && (
+                      <p className="text-xs text-sand mb-2">⚠️ المطعم ده حاليًا مقتصر بس على الأماكن المعلّمة تحت — لو عايزه يرجع يوصل بالمسافة القصوى بس، شيل كل التعليمات.</p>
+                    )}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-64 overflow-y-auto">
+                      {compounds.map(c => {
+                        const checked = explicit.some(e => e.compound_id === c.id)
+                        return (
+                          <label key={c.id} className={`flex items-center gap-1.5 text-xs rounded-lg px-2 py-1.5 cursor-pointer ${checked ? 'bg-sea/10 text-sea font-semibold' : 'bg-shellup/50'}`}>
+                            <input type="checkbox" className="accent-sea" checked={checked} onChange={() => toggleCoverage(r.id, c.id)} />
+                            <span className="truncate">{c.name}</span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 

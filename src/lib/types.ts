@@ -3,7 +3,7 @@ export interface Restaurant {
   rating: number; delivery_time: string; is_open: boolean
   vendor_type: string; prep_minutes: number
   order_mode: 'catalog' | 'custom_request' | 'pickup_request'
-  archived: boolean; logo_url: string | null
+  archived: boolean; logo_url: string | null; max_delivery_km: number | null
 }
 export interface MenuItem {
   id: number; restaurant_id: number; name: string; description: string
@@ -96,4 +96,9 @@ export interface SettlementRequest {
   drivers?: { name: string }
 }
 export interface VendorCoverage { id: number; restaurant_id: number; compound_id: number }
+export interface OrderRating {
+  id: number; order_id: number; driver_rating: number | null; restaurant_rating: number | null
+  created_at: string
+  orders?: { customer_name: string; customer_phone: string; restaurants?: { name: string } }
+}
 export interface Reliability { avg_accept_minutes: number | null; slow_accepts: number; total_orders: number }

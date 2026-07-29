@@ -28,13 +28,15 @@ export default function CartPage() {
   const lines = items.filter(it => cart.qty[it.id])
   const subtotal = lines.reduce((s, it) => s + it.price * cart.qty[it.id], 0)
   const deliveryFee = compound ? estimateDeliveryFee(compound.distance_km) : null
+  const serviceFee = Math.round(subtotal * 0.02)
+  const grandTotal = subtotal + (deliveryFee ?? 0) + serviceFee
 
   if (!cart.restaurantId || lines.length === 0) {
     return (
       <div className="text-center py-16">
         <p className="text-4xl mb-3">🛒</p>
         <p className="font-bold text-lg mb-1">عربتك فاضية</p>
-        <p className="text-mist text-sm mb-5">لسه ما ضفتش أي حاجة من المطاعم</p>
+        <p className="text-mist text-sm mb-4">لسه ما ضفتش أي حاجة من المطاعم</p>
         <button className="btn-sea" onClick={() => nav('/')}>تصفح المطاعم</button>
       </div>
     )
@@ -46,13 +48,13 @@ export default function CartPage() {
         <h1 className="text-2xl font-bold">عربتك</h1>
         <button className="text-sm text-seadeep font-semibold" onClick={() => cart.clear()}>مسح الكل</button>
       </div>
-      {restaurant && <p className="text-mist text-sm mb-5">من {restaurant.name}</p>}
+      {restaurant && <p className="text-mist text-sm mb-4">من {restaurant.name}</p>}
 
-      <div className="space-y-4 mb-6">
+      <div className="space-y-3 mb-5">
         {lines.map(it => {
           const art = artFor(it.category)
           return (
-            <div key={it.id} className="card p-4 flex items-center gap-4">
+            <div key={it.id} className="card p-3.5 flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl grid place-items-center text-xl shrink-0" style={{ background: art.tint }}>
                 {art.emoji}
               </div>
@@ -71,15 +73,10 @@ export default function CartPage() {
       </div>
 
       <div className="fixed bottom-20 inset-x-4 z-40 max-w-5xl mx-auto">
-        <button className="btn-sea w-full !py-3.5 shadow-lg shadow-sea/20 flex items-center justify-between px-5"
+        <button className="btn-sea w-full !py-3 shadow-lg shadow-sea/20 flex items-center justify-between px-4"
           onClick={() => nav('/checkout')}>
           <span>روح للدفع</span>
-          <span className="text-left">
-            {deliveryFee !== null ? subtotal + deliveryFee : subtotal} ج.م
-            <span className="block text-[11px] opacity-80 font-normal">
-              {deliveryFee !== null ? `شامل ${deliveryFee} ج.م توصيل (حسب المسافة)` : 'التوصيل بيتحسب حسب مكانك'}
-            </span>
-          </span>
+          <span className="font-bold">{grandTotal} ج.م</span>
         </button>
       </div>
     </div>

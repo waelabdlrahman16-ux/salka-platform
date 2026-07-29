@@ -13,7 +13,7 @@ const STAGES = [
 
 interface TrackData {
   order: {
-    id: number; status: string; subtotal: number; delivery_fee: number; total: number
+    id: number; status: string; subtotal: number; delivery_fee: number; service_fee: number; total: number
     zone: string; unit_number: string; address_notes: string; restaurant_name: string
     ready_at: string | null; scheduled_date: string | null
     created_at: string; sla_minutes: number | null
@@ -28,7 +28,7 @@ interface TrackData {
     online_payment_status: 'pending' | 'paid' | 'failed' | null
     instapay_claimed: boolean
   } | null
-  items: { name: string; qty: number; total: number }[]
+  items: { name: string; qty: number; total: number; image_url: string | null }[]
   assignment: {
     status: string; driver_name: string | null; driver_phone: string | null
     driver_lat: number | null; driver_lng: number | null; driver_location_updated_at: string | null
@@ -137,7 +137,7 @@ export default function Track() {
     return (
       <div className="max-w-lg mx-auto">
         <Link to="/" className="text-sm text-mist hover:text-foam">← العودة للرئيسية</Link>
-        <div className="card p-5 mt-3 text-center">
+        <div className="card p-4 mt-3 text-center">
           <h1 className="font-bold text-lg mb-1">حوّل المبلغ على InstaPay</h1>
           <p className="text-mist text-sm mb-3">طلب #{o.id} من {o.restaurant_name}</p>
           <p className="text-sea font-bold text-2xl mb-4">{o.total} ج.م</p>
@@ -146,7 +146,7 @@ export default function Track() {
             <img src={INSTAPAY_QR_URL} alt="InstaPay QR" className="w-44 h-44 mx-auto mb-4 rounded-xl border border-line" />
           )}
 
-          <a href={INSTAPAY_LINK} target="_blank" rel="noreferrer" className="btn-sea w-full !flex mb-5">
+          <a href={INSTAPAY_LINK} target="_blank" rel="noreferrer" className="btn-sea w-full !flex items-center justify-center text-center mb-4">
             افتح InstaPay وحوّل مباشرة
           </a>
 
@@ -168,7 +168,7 @@ export default function Track() {
     return (
       <div className="max-w-lg mx-auto">
         <Link to="/" className="text-sm text-mist hover:text-foam">← العودة للرئيسية</Link>
-        <div className="card p-5 mt-3 text-center">
+        <div className="card p-4 mt-3 text-center">
           <p className="text-4xl mb-3">💳</p>
           <h1 className="font-bold text-lg mb-1">بننتظر تأكيد الدفع</h1>
           <p className="text-mist text-sm mb-1">طلب #{o.id} من {o.restaurant_name}</p>
@@ -196,12 +196,12 @@ export default function Track() {
       </div>
 
       {isCancelled(o.status) || cancelled ? (
-        <div className="card p-5 text-center mb-4">
+        <div className="card p-4 text-center mb-4">
           <p className="text-4xl mb-2">📦</p>
           <h1 className="font-bold text-lg">تم إلغاء الطلب</h1>
         </div>
       ) : (
-        <div className="card p-5 mb-4">
+        <div className="card p-4 mb-4">
           <p className="text-xs text-mist mb-1">الحالة</p>
           <h1 className="font-bold text-xl mb-1">
             {current === 'Delivered' ? '✅ تم التوصيل' : STAGES[stageIdx]?.label ?? 'قيد التجهيز'}
@@ -276,7 +276,7 @@ export default function Track() {
         </div>
       )}
 
-      {o.status !== 'Cancelled' && data.assignment?.driver_name && (
+      {o.status !== 'Cancelled' && current !== 'Delivered' && data.assignment?.driver_name && (
         <div className="card p-4 mb-4 flex items-center justify-between">
           <div>
             <p className="text-xs text-mist mb-0.5">المندوب</p>
@@ -308,8 +308,12 @@ export default function Track() {
           <div className="space-y-2">
             {data.items.map((it, i) => (
               <div key={i} className="flex items-center gap-3 text-sm">
-                <span className="w-6 h-6 rounded-full bg-shellup grid place-items-center text-xs font-bold shrink-0">{it.qty}</span>
-                <span className="flex-1">{it.name}</span>
+                {it.image_url ? (
+                  <img src={it.image_url} alt="" className="w-9 h-9 rounded-lg object-cover shrink-0 border border-line" />
+                ) : (
+                  <span className="w-6 h-6 rounded-full bg-shellup grid place-items-center text-xs font-bold shrink-0">{it.qty}</span>
+                )}
+                <span className="flex-1">{it.image_url ? `${it.name} × ${it.qty}` : it.name}</span>
                 <span className="text-mist">{it.total} ج.م</span>
               </div>
             ))}
@@ -329,6 +333,9 @@ export default function Track() {
           <div className="flex justify-between text-sm"><span className="text-mist">المنتجات</span><span>{o.subtotal} ج.م</span></div>
         )}
         <div className="flex justify-between text-sm"><span className="text-mist">التوصيل</span><span>{o.delivery_fee} ج.م</span></div>
+        {o.service_fee > 0 && (
+          <div className="flex justify-between text-sm"><span className="text-mist">رسوم الخدمة</span><span>{o.service_fee} ج.م</span></div>
+        )}
         <div className="flex justify-between font-bold pt-2 border-t border-line">
           <span>الإجمالي</span>
           <span className="text-sea">{o.pricing_status === 'pending_quote' ? 'قيد التسعير' : `${o.total} ج.م`}</span>
