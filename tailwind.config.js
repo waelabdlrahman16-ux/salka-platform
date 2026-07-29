@@ -4,16 +4,16 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Salka — warm, appetite-driven palette (Breadfast-style light theme)
-        night: '#FFFAF5',     // page background — warm cream, not stark white
+        // Salka — teal, silver & gold (cool, premium palette — confirmed July 2026)
+        night: '#F4F7F7',     // page background — cool silver, not warm cream
         shell: '#FFFFFF',     // card background
-        shellup: '#FFF1E6',   // elevated surface (header, active tab)
-        line: '#F0DFCB',      // borders — warm sand line
+        shellup: '#EAF1F0',   // elevated surface (header, active tab, thumbnails) — soft teal tint
+        line: '#E1E8E7',      // borders — cool silver line
         sea: '#0A5F5E',       // brand primary — matches the real logo teal exactly
         seadeep: '#063A39',   // primary hover/pressed
-        sand: '#E9A23B',      // accent — amber (ratings, highlights)
-        foam: '#2B1D12',      // primary text — warm dark brown, not pure black
-        mist: '#8A7561'       // secondary/muted text — warm taupe
+        sand: '#B8934A',      // secondary/accent — muted gold (ratings, highlights, warnings)
+        foam: '#17302E',      // primary text — deep cool teal-black, not warm brown
+        mist: '#64716F'       // secondary/muted text — cool silver-gray
       },
       fontFamily: { arabic: ['"IBM Plex Sans Arabic"', 'system-ui', 'sans-serif'] }
     }
