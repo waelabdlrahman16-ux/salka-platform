@@ -6,7 +6,7 @@ import { estimateDeliveryFee } from '../lib/deliveryFee'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { registerPush } from '../lib/push'
 import { orderStatusLabel } from '../lib/statusLabels'
-import type { Compound, Order, OrderItem, Restaurant } from '../lib/types'
+import type { Compound, MenuItem, Order, OrderItem, Restaurant } from '../lib/types'
 
 const KITCHEN = [
   { key: 'new', label: 'طلب جديد', next: 'preparing', action: 'قبول وبدء التحضير' },
@@ -282,11 +282,15 @@ function KitchenVendor({ rid }: { rid: number }) {
   const [orders, setOrders] = useState<Order[]>([])
   const [completedToday, setCompletedToday] = useState<Order[]>([])
   const [items, setItems] = useState<Record<number, OrderItem[]>>({})
+  const [menu, setMenu] = useState<MenuItem[]>([])
+  const [stockOpen, setStockOpen] = useState(false)
+  const [togglingId, setTogglingId] = useState<number | null>(null)
   const [isOpen, setIsOpen] = useState(true)
   const [name, setName] = useState('')
   const [declining, setDeclining] = useState<Order | null>(null)
   const [reliability, setReliability] = useState<{ avg_accept_minutes: number | null; total_orders: number } | null>(null)
   const audioUnlocked = useRef(false)
+  const stockRef = useRef<HTMLDivElement>(null)
 
   async function load() {
     if (!rid) return
@@ -294,6 +298,8 @@ function KitchenVendor({ rid }: { rid: number }) {
     if (r) { setIsOpen(r.is_open); setName(r.name) }
     const { data: rel } = await supabase.rpc('restaurant_reliability', { p_restaurant_id: rid })
     setReliability(rel)
+    const { data: m } = await supabase.from('menu_items').select('*').eq('restaurant_id', rid).order('category').order('name')
+    setMenu(m ?? [])
     const { data: o } = await supabase.from('orders').select('*')
       .eq('restaurant_id', rid).not('status', 'in', '("Delivered","Cancelled","Failed_Delivery")')
       .order('id', { ascending: false }).limit(30)
@@ -327,6 +333,23 @@ function KitchenVendor({ rid }: { rid: number }) {
     const t = setInterval(load, 8000)
     return () => { clearInterval(t); stopRinging() }
   }, [rid])
+
+  useEffect(() => {
+    if (!stockOpen) return
+    function onClickOutside(e: MouseEvent) {
+      if (stockRef.current && !stockRef.current.contains(e.target as Node)) setStockOpen(false)
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [stockOpen])
+
+  async function toggleStock(it: MenuItem) {
+    setTogglingId(it.id)
+    const { error } = await supabase.rpc('vendor_set_item_availability', { p_item_id: it.id, p_available: !it.available })
+    setTogglingId(null)
+    if (error) { alert('حصل خطأ، جرب تاني'); return }
+    setMenu(prev => prev.map(m => m.id === it.id ? { ...m, available: !m.available } : m))
+  }
 
   async function advance(o: Order, next: string) {
     if (next === 'ready') {
@@ -435,7 +458,27 @@ function KitchenVendor({ rid }: { rid: number }) {
     <div>
       <div className="flex items-center justify-between mb-2">
         <h1 className="text-xl font-bold">🍽️ {name}</h1>
-        <span className={isOpen ? 'badge-open' : 'badge-closed'}>{isOpen ? 'مفتوح' : 'مغلق'}</span>
+        <div className="flex items-center gap-2">
+          <span className={isOpen ? 'badge-open' : 'badge-closed'}>{isOpen ? 'مفتوح' : 'مغلق'}</span>
+          <div className="relative" ref={stockRef}>
+            <button className="btn-ghost !py-1.5 !px-2.5 text-xs" onClick={() => setStockOpen(v => !v)}>
+              📋 الأصناف {menu.filter(m => !m.available).length > 0 && `(${menu.filter(m => !m.available).length} خلص)`}
+            </button>
+            {stockOpen && (
+              <div className="absolute left-0 mt-1 z-20 bg-shell border border-line rounded-xl shadow-lg py-2 w-72 max-h-[60vh] overflow-y-auto">
+                <p className="text-xs text-mist px-3 pb-2">علّم على الصنف اللي خلص عشان العميل يبطل يشوفه</p>
+                {menu.map(m => (
+                  <label key={m.id} className="flex items-center justify-between gap-2 px-3 py-2 hover:bg-night cursor-pointer">
+                    <span className={`text-sm ${m.available ? '' : 'text-mist line-through'}`}>{m.name}</span>
+                    <input type="checkbox" checked={!m.available} disabled={togglingId === m.id}
+                      onChange={() => toggleStock(m)} className="accent-sand w-4 h-4 shrink-0" />
+                  </label>
+                ))}
+                {menu.length === 0 && <p className="text-xs text-mist px-3 py-2">لا توجد أصناف</p>}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
       {reliability && reliability.total_orders > 0 && (
         <p className="text-xs text-mist mb-4">
