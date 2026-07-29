@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
@@ -8,7 +8,7 @@ interface Row {
 }
 
 export default function MyOrders() {
-  const [phone, setPhone] = useState('')
+  const [phone, setPhone] = useState(() => localStorage.getItem('salka_phone') ?? '')
   const [rows, setRows] = useState<Row[] | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -18,6 +18,11 @@ export default function MyOrders() {
     setRows((data as Row[]) ?? [])
     setBusy(false)
   }
+
+  useEffect(() => {
+    if (phone.trim()) search()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className="max-w-sm mx-auto">

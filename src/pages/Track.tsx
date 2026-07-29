@@ -13,7 +13,7 @@ const STAGES = [
 
 interface TrackData {
   order: {
-    id: number; status: string; subtotal: number; delivery_fee: number; service_fee: number; total: number
+    id: number; status: string; subtotal: number; delivery_fee: number; service_fee: number; wallet_used: number; total: number
     zone: string; unit_number: string; address_notes: string; restaurant_name: string
     ready_at: string | null; scheduled_date: string | null
     created_at: string; sla_minutes: number | null
@@ -335,6 +335,9 @@ export default function Track() {
         <div className="flex justify-between text-sm"><span className="text-mist">التوصيل</span><span>{o.delivery_fee} ج.م</span></div>
         {o.service_fee > 0 && (
           <div className="flex justify-between text-sm"><span className="text-mist">رسوم الخدمة</span><span>{o.service_fee} ج.م</span></div>
+        )}
+        {o.wallet_used > 0 && (
+          <div className="flex justify-between text-sm text-emerald-700"><span>من رصيدك</span><span>-{o.wallet_used} ج.م</span></div>
         )}
         <div className="flex justify-between font-bold pt-2 border-t border-line">
           <span>الإجمالي</span>

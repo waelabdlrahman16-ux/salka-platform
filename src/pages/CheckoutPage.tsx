@@ -28,6 +28,13 @@ export default function CheckoutPage() {
   const [error, setError] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'instapay'>('cod')
   const [addressLoaded, setAddressLoaded] = useState(false)
+  const [walletBalance, setWalletBalance] = useState(0)
+  const [useWallet, setUseWallet] = useState(true)
+
+  useEffect(() => {
+    if (!isValidEgyptPhone(phone)) { setWalletBalance(0); return }
+    supabase.rpc('wallet_balance_for_phone', { p_phone: phone.trim() }).then(({ data }) => setWalletBalance(Number(data) || 0))
+  }, [phone])
 
   useEffect(() => {
     if (!isValidEgyptPhone(phone) || addressLoaded) return
@@ -61,6 +68,9 @@ export default function CheckoutPage() {
   const selectedCompound = compounds.find(c => c.id === compoundId)
   const deliveryFee = selectedCompound ? estimateDeliveryFee(selectedCompound.distance_km) : 0
   const serviceFee = Math.round(subtotal * 0.02)
+  const preWalletTotal = subtotal + deliveryFee + serviceFee
+  const walletApplied = useWallet ? Math.min(walletBalance, preWalletTotal) : 0
+  const finalTotal = preWalletTotal - walletApplied
   const valid = name.trim() && isValidEgyptPhone(phone) && compoundId && unit.trim() && (!scheduled || !!slot)
 
   const isInstapay = paymentMethod === 'instapay'
@@ -82,7 +92,8 @@ export default function CheckoutPage() {
       p_slot_id: slot?.id ?? null,
       p_scheduled_date: slot?.scheduled_date ?? null,
       p_compound_id: compoundId,
-      p_payment_method: isInstapay ? 'instapay' : 'cod'
+      p_payment_method: isInstapay ? 'instapay' : 'cod',
+      p_use_wallet: walletBalance > 0 && useWallet
     })
     if (err || !data?.token) {
       setSaving(false)
@@ -168,6 +179,19 @@ export default function CheckoutPage() {
         )}
       </div>
 
+      {walletBalance > 0 && (
+        <div className="card p-4 mb-4">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" className="accent-sea w-4 h-4" checked={useWallet} onChange={e => setUseWallet(e.target.checked)} />
+            <span className="text-xl">👛</span>
+            <span className="flex-1">
+              <span className="font-semibold block">استخدم رصيدك</span>
+              <span className="text-xs text-mist">عندك {walletBalance} ج.م في محفظتك</span>
+            </span>
+          </label>
+        </div>
+      )}
+
       <div className="card p-4 mb-4">
         <h2 className="font-bold mb-3">الدفع</h2>
         <div className="space-y-2.5">
@@ -193,13 +217,16 @@ export default function CheckoutPage() {
         ))}
         <div className="flex justify-between text-sm text-mist"><span>التوصيل{selectedCompound ? ` (${selectedCompound.distance_km} كم)` : ''}</span><span>{deliveryFee} ج.م</span></div>
         <div className="flex justify-between text-sm text-mist"><span>رسوم الخدمة</span><span>{serviceFee} ج.م</span></div>
-        <div className="flex justify-between font-bold border-t border-line pt-2"><span>الإجمالي</span><span className="text-sea">{subtotal + deliveryFee + serviceFee} ج.م</span></div>
+        {walletApplied > 0 && (
+          <div className="flex justify-between text-sm text-emerald-700"><span>من رصيدك</span><span>-{walletApplied} ج.م</span></div>
+        )}
+        <div className="flex justify-between font-bold border-t border-line pt-2"><span>الإجمالي</span><span className="text-sea">{finalTotal} ج.م</span></div>
       </div>
 
       {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">{error}</p>}
 
       <button className="btn-sea w-full !py-3.5" disabled={!valid || saving} onClick={placeOrder}>
-        {saving ? 'جاري التجهيز…' : `تأكيد الطلب · ${subtotal + deliveryFee + serviceFee} ج.م`}
+        {saving ? 'جاري التجهيز…' : `تأكيد الطلب · ${finalTotal} ج.م`}
       </button>
     </div>
   )
