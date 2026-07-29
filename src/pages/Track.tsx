@@ -357,7 +357,9 @@ export default function Track() {
               <span className="text-sm text-mist">المندوب</span>
               <div className="flex gap-1">
                 {[1,2,3,4,5].map(n => (
-                  <button key={n} onClick={() => setDriverRating(n)} className={n <= driverRating ? 'text-sand' : 'text-line'}><Icon name="star" className="w-4.5 h-4.5" /></button>
+                  <button key={n} onClick={() => setDriverRating(n)} className={n <= driverRating ? 'text-sand' : 'text-line'}>
+                    <Icon name="star" variant={n <= driverRating ? 'solid' : 'regular'} className="w-4.5 h-4.5" />
+                  </button>
                 ))}
               </div>
             </div>
@@ -365,7 +367,9 @@ export default function Track() {
               <span className="text-sm text-mist">المطعم</span>
               <div className="flex gap-1">
                 {[1,2,3,4,5].map(n => (
-                  <button key={n} onClick={() => setRestaurantRating(n)} className={n <= restaurantRating ? 'text-sand' : 'text-line'}><Icon name="star" className="w-4.5 h-4.5" /></button>
+                  <button key={n} onClick={() => setRestaurantRating(n)} className={n <= restaurantRating ? 'text-sand' : 'text-line'}>
+                    <Icon name="star" variant={n <= restaurantRating ? 'solid' : 'regular'} className="w-4.5 h-4.5" />
+                  </button>
                 ))}
               </div>
             </div>

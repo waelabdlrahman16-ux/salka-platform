@@ -1,14 +1,28 @@
 // Inline SVG icons sourced from Font Awesome Free (path data extracted directly
-// from @fortawesome/free-solid-svg-icons so there's no external font/CDN request).
-// Two requested icons (fork-knife, box-open-full) are Pro-only in Font Awesome's
-// free tier — substituted with the closest free equivalents: utensils and box-open.
+// from @fortawesome/free-solid-svg-icons / free-regular-svg-icons -- no external
+// font/CDN request).
+//
+// IMPORTANT LIMITATION: Font Awesome's free tier only ships BOTH a regular
+// (outline) and solid (filled) style for a subset of icons. star, clock, clone,
+// and moneyBill have both -- everything else below (forkKnife, boxOpen,
+// bagShopping, receipt, magnifyingGlass, locationDot, mobileScreen, minus,
+// plus) is solid-only for free users; Font Awesome Pro is required for a
+// regular version of those specific shapes. For solid-only icons,
+// variant="regular" silently falls back to the solid path so nothing breaks --
+// active/inactive states for those rely on color instead of shape.
+//
+// Two requested icons (fork-knife, box-open-full) aren't in the free tier at
+// all in either style -- substituted with the closest free equivalents:
+// utensils and box-open.
 
 type IconName =
   | 'forkKnife' | 'boxOpen' | 'bagShopping' | 'receipt' | 'magnifyingGlass'
   | 'locationDot' | 'star' | 'clock' | 'minus' | 'plus' | 'clone'
   | 'moneyBill' | 'mobileScreen'
 
-const PATHS: Record<IconName, { viewBox: string; d: string }> = {
+type Variant = 'solid' | 'regular'
+
+const SOLID: Record<IconName, { viewBox: string; d: string }> = {
   forkKnife: {
     viewBox: '0 0 512 512',
     d: 'M63.9 14.4C63.1 6.2 56.2 0 48 0s-15.1 6.2-16 14.3L17.9 149.7c-1.3 6-1.9 12.1-1.9 18.2 0 45.9 35.1 83.6 80 87.7L96 480c0 17.7 14.3 32 32 32s32-14.3 32-32l0-224.4c44.9-4.1 80-41.8 80-87.7 0-6.1-.6-12.2-1.9-18.2L223.9 14.3C223.1 6.2 216.2 0 208 0s-15.1 6.2-15.9 14.4L178.5 149.9c-.6 5.7-5.4 10.1-11.1 10.1-5.8 0-10.6-4.4-11.2-10.2L143.9 14.6C143.2 6.3 136.3 0 128 0s-15.2 6.3-15.9 14.6L99.8 149.8c-.5 5.8-5.4 10.2-11.2 10.2-5.8 0-10.6-4.4-11.1-10.1L63.9 14.4zM448 0C432 0 320 32 320 176l0 112c0 35.3 28.7 64 64 64l32 0 0 128c0 17.7 14.3 32 32 32s32-14.3 32-32l0-448c0-17.7-14.3-32-32-32z'
@@ -55,7 +69,7 @@ const PATHS: Record<IconName, { viewBox: string; d: string }> = {
   },
   moneyBill: {
     viewBox: '0 0 512 512',
-    d: 'M64 64C28.7 64 0 92.7 0 128L0 384c0 35.3 28.7 64 64 64l384 0c35.3 0 64-28.7 64-64l0-256c0-35.3-28.7-64-64-64L64 64zm192 80a112 112 0 1 1 0 224 112 112 0 1 1 0-224zM64 184l0-48c0-4.4 3.6-8 8-8l48 0c4.4 0 8.1 3.6 7.5 8-3.6 29-26.6 51.9-55.5 55.5-4.4 .5-8-3.1-8-7.5zm0 144c0-4.4 3.6-8.1 8-7.5 29 3.6 51.9 26.6 55.5 55.5 .5 4.4-3.1 8-7.5 8l-48 0c-4.4 0-8-3.6-8-8l0-48zM440 191.5c-29-3.6-51.9-26.6-55.5-55.5-.5-4.4 3.1-8 7.5-8l48 0c4.4 0 8 3.6 8 8l0 48c0 4.4-3.6 8.1-8 7.5zM448 328l0 48c0 4.4-3.6 8-8 8l-48 0c-4.4 0-8.1-3.6-7.5-8 3.6-29 26.6-51.9 55.5-55.5 4.4-.5 8 3.1 8 7.5zM240 188c-11 0-20 9-20 20 0 9.7 6.9 17.7 16 19.6l0 48.4-4 0c-11 0-20 9-20 20s9 20 20 20l48 0c11 0 20-9 20-20s-9-20-20-20l-4 0 0-68c0-11-9-20-20-20l-16 0z'
+    d: 'M112 112c0 35.3-28.7 64-64 64l0 160c35.3 0 64 28.7 64 64l288 0c0-35.3 28.7-64 64-64l0-160c-35.3 0-64-28.7-64-64l-288 0zM0 128C0 92.7 28.7 64 64 64l384 0c35.3 0 64 28.7 64 64l0 256c0 35.3-28.7 64-64 64L64 448c-35.3 0-64-28.7-64-64L0 128zm256 16a112 112 0 1 1 0 224 112 112 0 1 1 0-224zm-16 44c-11 0-20 9-20 20 0 9.7 6.9 17.7 16 19.6l0 48.4-4 0c-11 0-20 9-20 20s9 20 20 20l48 0c11 0 20-9 20-20s-9-20-20-20l-4 0 0-68c0-11-9-20-20-20l-16 0z'
   },
   mobileScreen: {
     viewBox: '0 0 384 512',
@@ -63,8 +77,29 @@ const PATHS: Record<IconName, { viewBox: string; d: string }> = {
   },
 }
 
-export default function Icon({ name, className = '' }: { name: IconName; className?: string }) {
-  const { viewBox, d } = PATHS[name]
+// Only these four exist as a real, distinct outline style in Font Awesome's
+// free tier. Everything else has no free regular version to fall back to.
+const REGULAR: Partial<Record<IconName, { viewBox: string; d: string }>> = {
+  star: {
+    viewBox: '0 0 576 512',
+    d: 'M288.1-32c9 0 17.3 5.1 21.4 13.1L383 125.3 542.9 150.7c8.9 1.4 16.3 7.7 19.1 16.3s.5 18-5.8 24.4L441.7 305.9 467 465.8c1.4 8.9-2.3 17.9-9.6 23.2s-17 6.1-25 2L288.1 417.6 143.8 491c-8 4.1-17.7 3.3-25-2s-11-14.2-9.6-23.2L134.4 305.9 20 191.4c-6.4-6.4-8.6-15.8-5.8-24.4s10.1-14.9 19.1-16.3l159.9-25.4 73.6-144.2c4.1-8 12.4-13.1 21.4-13.1zm0 76.8L230.3 158c-3.5 6.8-10 11.6-17.6 12.8l-125.5 20 89.8 89.9c5.4 5.4 7.9 13.1 6.7 20.7l-19.8 125.5 113.3-57.6c6.8-3.5 14.9-3.5 21.8 0l113.3 57.6-19.8-125.5c-1.2-7.6 1.3-15.3 6.7-20.7l89.8-89.9-125.5-20c-7.6-1.2-14.1-6-17.6-12.8L288.1 44.8z'
+  },
+  clock: {
+    viewBox: '0 0 512 512',
+    d: 'M464 256a208 208 0 1 1 -416 0 208 208 0 1 1 416 0zM0 256a256 256 0 1 0 512 0 256 256 0 1 0 -512 0zM232 120l0 136c0 8 4 15.5 10.7 20l96 64c11 7.4 25.9 4.4 33.3-6.7s4.4-25.9-6.7-33.3L280 243.2 280 120c0-13.3-10.7-24-24-24s-24 10.7-24 24z'
+  },
+  clone: {
+    viewBox: '0 0 512 512',
+    d: 'M288 464L64 464c-8.8 0-16-7.2-16-16l0-224c0-8.8 7.2-16 16-16l48 0 0-48-48 0c-35.3 0-64 28.7-64 64L0 448c0 35.3 28.7 64 64 64l224 0c35.3 0 64-28.7 64-64l0-48-48 0 0 48c0 8.8-7.2 16-16 16zM224 304c-8.8 0-16-7.2-16-16l0-224c0-8.8 7.2-16 16-16l224 0c8.8 0 16 7.2 16 16l0 224c0 8.8-7.2 16-16 16l-224 0zm-64-16c0 35.3 28.7 64 64 64l224 0c35.3 0 64-28.7 64-64l0-224c0-35.3-28.7-64-64-64L224 0c-35.3 0-64 28.7-64 64l0 224z'
+  },
+  moneyBill: {
+    viewBox: '0 0 512 512',
+    d: 'M112 112c0 35.3-28.7 64-64 64l0 160c35.3 0 64 28.7 64 64l288 0c0-35.3 28.7-64 64-64l0-160c-35.3 0-64-28.7-64-64l-288 0zM0 128C0 92.7 28.7 64 64 64l384 0c35.3 0 64 28.7 64 64l0 256c0 35.3-28.7 64-64 64L64 448c-35.3 0-64-28.7-64-64L0 128zm256 16a112 112 0 1 1 0 224 112 112 0 1 1 0-224zm-16 44c-11 0-20 9-20 20 0 9.7 6.9 17.7 16 19.6l0 48.4-4 0c-11 0-20 9-20 20s9 20 20 20l48 0c11 0 20-9 20-20s-9-20-20-20l-4 0 0-68c0-11-9-20-20-20l-16 0z'
+  },
+}
+
+export default function Icon({ name, variant = 'solid', className = '' }: { name: IconName; variant?: Variant; className?: string }) {
+  const { viewBox, d } = (variant === 'regular' && REGULAR[name]) || SOLID[name]
   return (
     <svg viewBox={viewBox} className={className} aria-hidden="true">
       <path d={d} fill="currentColor" />

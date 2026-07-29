@@ -4,6 +4,15 @@ import type { Assignment, Compound, Complaint, Driver, DeliverySlotRow, Earning,
 import { ping, askNotificationPermission } from '../lib/notify'
 import { uploadVendorImage } from '../lib/upload'
 import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel } from '../lib/statusLabels'
+import Icon from '../components/Icon'
+
+function StarRow({ n }: { n: number }) {
+  return (
+    <span className="inline-flex items-center gap-0.5 align-middle text-sand">
+      {[1,2,3,4,5].map(i => <Icon key={i} name="star" variant={i <= n ? 'solid' : 'regular'} className="w-3 h-3" />)}
+    </span>
+  )
+}
 
 type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet'
 const TABS: { key: Tab; label: string }[] = [
@@ -1014,10 +1023,10 @@ export default function Admin() {
                 <div key={rt.id} className="card p-3.5 flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <p className="font-semibold text-sm truncate">طلب #{rt.order_id} — {rt.orders?.restaurants?.name}</p>
-                    <p className="text-xs text-mist truncate">
-                      {rt.orders?.customer_name} · {rt.orders?.customer_phone}
-                      {rt.driver_rating != null && ` · المندوب ${'★'.repeat(rt.driver_rating)}${'☆'.repeat(5 - rt.driver_rating)}`}
-                      {rt.restaurant_rating != null && ` · المطعم ${'★'.repeat(rt.restaurant_rating)}${'☆'.repeat(5 - rt.restaurant_rating)}`}
+                    <p className="text-xs text-mist truncate flex items-center gap-1 flex-wrap">
+                      <span>{rt.orders?.customer_name} · {rt.orders?.customer_phone}</span>
+                      {rt.driver_rating != null && <span className="flex items-center gap-1">· المندوب <StarRow n={rt.driver_rating} /></span>}
+                      {rt.restaurant_rating != null && <span className="flex items-center gap-1">· المطعم <StarRow n={rt.restaurant_rating} /></span>}
                     </p>
                   </div>
                   <button className="btn-ghost !py-1.5 !px-2.5 text-xs shrink-0" onClick={() => compensateFromRating(rt)}>💳 تعويض العميل</button>
