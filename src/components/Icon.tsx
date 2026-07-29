@@ -3,11 +3,11 @@
 // font/CDN request).
 //
 // IMPORTANT LIMITATION: Font Awesome's free tier only ships BOTH a regular
-// (outline) and solid (filled) style for a subset of icons. star, clock, clone,
-// and moneyBill have both -- everything else below (forkKnife, boxOpen,
-// bagShopping, receipt, magnifyingGlass, locationDot, mobileScreen, minus,
-// plus) is solid-only for free users; Font Awesome Pro is required for a
-// regular version of those specific shapes. For solid-only icons,
+// (outline) and solid (filled) style for a subset of icons. star, clock,
+// clone, moneyBill, and house have both -- everything else below (forkKnife,
+// boxOpen, bagShopping, receipt, magnifyingGlass, locationDot, mobileScreen,
+// minus, plus) is solid-only for free users; Font Awesome Pro is required for
+// a regular version of those specific shapes. For solid-only icons,
 // variant="regular" silently falls back to the solid path so nothing breaks --
 // active/inactive states for those rely on color instead of shape.
 //
@@ -18,7 +18,7 @@
 type IconName =
   | 'forkKnife' | 'boxOpen' | 'bagShopping' | 'receipt' | 'magnifyingGlass'
   | 'locationDot' | 'star' | 'clock' | 'minus' | 'plus' | 'clone'
-  | 'moneyBill' | 'mobileScreen'
+  | 'moneyBill' | 'mobileScreen' | 'house'
 
 type Variant = 'solid' | 'regular'
 
@@ -75,6 +75,10 @@ const SOLID: Record<IconName, { viewBox: string; d: string }> = {
     viewBox: '0 0 384 512',
     d: 'M16 64C16 28.7 44.7 0 80 0L304 0c35.3 0 64 28.7 64 64l0 384c0 35.3-28.7 64-64 64L80 512c-35.3 0-64-28.7-64-64L16 64zm64 0l0 304 224 0 0-304-224 0zM192 472c17.7 0 32-14.3 32-32s-14.3-32-32-32-32 14.3-32 32 14.3 32 32 32z'
   },
+  house: {
+    viewBox: '0 0 512 512',
+    d: 'M277.8 8.6c-12.3-11.4-31.3-11.4-43.5 0l-224 208c-9.6 9-12.8 22.9-8 35.1S18.8 272 32 272l16 0 0 176c0 35.3 28.7 64 64 64l288 0c35.3 0 64-28.7 64-64l0-176 16 0c13.2 0 25-8.1 29.8-20.3s1.6-26.2-8-35.1l-224-208zM240 320l32 0c26.5 0 48 21.5 48 48l0 96-128 0 0-96c0-26.5 21.5-48 48-48z'
+  },
 }
 
 // Only these four exist as a real, distinct outline style in Font Awesome's
@@ -95,6 +99,10 @@ const REGULAR: Partial<Record<IconName, { viewBox: string; d: string }>> = {
   moneyBill: {
     viewBox: '0 0 512 512',
     d: 'M112 112c0 35.3-28.7 64-64 64l0 160c35.3 0 64 28.7 64 64l288 0c0-35.3 28.7-64 64-64l0-160c-35.3 0-64-28.7-64-64l-288 0zM0 128C0 92.7 28.7 64 64 64l384 0c35.3 0 64 28.7 64 64l0 256c0 35.3-28.7 64-64 64L64 448c-35.3 0-64-28.7-64-64L0 128zm256 16a112 112 0 1 1 0 224 112 112 0 1 1 0-224zm-16 44c-11 0-20 9-20 20 0 9.7 6.9 17.7 16 19.6l0 48.4-4 0c-11 0-20 9-20 20s9 20 20 20l48 0c11 0 20-9 20-20s-9-20-20-20l-4 0 0-68c0-11-9-20-20-20l-16 0z'
+  },
+  house: {
+    viewBox: '0 0 512 512',
+    d: 'M240 6.1c9.1-8.2 22.9-8.2 32 0l232 208c9.9 8.8 10.7 24 1.8 33.9s-24 10.7-33.9 1.8l-8-7.2 0 205.3c0 35.3-28.7 64-64 64l-288 0c-35.3 0-64-28.7-64-64l0-205.3-8 7.2c-9.9 8.8-25 8-33.9-1.8s-8-25 1.8-33.9L240 6.1zm16 50.1L96 199.7 96 448c0 8.8 7.2 16 16 16l48 0 0-104c0-39.8 32.2-72 72-72l48 0c39.8 0 72 32.2 72 72l0 104 48 0c8.8 0 16-7.2 16-16l0-248.3-160-143.4zM208 464l96 0 0-104c0-13.3-10.7-24-24-24l-48 0c-13.3 0-24 10.7-24 24l0 104z'
   },
 }
 

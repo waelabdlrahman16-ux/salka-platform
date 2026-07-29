@@ -48,7 +48,7 @@ function BottomNav() {
   if (isStaff) return null
 
   const items = [
-    { to: '/', label: 'الرئيسية', icon: 'forkKnife' as const },
+    { to: '/', label: 'الرئيسية', icon: 'house' as const },
     { to: '/custom-order', label: 'طلب خاص', icon: 'boxOpen' as const },
     { to: '/cart', label: 'عربتي', icon: 'bagShopping' as const, badge: cart.count },
     { to: '/my-orders', label: 'طلباتي', icon: 'receipt' as const },
