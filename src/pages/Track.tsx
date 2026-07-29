@@ -253,10 +253,7 @@ export default function Track() {
       </div>
 
       {/* payment */}
-      <div className="card p-4 mb-4 flex items-center gap-3">
-        <span className={`w-9 h-9 rounded-md grid place-items-center shrink-0 ${o.payment_method === 'instapay' ? 'bg-sand/15 text-sand' : 'bg-sea/10 text-sea'}`}>
-          <Icon name={o.payment_method === 'instapay' ? 'creditCard' : 'moneyBill'} className="w-4.5 h-4.5" />
-        </span>
+      <div className="card p-4 mb-4">
         <div>
           <p className="font-semibold text-sm">{o.total} ج.م</p>
           <p className="text-sm text-mist">
@@ -358,7 +355,7 @@ export default function Track() {
               <div className="flex gap-1">
                 {[1,2,3,4,5].map(n => (
                   <button key={n} onClick={() => setDriverRating(n)} className={n <= driverRating ? 'text-sand' : 'text-line'}>
-                    <Icon name="star" variant={n <= driverRating ? 'solid' : 'regular'} className="w-4.5 h-4.5" />
+                    <Icon name="star" className="w-4.5 h-4.5" />
                   </button>
                 ))}
               </div>
@@ -368,7 +365,7 @@ export default function Track() {
               <div className="flex gap-1">
                 {[1,2,3,4,5].map(n => (
                   <button key={n} onClick={() => setRestaurantRating(n)} className={n <= restaurantRating ? 'text-sand' : 'text-line'}>
-                    <Icon name="star" variant={n <= restaurantRating ? 'solid' : 'regular'} className="w-4.5 h-4.5" />
+                    <Icon name="star" className="w-4.5 h-4.5" />
                   </button>
                 ))}
               </div>

@@ -5,6 +5,8 @@ import { ping, askNotificationPermission } from '../lib/notify'
 import { registerPush } from '../lib/push'
 import { startLocationReporting, stopLocationReporting } from '../lib/geolocation'
 import type { Assignment, Driver, Shift, SwapRequest } from '../lib/types'
+import Icon from '../components/Icon'
+import { assignmentStatusLabel } from '../lib/statusLabels'
 
 interface PoolOrder {
   id: number; total: number; zone: string
@@ -302,22 +304,40 @@ export default function DriverPage() {
         {assignments.map(a => {
           const o = a.orders
           if (!o) return null
+          const stages = ['Accepted', 'Picked_Up', 'Out_for_Delivery', 'Delivered']
+          const stageIndex = stages.indexOf(a.status)
+          const statusColor = a.status === 'Delivered' ? 'bg-emerald-100 text-emerald-700'
+            : a.status === 'Offered' ? 'bg-sand/15 text-sand'
+            : 'bg-sea/10 text-sea'
           return (
             <div key={a.id} className="card p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h2 className="font-bold">طلب #{o.id} — {o.restaurants?.name}</h2>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h2 className="font-bold truncate">طلب #{o.id} — {o.restaurants?.name}</h2>
                   <p className="text-sm text-mist mt-0.5">{o.total} ج.م · كاش عند الاستلام</p>
                 </div>
-                <span className="text-xs font-semibold bg-shellup rounded-full px-2.5 py-1">{a.status === 'Offered' ? 'عرض جديد' : a.status}</span>
+                <span className={`text-xs font-semibold rounded-full px-2.5 py-1 shrink-0 ${statusColor}`}>
+                  {a.status === 'Offered' ? 'عرض جديد' : assignmentStatusLabel(a.status)}
+                </span>
               </div>
 
-              <div className="mt-3 bg-night border border-line rounded-xl p-3.5 text-sm space-y-1.5">
-                <p>👤 {o.customer_name}</p>
-                <p>📍 {o.zone} — وحدة {o.unit_number}{o.address_notes ? ` — ${o.address_notes}` : ''}</p>
-                <div className="flex gap-2 pt-1.5">
-                  <a className="btn-ghost !py-1.5 text-sm flex-1 text-center" href={`tel:${o.customer_phone}`}>📞 اتصال</a>
-                  <a className="btn-ghost !py-1.5 text-sm flex-1 text-center" href={`https://wa.me/${o.customer_phone.replace(/^0/, '20').replace('+', '')}`} target="_blank" rel="noreferrer">💬 واتساب</a>
+              {stageIndex >= 0 && (
+                <div className="flex gap-1 mt-3">
+                  {stages.map((s, i) => (
+                    <div key={s} className={`h-1.5 flex-1 rounded-full ${i <= stageIndex ? 'bg-sea' : 'bg-line'}`} />
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-3 bg-night border border-line rounded-xl p-3.5 text-sm space-y-2">
+                <p className="font-semibold">{o.customer_name}</p>
+                <p className="text-mist flex items-start gap-1.5">
+                  <Icon name="locationDot" className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                  <span>{o.zone} — وحدة {o.unit_number}{o.address_notes ? ` — ${o.address_notes}` : ''}</span>
+                </p>
+                <div className="flex gap-2 pt-1">
+                  <a className="btn-ghost !py-1.5 text-sm flex-1 text-center" href={`tel:${o.customer_phone}`}>اتصال</a>
+                  <a className="btn-ghost !py-1.5 text-sm flex-1 text-center" href={`https://wa.me/${o.customer_phone.replace(/^0/, '20').replace('+', '')}`} target="_blank" rel="noreferrer">واتساب</a>
                 </div>
               </div>
 
@@ -336,14 +356,16 @@ export default function DriverPage() {
                     <button className="btn-ghost text-sm" onClick={() => markFailed(a)}>العميل ما ردش</button>
                   </div>
                 )}
-                {a.status === 'Delivered' && <p className="text-emerald-700 font-semibold text-center">✅ اكتمل</p>}
+                {a.status === 'Delivered' && <p className="text-emerald-700 font-semibold text-center">اكتمل</p>}
               </div>
 
-              <div className="mt-2.5 text-xs text-mist flex flex-wrap gap-x-4 gap-y-1">
-                {a.responded_at && <span>القبول: {fmt(a.responded_at)}</span>}
-                {a.picked_up_at && <span>الاستلام: {fmt(a.picked_up_at)}</span>}
-                {a.delivered_at && <span>التسليم: {fmt(a.delivered_at)}</span>}
-              </div>
+              {(a.responded_at || a.picked_up_at || a.delivered_at) && (
+                <div className="mt-3 pt-2.5 border-t border-line text-xs text-mist flex flex-wrap gap-x-4 gap-y-1">
+                  {a.responded_at && <span>القبول: {fmt(a.responded_at)}</span>}
+                  {a.picked_up_at && <span>الاستلام: {fmt(a.picked_up_at)}</span>}
+                  {a.delivered_at && <span>التسليم: {fmt(a.delivered_at)}</span>}
+                </div>
+              )}
             </div>
           )
         })}

@@ -131,7 +131,7 @@ const REGULAR: Partial<Record<IconName, { viewBox: string; d: string }>> = {
   },
 }
 
-export default function Icon({ name, variant = 'solid', className = '' }: { name: IconName; variant?: Variant; className?: string }) {
+export default function Icon({ name, variant = 'regular', className = '' }: { name: IconName; variant?: Variant; className?: string }) {
   const { viewBox, d } = (variant === 'regular' && REGULAR[name]) || SOLID[name]
   return (
     <svg viewBox={viewBox} className={className} aria-hidden="true">

@@ -8,8 +8,8 @@ import Icon from '../components/Icon'
 
 function StarRow({ n }: { n: number }) {
   return (
-    <span className="inline-flex items-center gap-0.5 align-middle text-sand">
-      {[1,2,3,4,5].map(i => <Icon key={i} name="star" variant={i <= n ? 'solid' : 'regular'} className="w-3 h-3" />)}
+    <span className="inline-flex items-center gap-0.5 align-middle">
+      {[1,2,3,4,5].map(i => <Icon key={i} name="star" className={`w-3 h-3 ${i <= n ? 'text-sand' : 'text-line'}`} />)}
     </span>
   )
 }

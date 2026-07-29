@@ -63,7 +63,7 @@ function BottomNav() {
             <Link key={it.to} to={it.to}
               className={`relative flex flex-col items-center gap-0.5 py-2.5 text-xs font-semibold ${active ? 'text-sea' : 'text-mist'}`}>
               <span className="relative leading-none">
-                <Icon name={it.icon} variant={active ? 'solid' : 'regular'} className="w-5 h-5" />
+                <Icon name={it.icon} className="w-5 h-5" />
                 {!!it.badge && (
                   <span className="absolute -top-1.5 -left-2.5 bg-sea text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 grid place-items-center px-1">
                     {it.badge}
