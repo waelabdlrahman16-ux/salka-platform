@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { registerPush } from '../lib/push'
 import { INSTAPAY_QR_URL, INSTAPAY_LINK } from '../lib/instapay'
 import LiveMap from '../components/LiveMap'
+import Icon from '../components/Icon'
 
 const STAGES = [
   { key: 'placed', label: 'قيد التجهيز', statuses: ['pending', 'Accepted'] },
@@ -214,8 +215,9 @@ export default function Track() {
             const target = new Date(new Date(o.created_at).getTime() + o.sla_minutes * 60000)
             const isLate = Date.now() > target.getTime()
             return (
-              <p className={`text-sm mt-1 ${isLate ? 'text-sand' : 'text-mist'}`}>
-                {isLate ? '⏱ اتأخر شوية عن الوقت المستهدف' : `⏱ الهدف: يوصلك قبل ${fmtTime(target.toISOString())}`}
+              <p className={`text-sm mt-1 flex items-center gap-1 ${isLate ? 'text-sand' : 'text-mist'}`}>
+                <Icon name="clock" className="w-3.5 h-3.5" />
+                {isLate ? 'اتأخر شوية عن الوقت المستهدف' : `الهدف: يوصلك قبل ${fmtTime(target.toISOString())}`}
               </p>
             )
           })()}
@@ -243,7 +245,7 @@ export default function Track() {
 
       {/* address */}
       <div className="card p-4 mb-4 flex items-start gap-3">
-        <span className="text-xl">📍</span>
+        <span className="w-9 h-9 rounded-md bg-sea/10 text-sea grid place-items-center shrink-0"><Icon name="locationDot" className="w-4 h-4" /></span>
         <div>
           <p className="font-semibold text-sm">{o.zone}</p>
           <p className="text-sm text-mist">وحدة {o.unit_number}{o.address_notes ? ` — ${o.address_notes}` : ''}</p>
@@ -252,7 +254,9 @@ export default function Track() {
 
       {/* payment */}
       <div className="card p-4 mb-4 flex items-center gap-3">
-        <span className="text-xl">{o.payment_method === 'online' ? '💳' : o.payment_method === 'instapay' ? '📲' : '💵'}</span>
+        <span className={`w-9 h-9 rounded-md grid place-items-center shrink-0 ${o.payment_method === 'instapay' ? 'bg-sand/15 text-sand' : 'bg-sea/10 text-sea'}`}>
+          <Icon name={o.payment_method === 'instapay' ? 'mobileScreen' : 'moneyBill'} className="w-4.5 h-4.5" />
+        </span>
         <div>
           <p className="font-semibold text-sm">{o.total} ج.م</p>
           <p className="text-sm text-mist">
@@ -326,7 +330,7 @@ export default function Track() {
         <div className="flex items-center justify-between text-sm pb-2 border-b border-line">
           <span className="text-mist">رقم الطلب</span>
           <button className="font-semibold flex items-center gap-1.5" onClick={copyOrderNumber}>
-            #{o.id} <span className="text-xs text-mist">{copied ? '✅ اتنسخ' : '📋'}</span>
+            #{o.id} <span className="text-xs text-mist">{copied ? '✅ اتنسخ' : <Icon name="clone" className="w-3.5 h-3.5" />}</span>
           </button>
         </div>
         {o.pricing_status !== 'pending_quote' && (
@@ -353,7 +357,7 @@ export default function Track() {
               <span className="text-sm text-mist">المندوب</span>
               <div className="flex gap-1">
                 {[1,2,3,4,5].map(n => (
-                  <button key={n} onClick={() => setDriverRating(n)} className={n <= driverRating ? 'text-sand' : 'text-line'}>★</button>
+                  <button key={n} onClick={() => setDriverRating(n)} className={n <= driverRating ? 'text-sand' : 'text-line'}><Icon name="star" className="w-4.5 h-4.5" /></button>
                 ))}
               </div>
             </div>
@@ -361,7 +365,7 @@ export default function Track() {
               <span className="text-sm text-mist">المطعم</span>
               <div className="flex gap-1">
                 {[1,2,3,4,5].map(n => (
-                  <button key={n} onClick={() => setRestaurantRating(n)} className={n <= restaurantRating ? 'text-sand' : 'text-line'}>★</button>
+                  <button key={n} onClick={() => setRestaurantRating(n)} className={n <= restaurantRating ? 'text-sand' : 'text-line'}><Icon name="star" className="w-4.5 h-4.5" /></button>
                 ))}
               </div>
             </div>

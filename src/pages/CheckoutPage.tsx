@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { useCart } from '../lib/cart'
 import { estimateDeliveryFee } from '../lib/deliveryFee'
+import Icon from '../components/Icon'
 import type { Compound, MenuItem, Restaurant, Slot } from '../lib/types'
 
 export default function CheckoutPage() {
@@ -197,12 +198,12 @@ export default function CheckoutPage() {
         <div className="space-y-2.5">
           <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${paymentMethod === 'cod' ? 'border-sea bg-sea/5' : 'border-line'}`}>
             <input type="radio" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} className="accent-sea w-4 h-4" />
-            <span className="text-xl">💵</span>
+            <span className="w-9 h-9 rounded-md bg-sea/10 text-sea grid place-items-center shrink-0"><Icon name="moneyBill" className="w-4.5 h-4.5" /></span>
             <span className="font-semibold flex-1">كاش عند الاستلام</span>
           </label>
           <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${paymentMethod === 'instapay' ? 'border-sea bg-sea/5' : 'border-line'}`}>
             <input type="radio" checked={paymentMethod === 'instapay'} onChange={() => setPaymentMethod('instapay')} className="accent-sea w-4 h-4" />
-            <span className="text-xl">📲</span>
+            <span className="w-9 h-9 rounded-md bg-sand/15 text-sand grid place-items-center shrink-0"><Icon name="mobileScreen" className="w-4.5 h-4.5" /></span>
             <span className="font-semibold flex-1">InstaPay</span>
           </label>
         </div>

@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useCart } from '../lib/cart'
 import { artFor } from '../lib/categoryArt'
 import { estimateDeliveryFee } from '../lib/deliveryFee'
+import Icon from '../components/Icon'
 import type { Compound, MenuItem, Restaurant } from '../lib/types'
 
 export default function CartPage() {
@@ -62,10 +63,10 @@ export default function CartPage() {
                 <h3 className="font-semibold text-sm truncate">{it.name}</h3>
                 <p className="text-sea font-bold text-sm mt-0.5">{it.price} ج.م</p>
               </div>
-              <div className="flex items-center gap-2 bg-shellup rounded-full px-1 py-1 shrink-0">
-                <button className="w-7 h-7 rounded-full grid place-items-center font-bold hover:bg-white" onClick={() => cart.add(it, -1)}>−</button>
+              <div className="flex items-center gap-2 bg-shellup rounded-lg px-1 py-1 shrink-0">
+                <button className="w-7 h-7 rounded-md grid place-items-center hover:bg-white" onClick={() => cart.add(it, -1)}><Icon name="minus" className="w-3 h-3" /></button>
                 <span className="font-bold text-sm w-4 text-center">{cart.qty[it.id]}</span>
-                <button className="w-7 h-7 rounded-full grid place-items-center font-bold bg-sea text-white" onClick={() => cart.add(it, 1)}>+</button>
+                <button className="w-7 h-7 rounded-md grid place-items-center bg-sea text-white" onClick={() => cart.add(it, 1)}><Icon name="plus" className="w-3 h-3" /></button>
               </div>
             </div>
           )
@@ -73,7 +74,7 @@ export default function CartPage() {
       </div>
 
       <div className="fixed bottom-20 inset-x-4 z-40 max-w-5xl mx-auto">
-        <button className="btn-sea w-full !py-3 shadow-lg shadow-sea/20 flex items-center justify-between px-4"
+        <button className="btn-sea w-full !rounded-xl !py-4 shadow-lg shadow-sea/20 flex items-center justify-between px-4"
           onClick={() => nav('/checkout')}>
           <span>روح للدفع</span>
           <span className="font-bold">{grandTotal} ج.م</span>

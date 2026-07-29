@@ -1,4 +1,5 @@
 import { artFor } from '../lib/categoryArt'
+import Icon from './Icon'
 import type { MenuItem } from '../lib/types'
 
 export default function ProductCard({
@@ -32,16 +33,16 @@ export default function ProductCard({
 
       {qty === 0 ? (
         <button
-          className="w-full h-10 rounded-full bg-sea text-white font-bold text-sm grid place-items-center hover:bg-seadeep transition-colors disabled:opacity-40 disabled:pointer-events-none"
+          className="w-full h-10 rounded-lg bg-sea text-white font-bold text-sm grid place-items-center hover:bg-seadeep transition-colors disabled:opacity-40 disabled:pointer-events-none"
           disabled={disabled}
-          onClick={onAdd}>+ إضافة</button>
+          onClick={onAdd}><span className="flex items-center gap-1.5"><Icon name="plus" className="w-3 h-3" /> إضافة</span></button>
       ) : (
-        <div className="w-full h-10 rounded-full bg-shellup flex items-center justify-between px-1.5">
-          <button className="w-7 h-7 rounded-full grid place-items-center text-foam font-bold hover:bg-white transition-colors"
-            onClick={onRemove} aria-label="تقليل">−</button>
+        <div className="w-full h-10 rounded-lg bg-shellup flex items-center justify-between px-1.5">
+          <button className="w-7 h-7 rounded-md grid place-items-center text-foam hover:bg-white transition-colors"
+            onClick={onRemove} aria-label="تقليل"><Icon name="minus" className="w-3 h-3" /></button>
           <span className="font-bold text-sm">{qty}</span>
-          <button className="w-7 h-7 rounded-full grid place-items-center text-white bg-sea font-bold hover:bg-seadeep transition-colors"
-            onClick={onAdd} aria-label="زيادة">+</button>
+          <button className="w-7 h-7 rounded-md grid place-items-center text-white bg-sea hover:bg-seadeep transition-colors"
+            onClick={onAdd} aria-label="زيادة"><Icon name="plus" className="w-3 h-3" /></button>
         </div>
       )}
     </div>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { haversineKm } from '../lib/geo'
+import Icon from '../components/Icon'
 import type { Compound, Restaurant } from '../lib/types'
 
 const STORAGE_KEY = 'salka_compound_id'
@@ -71,10 +72,10 @@ export default function Home() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4 gap-3">
-        <h1 className="text-2xl font-bold shrink-0">🍽️ المطاعم</h1>
+        <h1 className="text-2xl font-bold shrink-0">المطاعم</h1>
         <button className="btn-ghost text-sm shrink-0 max-w-[55%]" onClick={() => setPicking(true)}>
           <span className="flex items-center gap-1">
-            <span className="shrink-0">📍</span>
+            <Icon name="locationDot" className="w-3.5 h-3.5 shrink-0" />
             <span className="truncate">{selected ? selected.name : 'اختر مكانك'}</span>
           </span>
         </button>
@@ -104,8 +105,10 @@ export default function Home() {
                 </div>
                 <p className="text-sm text-mist mt-1.5 leading-relaxed">{r.description}</p>
                 <div className="flex items-center gap-3 mt-3 text-sm text-mist">
-                  <span className="text-sand">★ {r.rating}</span>
-                  <span>{r.order_mode === 'pickup_request' ? '🛵 اطلب مندوب توصيل' : `⏱ ${eta(r)} دقيقة`}</span>
+                  <span className="text-sand flex items-center gap-1"><Icon name="star" className="w-3.5 h-3.5" /> {r.rating}</span>
+                  <span className="flex items-center gap-1">
+                    {r.order_mode === 'pickup_request' ? '🛵 اطلب مندوب توصيل' : <><Icon name="clock" className="w-3.5 h-3.5" /> {eta(r)} دقيقة</>}
+                  </span>
                 </div>
               </Link>
             ))}
@@ -137,11 +140,14 @@ export default function Home() {
             )}
 
             <div className="flex items-center gap-2 mb-4">
-              <input className="field flex-1" value={search} onChange={e => setSearch(e.target.value)}
-                placeholder="🔍 دوّر على اسم المكان…" />
+              <div className="relative flex-1">
+                <Icon name="magnifyingGlass" className="w-4 h-4 absolute top-1/2 -translate-y-1/2 right-3.5 text-mist" />
+                <input className="field pr-10" value={search} onChange={e => setSearch(e.target.value)}
+                  placeholder="دوّر على اسم المكان…" />
+              </div>
               <button className="btn-ghost !px-3.5 shrink-0" disabled={locating} onClick={useMyLocation}
                 title="استخدم موقعي الحالي" aria-label="استخدم موقعي الحالي">
-                {locating ? '…' : '📍'}
+                {locating ? '…' : <Icon name="locationDot" className="w-4 h-4" />}
               </button>
             </div>
 

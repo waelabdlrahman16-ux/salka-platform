@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useCart } from '../lib/cart'
 import ProductCard from '../components/ProductCard'
+import Icon from '../components/Icon'
 import type { Compound, MenuItem, Restaurant } from '../lib/types'
 
 export default function RestaurantDetail() {
@@ -64,8 +65,8 @@ export default function RestaurantDetail() {
         </div>
         <p className="text-mist mt-1.5">{restaurant.description}</p>
         <div className="flex items-center gap-3 mt-2 text-sm text-mist">
-          <span className="text-sand">★ {restaurant.rating}</span>
-          <span>⏱ {totalEta ? `يوصلك خلال ${totalEta} دقيقة تقريبًا` : `التحضير حوالي ${restaurant.prep_minutes} دقيقة`}</span>
+          <span className="text-sand flex items-center gap-1"><Icon name="star" className="w-3.5 h-3.5" /> {restaurant.rating}</span>
+          <span className="flex items-center gap-1"><Icon name="clock" className="w-3.5 h-3.5" /> {totalEta ? `يوصلك خلال ${totalEta} دقيقة تقريبًا` : `التحضير حوالي ${restaurant.prep_minutes} دقيقة`}</span>
         </div>
         {restaurant.order_mode === 'pickup_request' && (
           <p className="text-sm bg-shellup/60 rounded-xl p-3 mt-3">

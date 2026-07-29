@@ -1,3 +1,4 @@
+import Icon from './components/Icon'
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/auth'
 import { CartProvider, useCart } from './lib/cart'
@@ -47,10 +48,10 @@ function BottomNav() {
   if (isStaff) return null
 
   const items = [
-    { to: '/', label: 'المطاعم', icon: '🍽️' },
-    { to: '/custom-order', label: 'طلب خاص', icon: '🧾' },
-    { to: '/cart', label: 'عربتي', icon: '🛒', badge: cart.count },
-    { to: '/my-orders', label: 'طلباتي', icon: '📋' },
+    { to: '/', label: 'الرئيسية', icon: 'forkKnife' as const },
+    { to: '/custom-order', label: 'طلب خاص', icon: 'boxOpen' as const },
+    { to: '/cart', label: 'عربتي', icon: 'bagShopping' as const, badge: cart.count },
+    { to: '/my-orders', label: 'طلباتي', icon: 'receipt' as const },
   ]
 
   return (
@@ -61,8 +62,8 @@ function BottomNav() {
           return (
             <Link key={it.to} to={it.to}
               className={`relative flex flex-col items-center gap-0.5 py-2.5 text-xs font-semibold ${active ? 'text-sea' : 'text-mist'}`}>
-              <span className="relative text-xl leading-none">
-                {it.icon}
+              <span className="relative leading-none">
+                <Icon name={it.icon} className="w-5 h-5" />
                 {!!it.badge && (
                   <span className="absolute -top-1.5 -left-2.5 bg-sea text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 grid place-items-center px-1">
                     {it.badge}
