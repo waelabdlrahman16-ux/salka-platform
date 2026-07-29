@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Assignment, Compound, Complaint, Driver, DeliverySlotRow, Earning, MenuItem, Order, OrderRating, Reliability, Restaurant, Setting, SettlementRequest, Shift, VendorCoverage } from '../lib/types'
 import { ping, askNotificationPermission } from '../lib/notify'
@@ -11,6 +11,47 @@ function StarRow({ n }: { n: number }) {
     <span className="inline-flex items-center gap-0.5 align-middle">
       {[1,2,3,4,5].map(i => <Icon key={i} name="star" className={`w-3 h-3 ${i <= n ? 'text-sand' : 'text-line'}`} />)}
     </span>
+  )
+}
+
+function AccountActionsMenu({ busy, onChangeEmail, onResetPassword, onCustomPassword, onRemove }: {
+  busy: boolean
+  onChangeEmail: () => void
+  onResetPassword: () => void
+  onCustomPassword: () => void
+  onRemove: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function onClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [open])
+
+  function pick(fn: () => void) {
+    setOpen(false)
+    fn()
+  }
+
+  return (
+    <div className="relative shrink-0" ref={ref}>
+      <button className="btn-ghost !py-1.5 !px-2.5 text-xs inline-flex items-center gap-1" disabled={busy} onClick={() => setOpen(v => !v)}>
+        <Icon name="penToSquare" className="w-3 h-3" /> الحساب
+      </button>
+      {open && (
+        <div className="absolute left-0 mt-1 z-20 bg-shell border border-line rounded-xl shadow-lg py-1.5 min-w-[160px]">
+          <button className="w-full text-right text-xs px-3 py-2 hover:bg-night" onClick={() => pick(onChangeEmail)}>تغيير الإيميل</button>
+          <button className="w-full text-right text-xs px-3 py-2 hover:bg-night" onClick={() => pick(onResetPassword)}>تغيير كلمة السر</button>
+          <button className="w-full text-right text-xs px-3 py-2 hover:bg-night" onClick={() => pick(onCustomPassword)}>كلمة سر مخصصة</button>
+          <button className="w-full text-right text-xs px-3 py-2 hover:bg-night text-red-500" onClick={() => pick(onRemove)}>إلغاء الحساب</button>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -1149,16 +1190,13 @@ export default function Admin() {
                       </div>
                       <div className="flex gap-1.5 shrink-0">
                         {acc ? (
-                          <>
-                            <button className="btn-ghost !py-1.5 !px-2.5 text-xs" disabled={accountBusy === acc.profile_id}
-                              onClick={() => changeEmail(acc.profile_id, acc.email)}>تغيير الإيميل</button>
-                            <button className="btn-ghost !py-1.5 !px-2.5 text-xs" disabled={accountBusy === acc.profile_id}
-                              onClick={() => resetPassword(acc.profile_id)}>تغيير كلمة السر</button>
-                            <button className="btn-ghost !py-1.5 !px-2.5 text-xs" disabled={accountBusy === acc.profile_id}
-                              onClick={() => setCustomPassword(acc.profile_id)}>كلمة سر مخصصة</button>
-                            <button className="btn-danger !py-1.5 !px-2.5 text-xs" disabled={accountBusy === acc.profile_id}
-                              onClick={() => removeLogin(acc.profile_id)}>إلغاء الحساب</button>
-                          </>
+                          <AccountActionsMenu
+                            busy={accountBusy === acc.profile_id}
+                            onChangeEmail={() => changeEmail(acc.profile_id, acc.email)}
+                            onResetPassword={() => resetPassword(acc.profile_id)}
+                            onCustomPassword={() => setCustomPassword(acc.profile_id)}
+                            onRemove={() => removeLogin(acc.profile_id)}
+                          />
                         ) : (
                           <button className="btn-sea !py-1.5 !px-3 text-xs" disabled={accountBusy === `vendor-${r.id}`}
                             onClick={() => createVendorLogin(r.id)}>إنشاء حساب</button>
@@ -1188,16 +1226,13 @@ export default function Admin() {
                       </div>
                       <div className="flex gap-1.5 shrink-0">
                         {acc ? (
-                          <>
-                            <button className="btn-ghost !py-1.5 !px-2.5 text-xs" disabled={accountBusy === acc.profile_id}
-                              onClick={() => changeEmail(acc.profile_id, acc.email)}>تغيير الإيميل</button>
-                            <button className="btn-ghost !py-1.5 !px-2.5 text-xs" disabled={accountBusy === acc.profile_id}
-                              onClick={() => resetPassword(acc.profile_id)}>تغيير كلمة السر</button>
-                            <button className="btn-ghost !py-1.5 !px-2.5 text-xs" disabled={accountBusy === acc.profile_id}
-                              onClick={() => setCustomPassword(acc.profile_id)}>كلمة سر مخصصة</button>
-                            <button className="btn-danger !py-1.5 !px-2.5 text-xs" disabled={accountBusy === acc.profile_id}
-                              onClick={() => removeLogin(acc.profile_id)}>إلغاء الحساب</button>
-                          </>
+                          <AccountActionsMenu
+                            busy={accountBusy === acc.profile_id}
+                            onChangeEmail={() => changeEmail(acc.profile_id, acc.email)}
+                            onResetPassword={() => resetPassword(acc.profile_id)}
+                            onCustomPassword={() => setCustomPassword(acc.profile_id)}
+                            onRemove={() => removeLogin(acc.profile_id)}
+                          />
                         ) : (
                           <button className="btn-sea !py-1.5 !px-3 text-xs" disabled={accountBusy === `driver-${d.id}`}
                             onClick={() => createDriverLogin(d.id)}>إنشاء حساب</button>
