@@ -2,23 +2,28 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from "jsr:@supabase/supabase-js@2"
 
 // Customer login via SMS OTP -- no password, no Supabase Auth account.
-// action=request  -> generates a code, stores it, sends it over SMS.
+// action=request  -> generates a code, stores it, sends it via SMS Misr's OTP API.
 // action=verify   -> checks the code, creates/finds the customer, issues a session token.
 //
-// Requires these secrets to actually deliver messages (set in Supabase dashboard):
-//   SMS_API_URL     -- your SMS gateway's send endpoint
-//   SMS_API_KEY     -- your gateway's API key / auth token
-//   SMS_SENDER_ID   -- the sender name/number your gateway has approved
-// Until these are set, action=request returns sms_not_configured rather than
-// silently pretending to succeed.
+// Requires these secrets (set in Supabase dashboard -> Edge Functions -> Secrets)
+// once a SMS Misr account exists and a Sender ID + OTP template are approved:
+//   SMSMISR_USERNAME      -- SMS Misr account username
+//   SMSMISR_PASSWORD      -- SMS Misr account password
+//   SMSMISR_SENDER        -- approved Sender ID / token
+//   SMSMISR_OTP_TEMPLATE  -- approved OTP template token (contact SMS Misr to set
+//                            up an Arabic template like "كود تأكيد سالكة: {otp}")
+//   SMSMISR_ENV           -- "2" for their test environment, "1" for live once
+//                            everything is approved. Defaults to "2" (test) if unset,
+//                            so nothing can accidentally go live before you're ready.
+// Until SMSMISR_USERNAME/PASSWORD/SENDER/OTP_TEMPLATE are all set, action=request
+// returns sms_not_configured rather than silently pretending to succeed.
 //
-// NOTE: the request body shape below (JSON with api_key/sender/to/message) is a
-// generic placeholder -- it is NOT tied to any specific provider. Once a real
-// SMS gateway is chosen, only the fetch() call in the "request" branch below
-// needs to be adjusted to match that provider's actual API (field names,
-// auth header vs body field, response shape, etc). Everything else --
-// rate limiting, code storage, verification, session issuance -- is already
-// provider-agnostic and doesn't need to change.
+// NOTE: success/failure is currently detected via presence of an SMSID in the
+// response. SMS Misr's docs show a success code of "4901" for their OTP
+// endpoint -- worth tightening this check against their full response-code
+// table once a real account is live, in case other codes should also count
+// as success or need distinct handling (e.g. insufficient balance vs bad
+// template vs bad number).
 //
 // Both request and verify are rate-limited per phone number (via check_rate_limit).
 // verify is limited separately and more tightly than request, since a 6-digit code
@@ -42,7 +47,8 @@ function normalizePhone(raw: string): string {
 }
 
 function toE164Egypt(raw: string): string {
-  // local Egyptian format is 01xxxxxxxxx (11 digits) -> +20 1xxxxxxxxx
+  // local Egyptian format is 01xxxxxxxxx (11 digits) -> 20 1xxxxxxxxx (no plus,
+  // SMS Misr's examples use the bare "2011XXXXXXX" form)
   const digits = raw.replace(/[^0-9]/g, "")
   const local = digits.slice(-10) // drop leading 0
   return `20${local}`
@@ -78,24 +84,27 @@ Deno.serve(async (req) => {
     })
     if (insertErr) return json({ error: "otp_store_failed", detail: insertErr.message }, 500)
 
-    const apiUrl = Deno.env.get("SMS_API_URL")
-    const apiKey = Deno.env.get("SMS_API_KEY")
-    const senderId = Deno.env.get("SMS_SENDER_ID")
-    if (!apiUrl || !apiKey || !senderId) {
+    const username = Deno.env.get("SMSMISR_USERNAME")
+    const password = Deno.env.get("SMSMISR_PASSWORD")
+    const sender = Deno.env.get("SMSMISR_SENDER")
+    const template = Deno.env.get("SMSMISR_OTP_TEMPLATE")
+    const environment = Deno.env.get("SMSMISR_ENV") ?? "2"
+    if (!username || !password || !sender || !template) {
       return json({ error: "sms_not_configured" }, 500)
     }
 
-    const smsRes = await fetch(apiUrl, {
+    const form = new URLSearchParams({
+      environment, username, password, sender,
+      mobile: toE164Egypt(cleanPhone),
+      template, otp: code
+    })
+    const smsRes = await fetch("https://smsmisr.com/api/OTP/", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        sender: senderId,
-        to: toE164Egypt(cleanPhone),
-        message: `كود تأكيد سالكة: ${code}`
-      })
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: form
     })
     const smsData = await smsRes.json().catch(() => null)
-    if (!smsRes.ok) return json({ error: "sms_send_failed", detail: smsData }, 502)
+    if (!smsRes.ok || !smsData?.SMSID) return json({ error: "sms_send_failed", detail: smsData }, 502)
 
     return json({ ok: true })
   }
