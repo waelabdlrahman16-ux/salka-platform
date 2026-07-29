@@ -3,8 +3,10 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useCart } from '../lib/cart'
 import ProductCard from '../components/ProductCard'
+import CustomizeSheet from '../components/CustomizeSheet'
 import Icon from '../components/Icon'
-import type { Compound, MenuItem, Restaurant } from '../lib/types'
+import { isItemAvailableNow } from '../lib/itemAvailability'
+import type { Compound, MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemSize, Restaurant } from '../lib/types'
 
 export default function RestaurantDetail() {
   const { id } = useParams()
@@ -12,12 +14,33 @@ export default function RestaurantDetail() {
   const cart = useCart()
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
   const [items, setItems] = useState<MenuItem[]>([])
+  const [sizes, setSizes] = useState<MenuItemSize[]>([])
+  const [addonGroups, setAddonGroups] = useState<MenuItemAddonGroup[]>([])
+  const [addons, setAddons] = useState<MenuItemAddon[]>([])
+  const [customizing, setCustomizing] = useState<MenuItem | null>(null)
   const [compounds, setCompounds] = useState<Compound[]>([])
   const [activeCat, setActiveCat] = useState<string | null>(null)
 
   useEffect(() => {
     supabase.from('restaurants').select('*').eq('id', id).single().then(({ data }) => setRestaurant(data))
-    supabase.from('menu_items').select('*').eq('restaurant_id', id).eq('available', true).then(({ data }) => setItems(data ?? []))
+    supabase.from('menu_items').select('*').eq('restaurant_id', id).eq('available', true).then(async ({ data }) => {
+      const list = data ?? []
+      setItems(list)
+      if (list.length) {
+        const ids = list.map(it => it.id)
+        const [{ data: sz }, { data: gr }] = await Promise.all([
+          supabase.from('menu_item_sizes').select('*').in('menu_item_id', ids).eq('available', true).order('display_order'),
+          supabase.from('menu_item_addon_groups').select('*').in('menu_item_id', ids).order('display_order')
+        ])
+        setSizes(sz ?? [])
+        setAddonGroups(gr ?? [])
+        const groupIds = (gr ?? []).map(g => g.id)
+        if (groupIds.length) {
+          const { data: ad } = await supabase.from('menu_item_addons').select('*').in('group_id', groupIds).order('display_order')
+          setAddons(ad ?? [])
+        }
+      }
+    })
     supabase.from('compounds').select('*').eq('active', true).order('direction').order('distance_km')
       .then(({ data }) => setCompounds(data ?? []))
   }, [id])
@@ -38,7 +61,7 @@ export default function RestaurantDetail() {
     if (!activeCat && categories.length) setActiveCat(categories[0])
   }, [categories, activeCat])
 
-  const shown = items.filter(it => it.category === activeCat)
+  const shown = items.filter(it => it.category === activeCat && isItemAvailableNow(it.available_from, it.available_until))
   const compoundId = sessionStorage.getItem('salka_compound_id')
   const selectedCompound = compounds.find(c => String(c.id) === compoundId)
   const totalEta = restaurant && selectedCompound ? restaurant.prep_minutes + selectedCompound.est_travel_minutes : null
@@ -106,20 +129,41 @@ export default function RestaurantDetail() {
             <section>
               <h2 className="font-bold text-lg mb-3">{activeCat}</h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {shown.map(it => (
-                  <ProductCard
-                    key={it.id}
-                    item={it}
-                    qty={cart.qty[it.id] ?? 0}
-                    disabled={!restaurant.is_open}
-                    onAdd={() => cart.add(it, 1)}
-                    onRemove={() => cart.add(it, -1)}
-                  />
-                ))}
+                {shown.map(it => {
+                  const itemSizes = sizes.filter(s => s.menu_item_id === it.id)
+                  const itemGroups = addonGroups.filter(g => g.menu_item_id === it.id)
+                  const hasOptions = itemSizes.length > 0 || itemGroups.length > 0
+                  return (
+                    <ProductCard
+                      key={it.id}
+                      item={it}
+                      qty={cart.qtyFor(it.id)}
+                      disabled={!restaurant.is_open}
+                      hasOptions={hasOptions}
+                      onAdd={() => cart.add(it, 1)}
+                      onRemove={() => cart.add(it, -1)}
+                      onCustomize={() => setCustomizing(it)}
+                    />
+                  )
+                })}
               </div>
             </section>
           )}
         </>
+      )}
+
+      {customizing && (
+        <CustomizeSheet
+          item={customizing}
+          sizes={sizes.filter(s => s.menu_item_id === customizing.id)}
+          addonGroups={addonGroups.filter(g => g.menu_item_id === customizing.id)}
+          addons={addons.filter(a => addonGroups.some(g => g.menu_item_id === customizing.id && g.id === a.group_id))}
+          onClose={() => setCustomizing(null)}
+          onConfirm={(sizeId, addonIds, qty) => {
+            cart.addCustomLine(customizing.id, sizeId, addonIds, qty)
+            setCustomizing(null)
+          }}
+        />
       )}
 
     </div>

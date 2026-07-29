@@ -3,13 +3,15 @@ import Icon from './Icon'
 import type { MenuItem } from '../lib/types'
 
 export default function ProductCard({
-  item, qty, disabled, onAdd, onRemove
+  item, qty, disabled, onAdd, onRemove, hasOptions, onCustomize
 }: {
   item: MenuItem
   qty: number
   disabled?: boolean
   onAdd: () => void
   onRemove: () => void
+  hasOptions?: boolean
+  onCustomize?: () => void
 }) {
   const art = artFor(item.category)
 
@@ -25,13 +27,23 @@ export default function ProductCard({
             💊 روشتة
           </span>
         )}
+        {hasOptions && qty > 0 && (
+          <span className="absolute top-2 left-2 bg-sea text-white rounded-full min-w-[1.25rem] h-5 px-1 grid place-items-center text-[10px] font-bold">
+            {qty}
+          </span>
+        )}
       </div>
 
       <h3 className="font-semibold text-sm leading-snug line-clamp-2 min-h-[2.5em]">{item.name}</h3>
       {item.description && <p className="text-xs text-mist mt-0.5 line-clamp-1">{item.description}</p>}
       <p className="text-sea font-bold mt-1.5 mb-3">{item.price} ج.م</p>
 
-      {qty === 0 ? (
+      {hasOptions ? (
+        <button
+          className="w-full h-10 rounded-lg bg-sea text-white font-bold text-sm grid place-items-center hover:bg-seadeep transition-colors disabled:opacity-40 disabled:pointer-events-none"
+          disabled={disabled}
+          onClick={onCustomize}><span className="flex items-center gap-1.5"><Icon name="plus" className="w-3 h-3" /> اختيار</span></button>
+      ) : qty === 0 ? (
         <button
           className="w-full h-10 rounded-lg bg-sea text-white font-bold text-sm grid place-items-center hover:bg-seadeep transition-colors disabled:opacity-40 disabled:pointer-events-none"
           disabled={disabled}

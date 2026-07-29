@@ -379,11 +379,18 @@ function KitchenVendor({ rid }: { rid: number }) {
           </div>
         </div>
 
-        <div className="mt-3 bg-night border border-line rounded-xl p-3.5 text-sm space-y-1">
+        <div className="mt-3 bg-night border border-line rounded-xl p-3.5 text-sm space-y-1.5">
           {(items[o.id] ?? []).map(it => (
             <div key={it.id} className="flex justify-between">
-              <span>{it.name} × {it.qty}{it.requires_prescription ? ' 💊' : ''}</span>
-              <span className="text-mist">{it.total} ج.م</span>
+              <span>
+                {it.name} × {it.qty}{it.requires_prescription ? ' 💊' : ''}
+                {(it.size_name || (it.addon_names && it.addon_names.length > 0)) && (
+                  <span className="block text-xs text-mist mt-0.5">
+                    {[it.size_name, ...(it.addon_names ?? [])].filter(Boolean).join(' · ')}
+                  </span>
+                )}
+              </span>
+              <span className="text-mist shrink-0 mr-2">{it.total} ج.م</span>
             </div>
           ))}
         </div>

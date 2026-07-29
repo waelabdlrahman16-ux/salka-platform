@@ -9,6 +9,19 @@ export interface MenuItem {
   id: number; restaurant_id: number; name: string; description: string
   category: string; price: number; available: boolean; requires_prescription: boolean
   image_url: string | null
+  available_from: string | null; available_until: string | null
+}
+export interface MenuItemSize {
+  id: number; menu_item_id: number; name: string; price: number
+  is_default: boolean; display_order: number; available: boolean
+}
+export interface MenuItemAddonGroup {
+  id: number; menu_item_id: number; name: string
+  min_select: number; max_select: number | null; display_order: number
+}
+export interface MenuItemAddon {
+  id: number; group_id: number; name: string; price: number
+  display_order: number; available: boolean
 }
 export interface RequestItem { name: string; qty: number }
 export interface Order {
@@ -34,6 +47,7 @@ export interface OrderItem {
   id: number; order_id: number; menu_item_id: number
   name: string; qty: number; unit_price: number; total: number
   requires_prescription: boolean
+  size_name: string | null; addon_names: string[] | null
 }
 export interface Driver {
   id: number; name: string; phone: string; status: string

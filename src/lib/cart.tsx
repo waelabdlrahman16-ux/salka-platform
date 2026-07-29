@@ -1,25 +1,43 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { MenuItem, Restaurant } from './types'
 
-const KEY = 'salka_cart_v1'
+const KEY = 'salka_cart_v2'
+
+export interface CartLine {
+  key: string
+  menuItemId: number
+  sizeId: number | null
+  addonIds: number[]
+  qty: number
+}
 
 interface CartState {
   restaurantId: number | null
-  qty: Record<number, number>
+  lines: CartLine[]
 }
 
 interface CartCtx {
   restaurantId: number | null
-  qty: Record<number, number>
+  lines: CartLine[]
   setForRestaurant: (restaurant: Restaurant) => void
+  // simple path: items with no sizes/add-ons, same +/- stepper behavior as before
   add: (item: MenuItem, delta: number) => void
-  remove: (itemId: number) => void
+  qtyFor: (itemId: number) => number
+  // customized path: items with sizes and/or add-ons go through a picker first
+  addCustomLine: (menuItemId: number, sizeId: number | null, addonIds: number[], qty: number) => void
+  updateLineQty: (key: string, delta: number) => void
+  removeLine: (key: string) => void
   clear: () => void
   count: number
 }
 
+function lineKey(menuItemId: number, sizeId: number | null, addonIds: number[]): string {
+  return `${menuItemId}:${sizeId ?? 'x'}:${[...addonIds].sort((a, b) => a - b).join(',')}`
+}
+
 const Ctx = createContext<CartCtx>({
-  restaurantId: null, qty: {}, setForRestaurant: () => {}, add: () => {}, remove: () => {}, clear: () => {}, count: 0
+  restaurantId: null, lines: [], setForRestaurant: () => {}, add: () => {}, qtyFor: () => 0,
+  addCustomLine: () => {}, updateLineQty: () => {}, removeLine: () => {}, clear: () => {}, count: 0
 })
 
 export const useCart = () => useContext(Ctx)
@@ -29,7 +47,7 @@ function load(): CartState {
     const raw = sessionStorage.getItem(KEY)
     if (raw) return JSON.parse(raw)
   } catch { /* ignore */ }
-  return { restaurantId: null, qty: {} }
+  return { restaurantId: null, lines: [] }
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
@@ -42,34 +60,58 @@ export function CartProvider({ children }: { children: ReactNode }) {
   function setForRestaurant(restaurant: Restaurant) {
     // switching to a different restaurant's menu clears any in-progress cart
     // from a different vendor — one order is tied to one vendor.
-    setState(s => s.restaurantId === restaurant.id ? s : { restaurantId: restaurant.id, qty: {} })
+    setState(s => s.restaurantId === restaurant.id ? s : { restaurantId: restaurant.id, lines: [] })
   }
 
   function add(item: MenuItem, delta: number) {
+    const key = lineKey(item.id, null, [])
     setState(s => {
-      const q = Math.max(0, (s.qty[item.id] ?? 0) + delta)
-      const next = { ...s.qty }
-      if (q === 0) delete next[item.id]; else next[item.id] = q
-      return { restaurantId: item.restaurant_id, qty: next }
+      const existing = s.lines.find(l => l.key === key)
+      const q = Math.max(0, (existing?.qty ?? 0) + delta)
+      const rest = s.lines.filter(l => l.key !== key)
+      const next = q === 0 ? rest : [...rest, { key, menuItemId: item.id, sizeId: null, addonIds: [], qty: q }]
+      return { restaurantId: item.restaurant_id, lines: next }
     })
   }
 
-  function remove(itemId: number) {
+  function qtyFor(itemId: number): number {
+    return state.lines.filter(l => l.menuItemId === itemId).reduce((s, l) => s + l.qty, 0)
+  }
+
+  function addCustomLine(menuItemId: number, sizeId: number | null, addonIds: number[], qty: number) {
+    const key = lineKey(menuItemId, sizeId, addonIds)
     setState(s => {
-      const next = { ...s.qty }
-      delete next[itemId]
-      return { ...s, qty: next }
+      const existing = s.lines.find(l => l.key === key)
+      const rest = s.lines.filter(l => l.key !== key)
+      const q = (existing?.qty ?? 0) + qty
+      return { ...s, lines: [...rest, { key, menuItemId, sizeId, addonIds, qty: q }] }
     })
+  }
+
+  function updateLineQty(key: string, delta: number) {
+    setState(s => {
+      const next = s.lines
+        .map(l => l.key === key ? { ...l, qty: Math.max(0, l.qty + delta) } : l)
+        .filter(l => l.qty > 0)
+      return { ...s, lines: next }
+    })
+  }
+
+  function removeLine(key: string) {
+    setState(s => ({ ...s, lines: s.lines.filter(l => l.key !== key) }))
   }
 
   function clear() {
-    setState({ restaurantId: null, qty: {} })
+    setState({ restaurantId: null, lines: [] })
   }
 
-  const count = Object.values(state.qty).reduce((a, b) => a + b, 0)
+  const count = state.lines.reduce((a, l) => a + l.qty, 0)
 
   return (
-    <Ctx.Provider value={{ restaurantId: state.restaurantId, qty: state.qty, setForRestaurant, add, remove, clear, count }}>
+    <Ctx.Provider value={{
+      restaurantId: state.restaurantId, lines: state.lines, setForRestaurant,
+      add, qtyFor, addCustomLine, updateLineQty, removeLine, clear, count
+    }}>
       {children}
     </Ctx.Provider>
   )

@@ -5,6 +5,7 @@ import { ping, askNotificationPermission } from '../lib/notify'
 import { uploadVendorImage } from '../lib/upload'
 import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel } from '../lib/statusLabels'
 import Icon from '../components/Icon'
+import MenuItemEditor from '../components/MenuItemEditor'
 
 function StarRow({ n }: { n: number }) {
   return (
@@ -82,6 +83,7 @@ export default function Admin() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [menu, setMenu] = useState<MenuItem[]>([])
   const [openRest, setOpenRest] = useState<number | null>(null)
+  const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
   const [newItem, setNewItem] = useState({ name: '', category: '', price: '', requiresRx: false })
   const [settings, setSettings] = useState<Setting[]>([])
   const [shifts, setShifts] = useState<Shift[]>([])
@@ -853,7 +855,7 @@ export default function Admin() {
                     {its.map(it => (
                       <div key={it.id} className="bg-night border border-line rounded-xl p-3">
                         <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-2.5 min-w-0">
+                          <button className="flex items-center gap-2.5 min-w-0 text-right" onClick={() => setEditingItem(it)}>
                             {it.image_url
                               ? <img src={it.image_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0 border border-line" />
                               : <div className="w-10 h-10 rounded-lg bg-shellup shrink-0" />}
@@ -861,8 +863,9 @@ export default function Admin() {
                               <p className="font-semibold truncate">{it.name}</p>
                               <p className="text-xs text-mist">{it.category}</p>
                             </div>
-                          </div>
+                          </button>
                           <div className="flex items-center gap-2 shrink-0">
+                            <button className="text-xs text-sea font-semibold" onClick={() => setEditingItem(it)}>✏️ تعديل</button>
                             <input type="number" defaultValue={it.price} className="field !w-24 !py-1.5 text-center"
                               onBlur={e => updatePrice(it, Number(e.target.value))} />
                             <span className="text-mist text-sm">ج.م</span>
@@ -873,6 +876,11 @@ export default function Admin() {
                             onClick={() => toggleItem(it)}>
                             {it.available ? '✓ متاح' : '✗ غير متاح'}
                           </button>
+                          {it.available_from && it.available_until && (
+                            <span className="text-xs text-mist bg-shellup/60 rounded-full px-2 py-0.5">
+                              ⏰ {it.available_from.slice(0, 5)}–{it.available_until.slice(0, 5)}
+                            </span>
+                          )}
                           {r.vendor_type === 'pharmacy' && (
                             <button className={`text-sm ${it.requires_prescription ? 'text-sand' : 'text-mist'}`}
                               onClick={() => toggleRx(it)}>
@@ -1340,6 +1348,14 @@ export default function Admin() {
             <button className="btn-ghost w-full mt-4" onClick={() => setAssigning(null)}>إلغاء</button>
           </div>
         </div>
+      )}
+
+      {editingItem && (
+        <MenuItemEditor
+          item={editingItem}
+          onClose={() => setEditingItem(null)}
+          onSaved={() => { setEditingItem(null); load() }}
+        />
       )}
     </div>
   )

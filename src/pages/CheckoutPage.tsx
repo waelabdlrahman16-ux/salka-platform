@@ -5,7 +5,7 @@ import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { useCart } from '../lib/cart'
 import { estimateDeliveryFee } from '../lib/deliveryFee'
 import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
-import type { Compound, MenuItem, Restaurant, Slot } from '../lib/types'
+import type { Compound, MenuItem, MenuItemAddon, MenuItemSize, Restaurant, Slot } from '../lib/types'
 
 export default function CheckoutPage() {
   const nav = useNavigate()
@@ -13,6 +13,8 @@ export default function CheckoutPage() {
   const { customer } = useCustomerAuth()
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
   const [items, setItems] = useState<MenuItem[]>([])
+  const [sizes, setSizes] = useState<MenuItemSize[]>([])
+  const [addons, setAddons] = useState<MenuItemAddon[]>([])
   const [compounds, setCompounds] = useState<Compound[]>([])
   const [slots, setSlots] = useState<Slot[]>([])
   const [slot, setSlot] = useState<Slot | null>(null)
@@ -62,12 +64,33 @@ export default function CheckoutPage() {
     supabase.from('compounds').select('*').eq('active', true).order('direction').order('distance_km')
       .then(({ data }) => setCompounds(data ?? []))
     supabase.rpc('open_slots', { p_restaurant_id: cart.restaurantId }).then(({ data }) => setSlots((data as Slot[]) ?? []))
+    ;(async () => {
+      const ids = (await supabase.from('menu_items').select('id').eq('restaurant_id', cart.restaurantId)).data?.map(x => x.id) ?? []
+      if (!ids.length) return
+      const { data: sz } = await supabase.from('menu_item_sizes').select('*').in('menu_item_id', ids)
+      setSizes(sz ?? [])
+      const { data: gr } = await supabase.from('menu_item_addon_groups').select('id').in('menu_item_id', ids)
+      const groupIds = (gr ?? []).map(g => g.id)
+      if (groupIds.length) {
+        const { data: ad } = await supabase.from('menu_item_addons').select('*').in('group_id', groupIds)
+        setAddons(ad ?? [])
+      }
+    })()
   }, [cart.restaurantId])
 
-  const lines = useMemo(() => items.filter(it => cart.qty[it.id]), [items, cart.qty])
-  const subtotal = lines.reduce((s, it) => s + it.price * cart.qty[it.id], 0)
+  function priceFor(menuItemId: number, sizeId: number | null, addonIds: number[]) {
+    const item = items.find(i => i.id === menuItemId)
+    const size = sizeId ? sizes.find(s => s.id === sizeId) : null
+    const base = size ? size.price : (item?.price ?? 0)
+    const selectedAddons = addonIds.map(id => addons.find(a => a.id === id)).filter((a): a is MenuItemAddon => !!a)
+    const addonsTotal = selectedAddons.reduce((s, a) => s + a.price, 0)
+    return { unit: base + addonsTotal, item, sizeName: size?.name ?? null, addonNames: selectedAddons.map(a => a.name) }
+  }
+
+  const lines = useMemo(() => cart.lines.filter(l => items.some(i => i.id === l.menuItemId)), [items, cart.lines])
+  const subtotal = lines.reduce((s, l) => s + priceFor(l.menuItemId, l.sizeId, l.addonIds).unit * l.qty, 0)
   const scheduled = restaurant?.vendor_type === 'supermarket'
-  const hasRx = lines.some(it => it.requires_prescription)
+  const hasRx = lines.some(l => priceFor(l.menuItemId, l.sizeId, l.addonIds).item?.requires_prescription)
   const selectedCompound = compounds.find(c => c.id === compoundId)
   const deliveryFee = selectedCompound ? estimateDeliveryFee(selectedCompound.distance_km) : 0
   const serviceFee = Math.round(subtotal * 0.02)
@@ -82,7 +105,7 @@ export default function CheckoutPage() {
     if (!restaurant || !valid) return
     setSaving(true)
     setError('')
-    const payload = lines.map(it => ({ menu_item_id: it.id, name: it.name, qty: cart.qty[it.id], unit_price: it.price }))
+    const payload = lines.map(l => ({ menu_item_id: l.menuItemId, qty: l.qty, size_id: l.sizeId, addon_ids: l.addonIds }))
     const { data, error: err } = await supabase.rpc('place_order', {
       p_restaurant_id: restaurant.id,
       p_customer_name: name.trim(),
@@ -105,6 +128,11 @@ export default function CheckoutPage() {
         err?.message.includes('slot_full') ? 'الفترة دي اتملت، اختار فترة تانية'
         : err?.message.includes('restaurant_closed') ? 'المطعم قفل قبل ما تأكد الطلب، جرب تاني بعدين'
         : err?.message.includes('vendor_not_covering_compound') ? 'المطعم ده مش بيوصل لمنطقتك للأسف'
+        : err?.message.includes('item_not_available_now') ? 'في صنف في عربتك مش متاح دلوقتي (وقت محدود)، شيله وجرب تاني'
+        : err?.message.includes('item_unavailable') ? 'في صنف في عربتك خلص، شيله وجرب تاني'
+        : err?.message.includes('size_required') || err?.message.includes('invalid_size') ? 'اختار حجم الصنف قبل ما تكمل'
+        : err?.message.includes('addon_group_min_not_met') ? 'في اختيار مطلوب لصنف في عربتك لسه ما اتحددش'
+        : err?.message.includes('addon_group_max_exceeded') ? 'اخترت إضافات أكتر من المسموح لصنف في عربتك'
         : 'حصل خطأ، جرب تاني'
       )
       return
@@ -211,11 +239,20 @@ export default function CheckoutPage() {
 
       <div className="card p-4 mb-5 space-y-2">
         <h2 className="font-bold mb-1">ملخص الطلب</h2>
-        {lines.map(it => (
-          <div key={it.id} className="flex justify-between text-sm">
-            <span>{it.name} × {cart.qty[it.id]}</span><span>{cart.qty[it.id] * it.price} ج.م</span>
-          </div>
-        ))}
+        {lines.map(l => {
+          const { unit, item, sizeName, addonNames } = priceFor(l.menuItemId, l.sizeId, l.addonIds)
+          return (
+            <div key={l.key} className="flex justify-between text-sm">
+              <span>
+                {item?.name} × {l.qty}
+                {(sizeName || addonNames.length > 0) && (
+                  <span className="text-mist"> ({[sizeName, ...addonNames].filter(Boolean).join(' · ')})</span>
+                )}
+              </span>
+              <span>{l.qty * unit} ج.م</span>
+            </div>
+          )
+        })}
         <div className="flex justify-between text-sm text-mist"><span>التوصيل{selectedCompound ? ` (${selectedCompound.distance_km} كم)` : ''}</span><span>{deliveryFee} ج.م</span></div>
         <div className="flex justify-between text-sm text-mist"><span>رسوم الخدمة</span><span>{serviceFee} ج.م</span></div>
         {walletApplied > 0 && (
