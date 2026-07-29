@@ -4,19 +4,21 @@ import { supabase } from '../lib/supabase'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { useCart } from '../lib/cart'
 import { estimateDeliveryFee } from '../lib/deliveryFee'
+import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
 import type { Compound, MenuItem, Restaurant, Slot } from '../lib/types'
 
 export default function CheckoutPage() {
   const nav = useNavigate()
   const cart = useCart()
+  const { customer } = useCustomerAuth()
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
   const [items, setItems] = useState<MenuItem[]>([])
   const [compounds, setCompounds] = useState<Compound[]>([])
   const [slots, setSlots] = useState<Slot[]>([])
   const [slot, setSlot] = useState<Slot | null>(null)
 
-  const [name, setName] = useState('')
-  const [phone, setPhone] = useState(() => localStorage.getItem('salka_phone') ?? '')
+  const [name, setName] = useState(() => customer?.name ?? '')
+  const [phone, setPhone] = useState(() => customer?.phone ?? localStorage.getItem('salka_phone') ?? '')
   const [unit, setUnit] = useState('')
   const [notes, setNotes] = useState('')
   const [compoundId, setCompoundId] = useState<number | null>(() => {
@@ -33,13 +35,14 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (!isValidEgyptPhone(phone)) { setWalletBalance(0); return }
-    supabase.rpc('wallet_balance_for_phone', { p_phone: phone.trim() }).then(({ data }) => setWalletBalance(Number(data) || 0))
+    supabase.rpc('wallet_balance_for_phone', { p_phone: phone.trim(), p_session_token: getSessionToken() })
+      .then(({ data }) => setWalletBalance(Number(data) || 0))
   }, [phone])
 
   useEffect(() => {
     if (!isValidEgyptPhone(phone) || addressLoaded) return
     const t = setTimeout(async () => {
-      const { data } = await supabase.rpc('last_address_for_phone', { p_phone: phone })
+      const { data } = await supabase.rpc('last_address_for_phone', { p_phone: phone, p_session_token: getSessionToken() })
       if (data) {
         setAddressLoaded(true)
         if (!name.trim() && data.customer_name) setName(data.customer_name)
@@ -93,7 +96,8 @@ export default function CheckoutPage() {
       p_scheduled_date: slot?.scheduled_date ?? null,
       p_compound_id: compoundId,
       p_payment_method: isInstapay ? 'instapay' : 'cod',
-      p_use_wallet: walletBalance > 0 && useWallet
+      p_use_wallet: walletBalance > 0 && useWallet,
+      p_session_token: getSessionToken()
     })
     if (err || !data?.token) {
       setSaving(false)

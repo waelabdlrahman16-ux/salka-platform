@@ -16,7 +16,8 @@ import Vendor from './pages/Vendor'
 import MyOrders from './pages/MyOrders'
 import Terms from './pages/Terms'
 import InstallPrompt from './components/InstallPrompt'
-import Onboarding from './components/Onboarding'
+import CustomerLogin from './components/CustomerLogin'
+import { CustomerAuthProvider } from './lib/customerAuth'
 import { useState } from 'react'
 
 function Header() {
@@ -90,38 +91,47 @@ export default function App() {
 
   return (
     <AuthProvider>
-      <CartProvider>
-        <div className="min-h-screen font-arabic">
-          {isStaff && <Header />}
-          {!isStaff && <InstallPrompt />}
-          {showOnboarding && <Onboarding onDone={() => setShowOnboarding(false)} />}
-          <main
-            className="max-w-5xl mx-auto px-4 pb-28"
-            style={{ paddingTop: isStaff ? '1.5rem' : 'max(1.5rem, calc(env(safe-area-inset-top) + 0.75rem))' }}
-          >
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/restaurant/:id" element={<RestaurantDetail />} />
-              <Route path="/cart" element={<CartPage />} />
-              <Route path="/checkout" element={<CheckoutPage />} />
-              <Route path="/custom-order" element={<CustomOrder />} />
-              <Route path="/my-orders" element={<MyOrders />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/track/:token" element={<Track />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/admin" element={<Protected role="admin"><Admin /></Protected>} />
-              <Route path="/driver" element={<Protected role="driver"><DriverPage /></Protected>} />
-              <Route path="/vendor" element={<Protected role="vendor"><Vendor /></Protected>} />
-            </Routes>
-          </main>
-          {!isStaff && (
-            <footer className="max-w-5xl mx-auto px-4 pb-8 text-center">
-              <Link to="/terms" className="text-xs text-mist hover:text-foam">الشروط وسياسة الخصوصية</Link>
-            </footer>
-          )}
-          <BottomNav />
-        </div>
-      </CartProvider>
+      <CustomerAuthProvider>
+        <CartProvider>
+          <div className="min-h-screen font-arabic">
+            {isStaff && <Header />}
+            {!isStaff && <InstallPrompt />}
+            {showOnboarding && (
+              <CustomerLogin
+                onDone={() => { localStorage.setItem('salka_onboarded', '1'); setShowOnboarding(false) }}
+                // TEMPORARY: skippable until WhatsApp OTP delivery is configured and verified end-to-end.
+                // Once that's done, remove onSkip entirely to make verification mandatory as intended.
+                onSkip={() => { localStorage.setItem('salka_onboarded', '1'); setShowOnboarding(false) }}
+              />
+            )}
+            <main
+              className="max-w-5xl mx-auto px-4 pb-28"
+              style={{ paddingTop: isStaff ? '1.5rem' : 'max(1.5rem, calc(env(safe-area-inset-top) + 0.75rem))' }}
+            >
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/restaurant/:id" element={<RestaurantDetail />} />
+                <Route path="/cart" element={<CartPage />} />
+                <Route path="/checkout" element={<CheckoutPage />} />
+                <Route path="/custom-order" element={<CustomOrder />} />
+                <Route path="/my-orders" element={<MyOrders />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/track/:token" element={<Track />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/admin" element={<Protected role="admin"><Admin /></Protected>} />
+                <Route path="/driver" element={<Protected role="driver"><DriverPage /></Protected>} />
+                <Route path="/vendor" element={<Protected role="vendor"><Vendor /></Protected>} />
+              </Routes>
+            </main>
+            {!isStaff && (
+              <footer className="max-w-5xl mx-auto px-4 pb-8 text-center">
+                <Link to="/terms" className="text-xs text-mist hover:text-foam">الشروط وسياسة الخصوصية</Link>
+              </footer>
+            )}
+            <BottomNav />
+          </div>
+        </CartProvider>
+      </CustomerAuthProvider>
     </AuthProvider>
   )
 }

@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { estimateDeliveryFee } from '../lib/deliveryFee'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { artFor } from '../lib/categoryArt'
+import { getSessionToken } from '../lib/customerAuth'
 import type { Compound, MenuItem, Restaurant } from '../lib/types'
 
 export default function CustomOrder() {
@@ -28,7 +29,7 @@ export default function CustomOrder() {
   useEffect(() => {
     if (!isValidEgyptPhone(phone) || addressLoaded) return
     const t = setTimeout(async () => {
-      const { data } = await supabase.rpc('last_address_for_phone', { p_phone: phone })
+      const { data } = await supabase.rpc('last_address_for_phone', { p_phone: phone, p_session_token: getSessionToken() })
       if (data) {
         setAddressLoaded(true)
         if (!name.trim() && data.customer_name) setName(data.customer_name)
@@ -81,7 +82,8 @@ export default function CustomOrder() {
       p_delivery_fee: deliveryFee,
       p_request_items: [],
       p_request_notes: list.trim(),
-      p_compound_id: compoundId
+      p_compound_id: compoundId,
+      p_session_token: getSessionToken()
     })
     if (err || !data?.token) {
       setSaving(false)

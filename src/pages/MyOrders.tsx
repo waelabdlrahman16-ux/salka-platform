@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
 
 interface Row {
   id: number; public_token: string; total: number
@@ -8,13 +9,14 @@ interface Row {
 }
 
 export default function MyOrders() {
-  const [phone, setPhone] = useState(() => localStorage.getItem('salka_phone') ?? '')
+  const { customer, logout } = useCustomerAuth()
+  const [phone, setPhone] = useState(() => customer?.phone ?? localStorage.getItem('salka_phone') ?? '')
   const [rows, setRows] = useState<Row[] | null>(null)
   const [busy, setBusy] = useState(false)
 
   async function search() {
     setBusy(true)
-    const { data } = await supabase.rpc('my_orders', { p_phone: phone.trim() })
+    const { data } = await supabase.rpc('my_orders', { p_phone: phone.trim(), p_session_token: getSessionToken() })
     setRows((data as Row[]) ?? [])
     setBusy(false)
   }
@@ -26,16 +28,26 @@ export default function MyOrders() {
 
   return (
     <div className="max-w-sm mx-auto">
-      <div className="card p-6 mt-4">
-        <h1 className="text-xl font-bold">طلباتي</h1>
-        <p className="text-sm text-mist mt-1.5">اكتب رقم الموبايل اللي طلبت بيه</p>
-        <input className="field mt-4" dir="ltr" value={phone} placeholder="01xxxxxxxxx"
-          onChange={e => setPhone(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && search()} />
-        <button className="btn-sea w-full mt-3" disabled={!phone.trim() || busy} onClick={search}>
-          {busy ? 'جاري البحث…' : 'بحث'}
-        </button>
-      </div>
+      {customer ? (
+        <div className="card p-4 mt-4 flex items-center justify-between">
+          <div>
+            <p className="font-semibold">{customer.name || 'حسابك'}</p>
+            <p className="text-xs text-mist mt-0.5" dir="ltr">{customer.phone}</p>
+          </div>
+          <button className="btn-ghost !py-1.5 !px-3 text-sm" onClick={logout}>خروج</button>
+        </div>
+      ) : (
+        <div className="card p-6 mt-4">
+          <h1 className="text-xl font-bold">طلباتي</h1>
+          <p className="text-sm text-mist mt-1.5">اكتب رقم الموبايل اللي طلبت بيه</p>
+          <input className="field mt-4" dir="ltr" value={phone} placeholder="01xxxxxxxxx"
+            onChange={e => setPhone(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && search()} />
+          <button className="btn-sea w-full mt-3" disabled={!phone.trim() || busy} onClick={search}>
+            {busy ? 'جاري البحث…' : 'بحث'}
+          </button>
+        </div>
+      )}
 
       {rows && rows.length === 0 && (
         <p className="text-center text-mist text-sm mt-5">لا توجد طلبات بهذا الرقم</p>
