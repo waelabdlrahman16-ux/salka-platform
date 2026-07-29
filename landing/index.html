@@ -4,115 +4,128 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>سالكة — التوصيل يعرف الساحل</title>
-<meta name="description" content="سالكة توصل طلبك على طول ساحل العين السخنة — من المطعم لباب الشاليه." />
+<meta name="description" content="سالكة توصل طلبك على طول ساحل العين السخنة — من المطعم لباب الشاليه. تغطية حقيقية على 52 كمبوند، لحد 31 كم." />
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@500;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --sand:#FBF6EE;
-    --ink:#16302E;
-    --teal:#0E7C7B;
-    --teal-deep:#0A5F5E;
-    --teal-glass:#D9EEEC;
-    --coral:#D9694E;
-    --coral-deep:#B8503A;
-    --line:#E7DFCF;
+    --sea:#0A5F5E;
+    --sea-deep:#063A39;
+    --sea-tint:rgba(10,95,94,.08);
+    --silver:#F4F7F7;
+    --line:#E1E8E7;
+    --ink:#17302E;
+    --mist:#64716F;
+    --gold:#B8934A;
+    --gold-tint:rgba(184,147,74,.12);
   }
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
   @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} *{animation:none !important; transition:none !important} }
   body{
-    margin:0; background:var(--sand); color:var(--ink);
+    margin:0; background:var(--silver); color:var(--ink);
     font-family:'IBM Plex Sans Arabic', sans-serif;
-    line-height:1.7;
+    line-height:1.7; -webkit-font-smoothing:antialiased;
   }
   h1,h2,h3,.display{ font-family:'Baloo Bhaijaan 2', sans-serif; font-weight:800; }
   a{ color:inherit }
   .wrap{ max-width:1080px; margin:0 auto; padding:0 24px; }
+  .num{ font-variant-numeric:tabular-nums; }
+  .reveal{ opacity:0; transform:translateY(16px); transition:opacity .6s ease, transform .6s ease; }
+  .reveal.in{ opacity:1; transform:none; }
 
   /* ---- nav ---- */
   nav{ display:flex; align-items:center; justify-content:space-between; padding:22px 24px; max-width:1080px; margin:0 auto; }
-  .logo{ display:flex; align-items:center; gap:10px; font-family:'Baloo Bhaijaan 2'; font-weight:800; font-size:22px; color:var(--teal-deep); }
-  .logo svg{ width:30px; height:30px; }
+  .logo{ display:flex; align-items:center; gap:9px; font-family:'Baloo Bhaijaan 2'; font-weight:800; font-size:21px; color:var(--sea-deep); }
+  .logo svg{ width:28px; height:28px; }
   .cta-btn{
-    background:var(--coral); color:#fff; border:none; padding:12px 26px; border-radius:999px;
+    background:var(--sea); color:#fff; border:none; padding:12px 26px; border-radius:12px;
     font-family:'Baloo Bhaijaan 2'; font-weight:700; font-size:15px; text-decoration:none;
     display:inline-block; transition:background .15s, transform .15s;
   }
-  .cta-btn:hover{ background:var(--coral-deep); transform:translateY(-1px); }
-  .cta-btn:focus-visible, a:focus-visible, button:focus-visible{ outline:3px solid var(--teal); outline-offset:2px; }
-
-  /* ---- route spine ---- */
-  .route{ position:relative; }
-  .route::before{
-    content:''; position:absolute; top:0; bottom:0; right:calc(50% - 1px);
-    width:2px; background:repeating-linear-gradient(to bottom, var(--teal) 0 10px, transparent 10px 20px);
-    opacity:.35;
-  }
-  @media (max-width:720px){ .route::before{ display:none } }
-
-  .waypoint{ position:relative; padding:80px 0; }
-  .waypoint-dot{
-    position:absolute; top:80px; right:calc(50% - 9px); width:18px; height:18px; border-radius:50%;
-    background:var(--sand); border:3px solid var(--teal); z-index:2;
-  }
-  @media (max-width:720px){ .waypoint-dot{ display:none } .waypoint{ padding:56px 0 } }
+  .cta-btn:hover{ background:var(--sea-deep); transform:translateY(-1px); }
+  .cta-btn:focus-visible, a:focus-visible, button:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; }
 
   /* ---- hero ---- */
-  .hero{ padding:64px 0 40px; text-align:center; }
+  .hero{ padding:56px 0 8px; text-align:center; }
   .hero .eyebrow{
-    display:inline-block; background:var(--teal-glass); color:var(--teal-deep); font-weight:600;
-    font-size:14px; padding:6px 16px; border-radius:999px; margin-bottom:22px;
+    display:inline-flex; align-items:center; gap:7px; background:var(--sea-tint); color:var(--sea-deep); font-weight:600;
+    font-size:13.5px; padding:7px 16px; border-radius:999px; margin-bottom:24px;
   }
-  .hero h1{ font-size:clamp(34px,6vw,58px); color:var(--teal-deep); margin:0 0 18px; line-height:1.25; }
-  .hero p.sub{ font-size:18px; color:#3E5250; max-width:560px; margin:0 auto 34px; }
-  .hero-actions{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+  .hero .eyebrow b{ color:var(--gold); }
+  .hero h1{ font-size:clamp(34px,6vw,58px); color:var(--sea-deep); margin:0 0 18px; line-height:1.22; }
+  .hero p.sub{ font-size:17.5px; color:var(--mist); max-width:540px; margin:0 auto 32px; }
+  .hero-actions{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-bottom:56px; }
   .btn-ghost{
-    border:2px solid var(--teal); color:var(--teal-deep); background:transparent; padding:11px 24px;
-    border-radius:999px; font-family:'Baloo Bhaijaan 2'; font-weight:700; font-size:15px; text-decoration:none;
+    border:1.5px solid var(--line); color:var(--ink); background:#fff; padding:11px 24px;
+    border-radius:12px; font-family:'Baloo Bhaijaan 2'; font-weight:700; font-size:15px; text-decoration:none;
+    transition:border-color .15s;
   }
+  .btn-ghost:hover{ border-color:var(--sea); }
 
-  /* ---- coastline svg ---- */
-  .coastline{ width:100%; height:auto; display:block; margin:8px 0 0; }
+  /* ---- distance gauge (signature element) ---- */
+  .gauge-wrap{ max-width:760px; margin:0 auto; padding:0 16px 8px; }
+  .gauge-label{ display:flex; justify-content:space-between; font-size:12.5px; color:var(--mist); margin-bottom:8px; }
+  .gauge{ position:relative; height:10px; border-radius:999px; background:var(--line); overflow:visible; }
+  .gauge-fill{ position:absolute; inset:0; border-radius:999px;
+    background:linear-gradient(to left, var(--sea) 0%, var(--sea) 32%, var(--gold) 32%, var(--gold) 65%, var(--sea-deep) 65%, var(--sea-deep) 100%); }
+  .gauge-scoot{
+    position:absolute; top:50%; right:0; width:26px; height:26px; margin-top:-13px;
+    background:var(--sea-deep); border-radius:999px; display:grid; place-items:center; color:#fff;
+    box-shadow:0 3px 10px rgba(6,58,57,.3);
+    animation:ride 6s ease-in-out infinite;
+  }
+  .gauge-scoot svg{ width:14px; height:14px; }
+  @keyframes ride{
+    0%,100%{ right:0; } 50%{ right:calc(100% - 26px); }
+  }
+  .gauge-ticks{ display:flex; justify-content:space-between; margin-top:10px; font-size:12px; color:var(--mist); }
+  .gauge-ticks b{ display:block; color:var(--ink); font-size:14px; font-family:'Baloo Bhaijaan 2'; font-weight:700; }
+  .gauge-ticks .gold-tick b{ color:var(--gold); }
 
   /* ---- sections ---- */
-  section h2{ font-size:clamp(24px,4vw,32px); color:var(--teal-deep); margin:0 0 14px; }
-  .kicker{ color:var(--coral); font-weight:600; font-size:14px; letter-spacing:.02em; margin:0 0 8px; }
+  section{ padding:64px 0; }
+  section h2{ font-size:clamp(24px,4vw,32px); color:var(--sea-deep); margin:0 0 12px; }
+  .kicker{ color:var(--mist); font-weight:700; font-size:12.5px; letter-spacing:.06em; margin:0 0 8px; text-transform:uppercase; }
   .center{ text-align:center }
-  .lede{ max-width:560px; margin:0 auto 40px; color:#3E5250; font-size:16.5px; }
+  .lede{ max-width:560px; margin:0 auto 40px; color:var(--mist); font-size:16.5px; }
 
   /* vendor chips */
   .vendors{ display:flex; flex-wrap:wrap; gap:12px; justify-content:center; }
   .vendor-chip{
-    background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px 22px;
-    font-weight:600; font-size:15px; box-shadow:0 2px 10px rgba(20,40,38,.04);
+    background:#fff; border:1px solid var(--line); border-radius:12px; padding:13px 20px;
+    font-weight:600; font-size:14.5px; box-shadow:0 2px 10px rgba(23,48,46,.04);
+    display:flex; align-items:center; gap:8px;
   }
+  .vendor-chip .dot{ width:7px; height:7px; border-radius:999px; background:var(--sea); flex-shrink:0; }
 
   /* steps */
-  .steps{ display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+  .steps{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
   @media (max-width:720px){ .steps{ grid-template-columns:1fr } }
-  .step{ background:#fff; border:1px solid var(--line); border-radius:18px; padding:28px 24px; }
-  .step .num{
-    width:36px; height:36px; border-radius:50%; background:var(--teal); color:#fff; display:grid; place-items:center;
-    font-family:'Baloo Bhaijaan 2'; font-weight:700; margin-bottom:14px;
+  .step{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:26px 22px; }
+  .step .stepnum{
+    width:34px; height:34px; border-radius:10px; background:var(--sea-tint); color:var(--sea);
+    display:grid; place-items:center; font-family:'Baloo Bhaijaan 2'; font-weight:700; margin-bottom:14px; font-size:15px;
   }
-  .step h3{ font-size:18px; margin:0 0 6px; color:var(--ink); }
-  .step p{ margin:0; color:#4A5C5A; font-size:15px; }
+  .step h3{ font-size:17.5px; margin:0 0 6px; color:var(--ink); }
+  .step p{ margin:0; color:var(--mist); font-size:14.5px; }
 
   /* coverage */
   .coverage-card{
-    background:var(--teal); color:#fff; border-radius:24px; padding:44px 36px; text-align:center;
+    background:var(--sea); color:#fff; border-radius:20px; padding:44px 36px; text-align:center;
   }
   .coverage-card h2{ color:#fff }
-  .coverage-stat{ font-family:'Baloo Bhaijaan 2'; font-weight:800; font-size:52px; line-height:1; }
+  .coverage-card .kicker{ color:rgba(255,255,255,.75) }
+  .coverage-card .lede{ color:rgba(255,255,255,.8) }
+  .coverage-stat{ font-family:'Baloo Bhaijaan 2'; font-weight:800; font-size:48px; line-height:1; color:#F2D9A8; }
   .coverage-grid{ display:flex; gap:44px; justify-content:center; flex-wrap:wrap; margin-top:26px; }
-  .coverage-item p{ margin:6px 0 0; opacity:.85; font-size:14px; }
+  .coverage-item p{ margin:6px 0 0; opacity:.85; font-size:13.5px; }
 
   /* final cta */
-  .final-cta{ text-align:center; padding:70px 0 90px; }
-  .final-cta h2{ font-size:clamp(26px,5vw,40px); }
+  .final-cta{ text-align:center; padding:64px 0 84px; }
+  .final-cta h2{ font-size:clamp(26px,5vw,38px); }
 
-  footer{ border-top:1px solid var(--line); padding:28px 24px; text-align:center; color:#6B7A78; font-size:13.5px; }
+  footer{ border-top:1px solid var(--line); padding:26px 24px; text-align:center; color:var(--mist); font-size:13px; }
 </style>
 </head>
 <body>
@@ -120,7 +133,7 @@
 <nav>
   <div class="logo">
     <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path d="M14 10c-6 0-9 4-9 9s3 8 8 8c6 0 6-6 12-6 5 0 8 4 8 8s-3 9-9 9" stroke="#D9694E" stroke-width="5" stroke-linecap="round"/>
+      <path d="M14 10c-6 0-9 4-9 9s3 8 8 8c6 0 6-6 12-6 5 0 8 4 8 8s-3 9-9 9" stroke="#0A5F5E" stroke-width="5" stroke-linecap="round"/>
     </svg>
     سالكة
   </div>
@@ -129,7 +142,7 @@
 
 <header class="hero">
   <div class="wrap">
-    <span class="eyebrow">ساحل العين السخنة — 76 كم من التوصيل الحقيقي</span>
+    <span class="eyebrow">ساحل العين السخنة — <b>52</b> كمبوند وفندق متغطّي فعليًا</span>
     <h1>التوصيل يعرف الساحل</h1>
     <p class="sub">مش تطبيق توصيل عادي بيوريك "خارج نطاق التغطية". سالكة موجودة فعليًا على طول الساحل، وبتوصلك بجد.</p>
     <div class="hero-actions">
@@ -138,53 +151,63 @@
     </div>
   </div>
 
-  <svg class="coastline" viewBox="0 0 1080 90" preserveAspectRatio="none" aria-hidden="true">
-    <path d="M0 45 C 150 10, 250 80, 400 45 S 650 10, 800 45 S 1000 80, 1080 45"
-      fill="none" stroke="#0E7C7B" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
-  </svg>
+  <div class="gauge-wrap reveal">
+    <div class="gauge-label">
+      <span>قريب</span>
+      <span>بعيد على الساحل</span>
+    </div>
+    <div class="gauge">
+      <div class="gauge-fill"></div>
+      <div class="gauge-scoot" aria-hidden="true">
+        <svg viewBox="0 0 48 48" fill="none"><path d="M14 10c-6 0-9 4-9 9s3 8 8 8c6 0 6-6 12-6 5 0 8 4 8 8s-3 9-9 9" stroke="#fff" stroke-width="6" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+    <div class="gauge-ticks">
+      <div>حتى 10 كم<b>20 دقيقة</b></div>
+      <div class="gold-tick">حتى 20 كم<b>35 دقيقة</b></div>
+      <div>حتى 31 كم<b>45 دقيقة</b></div>
+    </div>
+  </div>
 </header>
 
-<main class="route">
+<main>
 
-  <section class="waypoint" id="vendors">
-    <div class="waypoint-dot"></div>
-    <div class="wrap center">
-      <p class="kicker">محطة 1</p>
-      <h2>مطاعمك المفضلة، على الساحل</h2>
-      <p class="lede">من البرجر السريع للمأكولات البحرية — كله جاهز يتوصلك من مكان واحد قريب منك.</p>
+  <section id="vendors">
+    <div class="wrap center reveal">
+      <p class="kicker">على الساحل معاك</p>
+      <h2>مطاعمك المفضلة، وأكتر</h2>
+      <p class="lede">من البرجر السريع للمأكولات البحرية، لغاية الصيدلية والسوبر ماركت — كله من مكان واحد قريب منك.</p>
       <div class="vendors">
-        <span class="vendor-chip">ماكدونالدز</span>
-        <span class="vendor-chip">كنتاكي</span>
-        <span class="vendor-chip">بيتزا هت</span>
-        <span class="vendor-chip">هارت أتاك</span>
-        <span class="vendor-chip">أرابياتا</span>
-        <span class="vendor-chip">إستاكوزا الدولي (مأكولات بحرية)</span>
-        <span class="vendor-chip">صيدلية العزبي</span>
-        <span class="vendor-chip">سبينيس</span>
+        <span class="vendor-chip"><span class="dot"></span>كنتاكي (KFC)</span>
+        <span class="vendor-chip"><span class="dot"></span>ماكدونالدز</span>
+        <span class="vendor-chip"><span class="dot"></span>هارت أتاك</span>
+        <span class="vendor-chip"><span class="dot"></span>أرابياتا</span>
+        <span class="vendor-chip"><span class="dot"></span>إستاكوزا الدولي (مأكولات بحرية)</span>
+        <span class="vendor-chip"><span class="dot"></span>صيدلية</span>
+        <span class="vendor-chip"><span class="dot"></span>سوبر ماركت</span>
       </div>
     </div>
   </section>
 
-  <section class="waypoint">
-    <div class="waypoint-dot"></div>
+  <section>
     <div class="wrap">
-      <div class="center" style="margin-bottom:36px">
-        <p class="kicker">محطة 2</p>
-        <h2>اطلب في 3 خطوات</h2>
+      <div class="center reveal" style="margin-bottom:32px">
+        <p class="kicker">اطلب في 3 خطوات</p>
+        <h2>بسيطة زي ما لازم تكون</h2>
       </div>
-      <div class="steps">
+      <div class="steps reveal">
         <div class="step">
-          <div class="num">1</div>
+          <div class="stepnum">١</div>
           <h3>اختار مكانك</h3>
-          <p>حدد الكمبوند أو الفندق اللي انت فيه من أكتر من 40 موقع على الساحل.</p>
+          <p>حدد الكمبوند أو الفندق اللي انت فيه من 52 موقع متأكدين من إحداثياته فعليًا.</p>
         </div>
         <div class="step">
-          <div class="num">2</div>
+          <div class="stepnum">٢</div>
           <h3>اطلب اللي عايزه</h3>
           <p>من مطعم، صيدلية، سوبر ماركت — أو اطلب حاجة خاصة مش موجودة في القايمة.</p>
         </div>
         <div class="step">
-          <div class="num">3</div>
+          <div class="stepnum">٣</div>
           <h3>تابع لحظة بلحظة</h3>
           <p>هتعرف بالظبط فين طلبك ومتى هيوصلك، لحد ما يوصل باب الشاليه.</p>
         </div>
@@ -192,23 +215,23 @@
     </div>
   </section>
 
-  <section class="waypoint">
-    <div class="waypoint-dot"></div>
-    <div class="wrap">
+  <section>
+    <div class="wrap reveal">
       <div class="coverage-card">
-        <p class="kicker" style="color:#FFD9CC">محطة 3</p>
-        <h2>تغطية حقيقية، مش خريطة فاضية</h2>
+        <p class="kicker" >تغطية حقيقية، مش خريطة فاضية</p>
+        <h2>كل رقم هنا حقيقي</h2>
+        <p class="lede">مفيش تخمين ولا مسافات متوقعة — كل كمبوند اتزار فعليًا واتأكد موقعه بالـ GPS.</p>
         <div class="coverage-grid">
           <div class="coverage-item">
-            <div class="coverage-stat">76</div>
-            <p>كيلومتر ساحل مغطى فعليًا</p>
+            <div class="coverage-stat num">52</div>
+            <p>كمبوند وفندق متأكد من موقعه</p>
           </div>
           <div class="coverage-item">
-            <div class="coverage-stat">+40</div>
-            <p>كمبوند وفندق مسجلين بالاسم</p>
+            <div class="coverage-stat num">31</div>
+            <p>أبعد كيلومتر بنوصله فعليًا</p>
           </div>
           <div class="coverage-item">
-            <div class="coverage-stat">7</div>
+            <div class="coverage-stat num">7</div>
             <p>مركبة توصيل بتشتغل يوميًا</p>
           </div>
         </div>
@@ -219,7 +242,7 @@
 </main>
 
 <section class="final-cta">
-  <div class="wrap">
+  <div class="wrap reveal">
     <h2>جاهز تطلب؟</h2>
     <p class="lede">سالكة معاك من أول لحظة تطلب لحد ما يوصلك الأكل.</p>
     <a class="cta-btn" href="https://app.gosalka.com">اطلب دلوقتي</a>
@@ -229,6 +252,18 @@
 <footer>
   © سالكة 2026 — العين السخنة، مصر
 </footer>
+
+<script>
+  var els = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){ if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.15 });
+    els.forEach(function(el){ io.observe(el); });
+  } else {
+    els.forEach(function(el){ el.classList.add('in'); });
+  }
+</script>
 
 </body>
 </html>
