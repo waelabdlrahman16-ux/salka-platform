@@ -142,7 +142,7 @@ export default function Admin() {
     ? (() => {
         const r = restaurants.find(r => r.id === assigning.restaurant_id)
         if (r?.vendor_type !== 'supermarket') return false
-        return assigning.pricing_status !== 'confirmed' || assigning.subtotal >= vanRequiredSubtotal
+        return assigning.pricing_status === 'pending_quote' || assigning.subtotal >= vanRequiredSubtotal
       })()
     : false
   const assignableDrivers = assigningNeedsVan
