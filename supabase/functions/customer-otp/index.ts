@@ -1,16 +1,28 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from "jsr:@supabase/supabase-js@2"
 
-// Customer login via WhatsApp OTP -- no password, no Supabase Auth account.
-// action=request  -> generates a code, stores it, sends it over WhatsApp.
+// Customer login via SMS OTP -- no password, no Supabase Auth account.
+// action=request  -> generates a code, stores it, sends it over SMS.
 // action=verify   -> checks the code, creates/finds the customer, issues a session token.
 //
 // Requires these secrets to actually deliver messages (set in Supabase dashboard):
-//   WHATSAPP_ACCESS_TOKEN     -- Meta WhatsApp Cloud API permanent/system-user token
-//   WHATSAPP_PHONE_NUMBER_ID  -- the sending number's phone_number_id
-//   WHATSAPP_OTP_TEMPLATE     -- name of the pre-approved "authentication" template
-// Until these are set, action=request returns whatsapp_not_configured rather than
+//   SMS_API_URL     -- your SMS gateway's send endpoint
+//   SMS_API_KEY     -- your gateway's API key / auth token
+//   SMS_SENDER_ID   -- the sender name/number your gateway has approved
+// Until these are set, action=request returns sms_not_configured rather than
 // silently pretending to succeed.
+//
+// NOTE: the request body shape below (JSON with api_key/sender/to/message) is a
+// generic placeholder -- it is NOT tied to any specific provider. Once a real
+// SMS gateway is chosen, only the fetch() call in the "request" branch below
+// needs to be adjusted to match that provider's actual API (field names,
+// auth header vs body field, response shape, etc). Everything else --
+// rate limiting, code storage, verification, session issuance -- is already
+// provider-agnostic and doesn't need to change.
+//
+// Both request and verify are rate-limited per phone number (via check_rate_limit).
+// verify is limited separately and more tightly than request, since a 6-digit code
+// is guessable if an attacker gets unlimited attempts within the 5-minute TTL.
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -54,7 +66,6 @@ Deno.serve(async (req) => {
   if (cleanPhone.length !== 10) return json({ error: "invalid_phone" }, 400)
 
   if (action === "request") {
-    // simple per-phone + global rate limit via the existing DB helper
     const { error: limitErr } = await admin.rpc("check_rate_limit", {
       p_bucket: `login_otp:${cleanPhone}`, p_max: 5, p_window: "10 minutes"
     })
@@ -67,37 +78,34 @@ Deno.serve(async (req) => {
     })
     if (insertErr) return json({ error: "otp_store_failed", detail: insertErr.message }, 500)
 
-    const token = Deno.env.get("WHATSAPP_ACCESS_TOKEN")
-    const phoneNumberId = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID")
-    const templateName = Deno.env.get("WHATSAPP_OTP_TEMPLATE")
-    if (!token || !phoneNumberId || !templateName) {
-      return json({ error: "whatsapp_not_configured" }, 500)
+    const apiUrl = Deno.env.get("SMS_API_URL")
+    const apiKey = Deno.env.get("SMS_API_KEY")
+    const senderId = Deno.env.get("SMS_SENDER_ID")
+    if (!apiUrl || !apiKey || !senderId) {
+      return json({ error: "sms_not_configured" }, 500)
     }
 
-    const waRes = await fetch(`https://graph.facebook.com/v20.0/${phoneNumberId}/messages`, {
+    const smsRes = await fetch(apiUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
       body: JSON.stringify({
-        messaging_product: "whatsapp",
+        sender: senderId,
         to: toE164Egypt(cleanPhone),
-        type: "template",
-        template: {
-          name: templateName,
-          language: { code: "ar" },
-          components: [
-            { type: "body", parameters: [{ type: "text", text: code }] },
-            { type: "button", sub_type: "url", index: "0", parameters: [{ type: "text", text: code }] }
-          ]
-        }
+        message: `كود تأكيد سالكة: ${code}`
       })
     })
-    const waData = await waRes.json().catch(() => null)
-    if (!waRes.ok) return json({ error: "whatsapp_send_failed", detail: waData }, 502)
+    const smsData = await smsRes.json().catch(() => null)
+    if (!smsRes.ok) return json({ error: "sms_send_failed", detail: smsData }, 502)
 
     return json({ ok: true })
   }
 
   if (action === "verify") {
+    const { error: limitErr } = await admin.rpc("check_rate_limit", {
+      p_bucket: `verify_otp:${cleanPhone}`, p_max: 8, p_window: "10 minutes"
+    })
+    if (limitErr) return json({ error: "rate_limited" }, 429)
+
     const { code, name } = body
     if (!code) return json({ error: "code_required" }, 400)
 

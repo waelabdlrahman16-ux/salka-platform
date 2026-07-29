@@ -20,7 +20,7 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
     setSending(false)
     if (!res.ok) {
       setError(
-        res.error === 'whatsapp_not_configured' ? 'خدمة الواتساب لسه مش متفعّلة، حاول لاحقًا'
+        res.error === 'sms_not_configured' ? 'خدمة الرسائل لسه مش متفعّلة، حاول لاحقًا'
           : res.error === 'rate_limited' ? 'حاولت كتير، استنى شوية وجرب تاني'
           : 'حصل خطأ، جرب تاني'
       )
@@ -47,7 +47,7 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
           <>
             <div className="text-4xl mb-3">👋</div>
             <h1 className="text-xl font-bold mb-1">أهلاً بيك في سالكة</h1>
-            <p className="text-mist text-sm mb-5">هنبعتلك كود تأكيد على الواتساب</p>
+            <p className="text-mist text-sm mb-5">هنبعتلك كود تأكيد بالرسائل (SMS)</p>
 
             <div className="text-right space-y-3 mb-5">
               <div>
@@ -55,7 +55,7 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
                 <input className="field" value={name} onChange={e => setName(e.target.value)} placeholder="اسمك بالكامل" />
               </div>
               <div>
-                <label className="label">رقم الموبايل (واتساب)</label>
+                <label className="label">رقم الموبايل</label>
                 <input className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-red-400' : ''}`}
                   dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} placeholder="01xxxxxxxxx" maxLength={13} />
                 {phone.trim() && !isValidEgyptPhone(phone) && <p className="text-xs text-red-600 mt-1">{PHONE_HINT}</p>}
@@ -75,7 +75,7 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
           <>
             <div className="text-4xl mb-3">💬</div>
             <h1 className="text-xl font-bold mb-1">اكتب الكود</h1>
-            <p className="text-mist text-sm mb-5">بعتنالك كود من 6 أرقام على واتساب {phone}</p>
+            <p className="text-mist text-sm mb-5">بعتنالك كود من 6 أرقام برسالة نصية على {phone}</p>
 
             <input className="field text-center text-2xl tracking-widest mb-4" dir="ltr" value={code}
               onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="------" maxLength={6} />

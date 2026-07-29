@@ -99,7 +99,7 @@ export default function App() {
             {showOnboarding && (
               <CustomerLogin
                 onDone={() => { localStorage.setItem('salka_onboarded', '1'); setShowOnboarding(false) }}
-                // TEMPORARY: skippable until WhatsApp OTP delivery is configured and verified end-to-end.
+                // TEMPORARY: skippable until SMS OTP delivery is configured and verified end-to-end.
                 // Once that's done, remove onSkip entirely to make verification mandatory as intended.
                 onSkip={() => { localStorage.setItem('salka_onboarded', '1'); setShowOnboarding(false) }}
               />

@@ -200,12 +200,12 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
         <h2 className="font-bold mb-3">هل العميل دفع بالفعل؟</h2>
         <div className="space-y-2.5">
           <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${paymentMode === 'prepaid' ? 'border-sea bg-sea/5' : 'border-line'}`}>
-            <input type="radio" checked={paymentMode === 'prepaid'} onChange={() => setPaymentMode('prepaid')} className="accent-sea w-4 h-4" />
             <span className="font-semibold flex-1">أيوه، دفع خلاص</span>
+            <input type="radio" checked={paymentMode === 'prepaid'} onChange={() => setPaymentMode('prepaid')} className="accent-sea w-4 h-4" />
           </label>
           <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${paymentMode === 'driver_pays' ? 'border-sea bg-sea/5' : 'border-line'}`}>
-            <input type="radio" checked={paymentMode === 'driver_pays'} onChange={() => setPaymentMode('driver_pays')} className="accent-sea w-4 h-4" />
             <span className="font-semibold flex-1">لأ، المندوب يدفع ويحصلها من العميل كاش</span>
+            <input type="radio" checked={paymentMode === 'driver_pays'} onChange={() => setPaymentMode('driver_pays')} className="accent-sea w-4 h-4" />
           </label>
         </div>
         {paymentMode === 'driver_pays' && (

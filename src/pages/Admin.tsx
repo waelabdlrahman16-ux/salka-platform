@@ -62,6 +62,8 @@ export default function Admin() {
   const [walletAmount, setWalletAmount] = useState('')
   const [walletReason, setWalletReason] = useState('')
   const [walletResult, setWalletResult] = useState<string | null>(null)
+  const [walletOrderId, setWalletOrderId] = useState<number | null>(null)
+  const [compensatedOrderIds, setCompensatedOrderIds] = useState<Set<number>>(new Set())
   const [showResolvedComplaints, setShowResolvedComplaints] = useState(false)
   const [openHistory, setOpenHistory] = useState<number | null>(null)
   const [vendorAccounts, setVendorAccounts] = useState<{ profile_id: string; restaurant_id: number; email: string }[]>([])
@@ -73,7 +75,7 @@ export default function Admin() {
   const [imageError, setImageError] = useState<string | null>(null)
 
   async function load() {
-    const [o, a, d, e, r, m, st, sh, esc, sl, comp, sr, cpd, cov, lr] = await Promise.all([
+    const [o, a, d, e, r, m, st, sh, esc, sl, comp, sr, cpd, cov, lr, wt] = await Promise.all([
       supabase.from('orders').select('*, restaurants(name)').order('id', { ascending: false }),
       supabase.from('delivery_assignments').select('*, orders(*, restaurants(name)), drivers(*)').order('id', { ascending: false }),
       supabase.from('drivers').select('*').order('id'),
@@ -91,6 +93,7 @@ export default function Admin() {
       supabase.from('vendor_coverage').select('*'),
       supabase.from('order_ratings').select('*, orders(customer_name, customer_phone, restaurants(name))')
         .or('driver_rating.lte.2,restaurant_rating.lte.2').order('id', { ascending: false }).limit(30),
+      supabase.from('wallet_transactions').select('order_id').not('order_id', 'is', null).ilike('reason', 'تعويض%'),
     ])
     setOrders(o.data ?? []); setAssignments(a.data ?? []); setDrivers(d.data ?? [])
     setEarnings(e.data ?? [])
@@ -100,6 +103,7 @@ export default function Admin() {
     setComplaints(comp.data ?? []); setSettlementRequests(sr.data ?? [])
     setCompounds(cpd.data ?? []); setCoverage(cov.data ?? [])
     setLowRatings(lr.data ?? [])
+    setCompensatedOrderIds(new Set((wt.data ?? []).map((t: any) => t.order_id)))
     const { data: accounts } = await supabase.rpc('admin_list_accounts')
     setVendorAccounts(accounts?.vendors ?? []); setDriverAccounts(accounts?.drivers ?? [])
     ping('escalated_shifts', (esc.data ?? []).length, 'مندوب محتاج بديل', 'في وردية اتصعّدت للإدارة')
@@ -402,11 +406,13 @@ export default function Admin() {
   function compensateFromComplaint(c: Complaint) {
     setWalletPhone(c.orders?.customer_phone ?? '')
     setWalletReason(`تعويض شكوى طلب #${c.order_id}`)
+    setWalletOrderId(c.order_id)
     setTab('wallet')
   }
   function compensateFromRating(rt: OrderRating) {
     setWalletPhone(rt.orders?.customer_phone ?? '')
     setWalletReason(`تعويض تقييم منخفض طلب #${rt.order_id}`)
+    setWalletOrderId(rt.order_id)
     setTab('wallet')
   }
   async function markRefunded(orderId: number) {
@@ -424,10 +430,15 @@ export default function Admin() {
   async function sendWalletCredit() {
     if (!walletPhone.trim() || !walletAmount) return
     const { error } = await supabase.rpc('credit_wallet', {
-      p_phone: walletPhone.trim(), p_amount: Number(walletAmount), p_reason: walletReason.trim() || 'admin credit'
+      p_phone: walletPhone.trim(), p_amount: Number(walletAmount), p_reason: walletReason.trim() || 'admin credit',
+      p_order_id: walletOrderId
     })
     setWalletResult(error ? 'حصل خطأ، جرب تاني' : `تمت إضافة ${walletAmount} ج.م لمحفظة ${walletPhone}`)
-    if (!error) { setWalletPhone(''); setWalletAmount(''); setWalletReason('') }
+    if (!error) {
+      setWalletPhone(''); setWalletAmount(''); setWalletReason('')
+      if (walletOrderId != null) setCompensatedOrderIds(prev => new Set(prev).add(walletOrderId))
+      setWalletOrderId(null)
+    }
   }
 
   async function toggleRx(it: MenuItem) {
@@ -490,7 +501,7 @@ export default function Admin() {
 
       <div className="flex gap-1.5 overflow-x-auto pb-2 mb-4 -mx-4 px-4">
         {TABS.map(t => (
-          <button key={t.key} className={`tab ${tab === t.key ? 'tab-active' : ''}`} onClick={() => setTab(t.key)}>{t.label}</button>
+          <button key={t.key} className={`tab ${tab === t.key ? 'tab-active' : ''}`} onClick={() => { if (t.key !== 'wallet') setWalletOrderId(null); setTab(t.key) }}>{t.label}</button>
         ))}
       </div>
 
@@ -1054,7 +1065,9 @@ export default function Admin() {
                       {rt.restaurant_rating != null && <span className="flex items-center gap-1">· المطعم <StarRow n={rt.restaurant_rating} /></span>}
                     </p>
                   </div>
-                  <button className="btn-ghost !py-1.5 !px-2.5 text-xs shrink-0" onClick={() => compensateFromRating(rt)}>💳 تعويض العميل</button>
+                  {compensatedOrderIds.has(rt.order_id)
+                    ? <span className="text-xs font-semibold text-emerald-700 shrink-0 px-2.5 py-1.5">✓ اتعوّض</span>
+                    : <button className="btn-ghost !py-1.5 !px-2.5 text-xs shrink-0" onClick={() => compensateFromRating(rt)}>💳 تعويض العميل</button>}
                 </div>
               ))}
             </div>
@@ -1086,7 +1099,9 @@ export default function Admin() {
               <div className="flex gap-2.5 mt-3 flex-wrap">
                 {c.status !== 'reviewed' && <button className="btn-ghost flex-1 text-sm" onClick={() => updateComplaintStatus(c, 'reviewed')}>قيد المراجعة</button>}
                 {c.status !== 'resolved' && <button className="btn-sea flex-1 text-sm" onClick={() => updateComplaintStatus(c, 'resolved')}>اتحلت</button>}
-                <button className="btn-ghost flex-1 text-sm" onClick={() => compensateFromComplaint(c)}>💳 تعويض العميل</button>
+                {compensatedOrderIds.has(c.order_id)
+                  ? <span className="text-sm font-semibold text-emerald-700 flex-1 text-center py-2">✓ اتعوّض</span>
+                  : <button className="btn-ghost flex-1 text-sm" onClick={() => compensateFromComplaint(c)}>💳 تعويض العميل</button>}
               </div>
             </div>
           ))}
