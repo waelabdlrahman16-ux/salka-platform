@@ -5,7 +5,7 @@ import { estimateDeliveryFee } from '../lib/deliveryFee'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { artFor } from '../lib/categoryArt'
 import { getSessionToken } from '../lib/customerAuth'
-import type { Compound, MenuItem, Restaurant } from '../lib/types'
+import type { Compound, MenuItem, Restaurant, Slot } from '../lib/types'
 
 export default function CustomOrder() {
   const nav = useNavigate()
@@ -13,6 +13,8 @@ export default function CustomOrder() {
   const [vendor, setVendor] = useState<Restaurant | null>(null)
   const [categories, setCategories] = useState<string[]>([])
   const [list, setList] = useState('')
+  const [slots, setSlots] = useState<Slot[]>([])
+  const [slot, setSlot] = useState<Slot | null>(null)
 
   const [compounds, setCompounds] = useState<Compound[]>([])
   const [name, setName] = useState(''); const [phone, setPhone] = useState(() => localStorage.getItem('salka_phone') ?? '')
@@ -59,6 +61,12 @@ export default function CustomOrder() {
         for (const it of items) if (!seen.has(it.category)) { seen.add(it.category); cats.push(it.category) }
         setCategories(cats)
       })
+    setSlot(null)
+    if (vendor.vendor_type === 'supermarket') {
+      supabase.rpc('open_slots', { p_restaurant_id: vendor.id }).then(({ data }) => setSlots((data as Slot[]) ?? []))
+    } else {
+      setSlots([])
+    }
   }, [vendor])
 
   function addLine(text: string) {
@@ -67,7 +75,8 @@ export default function CustomOrder() {
 
   const selectedCompound = compounds.find(c => c.id === compoundId)
   const deliveryFee = selectedCompound ? estimateDeliveryFee(selectedCompound.distance_km) : 0
-  const valid = vendor && name.trim() && isValidEgyptPhone(phone) && compoundId && unit.trim() && list.trim()
+  const scheduled = vendor?.vendor_type === 'supermarket'
+  const valid = vendor && name.trim() && isValidEgyptPhone(phone) && compoundId && unit.trim() && list.trim() && (!scheduled || !!slot)
 
   async function submit() {
     if (!vendor || !valid) return
@@ -83,11 +92,13 @@ export default function CustomOrder() {
       p_request_items: [],
       p_request_notes: list.trim(),
       p_compound_id: compoundId,
-      p_session_token: getSessionToken()
+      p_session_token: getSessionToken(),
+      p_slot_id: slot?.id ?? null,
+      p_scheduled_date: slot?.scheduled_date ?? null
     })
     if (err || !data?.token) {
       setSaving(false)
-      setError('حصل خطأ، جرب تاني')
+      setError(err?.message.includes('slot_full') ? 'الفترة دي اتملت، اختار فترة تانية' : 'حصل خطأ، جرب تاني')
       return
     }
     localStorage.setItem('salka_phone', phone.trim())
@@ -143,9 +154,27 @@ export default function CustomOrder() {
           placeholder={'اكتب كل حاجة عايزها، سطر لكل صنف\nمثال:\nبنادول اكسترا\nشامبو أطفال\nخبز توست'} />
       </div>
 
+      {scheduled && (
+        <div className="mb-4">
+          <h2 className="font-bold mb-2">فترة التوصيل</h2>
+          {slots.length === 0 && <p className="text-sm text-sand">لا توجد فترات متاحة حالياً</p>}
+          <div className="grid grid-cols-2 gap-2">
+            {slots.map(sl => {
+              const on = slot?.id === sl.id && slot?.scheduled_date === sl.scheduled_date
+              const today = sl.scheduled_date === new Date().toISOString().slice(0, 10)
+              return (
+                <button key={`${sl.id}-${sl.scheduled_date}`} className={`card p-3 text-right ${on ? 'border-sea' : ''}`} onClick={() => setSlot(sl)}>
+                  <p className="text-sm font-semibold">{sl.start_time.slice(0, 5)} — {sl.end_time.slice(0, 5)}</p>
+                  <p className="text-xs text-mist mt-0.5">{today ? 'النهاردة' : 'بكرة'} · باقي {sl.remaining}</p>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="card p-4 mb-4 space-y-3">
         <h2 className="font-bold">عنوان التوصيل</h2>
-        {addressLoaded && <p className="text-xs text-emerald-700 -mt-2">✓ عبينالك بياناتك من آخر طلب، عدّل أي حاجة لو محتاج</p>}
         <div><label className="label">الاسم *</label>
           <input className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
         <div><label className="label">رقم الموبايل *</label>

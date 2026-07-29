@@ -137,10 +137,15 @@ export default function Admin() {
     .sort((a, b) => Number(isCooking(a)) - Number(isCooking(b)))
   const active = assignments.filter(a => activeStatuses.includes(a.status))
   const availableDrivers = drivers.filter(d => d.active && d.available)
-  const assigningIsSupermarket = assigning
-    ? restaurants.find(r => r.id === assigning.restaurant_id)?.vendor_type === 'supermarket'
+  const vanRequiredSubtotal = Number(settings.find(s => s.key === 'van_required_subtotal_egp')?.value ?? 300)
+  const assigningNeedsVan = assigning
+    ? (() => {
+        const r = restaurants.find(r => r.id === assigning.restaurant_id)
+        if (r?.vendor_type !== 'supermarket') return false
+        return assigning.pricing_status !== 'confirmed' || assigning.subtotal >= vanRequiredSubtotal
+      })()
     : false
-  const assignableDrivers = assigningIsSupermarket
+  const assignableDrivers = assigningNeedsVan
     ? availableDrivers.filter(d => d.vehicle_type === 'van')
     : availableDrivers
   useEffect(() => { ping('unassigned', unassigned.length, 'طلب غير معيّن', 'في طلب محدش استلمه') },
@@ -1260,12 +1265,12 @@ export default function Admin() {
         <div className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" onClick={() => setAssigning(null)}>
           <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold mb-4">اختيار مندوب متاح — طلب #{assigning.id}</h3>
-            {assigningIsSupermarket && (
-              <p className="text-sand text-sm mb-3">🚐 طلب سوبر ماركت — فانات بس</p>
+            {assigningNeedsVan && (
+              <p className="text-sand text-sm mb-3">🚐 الطلب محتاج فان — لسه السعر متأكدش أو الطلب كبير</p>
             )}
             {assignableDrivers.length === 0 && (
               <p className="text-mist text-sm">
-                {assigningIsSupermarket ? 'لا يوجد فان متاح حالياً' : 'لا يوجد مندوبين متاحين حالياً'}
+                {assigningNeedsVan ? 'لا يوجد فان متاح حالياً' : 'لا يوجد مندوبين متاحين حالياً'}
               </p>
             )}
             <div className="space-y-2.5">

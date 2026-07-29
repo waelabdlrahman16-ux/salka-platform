@@ -11,6 +11,7 @@ import { assignmentStatusLabel } from '../lib/statusLabels'
 interface PoolOrder {
   id: number; total: number; zone: string
   kitchen_status: string; restaurant_name: string; created_at: string
+  ready_at: string | null; dispatch_at: string | null
 }
 
 export default function DriverPage() {
@@ -145,7 +146,8 @@ export default function DriverPage() {
     if (error) {
       alert(
         error.message.includes('already_taken') ? 'الطلب اتاخد من مندوب تاني'
-        : error.message.includes('wrong_vehicle_type') ? 'الطلب ده لسوبر ماركت — محتاج فان'
+        : error.message.includes('wrong_vehicle_type') ? 'الطلب ده محتاج فان'
+        : error.message.includes('not_ready_yet') ? 'الطلب لسه بيتحضر، استنى شوية'
         : 'حصل خطأ، جرب تاني'
       )
     }
@@ -275,25 +277,30 @@ export default function DriverPage() {
         <div className="mb-5">
           <h2 className="font-bold text-mist mb-3">طلبات متاحة — أول واحد يقبل ياخدها</h2>
           <div className="space-y-3">
-            {pool.map(o => (
-              <div key={o.id} className="card p-4 border-sea/40">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="font-bold">{o.restaurant_name}</h3>
-                    <p className="text-sm text-mist mt-0.5">📍 {o.zone}</p>
-                    <p className="text-xs text-mist mt-1">
-                      {o.kitchen_status === 'ready' ? '✅ جاهز للاستلام'
-                        : o.kitchen_status === 'preparing' ? '👨‍🍳 قيد التحضير' : '🕐 المطعم لسه ما بدأش'}
-                    </p>
+            {pool.map(o => {
+              const notReadyYet = !!o.dispatch_at && new Date(o.dispatch_at) > new Date()
+              const minsLeft = notReadyYet ? Math.max(1, Math.round((+new Date(o.dispatch_at!) - Date.now()) / 60000)) : 0
+              return (
+                <div key={o.id} className={`card p-4 ${notReadyYet ? 'border-line opacity-80' : 'border-sea/40'}`}>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="font-bold">{o.restaurant_name}</h3>
+                      <p className="text-sm text-mist mt-0.5">📍 {o.zone}</p>
+                      <p className="text-xs text-mist mt-1">
+                        {notReadyYet ? `🕐 هيبقى جاهز خلال ${minsLeft} د`
+                          : o.kitchen_status === 'ready' ? '✅ جاهز للاستلام'
+                          : o.kitchen_status === 'preparing' ? '👨‍🍳 قيد التحضير' : '🕐 المطعم لسه ما بدأش'}
+                      </p>
+                    </div>
+                    <span className="font-bold text-sea">{o.total} ج.م</span>
                   </div>
-                  <span className="font-bold text-sea">{o.total} ج.م</span>
+                  <button className="btn-sea w-full mt-3" disabled={claiming === o.id || notReadyYet}
+                    onClick={() => claim(o.id)}>
+                    {claiming === o.id ? 'جاري القبول…' : notReadyYet ? 'لسه معلش' : 'أستلم الطلب'}
+                  </button>
                 </div>
-                <button className="btn-sea w-full mt-3" disabled={claiming === o.id}
-                  onClick={() => claim(o.id)}>
-                  {claiming === o.id ? 'جاري القبول…' : 'أستلم الطلب'}
-                </button>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}

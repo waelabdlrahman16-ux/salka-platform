@@ -73,7 +73,7 @@ export default function CartPage() {
         })}
       </div>
 
-      <div className="fixed bottom-20 inset-x-4 z-40 max-w-5xl mx-auto">
+      <div className="fixed bottom-[calc(4.5rem_+_env(safe-area-inset-bottom)_+_0.75rem)] inset-x-4 z-40 max-w-5xl mx-auto">
         <button className="btn-sea w-full !rounded-xl !py-4 shadow-lg shadow-sea/20 flex items-center justify-between px-4"
           onClick={() => nav('/checkout')}>
           <span>روح للدفع</span>
