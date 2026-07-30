@@ -15,6 +15,7 @@ export default function Home() {
   const [picking, setPicking] = useState(false)
   const [search, setSearch] = useState('')
   const [nearby, setNearby] = useState<Compound[] | null>(null)
+  const [myCoords, setMyCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [locating, setLocating] = useState(false)
   const [locationError, setLocationError] = useState('')
 
@@ -47,11 +48,23 @@ export default function Home() {
     setLocating(true); setLocationError('')
     navigator.geolocation.getCurrentPosition(
       pos => {
-        const { latitude, longitude } = pos.coords
+        const { latitude, longitude, accuracy } = pos.coords
+        setMyCoords({ lat: latitude, lng: longitude })
         const withCoords = compounds.filter(c => c.latitude != null && c.longitude != null)
         const ranked = [...withCoords].sort((a, b) =>
           haversineKm(latitude, longitude, a.latitude!, a.longitude!) -
           haversineKm(latitude, longitude, b.latitude!, b.longitude!))
+        const nearest = ranked[0]
+        const nearestKm = nearest ? haversineKm(latitude, longitude, nearest.latitude!, nearest.longitude!) : null
+
+        // A low-confidence fix (network/cell-tower rather than real GPS -- common
+        // indoors or with weak signal) can be tens of km off. Surface that
+        // explicitly rather than silently treating an unreliable reading as accurate.
+        if (accuracy > 3000) {
+          setLocationError(`الموقع اللي وصلنا بيه مش دقيق (نطاق خطأ ~${Math.round(accuracy / 1000)} كم) — جرب تفعّل GPS دقيق من إعدادات الموبايل، أو دوّر على اسم مكانك تحت`)
+        } else if (nearestKm !== null && nearestKm > 15) {
+          setLocationError(`أقرب مكان لينا بعيد عنك حوالي ${Math.round(nearestKm)} كم — تأكد من اسم مكانك تحت لو مش قريب`)
+        }
         setNearby(ranked.slice(0, 3))
         setLocating(false)
       },
@@ -59,7 +72,7 @@ export default function Home() {
         setLocationError('مش قادرين نوصل لموقعك — دوّر على اسم مكانك تحت')
         setLocating(false)
       },
-      { timeout: 8000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     )
   }
 
@@ -132,7 +145,11 @@ export default function Home() {
                     <button key={c.id} className={`w-full card !bg-night p-3 text-right border-sea/40 ${compoundId === c.id ? 'border-sea' : ''}`}
                       onClick={() => choose(c.id)}>
                       <span className="font-semibold block truncate">{c.name}</span>
-                      <span className="text-mist text-xs block mt-0.5">~{c.est_travel_minutes} دقيقة توصيل</span>
+                      <span className="text-mist text-xs block mt-0.5">
+                        ~{c.est_travel_minutes} دقيقة توصيل
+                        {myCoords && c.latitude != null && c.longitude != null &&
+                          ` · على بعد ${haversineKm(myCoords.lat, myCoords.lng, c.latitude, c.longitude).toFixed(1)} كم منك`}
+                      </span>
                     </button>
                   ))}
                 </div>
