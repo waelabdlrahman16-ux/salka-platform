@@ -7,7 +7,8 @@ import ProductDetailSheet from '../components/ProductDetailSheet'
 import CustomizeSheet from '../components/CustomizeSheet'
 import Icon from '../components/Icon'
 import { isItemAvailableNow } from '../lib/itemAvailability'
-import type { Compound, MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemSize, Restaurant } from '../lib/types'
+import { applyDiscount, effectiveDiscount } from '../lib/discounts'
+import type { Compound, Discount, MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemSize, Restaurant } from '../lib/types'
 
 const ALL = '__all__'
 
@@ -20,6 +21,7 @@ export default function RestaurantDetail() {
   const [sizes, setSizes] = useState<MenuItemSize[]>([])
   const [addonGroups, setAddonGroups] = useState<MenuItemAddonGroup[]>([])
   const [addons, setAddons] = useState<MenuItemAddon[]>([])
+  const [discounts, setDiscounts] = useState<Discount[]>([])
   const [customizing, setCustomizing] = useState<MenuItem | null>(null)
   const [detailItem, setDetailItem] = useState<MenuItem | null>(null)
   const [compounds, setCompounds] = useState<Compound[]>([])
@@ -47,6 +49,8 @@ export default function RestaurantDetail() {
     })
     supabase.from('compounds').select('*').eq('active', true).order('direction').order('distance_km')
       .then(({ data }) => setCompounds(data ?? []))
+    supabase.from('discounts').select('*').eq('restaurant_id', id).eq('active', true)
+      .then(({ data }) => setDiscounts(data ?? []))
   }, [id])
 
   useEffect(() => {
@@ -134,6 +138,9 @@ export default function RestaurantDetail() {
                   const itemSizes = sizes.filter(s => s.menu_item_id === it.id)
                   const itemGroups = addonGroups.filter(g => g.menu_item_id === it.id)
                   const hasOptions = itemSizes.length > 0 || itemGroups.length > 0
+                  const basePrice = itemSizes.length > 0 ? Math.min(...itemSizes.map(s => s.price)) : it.price
+                  const discount = effectiveDiscount(it.id, it.category, discounts)
+                  const displayPrice = applyDiscount(basePrice, discount)
                   return (
                     <ProductCard
                       key={it.id}
@@ -141,7 +148,9 @@ export default function RestaurantDetail() {
                       qty={cart.qtyFor(it.id)}
                       disabled={!restaurant.is_open}
                       hasOptions={hasOptions}
-                      sizes={itemSizes}
+                      displayPrice={displayPrice}
+                      originalPrice={discount ? basePrice : undefined}
+                      isFromPrice={itemSizes.length > 0}
                       onAdd={() => cart.add(it, 1)}
                       onRemove={() => cart.add(it, -1)}
                       onCustomize={() => setCustomizing(it)}
@@ -162,6 +171,7 @@ export default function RestaurantDetail() {
           sizes={sizes}
           addonGroups={addonGroups}
           addons={addons}
+          discounts={discounts}
           disabled={!restaurant.is_open}
           qtyFor={id => cart.qtyFor(id)}
           onAdd={it => cart.add(it, 1)}

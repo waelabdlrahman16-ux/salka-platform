@@ -1,9 +1,10 @@
 import { artFor } from '../lib/categoryArt'
 import Icon from './Icon'
-import type { MenuItem, MenuItemSize } from '../lib/types'
+import type { MenuItem } from '../lib/types'
 
 export default function ProductCard({
-  item, qty, disabled, onAdd, onRemove, hasOptions, onCustomize, onOpenDetail, sizes
+  item, qty, disabled, onAdd, onRemove, hasOptions, onCustomize, onOpenDetail,
+  displayPrice, originalPrice, isFromPrice
 }: {
   item: MenuItem
   qty: number
@@ -13,10 +14,11 @@ export default function ProductCard({
   hasOptions?: boolean
   onCustomize?: () => void
   onOpenDetail: () => void
-  sizes?: MenuItemSize[]
+  displayPrice: number
+  originalPrice?: number
+  isFromPrice?: boolean
 }) {
   const art = artFor(item.category)
-  const cheapestSize = sizes && sizes.length > 0 ? Math.min(...sizes.map(s => s.price)) : null
 
   return (
     <div className="card p-3 flex flex-col">
@@ -31,15 +33,23 @@ export default function ProductCard({
               💊 روشتة
             </span>
           )}
+          {originalPrice != null && (
+            <span className="absolute top-2 left-2 bg-sand text-white rounded-full px-2 py-0.5 text-[10px] font-bold">
+              خصم
+            </span>
+          )}
           {hasOptions && qty > 0 && (
-            <span className="absolute top-2 left-2 bg-sea text-white rounded-full min-w-[1.25rem] h-5 px-1 grid place-items-center text-[10px] font-bold">
+            <span className="absolute bottom-2 left-2 bg-sea text-white rounded-full min-w-[1.25rem] h-5 px-1 grid place-items-center text-[10px] font-bold">
               {qty}
             </span>
           )}
         </div>
 
         <h3 className="font-semibold text-sm leading-snug line-clamp-2 min-h-[2.5em]">{item.name}</h3>
-        <p className="text-sea font-bold mt-1.5 mb-3">{cheapestSize !== null ? `من ${cheapestSize}` : item.price} ج.م</p>
+        <p className="mt-1.5 mb-3">
+          {originalPrice != null && <span className="text-mist text-xs line-through ml-1.5">{originalPrice}</span>}
+          <span className="text-sea font-bold">{isFromPrice ? `من ${displayPrice}` : displayPrice} ج.م</span>
+        </p>
       </button>
 
       {hasOptions ? (

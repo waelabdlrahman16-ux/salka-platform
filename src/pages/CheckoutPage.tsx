@@ -6,7 +6,8 @@ import { useCart } from '../lib/cart'
 import { estimateDeliveryFee } from '../lib/deliveryFee'
 import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
 import { isItemAvailableNow } from '../lib/itemAvailability'
-import type { Compound, MenuItem, MenuItemAddon, MenuItemSize, Restaurant, Slot } from '../lib/types'
+import { applyDiscount, effectiveDiscount } from '../lib/discounts'
+import type { Compound, Discount, MenuItem, MenuItemAddon, MenuItemSize, Restaurant, Slot } from '../lib/types'
 
 export default function CheckoutPage() {
   const nav = useNavigate()
@@ -16,6 +17,7 @@ export default function CheckoutPage() {
   const [items, setItems] = useState<MenuItem[]>([])
   const [sizes, setSizes] = useState<MenuItemSize[]>([])
   const [addons, setAddons] = useState<MenuItemAddon[]>([])
+  const [discounts, setDiscounts] = useState<Discount[]>([])
   const [compounds, setCompounds] = useState<Compound[]>([])
   const [slots, setSlots] = useState<Slot[]>([])
   const [slot, setSlot] = useState<Slot | null>(null)
@@ -66,6 +68,8 @@ export default function CheckoutPage() {
     supabase.from('compounds').select('*').eq('active', true).order('direction').order('distance_km')
       .then(({ data }) => setCompounds(data ?? []))
     supabase.rpc('open_slots', { p_restaurant_id: cart.restaurantId }).then(({ data }) => setSlots((data as Slot[]) ?? []))
+    supabase.from('discounts').select('*').eq('restaurant_id', cart.restaurantId).eq('active', true)
+      .then(({ data }) => setDiscounts(data ?? []))
     ;(async () => {
       const ids = (await supabase.from('menu_items').select('id').eq('restaurant_id', cart.restaurantId)).data?.map(x => x.id) ?? []
       if (!ids.length) return
@@ -99,9 +103,14 @@ export default function CheckoutPage() {
     const item = items.find(i => i.id === menuItemId)
     const size = sizeId ? sizes.find(s => s.id === sizeId) : null
     const base = size ? size.price : (item?.price ?? 0)
+    const discount = item ? effectiveDiscount(item.id, item.category, discounts) : null
+    const discountedBase = applyDiscount(base, discount)
     const selectedAddons = addonIds.map(id => addons.find(a => a.id === id)).filter((a): a is MenuItemAddon => !!a)
     const addonsTotal = selectedAddons.reduce((s, a) => s + a.price, 0)
-    return { unit: base + addonsTotal, item, sizeName: size?.name ?? null, addonNames: selectedAddons.map(a => a.name) }
+    return {
+      unit: discountedBase + addonsTotal, original: discount ? base + addonsTotal : null,
+      item, sizeName: size?.name ?? null, addonNames: selectedAddons.map(a => a.name)
+    }
   }
 
   const lines = useMemo(() => cart.lines.filter(l => items.some(i => i.id === l.menuItemId)), [items, cart.lines])
@@ -266,7 +275,7 @@ export default function CheckoutPage() {
       <div className="card p-4 mb-5 space-y-2">
         <h2 className="font-bold mb-1">ملخص الطلب</h2>
         {lines.map(l => {
-          const { unit, item, sizeName, addonNames } = priceFor(l.menuItemId, l.sizeId, l.addonIds)
+          const { unit, original, item, sizeName, addonNames } = priceFor(l.menuItemId, l.sizeId, l.addonIds)
           return (
             <div key={l.key} className="flex justify-between text-sm">
               <span>
@@ -275,7 +284,10 @@ export default function CheckoutPage() {
                   <span className="text-mist"> ({[sizeName, ...addonNames].filter(Boolean).join(' · ')})</span>
                 )}
               </span>
-              <span>{l.qty * unit} ج.م</span>
+              <span>
+                {original != null && <span className="text-mist line-through ml-1.5">{l.qty * original}</span>}
+                {l.qty * unit} ج.م
+              </span>
             </div>
           )
         })}

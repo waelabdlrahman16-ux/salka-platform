@@ -5,8 +5,9 @@ import { useCart } from '../lib/cart'
 import { artFor } from '../lib/categoryArt'
 import { estimateDeliveryFee } from '../lib/deliveryFee'
 import { isItemAvailableNow } from '../lib/itemAvailability'
+import { applyDiscount, effectiveDiscount } from '../lib/discounts'
 import Icon from '../components/Icon'
-import type { Compound, MenuItem, MenuItemAddon, MenuItemSize, Restaurant } from '../lib/types'
+import type { Compound, Discount, MenuItem, MenuItemAddon, MenuItemSize, Restaurant } from '../lib/types'
 
 export default function CartPage() {
   const nav = useNavigate()
@@ -14,6 +15,7 @@ export default function CartPage() {
   const [items, setItems] = useState<MenuItem[]>([])
   const [sizes, setSizes] = useState<MenuItemSize[]>([])
   const [addons, setAddons] = useState<MenuItemAddon[]>([])
+  const [discounts, setDiscounts] = useState<Discount[]>([])
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
   const [compound, setCompound] = useState<Compound | null>(null)
   const [removedNotice, setRemovedNotice] = useState('')
@@ -22,6 +24,8 @@ export default function CartPage() {
     if (!cart.restaurantId) return
     supabase.from('menu_items').select('*').eq('restaurant_id', cart.restaurantId).then(({ data }) => setItems(data ?? []))
     supabase.from('restaurants').select('*').eq('id', cart.restaurantId).single().then(({ data }) => setRestaurant(data))
+    supabase.from('discounts').select('*').eq('restaurant_id', cart.restaurantId).eq('active', true)
+      .then(({ data }) => setDiscounts(data ?? []))
     ;(async () => {
       const ids = (await supabase.from('menu_items').select('id').eq('restaurant_id', cart.restaurantId)).data?.map(x => x.id) ?? []
       if (!ids.length) return
@@ -42,13 +46,19 @@ export default function CartPage() {
     supabase.from('compounds').select('*').eq('id', Number(compoundId)).single().then(({ data }) => setCompound(data))
   }, [])
 
-  function priceFor(menuItemId: number, sizeId: number | null, addonIds: number[]): { unit: number; name: string; sizeName: string | null; addonNames: string[] } {
+  function priceFor(menuItemId: number, sizeId: number | null, addonIds: number[]): { unit: number; original: number | null; name: string; sizeName: string | null; addonNames: string[] } {
     const item = items.find(i => i.id === menuItemId)
     const size = sizeId ? sizes.find(s => s.id === sizeId) : null
     const base = size ? size.price : (item?.price ?? 0)
+    const discount = item ? effectiveDiscount(item.id, item.category, discounts) : null
+    const discountedBase = applyDiscount(base, discount)
     const selectedAddons = addonIds.map(id => addons.find(a => a.id === id)).filter((a): a is MenuItemAddon => !!a)
     const addonsTotal = selectedAddons.reduce((s, a) => s + a.price, 0)
-    return { unit: base + addonsTotal, name: item?.name ?? '', sizeName: size?.name ?? null, addonNames: selectedAddons.map(a => a.name) }
+    return {
+      unit: discountedBase + addonsTotal,
+      original: discount ? base + addonsTotal : null,
+      name: item?.name ?? '', sizeName: size?.name ?? null, addonNames: selectedAddons.map(a => a.name)
+    }
   }
 
   // remove lines whose item no longer exists, went out of stock, or fell
@@ -97,7 +107,7 @@ export default function CartPage() {
       <div className="space-y-3 mb-5">
         {validLines.map(l => {
           const item = items.find(i => i.id === l.menuItemId)!
-          const { unit, sizeName, addonNames } = priceFor(l.menuItemId, l.sizeId, l.addonIds)
+          const { unit, original, sizeName, addonNames } = priceFor(l.menuItemId, l.sizeId, l.addonIds)
           const art = artFor(item.category)
           return (
             <div key={l.key} className="card p-3.5 flex items-center gap-3">
@@ -111,7 +121,10 @@ export default function CartPage() {
                     {[sizeName, ...addonNames].filter(Boolean).join(' · ')}
                   </p>
                 )}
-                <p className="text-sea font-bold text-sm mt-0.5">{unit} ج.م</p>
+                <p className="text-sm mt-0.5">
+                  {original != null && <span className="text-mist text-xs line-through ml-1.5">{original}</span>}
+                  <span className="text-sea font-bold">{unit} ج.م</span>
+                </p>
               </div>
               <div className="flex items-center gap-2 bg-shellup rounded-lg px-1 py-1 shrink-0">
                 <button className="w-7 h-7 rounded-md grid place-items-center hover:bg-white" onClick={() => cart.updateLineQty(l.key, -1)}><Icon name="minus" className="w-3 h-3" /></button>

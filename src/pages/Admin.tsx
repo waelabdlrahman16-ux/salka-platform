@@ -7,6 +7,7 @@ import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel } from '../l
 import Icon from '../components/Icon'
 import MenuItemEditor from '../components/MenuItemEditor'
 import AddMenuItemModal from '../components/AddMenuItemModal'
+import DiscountManager from '../components/DiscountManager'
 
 function StarRow({ n }: { n: number }) {
   return (
@@ -822,6 +823,20 @@ export default function Admin() {
                       <option value="custom_request">🧾 طلب خاص (نص حر)</option>
                       <option value="pickup_request">🛵 طلب مندوب بس (نظامهم الخاص)</option>
                     </select>
+                  </div>
+                )}
+
+                {expanded && its.length > 0 && (
+                  <div className="mt-4 border-t border-line pt-3">
+                    <p className="text-sm text-mist mb-2">خصومات على أقسام كاملة</p>
+                    <div className="space-y-2">
+                      {[...new Set(its.map(it => it.category))].map(cat => (
+                        <div key={cat}>
+                          <p className="text-xs font-semibold text-mist mb-1">{cat}</p>
+                          <DiscountManager restaurantId={r.id} scope="category" category={cat} />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 

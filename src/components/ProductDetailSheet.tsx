@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react'
 import { artFor } from '../lib/categoryArt'
 import { isItemAvailableNow } from '../lib/itemAvailability'
+import { applyDiscount, effectiveDiscount } from '../lib/discounts'
 import Icon from './Icon'
-import type { MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemSize } from '../lib/types'
+import type { Discount, MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemSize } from '../lib/types'
 
 export default function ProductDetailSheet({
-  item, items, sizes, addonGroups, addons, disabled, qtyFor, onAdd, onRemove, onCustomize, onClose
+  item, items, sizes, addonGroups, addons, discounts, disabled, qtyFor, onAdd, onRemove, onCustomize, onClose
 }: {
   item: MenuItem
   items: MenuItem[]
   sizes: MenuItemSize[]
   addonGroups: MenuItemAddonGroup[]
   addons: MenuItemAddon[]
+  discounts: Discount[]
   disabled?: boolean
   qtyFor: (id: number) => number
   onAdd: (item: MenuItem) => void
@@ -32,6 +34,9 @@ export default function ProductDetailSheet({
   const itemGroups = addonGroups.filter(g => g.menu_item_id === active.id)
   const hasOptions = itemSizes.length > 0 || itemGroups.length > 0
   const qty = qtyFor(active.id)
+  const baseActivePrice = itemSizes.length > 0 ? Math.min(...itemSizes.map(s => s.price)) : active.price
+  const activeDiscount = effectiveDiscount(active.id, active.category, discounts)
+  const activeDisplayPrice = applyDiscount(baseActivePrice, activeDiscount)
 
   const available = items.filter(i => i.id !== active.id && isItemAvailableNow(i.available_from, i.available_until))
   const sameCategory = available.filter(i => i.category === active.category)
@@ -55,7 +60,10 @@ export default function ProductDetailSheet({
         <div className="p-4">
           <h2 className="font-bold text-lg">{active.name}</h2>
           {active.description && <p className="text-sm text-mist mt-1 leading-relaxed">{active.description}</p>}
-          <p className="text-sea font-bold text-lg mt-2">{itemSizes.length > 0 ? `من ${Math.min(...itemSizes.map(s => s.price))}` : active.price} ج.م</p>
+          <p className="text-lg mt-2">
+            {activeDiscount && <span className="text-mist text-sm line-through ml-2">{baseActivePrice}</span>}
+            <span className="text-sea font-bold">{itemSizes.length > 0 ? `من ${activeDisplayPrice}` : activeDisplayPrice} ج.م</span>
+          </p>
 
           <div className="mt-4">
             {hasOptions ? (
@@ -86,14 +94,19 @@ export default function ProductDetailSheet({
                 {related.map(r => {
                   const rArt = artFor(r.category)
                   const rSizes = sizes.filter(s => s.menu_item_id === r.id)
-                  const rPrice = rSizes.length > 0 ? Math.min(...rSizes.map(s => s.price)) : r.price
+                  const rBasePrice = rSizes.length > 0 ? Math.min(...rSizes.map(s => s.price)) : r.price
+                  const rDiscount = effectiveDiscount(r.id, r.category, discounts)
+                  const rPrice = applyDiscount(rBasePrice, rDiscount)
                   return (
                     <button key={r.id} className="shrink-0 w-28 text-right" onClick={() => setActiveId(r.id)}>
                       <div className="rounded-xl aspect-square grid place-items-center text-2xl mb-1.5 overflow-hidden" style={{ background: rArt.tint }}>
                         {r.image_url ? <img src={r.image_url} alt={r.name} className="w-full h-full object-cover" /> : rArt.emoji}
                       </div>
                       <p className="text-xs font-semibold line-clamp-2 leading-snug">{r.name}</p>
-                      <p className="text-xs text-sea font-bold mt-0.5">{rSizes.length > 0 ? `من ${rPrice}` : rPrice} ج.م</p>
+                      <p className="text-xs mt-0.5">
+                        {rDiscount && <span className="text-mist line-through ml-1">{rBasePrice}</span>}
+                        <span className="text-sea font-bold">{rSizes.length > 0 ? `من ${rPrice}` : rPrice} ج.م</span>
+                      </p>
                     </button>
                   )
                 })}

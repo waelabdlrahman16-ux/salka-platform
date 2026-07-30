@@ -23,6 +23,12 @@ export interface MenuItemAddon {
   id: number; group_id: number; name: string; price: number
   display_order: number; available: boolean; image_url: string | null
 }
+export interface Discount {
+  id: number; restaurant_id: number; scope: 'item' | 'category'
+  menu_item_id: number | null; category: string | null
+  discount_type: 'percent' | 'fixed'; value: number; active: boolean
+  starts_at: string | null; ends_at: string | null
+}
 export interface RequestItem { name: string; qty: number }
 export interface Order {
   id: number; restaurant_id: number
@@ -48,6 +54,7 @@ export interface OrderItem {
   name: string; qty: number; unit_price: number; total: number
   requires_prescription: boolean
   size_name: string | null; addon_names: string[] | null
+  original_unit_price: number | null
 }
 export interface Driver {
   id: number; name: string; phone: string; status: string

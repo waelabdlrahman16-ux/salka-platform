@@ -5,6 +5,7 @@ import BasicInfoCard from './menuItemEditor/BasicInfoCard'
 import SizesCard from './menuItemEditor/SizesCard'
 import AddonsCard from './menuItemEditor/AddonsCard'
 import DangerZoneCard from './menuItemEditor/DangerZoneCard'
+import DiscountManager from './DiscountManager'
 import type { MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemSize } from '../lib/types'
 
 export default function MenuItemEditor({ item, onClose, onSaved, onDeleted }: {
@@ -158,6 +159,11 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted }: {
           availFrom={availFrom} setAvailFrom={setAvailFrom}
           availUntil={availUntil} setAvailUntil={setAvailUntil}
         />
+
+        <div className="card p-4 mb-3">
+          <p className="font-semibold text-sm mb-2">الخصم على الصنف ده</p>
+          <DiscountManager restaurantId={item.restaurant_id} scope="item" menuItemId={item.id} />
+        </div>
 
         <SizesCard sizes={sizes} newSize={newSize} setNewSize={setNewSize} onAdd={addSize} onRemove={removeSize} />
 
