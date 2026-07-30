@@ -510,6 +510,7 @@ export default function Admin() {
     <div className="mt-2.5 bg-night border border-line rounded-xl p-3 text-sm space-y-1">
       <p>👤 {o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
       <p>📍 {addr(o)}</p>
+      {o.customer_note && <p className="text-sand">📝 {o.customer_note}</p>}
     </div>
   )
 

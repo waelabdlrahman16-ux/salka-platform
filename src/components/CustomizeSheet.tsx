@@ -88,6 +88,7 @@ export default function CustomizeSheet({
             <div className="space-y-2">
               {addons.filter(a => a.group_id === g.id && a.available).map(a => (
                 <label key={a.id} className="flex items-center gap-3 rounded-xl border-2 border-line px-3.5 py-2.5 cursor-pointer">
+                  {a.image_url && <img src={a.image_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />}
                   <span className="flex-1 text-sm font-medium">{a.name}</span>
                   <span className="text-sm text-mist">{a.price > 0 ? `+${a.price} ج.م` : 'مجانًا'}</span>
                   {g.max_select === 1

@@ -32,8 +32,10 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted }: {
   const [newSize, setNewSize] = useState({ name: '', price: '' })
   const [groups, setGroups] = useState<MenuItemAddonGroup[]>([])
   const [addons, setAddons] = useState<MenuItemAddon[]>([])
-  const [newGroup, setNewGroup] = useState({ name: '', required: false, singleChoice: false, maxSelect: '' })
-  const [newAddon, setNewAddon] = useState<Record<number, { name: string; price: string }>>({})
+  const [newGroup, setNewGroup] = useState<{ name: string; kind: 'multi' | 'swap'; required: boolean; maxSelect: string }>(
+    { name: '', kind: 'multi', required: false, maxSelect: '' }
+  )
+  const [newAddon, setNewAddon] = useState<Record<number, { name: string; price: string; imageUrl: string | null; uploading: boolean }>>({})
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -112,9 +114,9 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted }: {
     await supabase.from('menu_item_addon_groups').insert({
       menu_item_id: item.id, name: newGroup.name.trim(),
       min_select: newGroup.required ? 1 : 0,
-      max_select: newGroup.singleChoice ? 1 : (newGroup.maxSelect ? Number(newGroup.maxSelect) : null)
+      max_select: newGroup.kind === 'swap' ? 1 : (newGroup.maxSelect ? Number(newGroup.maxSelect) : null)
     })
-    setNewGroup({ name: '', required: false, singleChoice: false, maxSelect: '' })
+    setNewGroup({ name: '', kind: 'multi', required: false, maxSelect: '' })
     loadOptions()
   }
   async function removeGroup(id: number) {
@@ -127,9 +129,9 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted }: {
     const draft = newAddon[groupId]
     if (!draft?.name.trim()) return
     await supabase.from('menu_item_addons').insert({
-      group_id: groupId, name: draft.name.trim(), price: Number(draft.price) || 0
+      group_id: groupId, name: draft.name.trim(), price: Number(draft.price) || 0, image_url: draft.imageUrl
     })
-    setNewAddon(prev => ({ ...prev, [groupId]: { name: '', price: '' } }))
+    setNewAddon(prev => ({ ...prev, [groupId]: { name: '', price: '', imageUrl: null, uploading: false } }))
     loadOptions()
   }
   async function removeAddon(id: number) {
@@ -139,9 +141,9 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted }: {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 grid place-items-end sm:place-items-center p-0 sm:p-4" onClick={onClose}>
-      <div className="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto bg-shellup rounded-t-2xl sm:rounded-2xl p-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3 px-1">
-          <h2 className="font-bold text-lg text-white">تعديل الصنف</h2>
+          <h2 className="font-bold text-lg text-foam">تعديل الصنف</h2>
           <button className="text-mist text-sm bg-shell rounded-full px-3 py-1" onClick={onClose}>✗ إغلاق</button>
         </div>
 

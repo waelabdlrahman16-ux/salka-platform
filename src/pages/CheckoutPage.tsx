@@ -24,6 +24,7 @@ export default function CheckoutPage() {
   const [phone, setPhone] = useState(() => customer?.phone ?? localStorage.getItem('salka_phone') ?? '')
   const [unit, setUnit] = useState('')
   const [notes, setNotes] = useState('')
+  const [customerNote, setCustomerNote] = useState('')
   const [compoundId, setCompoundId] = useState<number | null>(() => {
     const saved = sessionStorage.getItem('salka_compound_id')
     return saved ? Number(saved) : null
@@ -136,7 +137,8 @@ export default function CheckoutPage() {
       p_compound_id: compoundId,
       p_payment_method: isInstapay ? 'instapay' : 'cod',
       p_use_wallet: walletBalance > 0 && useWallet,
-      p_session_token: getSessionToken()
+      p_session_token: getSessionToken(),
+      p_customer_note: customerNote.trim() || null
     })
     if (err || !data?.token) {
       setSaving(false)
@@ -229,6 +231,9 @@ export default function CheckoutPage() {
             + إضافة علامة مميزة (اختياري)
           </button>
         )}
+        <div><label className="label">ملاحظات على الطلب (اختياري)</label>
+          <textarea className="field" rows={2} value={customerNote} onChange={e => setCustomerNote(e.target.value)}
+            placeholder="مثال: من غير بصل، اتصل قبل ما توصل" /></div>
       </div>
 
       {walletBalance > 0 && (

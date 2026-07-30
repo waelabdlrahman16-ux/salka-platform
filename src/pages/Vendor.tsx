@@ -422,6 +422,10 @@ function KitchenVendor({ rid }: { rid: number }) {
           <p className="text-sand text-sm mt-2">💊 الطلب فيه صنف يحتاج روشتة — أكّد مع العميل قبل التجهيز</p>
         )}
 
+        {o.customer_note && (
+          <p className="text-sand text-sm mt-2 bg-sand/10 rounded-lg p-2.5">📝 {o.customer_note}</p>
+        )}
+
         {!completed && remaining(o) !== null && o.kitchen_status !== 'ready' && (
           <p className={`text-sm mt-2 ${remaining(o)! < 0 ? 'text-red-600' : 'text-mist'}`}>
             {remaining(o)! < 0 ? `متأخر ${Math.abs(remaining(o)!)} دقيقة` : `المفروض يجهز خلال ${remaining(o)} دقيقة`}

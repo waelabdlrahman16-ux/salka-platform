@@ -21,13 +21,13 @@ export interface MenuItemAddonGroup {
 }
 export interface MenuItemAddon {
   id: number; group_id: number; name: string; price: number
-  display_order: number; available: boolean
+  display_order: number; available: boolean; image_url: string | null
 }
 export interface RequestItem { name: string; qty: number }
 export interface Order {
   id: number; restaurant_id: number
   customer_name: string; customer_phone: string
-  zone: string; unit_number: string; address_notes: string
+  zone: string; unit_number: string; address_notes: string; customer_note: string | null
   status: string; kitchen_status: string
   subtotal: number; delivery_fee: number; total: number
   payment_method: string; created_at: string
