@@ -342,6 +342,9 @@ export default function DriverPage() {
                   <Icon name="locationDot" className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                   <span>{o.zone} — وحدة {o.unit_number}{o.address_notes ? ` — ${o.address_notes}` : ''}</span>
                 </p>
+                {o.customer_note && (
+                  <p className="text-sand bg-sand/10 rounded-lg p-2">📝 {o.customer_note}</p>
+                )}
                 <div className="flex gap-2 pt-1">
                   <a className="btn-ghost !py-1.5 text-sm flex-1 text-center" href={`tel:${o.customer_phone}`}>اتصال</a>
                   <a className="btn-ghost !py-1.5 text-sm flex-1 text-center" href={`https://wa.me/${o.customer_phone.replace(/^0/, '20').replace('+', '')}`} target="_blank" rel="noreferrer">واتساب</a>

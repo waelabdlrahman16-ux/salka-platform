@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { haversineKm } from '../lib/geo'
 import Icon from '../components/Icon'
-import type { Compound, Restaurant } from '../lib/types'
+import type { Compound, Discount, Restaurant } from '../lib/types'
 
 const STORAGE_KEY = 'salka_compound_id'
 
@@ -11,6 +11,7 @@ export default function Home() {
   const [compounds, setCompounds] = useState<Compound[]>([])
   const [compoundId, setCompoundId] = useState<number | null>(null)
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
+  const [discountedRestaurantIds, setDiscountedRestaurantIds] = useState<Set<number>>(new Set())
   const [loading, setLoading] = useState(true)
   const [picking, setPicking] = useState(false)
   const [search, setSearch] = useState('')
@@ -34,7 +35,16 @@ export default function Home() {
     if (!compoundId) { setLoading(false); return }
     setLoading(true)
     supabase.rpc('restaurants_for_compound', { p_compound_id: compoundId })
-      .then(({ data }) => { setRestaurants((data as Restaurant[]) ?? []); setLoading(false) })
+      .then(async ({ data }) => {
+        const list = (data as Restaurant[]) ?? []
+        setRestaurants(list); setLoading(false)
+        if (!list.length) return
+        const { data: discounts } = await supabase.from('discounts').select('*')
+          .in('restaurant_id', list.map(r => r.id)).eq('active', true)
+        const now = new Date()
+        const inEffect = (d: Discount) => (!d.starts_at || new Date(d.starts_at) <= now) && (!d.ends_at || new Date(d.ends_at) >= now)
+        setDiscountedRestaurantIds(new Set((discounts ?? []).filter(inEffect).map(d => d.restaurant_id)))
+      })
   }, [compoundId])
 
   function choose(id: number) {
@@ -118,6 +128,11 @@ export default function Home() {
                   </div>
                   <span className={r.is_open ? 'badge-open' : 'badge-closed'}>{r.is_open ? 'مفتوح' : 'مغلق'}</span>
                 </div>
+                {discountedRestaurantIds.has(r.id) && (
+                  <span className="inline-flex items-center gap-1 bg-sand/15 text-sand text-xs font-bold rounded-full px-2 py-0.5 mt-2">
+                    🏷️ عروض وخصومات
+                  </span>
+                )}
                 <p className="text-sm text-mist mt-1.5 leading-relaxed">{r.description}</p>
                 <div className="flex items-center gap-3 mt-3 text-sm text-mist">
                   <span className="text-sand flex items-center gap-1"><Icon name="star" className="w-3.5 h-3.5" /> {r.rating}</span>
