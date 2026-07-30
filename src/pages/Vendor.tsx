@@ -93,11 +93,6 @@ function RideHistoryPanel({ restaurantId }: { restaurantId: number }) {
       .then(({ data }) => { setRides(data ?? []); setLoading(false) })
   }, [restaurantId])
 
-  const STATUS_LABEL: Record<string, string> = {
-    pending: 'قيد الانتظار', Accepted: 'المندوب في الطريق', Picked_Up: 'استلم الطلب',
-    Out_for_Delivery: 'في الطريق للعميل', Delivered: 'تم التوصيل', Cancelled: 'ملغي'
-  }
-
   if (loading) return <p className="text-mist text-center py-8">جاري التحميل…</p>
   if (rides.length === 0) return <p className="text-mist text-center py-8">لسه مفيش طلبات مندوب</p>
 
@@ -107,7 +102,7 @@ function RideHistoryPanel({ restaurantId }: { restaurantId: number }) {
         <div key={o.id} className="card p-3.5">
           <div className="flex items-center justify-between">
             <p className="font-semibold text-sm">#{o.id} — {o.customer_name}</p>
-            <span className="text-xs font-semibold text-mist">{STATUS_LABEL[o.status] ?? o.status}</span>
+            <span className="text-xs font-semibold text-mist">{orderStatusLabel(o.status)}</span>
           </div>
           <p className="text-mist text-xs mt-0.5">{o.zone} — وحدة {o.unit_number}</p>
           <p className="text-xs text-mist mt-1">

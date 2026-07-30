@@ -6,7 +6,7 @@ import { registerPush } from '../lib/push'
 import { startLocationReporting, stopLocationReporting } from '../lib/geolocation'
 import type { Assignment, Driver, Shift, SwapRequest } from '../lib/types'
 import Icon from '../components/Icon'
-import { assignmentStatusLabel } from '../lib/statusLabels'
+import { assignmentStatusLabel, driverStatusLabel } from '../lib/statusLabels'
 
 interface PoolOrder {
   id: number; total: number; zone: string
@@ -181,7 +181,7 @@ export default function DriverPage() {
           <h1 className="text-xl font-bold">🛵 {driver.name}</h1>
           <p className="text-sm text-mist">★ {driver.rating} · {driver.total_deliveries} توصيلة{streakDays >= 2 ? ` · 🔥 ${streakDays} أيام متتالية` : ''}</p>
         </div>
-        <span className={driver.available ? 'badge-open' : 'badge-closed'}>{driver.status}</span>
+        <span className={driver.available ? 'badge-open' : 'badge-closed'}>{driverStatusLabel(driver.status)}</span>
       </div>
 
       <div className="card p-4 mb-5">
@@ -210,7 +210,7 @@ export default function DriverPage() {
           <div className="space-y-3">
             {shifts.map(sh => {
               const requested = myOpenRequests.has(sh.id)
-      const myRequestId = myOpenRequests.get(sh.id)
+              const myRequestId = myOpenRequests.get(sh.id)
               return (
                 <div key={sh.id} className="card p-4">
                   <div className="flex items-center justify-between">
@@ -321,7 +321,12 @@ export default function DriverPage() {
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <h2 className="font-bold truncate">طلب #{o.id} — {o.restaurants?.name}</h2>
-                  <p className="text-sm text-mist mt-0.5">{o.total} ج.م · كاش عند الاستلام</p>
+                  <p className="text-sm text-mist mt-0.5">
+                    {o.total} ج.م ·{' '}
+                    {o.payment_method === 'instapay'
+                      ? <span className="text-emerald-700 font-semibold">مدفوع InstaPay — متحصلش فلوس</span>
+                      : 'كاش عند الاستلام'}
+                  </p>
                 </div>
                 <span className={`text-xs font-semibold rounded-full px-2.5 py-1 shrink-0 ${statusColor}`}>
                   {a.status === 'Offered' ? 'عرض جديد' : assignmentStatusLabel(a.status)}
