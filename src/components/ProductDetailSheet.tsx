@@ -40,11 +40,11 @@ export default function ProductDetailSheet({
   return (
     <div className="fixed inset-0 z-50 bg-black/60 grid place-items-end sm:place-items-center p-0 sm:p-4" onClick={onClose}>
       <div className="w-full sm:max-w-md max-h-[90vh] overflow-y-auto bg-shell rounded-t-2xl sm:rounded-2xl" onClick={e => e.stopPropagation()}>
-        <div className="relative aspect-[4/3] grid place-items-center text-6xl" style={{ background: art.tint }}>
+        <div className="relative aspect-square grid place-items-center text-6xl" style={{ background: art.tint }}>
           {active.image_url
             ? <img src={active.image_url} alt={active.name} className="w-full h-full object-cover" />
             : art.emoji}
-          <button className="absolute top-3 left-3 bg-white/90 rounded-full w-8 h-8 grid place-items-center" onClick={onClose}>✗</button>
+          <button className="absolute top-3 left-3 bg-white/80 rounded-full w-7 h-7 grid place-items-center text-mist text-sm" onClick={onClose}>✗</button>
           {active.requires_prescription && (
             <span className="absolute top-3 right-3 bg-white/90 rounded-full px-2.5 py-1 text-xs font-bold text-seadeep">
               💊 يحتاج روشتة
@@ -80,8 +80,8 @@ export default function ProductDetailSheet({
           </div>
 
           {related.length > 0 && (
-            <div className="mt-6">
-              <h3 className="font-bold text-sm mb-3">منتجات تانية ممكن تعجبك</h3>
+            <div>
+              <h3 className="font-semibold text-sm text-mist mb-3 pt-4 border-t border-line">منتجات تانية ممكن تعجبك</h3>
               <div className="flex gap-3 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none">
                 {related.map(r => {
                   const rArt = artFor(r.category)
