@@ -55,7 +55,7 @@ export default function ProductDetailSheet({
         <div className="p-4">
           <h2 className="font-bold text-lg">{active.name}</h2>
           {active.description && <p className="text-sm text-mist mt-1 leading-relaxed">{active.description}</p>}
-          <p className="text-sea font-bold text-lg mt-2">{active.price} ج.م</p>
+          <p className="text-sea font-bold text-lg mt-2">{itemSizes.length > 0 ? `من ${Math.min(...itemSizes.map(s => s.price))}` : active.price} ج.م</p>
 
           <div className="mt-4">
             {hasOptions ? (
@@ -85,13 +85,15 @@ export default function ProductDetailSheet({
               <div className="flex gap-3 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none">
                 {related.map(r => {
                   const rArt = artFor(r.category)
+                  const rSizes = sizes.filter(s => s.menu_item_id === r.id)
+                  const rPrice = rSizes.length > 0 ? Math.min(...rSizes.map(s => s.price)) : r.price
                   return (
                     <button key={r.id} className="shrink-0 w-28 text-right" onClick={() => setActiveId(r.id)}>
                       <div className="rounded-xl aspect-square grid place-items-center text-2xl mb-1.5 overflow-hidden" style={{ background: rArt.tint }}>
                         {r.image_url ? <img src={r.image_url} alt={r.name} className="w-full h-full object-cover" /> : rArt.emoji}
                       </div>
                       <p className="text-xs font-semibold line-clamp-2 leading-snug">{r.name}</p>
-                      <p className="text-xs text-sea font-bold mt-0.5">{r.price} ج.م</p>
+                      <p className="text-xs text-sea font-bold mt-0.5">{rSizes.length > 0 ? `من ${rPrice}` : rPrice} ج.م</p>
                     </button>
                   )
                 })}

@@ -1,9 +1,9 @@
 import { artFor } from '../lib/categoryArt'
 import Icon from './Icon'
-import type { MenuItem } from '../lib/types'
+import type { MenuItem, MenuItemSize } from '../lib/types'
 
 export default function ProductCard({
-  item, qty, disabled, onAdd, onRemove, hasOptions, onCustomize, onOpenDetail
+  item, qty, disabled, onAdd, onRemove, hasOptions, onCustomize, onOpenDetail, sizes
 }: {
   item: MenuItem
   qty: number
@@ -13,8 +13,10 @@ export default function ProductCard({
   hasOptions?: boolean
   onCustomize?: () => void
   onOpenDetail: () => void
+  sizes?: MenuItemSize[]
 }) {
   const art = artFor(item.category)
+  const cheapestSize = sizes && sizes.length > 0 ? Math.min(...sizes.map(s => s.price)) : null
 
   return (
     <div className="card p-3 flex flex-col">
@@ -37,7 +39,7 @@ export default function ProductCard({
         </div>
 
         <h3 className="font-semibold text-sm leading-snug line-clamp-2 min-h-[2.5em]">{item.name}</h3>
-        <p className="text-sea font-bold mt-1.5 mb-3">{item.price} ج.م</p>
+        <p className="text-sea font-bold mt-1.5 mb-3">{cheapestSize !== null ? `من ${cheapestSize}` : item.price} ج.م</p>
       </button>
 
       {hasOptions ? (

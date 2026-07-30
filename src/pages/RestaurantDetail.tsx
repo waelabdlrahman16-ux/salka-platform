@@ -142,6 +142,7 @@ export default function RestaurantDetail() {
                       qty={cart.qtyFor(it.id)}
                       disabled={!restaurant.is_open}
                       hasOptions={hasOptions}
+                      sizes={itemSizes}
                       onAdd={() => cart.add(it, 1)}
                       onRemove={() => cart.add(it, -1)}
                       onCustomize={() => setCustomizing(it)}
