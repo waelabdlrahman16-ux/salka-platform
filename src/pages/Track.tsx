@@ -52,20 +52,8 @@ export default function Track() {
   const [complaining, setComplaining] = useState(false)
   const [complaintText, setComplaintText] = useState('')
   const [complaintSent, setComplaintSent] = useState(false)
-  const [repaying, setRepaying] = useState(false)
   const [claimingPayment, setClaimingPayment] = useState(false)
   const [copied, setCopied] = useState(false)
-
-  async function retryPayment() {
-    if (!data?.order) return
-    setRepaying(true)
-    const { data: fw, error } = await supabase.functions.invoke('fawaterak-create-invoice', {
-      body: { order_id: data.order.id }
-    })
-    setRepaying(false)
-    if (error || !fw?.url) { alert('حصل خطأ، جرب تاني'); return }
-    window.location.href = fw.url
-  }
 
   async function claimInstapayPayment() {
     if (!token) return
@@ -160,26 +148,6 @@ export default function Track() {
               {claimingPayment ? 'جاري التأكيد…' : 'حوّلت المبلغ ✓'}
             </button>
           )}
-        </div>
-      </div>
-    )
-  }
-
-  if (o.status === 'awaiting_payment') {
-    return (
-      <div className="max-w-lg mx-auto">
-        <Link to="/" className="text-sm text-mist hover:text-foam">← العودة للرئيسية</Link>
-        <div className="card p-4 mt-3 text-center">
-          <p className="text-4xl mb-3">💳</p>
-          <h1 className="font-bold text-lg mb-1">بننتظر تأكيد الدفع</h1>
-          <p className="text-mist text-sm mb-1">طلب #{o.id} من {o.restaurant_name}</p>
-          <p className="text-sea font-bold text-xl my-3">{o.total} ج.م</p>
-          <p className="text-mist text-sm mb-4">
-            لو خرجت من صفحة الدفع قبل ما تكمل، اضغط تحت وكمّل الدفع
-          </p>
-          <button className="btn-sea w-full" disabled={repaying} onClick={retryPayment}>
-            {repaying ? 'جاري الفتح…' : 'كمّل الدفع'}
-          </button>
         </div>
       </div>
     )
