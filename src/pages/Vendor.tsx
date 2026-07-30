@@ -507,7 +507,12 @@ function KitchenVendor({ rid }: { rid: number }) {
 
       {completedToday.length > 0 && (
         <>
-          <h2 className="font-bold text-mist mt-6 mb-3">✅ طلبات مكتملة النهاردة ({completedToday.length})</h2>
+          <div className="flex items-center justify-between mt-6 mb-3">
+            <h2 className="font-bold text-mist">✅ طلبات مكتملة النهاردة ({completedToday.length})</h2>
+            <span className="text-sea font-bold text-sm">
+              {completedToday.filter(o => o.status === 'Delivered').reduce((s, o) => s + Number(o.subtotal), 0)} ج.م
+            </span>
+          </div>
           <div className="space-y-3">{completedToday.map(o => card(o))}</div>
         </>
       )}

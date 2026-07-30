@@ -40,7 +40,7 @@ export default function DriverPage() {
     const { data: stats } = await supabase.rpc('my_driver_stats')
     setStreakDays(stats?.streak_days ?? 0)
     const { data: a } = await supabase.from('delivery_assignments')
-      .select('*, orders(*, restaurants(name))').eq('driver_id', id)
+      .select('*, orders(*, restaurants(name), compounds(name, latitude, longitude))').eq('driver_id', id)
       .in('status', ['Offered', 'Accepted', 'Picked_Up', 'Out_for_Delivery', 'Delivered'])
       .order('id', { ascending: false }).limit(20)
     setAssignments(a ?? [])
@@ -353,6 +353,11 @@ export default function DriverPage() {
                 <div className="flex gap-2 pt-1">
                   <a className="btn-ghost !py-1.5 text-sm flex-1 text-center" href={`tel:${o.customer_phone}`}>اتصال</a>
                   <a className="btn-ghost !py-1.5 text-sm flex-1 text-center" href={`https://wa.me/${o.customer_phone.replace(/^0/, '20').replace('+', '')}`} target="_blank" rel="noreferrer">واتساب</a>
+                  {o.compounds?.latitude != null && o.compounds?.longitude != null && (
+                    <a className="btn-sea !py-1.5 text-sm flex-1 text-center"
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${o.compounds.latitude},${o.compounds.longitude}`}
+                      target="_blank" rel="noreferrer">🧭 الاتجاهات</a>
+                  )}
                 </div>
               </div>
 

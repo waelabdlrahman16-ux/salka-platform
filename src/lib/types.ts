@@ -48,6 +48,7 @@ export interface Order {
   instapay_claimed_at: string | null
   refund_status: 'pending' | 'refunded' | null
   restaurants?: { name: string }
+  compounds?: { name: string; latitude: number | null; longitude: number | null }
 }
 export interface OrderItem {
   id: number; order_id: number; menu_item_id: number
