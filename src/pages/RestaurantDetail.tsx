@@ -9,6 +9,8 @@ import Icon from '../components/Icon'
 import { isItemAvailableNow } from '../lib/itemAvailability'
 import type { Compound, MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemSize, Restaurant } from '../lib/types'
 
+const ALL = '__all__'
+
 export default function RestaurantDetail() {
   const { id } = useParams()
   const nav = useNavigate()
@@ -21,7 +23,7 @@ export default function RestaurantDetail() {
   const [customizing, setCustomizing] = useState<MenuItem | null>(null)
   const [detailItem, setDetailItem] = useState<MenuItem | null>(null)
   const [compounds, setCompounds] = useState<Compound[]>([])
-  const [activeCat, setActiveCat] = useState<string | null>(null)
+  const [activeCat, setActiveCat] = useState<string>(ALL)
 
   useEffect(() => {
     supabase.from('restaurants').select('*').eq('id', id).single().then(({ data }) => setRestaurant(data))
@@ -59,11 +61,7 @@ export default function RestaurantDetail() {
     return list
   }, [items])
 
-  useEffect(() => {
-    if (!activeCat && categories.length) setActiveCat(categories[0])
-  }, [categories, activeCat])
-
-  const shown = items.filter(it => it.category === activeCat && isItemAvailableNow(it.available_from, it.available_until))
+  const shown = (cat: string) => items.filter(it => it.category === cat && isItemAvailableNow(it.available_from, it.available_until))
   const compoundId = sessionStorage.getItem('salka_compound_id')
   const selectedCompound = compounds.find(c => String(c.id) === compoundId)
   const totalEta = restaurant && selectedCompound ? restaurant.prep_minutes + selectedCompound.est_travel_minutes : null
@@ -120,6 +118,7 @@ export default function RestaurantDetail() {
         <>
           {/* category pills */}
           <div className="flex gap-2 overflow-x-auto pb-1 mb-4 -mx-4 px-4 scrollbar-none">
+            <button className={`tab shrink-0 ${activeCat === ALL ? 'tab-active' : 'bg-shellup/60'}`} onClick={() => setActiveCat(ALL)}>الكل</button>
             {categories.map(cat => (
               <button key={cat}
                 className={`tab shrink-0 ${activeCat === cat ? 'tab-active' : 'bg-shellup/60'}`}
@@ -127,11 +126,11 @@ export default function RestaurantDetail() {
             ))}
           </div>
 
-          {activeCat && (
-            <section>
-              <h2 className="font-bold text-lg mb-3">{activeCat}</h2>
+          {(activeCat === ALL ? categories : [activeCat]).map(cat => shown(cat).length === 0 ? null : (
+            <section key={cat} className="mb-6">
+              <h2 className="font-bold text-lg mb-3">{cat}</h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {shown.map(it => {
+                {shown(cat).map(it => {
                   const itemSizes = sizes.filter(s => s.menu_item_id === it.id)
                   const itemGroups = addonGroups.filter(g => g.menu_item_id === it.id)
                   const hasOptions = itemSizes.length > 0 || itemGroups.length > 0
@@ -152,7 +151,7 @@ export default function RestaurantDetail() {
                 })}
               </div>
             </section>
-          )}
+          ))}
         </>
       )}
 
