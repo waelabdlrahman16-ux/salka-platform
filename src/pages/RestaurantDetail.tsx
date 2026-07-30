@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useCart } from '../lib/cart'
 import ProductCard from '../components/ProductCard'
+import ProductDetailSheet from '../components/ProductDetailSheet'
 import CustomizeSheet from '../components/CustomizeSheet'
 import Icon from '../components/Icon'
 import { isItemAvailableNow } from '../lib/itemAvailability'
@@ -18,6 +19,7 @@ export default function RestaurantDetail() {
   const [addonGroups, setAddonGroups] = useState<MenuItemAddonGroup[]>([])
   const [addons, setAddons] = useState<MenuItemAddon[]>([])
   const [customizing, setCustomizing] = useState<MenuItem | null>(null)
+  const [detailItem, setDetailItem] = useState<MenuItem | null>(null)
   const [compounds, setCompounds] = useState<Compound[]>([])
   const [activeCat, setActiveCat] = useState<string | null>(null)
 
@@ -143,6 +145,7 @@ export default function RestaurantDetail() {
                       onAdd={() => cart.add(it, 1)}
                       onRemove={() => cart.add(it, -1)}
                       onCustomize={() => setCustomizing(it)}
+                      onOpenDetail={() => setDetailItem(it)}
                     />
                   )
                 })}
@@ -150,6 +153,22 @@ export default function RestaurantDetail() {
             </section>
           )}
         </>
+      )}
+
+      {detailItem && (
+        <ProductDetailSheet
+          item={detailItem}
+          items={items.filter(it => isItemAvailableNow(it.available_from, it.available_until))}
+          sizes={sizes}
+          addonGroups={addonGroups}
+          addons={addons}
+          disabled={!restaurant.is_open}
+          qtyFor={id => cart.qtyFor(id)}
+          onAdd={it => cart.add(it, 1)}
+          onRemove={it => cart.add(it, -1)}
+          onCustomize={it => { setDetailItem(null); setCustomizing(it) }}
+          onClose={() => setDetailItem(null)}
+        />
       )}
 
       {customizing && (

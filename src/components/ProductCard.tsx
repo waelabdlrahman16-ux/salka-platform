@@ -3,7 +3,7 @@ import Icon from './Icon'
 import type { MenuItem } from '../lib/types'
 
 export default function ProductCard({
-  item, qty, disabled, onAdd, onRemove, hasOptions, onCustomize
+  item, qty, disabled, onAdd, onRemove, hasOptions, onCustomize, onOpenDetail
 }: {
   item: MenuItem
   qty: number
@@ -12,31 +12,33 @@ export default function ProductCard({
   onRemove: () => void
   hasOptions?: boolean
   onCustomize?: () => void
+  onOpenDetail: () => void
 }) {
   const art = artFor(item.category)
 
   return (
     <div className="card p-3 flex flex-col">
-      <div className="relative rounded-xl aspect-square grid place-items-center text-4xl mb-3 overflow-hidden"
-        style={{ background: art.tint }}>
-        {item.image_url
-          ? <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
-          : art.emoji}
-        {item.requires_prescription && (
-          <span className="absolute top-2 right-2 bg-white/90 rounded-full px-2 py-0.5 text-[10px] font-bold text-seadeep">
-            💊 روشتة
-          </span>
-        )}
-        {hasOptions && qty > 0 && (
-          <span className="absolute top-2 left-2 bg-sea text-white rounded-full min-w-[1.25rem] h-5 px-1 grid place-items-center text-[10px] font-bold">
-            {qty}
-          </span>
-        )}
-      </div>
+      <button className="text-right" onClick={onOpenDetail}>
+        <div className="relative rounded-xl aspect-square grid place-items-center text-4xl mb-3 overflow-hidden"
+          style={{ background: art.tint }}>
+          {item.image_url
+            ? <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+            : art.emoji}
+          {item.requires_prescription && (
+            <span className="absolute top-2 right-2 bg-white/90 rounded-full px-2 py-0.5 text-[10px] font-bold text-seadeep">
+              💊 روشتة
+            </span>
+          )}
+          {hasOptions && qty > 0 && (
+            <span className="absolute top-2 left-2 bg-sea text-white rounded-full min-w-[1.25rem] h-5 px-1 grid place-items-center text-[10px] font-bold">
+              {qty}
+            </span>
+          )}
+        </div>
 
-      <h3 className="font-semibold text-sm leading-snug line-clamp-2 min-h-[2.5em]">{item.name}</h3>
-      {item.description && <p className="text-xs text-mist mt-0.5 line-clamp-1">{item.description}</p>}
-      <p className="text-sea font-bold mt-1.5 mb-3">{item.price} ج.م</p>
+        <h3 className="font-semibold text-sm leading-snug line-clamp-2 min-h-[2.5em]">{item.name}</h3>
+        <p className="text-sea font-bold mt-1.5 mb-3">{item.price} ج.م</p>
+      </button>
 
       {hasOptions ? (
         <button
