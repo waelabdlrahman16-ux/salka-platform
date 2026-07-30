@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import Icon from './components/Icon'
 import { Routes, Route, Link, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/auth'
@@ -9,15 +10,19 @@ import CartPage from './pages/CartPage'
 import CheckoutPage from './pages/CheckoutPage'
 import CustomOrder from './pages/CustomOrder'
 import Track from './pages/Track'
-import Admin from './pages/Admin'
-import DriverPage from './pages/Driver'
 import Login from './pages/Login'
-import Vendor from './pages/Vendor'
 import MyOrders from './pages/MyOrders'
 import Terms from './pages/Terms'
 import InstallPrompt from './components/InstallPrompt'
 import CustomerLogin from './components/CustomerLogin'
 import { CustomerAuthProvider } from './lib/customerAuth'
+
+// Staff-only pages: not needed in the customer bundle, so they're loaded
+// on demand instead of shipping ~1500 lines of admin/vendor/driver code to
+// every customer who opens the app.
+const Admin = lazy(() => import('./pages/Admin'))
+const DriverPage = lazy(() => import('./pages/Driver'))
+const Vendor = lazy(() => import('./pages/Vendor'))
 import { useState } from 'react'
 
 function Header() {
@@ -109,20 +114,22 @@ export default function App() {
                 className="max-w-5xl mx-auto px-4 pb-28"
                 style={{ paddingTop: isStaff ? '1.5rem' : 'max(1.5rem, calc(env(safe-area-inset-top) + 0.75rem))' }}
               >
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/restaurant/:id" element={<RestaurantDetail />} />
-                  <Route path="/cart" element={<CartPage />} />
-                  <Route path="/checkout" element={<CheckoutPage />} />
-                  <Route path="/custom-order" element={<CustomOrder />} />
-                  <Route path="/my-orders" element={<MyOrders />} />
-                  <Route path="/terms" element={<Terms />} />
-                  <Route path="/track/:token" element={<Track />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/admin" element={<Protected role="admin"><Admin /></Protected>} />
-                  <Route path="/driver" element={<Protected role="driver"><DriverPage /></Protected>} />
-                  <Route path="/vendor" element={<Protected role="vendor"><Vendor /></Protected>} />
-                </Routes>
+                <Suspense fallback={<div className="text-center py-16 text-mist">جاري التحميل…</div>}>
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/restaurant/:id" element={<RestaurantDetail />} />
+                    <Route path="/cart" element={<CartPage />} />
+                    <Route path="/checkout" element={<CheckoutPage />} />
+                    <Route path="/custom-order" element={<CustomOrder />} />
+                    <Route path="/my-orders" element={<MyOrders />} />
+                    <Route path="/terms" element={<Terms />} />
+                    <Route path="/track/:token" element={<Track />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/admin" element={<Protected role="admin"><Admin /></Protected>} />
+                    <Route path="/driver" element={<Protected role="driver"><DriverPage /></Protected>} />
+                    <Route path="/vendor" element={<Protected role="vendor"><Vendor /></Protected>} />
+                  </Routes>
+                </Suspense>
               </main>
             )}
             {!isStaff && (
