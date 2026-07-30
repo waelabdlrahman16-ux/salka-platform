@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
+import { orderStatusLabel } from '../lib/statusLabels'
 
 interface Row {
   id: number; public_token: string; total: number
@@ -60,7 +61,7 @@ export default function MyOrders() {
               <div>
                 <p className="font-semibold">#{r.id} — {r.restaurant_name}</p>
                 <p className="text-xs text-mist mt-0.5">
-                  {new Date(r.created_at).toLocaleDateString('ar-EG')} · {r.status}
+                  {new Date(r.created_at).toLocaleDateString('ar-EG')} · {orderStatusLabel(r.status)}
                 </p>
               </div>
               <span className="font-bold text-sea">{r.total} ج.م</span>

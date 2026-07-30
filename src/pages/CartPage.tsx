@@ -123,6 +123,16 @@ export default function CartPage() {
         })}
       </div>
 
+      <div className="card p-3.5 mb-24 space-y-1.5">
+        <div className="flex justify-between text-sm text-mist"><span>المنتجات</span><span>{subtotal} ج.م</span></div>
+        <div className="flex justify-between text-sm text-mist">
+          <span>التوصيل{compound ? ` (${compound.distance_km} كم)` : ''}</span>
+          <span>{deliveryFee ?? '—'} ج.م</span>
+        </div>
+        <div className="flex justify-between text-sm text-mist"><span>رسوم الخدمة</span><span>{serviceFee} ج.م</span></div>
+        <div className="flex justify-between font-bold border-t border-line pt-2"><span>الإجمالي</span><span className="text-sea">{grandTotal} ج.م</span></div>
+      </div>
+
       <div className="fixed bottom-[calc(4.5rem_+_env(safe-area-inset-bottom)_+_0.75rem)] inset-x-4 z-40 max-w-5xl mx-auto">
         <button className="btn-sea w-full !rounded-xl !py-4 shadow-lg shadow-sea/20 flex items-center justify-between px-4"
           onClick={() => nav('/checkout')}>

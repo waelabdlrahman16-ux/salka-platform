@@ -57,6 +57,8 @@ export default function Home() {
         const nearest = ranked[0]
         const nearestKm = nearest ? haversineKm(latitude, longitude, nearest.latitude!, nearest.longitude!) : null
 
+        setSearch('') // detected results replace a manual text search, not stack with it
+
         // A low-confidence fix (network/cell-tower rather than real GPS -- common
         // indoors or with weak signal) can be tens of km off. Surface that
         // explicitly rather than silently treating an unreliable reading as accurate.
@@ -138,7 +140,8 @@ export default function Home() {
             <div className="flex items-center gap-2 mb-4">
               <div className="field flex-1 flex items-center gap-2 !px-3.5">
                 <Icon name="magnifyingGlass" className="w-4 h-4 shrink-0 text-mist" />
-                <input className="flex-1 bg-transparent focus:outline-none placeholder:text-mist/60" value={search} onChange={e => setSearch(e.target.value)}
+                <input className="flex-1 bg-transparent focus:outline-none placeholder:text-mist/60" value={search}
+                  onChange={e => { setSearch(e.target.value); if (e.target.value.trim()) setNearby(null) }}
                   placeholder="دوّر على اسم المكان…" />
               </div>
               <button className="w-12 h-12 rounded-xl border border-line bg-night grid place-items-center shrink-0" disabled={locating} onClick={useMyLocation}
