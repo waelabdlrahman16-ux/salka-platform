@@ -135,6 +135,18 @@ export default function Home() {
             <h3 className="font-bold text-lg mb-1">فين مكانك؟</h3>
             <p className="text-sm text-mist mb-3">هنعرض بس المطاعم اللي بتوصل لمنطقتك</p>
 
+            <div className="flex items-center gap-2 mb-4">
+              <div className="field flex-1 flex items-center gap-2 !px-3.5">
+                <Icon name="magnifyingGlass" className="w-4 h-4 shrink-0 text-mist" />
+                <input className="flex-1 bg-transparent focus:outline-none placeholder:text-mist/60" value={search} onChange={e => setSearch(e.target.value)}
+                  placeholder="دوّر على اسم المكان…" />
+              </div>
+              <button className="w-12 h-12 rounded-xl border border-line bg-night grid place-items-center shrink-0" disabled={locating} onClick={useMyLocation}
+                title="استخدم موقعي الحالي" aria-label="استخدم موقعي الحالي">
+                {locating ? '…' : <Icon name="locationDot" className="w-4 h-4" />}
+              </button>
+            </div>
+
             {locationError && <p className="text-xs text-sand mb-3 text-center">{locationError}</p>}
 
             {nearby && (
@@ -155,18 +167,6 @@ export default function Home() {
                 </div>
               </div>
             )}
-
-            <div className="flex items-center gap-2 mb-4">
-              <div className="field flex-1 flex items-center gap-2 !px-3.5">
-                <Icon name="magnifyingGlass" className="w-4 h-4 shrink-0 text-mist" />
-                <input className="flex-1 bg-transparent focus:outline-none placeholder:text-mist/60" value={search} onChange={e => setSearch(e.target.value)}
-                  placeholder="دوّر على اسم المكان…" />
-              </div>
-              <button className="w-12 h-12 rounded-xl border border-line bg-night grid place-items-center shrink-0" disabled={locating} onClick={useMyLocation}
-                title="استخدم موقعي الحالي" aria-label="استخدم موقعي الحالي">
-                {locating ? '…' : <Icon name="locationDot" className="w-4 h-4" />}
-              </button>
-            </div>
 
             {search.trim() && filtered.length === 0 && (
               <p className="text-sm text-mist text-center py-6">مفيش نتائج</p>
