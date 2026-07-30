@@ -6,6 +6,7 @@ import { uploadVendorImage } from '../lib/upload'
 import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel } from '../lib/statusLabels'
 import Icon from '../components/Icon'
 import MenuItemEditor from '../components/MenuItemEditor'
+import AddMenuItemModal from '../components/AddMenuItemModal'
 
 function StarRow({ n }: { n: number }) {
   return (
@@ -83,8 +84,8 @@ export default function Admin() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [menu, setMenu] = useState<MenuItem[]>([])
   const [openRest, setOpenRest] = useState<number | null>(null)
+  const [addingItemFor, setAddingItemFor] = useState<Restaurant | null>(null)
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
-  const [newItem, setNewItem] = useState({ name: '', category: '', price: '', requiresRx: false })
   const [settings, setSettings] = useState<Setting[]>([])
   const [shifts, setShifts] = useState<Shift[]>([])
   const [escalations, setEscalations] = useState<any[]>([])
@@ -387,6 +388,12 @@ export default function Admin() {
     load()
   }
 
+  async function removeLogo(r: Restaurant) {
+    if (!confirm('إزالة شعار المطعم؟')) return
+    await supabase.from('restaurants').update({ logo_url: null }).eq('id', r.id)
+    load()
+  }
+
   async function uploadItemImage(it: MenuItem, file: File) {
     setUploadingImage(`i${it.id}`); setImageError(null)
     const { url, error } = await uploadVendorImage(file, `menu-items/${it.id}/image`)
@@ -425,16 +432,6 @@ export default function Admin() {
   async function updateSetting(st: Setting, value: string) {
     if (value === st.value) return
     await supabase.from('settings').update({ value }).eq('key', st.key)
-    load()
-  }
-
-  async function addItem(restaurantId: number) {
-    await supabase.from('menu_items').insert({
-      restaurant_id: restaurantId, name: newItem.name.trim(),
-      category: newItem.category.trim() || 'أصناف', price: Number(newItem.price),
-      requires_prescription: newItem.requiresRx
-    })
-    setNewItem({ name: '', category: '', price: '', requiresRx: false })
     load()
   }
 
@@ -768,9 +765,9 @@ export default function Admin() {
                       <h2 className="font-bold truncate">{r.name}{r.archived ? ' (متوقف)' : ''}</h2>
                       <p className="text-sm text-mist mt-0.5">{its.length} صنف · اضغط للتعديل</p>
                     </div>
-                    <span className="text-mist shrink-0 mr-1">{expanded ? '▲' : '▼'}</span>
                   </button>
                   <div className="flex items-center gap-2 shrink-0">
+                    <button className="btn-ghost !py-1.5 !px-2.5 text-xs" onClick={() => setAddingItemFor(r)}>+ صنف</button>
                     <button className={r.is_open ? 'badge-open' : 'badge-closed'}
                       onClick={() => toggleRestaurant(r)}>{r.is_open ? 'مفتوح' : 'مغلق'}</button>
                     <button className={`text-xs font-semibold rounded-full px-2.5 py-1 ${r.archived ? 'bg-emerald-500/15 text-emerald-700' : 'bg-red-500/15 text-red-600'}`}
@@ -779,11 +776,21 @@ export default function Admin() {
                 </div>
 
                 {expanded && (
-                  <label className="flex items-center gap-2 mt-3 text-sm text-sea cursor-pointer w-fit">
-                    <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
-                      onChange={e => e.target.files?.[0] && uploadLogo(r, e.target.files[0])} />
-                    {uploadingImage === `r${r.id}` ? 'جاري رفع الشعار…' : (r.logo_url ? '🖼️ تغيير شعار المطعم' : '🖼️ إضافة شعار للمطعم')}
-                  </label>
+                  <div className="flex items-center gap-3 mt-3">
+                    <label className="relative cursor-pointer group">
+                      <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
+                        onChange={e => e.target.files?.[0] && uploadLogo(r, e.target.files[0])} />
+                      {r.logo_url
+                        ? <img src={r.logo_url} alt="" className="w-14 h-14 rounded-xl object-cover border border-line group-hover:opacity-70" />
+                        : <div className="w-14 h-14 rounded-xl bg-shellup grid place-items-center text-mist text-[10px] group-hover:opacity-70">اضغط لإضافة</div>}
+                    </label>
+                    <div className="text-xs text-mist">
+                      <p>{uploadingImage === `r${r.id}` ? 'جاري رفع الشعار…' : 'اضغط على الصورة لتغيير شعار المطعم'}</p>
+                      {r.logo_url && (
+                        <button className="text-red-500 font-semibold mt-1" onClick={() => removeLogo(r)}>✗ إزالة الشعار</button>
+                      )}
+                    </div>
+                  </div>
                 )}
                 {imageError && expanded && <p className="text-xs text-sand mt-1">{imageError}</p>}
 
@@ -896,29 +903,6 @@ export default function Admin() {
                         </div>
                       </div>
                     ))}
-
-                    <div className="border-t border-line pt-3 mt-3">
-                      <p className="text-sm text-mist mb-2">إضافة صنف جديد</p>
-                      <div className="space-y-2">
-                        <input className="field" placeholder="اسم الصنف" value={newItem.name}
-                          onChange={e => setNewItem({ ...newItem, name: e.target.value })} />
-                        <div className="flex gap-2">
-                          <input className="field" placeholder="القسم (مشويات…)" value={newItem.category}
-                            onChange={e => setNewItem({ ...newItem, category: e.target.value })} />
-                          <input className="field !w-28" type="number" placeholder="السعر" value={newItem.price}
-                            onChange={e => setNewItem({ ...newItem, price: e.target.value })} />
-                        </div>
-                        {r.vendor_type === 'pharmacy' && (
-                          <label className="flex items-center gap-2 text-sm text-mist">
-                            <input type="checkbox" checked={newItem.requiresRx}
-                              onChange={e => setNewItem({ ...newItem, requiresRx: e.target.checked })} />
-                            يحتاج روشتة طبية
-                          </label>
-                        )}
-                        <button className="btn-sea w-full" disabled={!newItem.name || !newItem.price}
-                          onClick={() => addItem(r.id)}>إضافة</button>
-                      </div>
-                    </div>
                   </div>
                 )}
               </div>
@@ -1349,6 +1333,14 @@ export default function Admin() {
             <button className="btn-ghost w-full mt-4" onClick={() => setAssigning(null)}>إلغاء</button>
           </div>
         </div>
+      )}
+
+      {addingItemFor && (
+        <AddMenuItemModal
+          restaurant={addingItemFor}
+          onClose={() => setAddingItemFor(null)}
+          onSaved={() => load()}
+        />
       )}
 
       {editingItem && (

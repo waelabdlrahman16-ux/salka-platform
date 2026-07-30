@@ -32,19 +32,19 @@ export default function BasicInfoCard({
       <div className="space-y-3">
         <div>
           <label className="label">الاسم</label>
-          <input className="field" value={name} onChange={e => setName(e.target.value)} />
+          <input className="field !h-9 !py-1.5 text-sm" value={name} onChange={e => setName(e.target.value)} />
         </div>
         <div>
           <label className="label">الوصف</label>
-          <textarea className="field" rows={2} value={description} onChange={e => setDescription(e.target.value)} />
+          <textarea className="field !py-1.5 text-sm" rows={2} value={description} onChange={e => setDescription(e.target.value)} />
         </div>
         <div>
           <label className="label">القسم</label>
-          <input className="field" value={category} onChange={e => setCategory(e.target.value)} placeholder="مشويات، مشروبات..." />
+          <input className="field !h-9 !py-1.5 text-sm" value={category} onChange={e => setCategory(e.target.value)} placeholder="مشويات، مشروبات..." />
         </div>
         <div>
           <label className="label">السعر</label>
-          <input className="field" type="number" value={price} onChange={e => setPrice(e.target.value)} />
+          <input className="field !h-9 !py-1.5 text-sm" type="number" value={price} onChange={e => setPrice(e.target.value)} />
         </div>
         <button className={`w-full py-2.5 rounded-xl text-sm font-semibold border-2 ${available ? 'border-emerald-500/40 text-emerald-700 bg-emerald-500/5' : 'border-red-400/40 text-red-600 bg-red-500/5'}`}
           onClick={() => setAvailable(!available)}>
