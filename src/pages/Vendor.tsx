@@ -39,7 +39,7 @@ export default function Vendor() {
     if (!rid) return
     async function checkNew() {
       const { count } = await supabase.from('orders').select('id', { count: 'exact', head: true })
-        .eq('restaurant_id', rid).eq('kitchen_status', 'new')
+        .eq('restaurant_id', rid).eq('kitchen_status', 'new').neq('status', 'Cancelled')
       if ((count ?? 0) > 0) startRinging(); else stopRinging()
     }
     checkNew()
@@ -293,6 +293,7 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
 function KitchenVendor({ rid }: { rid: number }) {
   const [orders, setOrders] = useState<Order[]>([])
   const [completedToday, setCompletedToday] = useState<Order[]>([])
+  const [completedView, setCompletedView] = useState<'delivered' | 'rejected'>('delivered')
   const [items, setItems] = useState<Record<number, OrderItem[]>>({})
   const [menu, setMenu] = useState<MenuItem[]>([])
   const [deliveryByOrder, setDeliveryByOrder] = useState<Record<number, { status: string; driver_name: string; arrived_at_restaurant_at: string | null; out_for_delivery_at: string | null }>>({})
@@ -551,17 +552,33 @@ function KitchenVendor({ rid }: { rid: number }) {
         </>
       )}
 
-      {completedToday.length > 0 && (
-        <>
-          <div className="flex items-center justify-between mt-6 mb-3">
-            <h2 className="font-bold text-mist">✅ طلبات مكتملة النهاردة ({completedToday.length})</h2>
-            <span className="text-sea font-bold text-sm">
-              {completedToday.filter(o => o.status === 'Delivered').reduce((s, o) => s + Number(o.subtotal), 0)} ج.م
-            </span>
-          </div>
-          <div className="space-y-3">{completedToday.map(o => card(o))}</div>
-        </>
-      )}
+      {completedToday.length > 0 && (() => {
+        const deliveredToday = completedToday.filter(o => o.status === 'Delivered')
+        const rejectedToday = completedToday.filter(o => o.status !== 'Delivered')
+        const shown = completedView === 'delivered' ? deliveredToday : rejectedToday
+        return (
+          <>
+            <div className="flex items-center justify-between mt-6 mb-3">
+              <div className="flex gap-1.5">
+                <button className={`tab !text-sm ${completedView === 'delivered' ? 'tab-active' : 'bg-shellup/60'}`}
+                  onClick={() => setCompletedView('delivered')}>✅ تم التوصيل ({deliveredToday.length})</button>
+                <button className={`tab !text-sm ${completedView === 'rejected' ? 'tab-active' : 'bg-shellup/60'}`}
+                  onClick={() => setCompletedView('rejected')}>✗ ملغي/مرفوض ({rejectedToday.length})</button>
+              </div>
+              {completedView === 'delivered' && (
+                <span className="text-sea font-bold text-sm shrink-0">
+                  {deliveredToday.reduce((s, o) => s + Number(o.subtotal), 0)} ج.م
+                </span>
+              )}
+            </div>
+            {shown.length === 0 ? (
+              <p className="text-mist text-sm text-center py-4">لا يوجد طلبات هنا</p>
+            ) : (
+              <div className="space-y-3">{shown.map(o => card(o))}</div>
+            )}
+          </>
+        )
+      })()}
 
       {declining && (
         <div className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" onClick={() => setDeclining(null)}>

@@ -120,6 +120,27 @@ export default function DriverPage() {
     load()
   }
 
+  async function markPickedUp(a: Assignment) {
+    if (navigator.vibrate) navigator.vibrate(15)
+    const { error } = await supabase.rpc('driver_mark_picked_up', { p_assignment_id: a.id })
+    if (error) {
+      alert(
+        error.message.includes('order_not_ready') ? 'الطلب لسه بيتحضر — استنى لحد ما المطعم يخليه جاهز'
+        : error.message.includes('must_arrive_first') ? 'لازم تسجل إنك وصلت المطعم الأول'
+        : 'حصل خطأ، جرب تاني'
+      )
+      return
+    }
+    load()
+  }
+
+  async function markOutForDelivery(a: Assignment) {
+    if (navigator.vibrate) navigator.vibrate(15)
+    const { error } = await supabase.rpc('driver_mark_out_for_delivery', { p_assignment_id: a.id })
+    if (error) { alert('حصل خطأ، جرب تاني'); return }
+    load()
+  }
+
   async function markCalledCustomer(a: Assignment) {
     if (navigator.vibrate) navigator.vibrate(15)
     const { error } = await supabase.rpc('driver_called_customer', { p_assignment_id: a.id })
@@ -381,7 +402,7 @@ export default function DriverPage() {
                   <a className="btn-ghost !py-1.5 text-sm flex-1 text-center" href={`https://wa.me/${o.customer_phone.replace(/^0/, '20').replace('+', '')}`} target="_blank" rel="noreferrer">واتساب</a>
                   {o.compounds?.latitude != null && o.compounds?.longitude != null && (
                     <a className="btn-sea !py-1.5 text-sm flex-1 text-center"
-                      href={`https://www.google.com/maps/dir/?api=1&destination=${o.compounds.latitude},${o.compounds.longitude}`}
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${o.compounds.latitude},${o.compounds.longitude}&travelmode=driving`}
                       target="_blank" rel="noreferrer">🧭 الاتجاهات</a>
                   )}
                 </div>
@@ -395,10 +416,12 @@ export default function DriverPage() {
                   </div>
                 )}
                 {a.status === 'Accepted' && !a.arrived_at_restaurant_at && (
-                  <button className="btn-ghost w-full mb-2" onClick={() => markArrived(a)}>📍 وصلت المطعم</button>
+                  <button className="btn-sea w-full" onClick={() => markArrived(a)}>📍 وصلت المطعم</button>
                 )}
-                {a.status === 'Accepted' && <button className="btn-sea w-full" onClick={() => setStatus(a, 'Picked_Up', { picked_up_at: new Date().toISOString() })}>استلمت الطلب</button>}
-                {a.status === 'Picked_Up' && <button className="btn-sea w-full" onClick={() => setStatus(a, 'Out_for_Delivery', { out_for_delivery_at: new Date().toISOString() })}>خرجت للتوصيل</button>}
+                {a.status === 'Accepted' && a.arrived_at_restaurant_at && (
+                  <button className="btn-sea w-full" onClick={() => markPickedUp(a)}>استلمت الطلب</button>
+                )}
+                {a.status === 'Picked_Up' && <button className="btn-sea w-full" onClick={() => markOutForDelivery(a)}>خرجت للتوصيل</button>}
                 {a.status === 'Out_for_Delivery' && (
                   <div className="space-y-2">
                     <button className="btn-sea w-full" onClick={() => setStatus(a, 'Delivered', { delivered_at: new Date().toISOString() })}>تم التسليم</button>
