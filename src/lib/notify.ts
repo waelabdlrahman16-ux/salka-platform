@@ -1,4 +1,6 @@
 // Free, no external service: browser notification + beep when new work arrives.
+import { getAudioContext } from './audioUnlock'
+
 let prev: Record<string, number> = {}
 
 export function ping(key: string, count: number, title: string, body: string) {
@@ -7,7 +9,7 @@ export function ping(key: string, count: number, title: string, body: string) {
   if (last === undefined || count <= last) return
 
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const ctx = getAudioContext()
     const osc = ctx.createOscillator(); const gain = ctx.createGain()
     osc.connect(gain); gain.connect(ctx.destination)
     osc.frequency.value = 880; gain.gain.value = 0.15

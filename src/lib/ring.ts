@@ -1,10 +1,11 @@
 // Continuous "incoming call" style ring for the vendor tablet.
 // Plays a two-tone pattern on a loop until stop() is called.
-let ctx: AudioContext | null = null
+import { getAudioContext } from './audioUnlock'
+
 let loopId: ReturnType<typeof setInterval> | null = null
 
 function beep(freq: number, start: number, duration: number) {
-  if (!ctx) return
+  const ctx = getAudioContext()
   const osc = ctx.createOscillator()
   const gain = ctx.createGain()
   osc.connect(gain); gain.connect(ctx.destination)
@@ -24,7 +25,6 @@ function ringOnce() {
 export function startRinging() {
   if (loopId) return // already ringing
   try {
-    ctx = ctx || new (window.AudioContext || (window as any).webkitAudioContext)()
     ringOnce()
     loopId = setInterval(ringOnce, 1500)
   } catch { /* audio blocked until first user interaction on the page - fine, resumes after a tap */ }

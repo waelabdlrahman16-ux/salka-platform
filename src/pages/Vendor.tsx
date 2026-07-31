@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { startRinging, stopRinging } from '../lib/ring'
+import { ping, askNotificationPermission } from '../lib/notify'
 import { estimateDeliveryFee } from '../lib/deliveryFee'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { registerPush } from '../lib/push'
@@ -37,10 +38,12 @@ export default function Vendor() {
   // navigates away from the main view.
   useEffect(() => {
     if (!rid) return
+    askNotificationPermission()
     async function checkNew() {
       const { count } = await supabase.from('orders').select('id', { count: 'exact', head: true })
         .eq('restaurant_id', rid).eq('kitchen_status', 'new').neq('status', 'Cancelled')
       if ((count ?? 0) > 0) startRinging(); else stopRinging()
+      ping('vendor_new_order', count ?? 0, 'طلب جديد 🔔', 'وصلك طلب جديد على سالكة')
     }
     checkNew()
     const t = setInterval(checkNew, 8000)

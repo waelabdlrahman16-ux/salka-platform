@@ -36,6 +36,7 @@ export default function CheckoutPage() {
   const [error, setError] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'instapay'>('cod')
   const [addressLoaded, setAddressLoaded] = useState(false)
+  const [addressExpanded, setAddressExpanded] = useState(false)
   const [walletBalance, setWalletBalance] = useState(0)
   const [codDepositThreshold, setCodDepositThreshold] = useState(300)
   const [useWallet, setUseWallet] = useState(true)
@@ -50,13 +51,16 @@ export default function CheckoutPage() {
     if (!isValidEgyptPhone(phone) || addressLoaded) return
     const t = setTimeout(async () => {
       const { data } = await supabase.rpc('last_address_for_phone', { p_phone: phone, p_session_token: getSessionToken() })
+      setAddressLoaded(true)
       if (data) {
-        setAddressLoaded(true)
         if (!name.trim() && data.customer_name) setName(data.customer_name)
         if (!unit.trim() && data.unit_number) setUnit(data.unit_number)
         if (!notes.trim() && data.address_notes) setNotes(data.address_notes)
         if (!compoundId && data.compound_id) setCompoundId(data.compound_id)
       }
+      // nothing saved to summarize yet (first-time customer) -> show the
+      // full editable form right away instead of an empty collapsed hero
+      if (!data?.compound_id || !data?.unit_number) setAddressExpanded(true)
     }, 500)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -228,21 +232,37 @@ export default function CheckoutPage() {
           {phone.trim() && !isValidEgyptPhone(phone) && (
             <p className="text-xs text-red-600 mt-1">{PHONE_HINT}</p>
           )}</div>
-        <div><label className="label">المكان *</label>
-          <select className="field" value={compoundId ?? ''} onChange={e => setCompoundId(Number(e.target.value) || null)}>
-            <option value="">اختر مكانك…</option>
-            {compounds.map(c => <option key={c.id} value={c.id}>{c.name} (~{c.est_travel_minutes} د)</option>)}
-          </select></div>
-        <div><label className="label">رقم الشاليه / الفيلا *</label>
-          <input className="field" value={unit} onChange={e => setUnit(e.target.value)} placeholder="مثال: B4 - 204" /></div>
-        {showLandmark || notes.trim() ? (
-          <div><label className="label">علامة مميزة (اختياري)</label>
-            <input className="field" value={notes} onChange={e => setNotes(e.target.value)} placeholder="مثال: بجوار حمام السباحة" autoFocus /></div>
-        ) : (
-          <button type="button" className="text-sea text-sm font-semibold" onClick={() => setShowLandmark(true)}>
-            + إضافة علامة مميزة (اختياري)
+
+        {!addressExpanded && selectedCompound ? (
+          <button type="button" className="w-full flex items-center gap-3 rounded-xl border-2 border-sea/40 bg-sea/5 px-4 py-3.5 text-right"
+            onClick={() => setAddressExpanded(true)}>
+            <span className="text-2xl shrink-0">📍</span>
+            <span className="flex-1 min-w-0">
+              <span className="block font-bold truncate">{selectedCompound.name}{unit.trim() ? ` — شاليه ${unit}` : ''}</span>
+              {notes.trim() && <span className="block text-xs text-mist truncate mt-0.5">{notes}</span>}
+            </span>
+            <span className="text-sea text-sm font-semibold shrink-0">تغيير</span>
           </button>
+        ) : (
+          <>
+            <div><label className="label">المكان *</label>
+              <select className="field" value={compoundId ?? ''} onChange={e => setCompoundId(Number(e.target.value) || null)}>
+                <option value="">اختر مكانك…</option>
+                {compounds.map(c => <option key={c.id} value={c.id}>{c.name} (~{c.est_travel_minutes} د)</option>)}
+              </select></div>
+            <div><label className="label">رقم الشاليه / الفيلا *</label>
+              <input className="field" value={unit} onChange={e => setUnit(e.target.value)} placeholder="مثال: B4 - 204" /></div>
+            {showLandmark || notes.trim() ? (
+              <div><label className="label">علامة مميزة (اختياري)</label>
+                <input className="field" value={notes} onChange={e => setNotes(e.target.value)} placeholder="مثال: بجوار حمام السباحة" autoFocus /></div>
+            ) : (
+              <button type="button" className="text-sea text-sm font-semibold" onClick={() => setShowLandmark(true)}>
+                + إضافة علامة مميزة (اختياري)
+              </button>
+            )}
+          </>
         )}
+
         <div><label className="label">ملاحظات على الطلب (اختياري)</label>
           <textarea className="field" rows={2} value={customerNote} onChange={e => setCustomerNote(e.target.value)}
             placeholder="مثال: من غير بصل، اتصل قبل ما توصل" /></div>
