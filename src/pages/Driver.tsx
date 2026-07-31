@@ -91,7 +91,7 @@ export default function DriverPage() {
     return () => stopLocationReporting()
   }, [assignments])
 
-  async function setStatus(a: Assignment, status: string, extra: Record<string, unknown> = {}) {
+  async function setStatus(a: Assignment, status: string) {
     if (!id) return
     if (status === 'Accepted') {
       const { error } = await supabase.rpc('driver_accept_assignment', { p_assignment_id: a.id, p_order_id: a.order_id })
@@ -104,13 +104,11 @@ export default function DriverPage() {
       load()
       return
     }
-    await supabase.from('delivery_assignments').update({ status, ...extra }).eq('id', a.id)
-    if (status === 'Picked_Up') await supabase.from('orders').update({ status: 'Picked_Up' }).eq('id', a.order_id)
-    if (status === 'Out_for_Delivery') await supabase.from('orders').update({ status: 'Out_for_Delivery' }).eq('id', a.order_id)
     if (status === 'Delivered') {
-      await supabase.rpc('mark_delivered', { p_assignment_id: a.id, p_order_id: a.order_id })
+      const { error } = await supabase.rpc('mark_delivered', { p_assignment_id: a.id, p_order_id: a.order_id })
+      if (error) { alert('حصل خطأ، جرب تاني'); return }
+      load()
     }
-    load()
   }
 
   async function markArrived(a: Assignment) {
@@ -207,10 +205,8 @@ export default function DriverPage() {
 
   async function reject() {
     if (!rejecting) return
-    await supabase.from('delivery_assignments').update({
-      status: 'Rejected', responded_at: new Date().toISOString(), rejection_reason: reason.trim()
-    }).eq('id', rejecting.id)
-    await supabase.from('orders').update({ status: 'pending' }).eq('id', rejecting.order_id)
+    const { error } = await supabase.rpc('driver_reject_assignment', { p_assignment_id: rejecting.id, p_reason: reason.trim() })
+    if (error) { alert('حصل خطأ، جرب تاني'); return }
     setRejecting(null); setReason(''); load()
   }
 
@@ -411,7 +407,7 @@ export default function DriverPage() {
               <div className="mt-3">
                 {a.status === 'Offered' && (
                   <div className="flex gap-3">
-                    <button className="btn-sea flex-1" onClick={() => setStatus(a, 'Accepted', { responded_at: new Date().toISOString() })}>قبول</button>
+                    <button className="btn-sea flex-1" onClick={() => setStatus(a, 'Accepted')}>قبول</button>
                     <button className="btn-danger flex-1" onClick={() => setRejecting(a)}>رفض</button>
                   </div>
                 )}
@@ -424,7 +420,7 @@ export default function DriverPage() {
                 {a.status === 'Picked_Up' && <button className="btn-sea w-full" onClick={() => markOutForDelivery(a)}>خرجت للتوصيل</button>}
                 {a.status === 'Out_for_Delivery' && (
                   <div className="space-y-2">
-                    <button className="btn-sea w-full" onClick={() => setStatus(a, 'Delivered', { delivered_at: new Date().toISOString() })}>تم التسليم</button>
+                    <button className="btn-sea w-full" onClick={() => setStatus(a, 'Delivered')}>تم التسليم</button>
                     {a.no_answer_reported_at ? (
                       <p className="text-sand text-sm text-center">⏳ اتبلّغت الإدارة، مستنيين قرارهم</p>
                     ) : !a.called_customer_at ? (
