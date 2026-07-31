@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Assignment, Compound, Complaint, Driver, DeliverySlotRow, Earning, MenuItem, Order, OrderRating, Reliability, Restaurant, Setting, SettlementRequest, Shift, VendorCoverage } from '../lib/types'
 import { ping, askNotificationPermission } from '../lib/notify'
+import { registerPush } from '../lib/push'
 import { uploadVendorImage } from '../lib/upload'
 import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel } from '../lib/statusLabels'
 import Icon from '../components/Icon'
@@ -165,6 +166,7 @@ export default function Admin() {
 
   useEffect(() => {
     askNotificationPermission()
+    registerPush(pushToken => { supabase.rpc('save_my_push_token', { p_push_token: pushToken }) })
     load()
     const t = setInterval(load, 15000)
     return () => clearInterval(t)
@@ -185,6 +187,7 @@ export default function Admin() {
     .filter(o => o.status !== 'Delivered' && o.status !== 'Cancelled' && !assignedOrderIds.has(o.id))
     .sort((a, b) => Number(isCooking(a)) - Number(isCooking(b)))
   const active = assignments.filter(a => activeStatuses.includes(a.status))
+  const noAnswerReports = assignments.filter(a => a.no_answer_reported_at && !a.no_answer_admin_action)
   const availableDrivers = drivers.filter(d => d.active && d.available)
   const vanRequiredSubtotal = Number(settings.find(s => s.key === 'van_required_subtotal_egp')?.value ?? 300)
   const assigningNeedsVan = assigning
@@ -197,8 +200,10 @@ export default function Admin() {
   const assignableDrivers = assigningNeedsVan
     ? availableDrivers.filter(d => d.vehicle_type === 'van')
     : availableDrivers
-  useEffect(() => { ping('unassigned', unassigned.length, 'طلب غير معيّن', 'في طلب محدش استلمه') },
-    [unassigned.length])
+  useEffect(() => { ping('unassigned_late', unassigned.filter(isLate).length, 'طلب متأخر', 'في طلب محدش استلمه من زمان') },
+    [unassigned.filter(isLate).length])
+  useEffect(() => { ping('no_answer', noAnswerReports.length, 'عميل ما ردش', 'مندوب اتصل بعميل ومردش، محتاج قرارك') },
+    [noAnswerReports.length])
 
   async function assign(order: Order, driver: Driver) {
     const { error } = await supabase.rpc('admin_assign_order', { p_order_id: order.id, p_driver_id: driver.id })
@@ -492,6 +497,13 @@ export default function Admin() {
 
   const pendingInstapay = orders.filter(o => o.payment_method === 'instapay' && o.status === 'awaiting_payment')
 
+  async function resolveNoAnswer(a: Assignment, action: 'wait' | 'contact' | 'cancel') {
+    if (action === 'cancel' && !confirm('إلغاء الطلب فعلاً؟ المندوب هياخد أجرة التوصيل كاملة.')) return
+    const { error } = await supabase.rpc('admin_resolve_no_answer', { p_assignment_id: a.id, p_action: action })
+    if (error) { alert('حصل خطأ، جرب تاني'); return }
+    load()
+  }
+
   async function confirmInstapayPayment(orderId: number) {
     setAccountBusy(`instapay-${orderId}`)
     const { error } = await supabase.rpc('admin_confirm_instapay_payment', { p_order_id: orderId })
@@ -515,6 +527,31 @@ export default function Admin() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-4">لوحة التحكم</h1>
+
+      {noAnswerReports.length > 0 && (
+        <div className="card p-4 mb-4 border-red-400/50 bg-red-500/5">
+          <p className="font-bold mb-3">☎️ عملاء ما ردوش على المندوب ({noAnswerReports.length})</p>
+          <div className="space-y-2.5">
+            {noAnswerReports.map(a => {
+              const o = a.orders
+              if (!o) return null
+              return (
+                <div key={a.id} className="bg-night border border-line rounded-xl p-3">
+                  <p className="font-semibold text-sm">طلب #{o.id} — {o.restaurants?.name} — {o.total} ج.م</p>
+                  <p className="text-xs text-mist mt-0.5">👤 {o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
+                  <p className="text-xs text-mist mt-0.5">📍 {addr(o)}</p>
+                  <p className="text-xs text-sand mt-1">المندوب اتصل ومردش حد، اتبلّغ الإدارة</p>
+                  <div className="flex gap-2 mt-2.5">
+                    <a className="btn-ghost !py-1.5 text-xs flex-1 text-center" href={`tel:${o.customer_phone}`}>اتصل بالعميل</a>
+                    <button className="btn-ghost !py-1.5 text-xs flex-1" onClick={() => resolveNoAnswer(a, 'wait')}>قول للمندوب يستنى 5 دقايق</button>
+                    <button className="btn-danger !py-1.5 text-xs flex-1" onClick={() => resolveNoAnswer(a, 'cancel')}>إلغاء الطلب</button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {pendingInstapay.length > 0 && (
         <div className="card p-4 mb-4 border-sand/50 bg-sand/5">

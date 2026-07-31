@@ -278,6 +278,7 @@ function KitchenVendor({ rid }: { rid: number }) {
   const [completedToday, setCompletedToday] = useState<Order[]>([])
   const [items, setItems] = useState<Record<number, OrderItem[]>>({})
   const [menu, setMenu] = useState<MenuItem[]>([])
+  const [deliveryByOrder, setDeliveryByOrder] = useState<Record<number, { status: string; driver_name: string; arrived_at_restaurant_at: string | null; out_for_delivery_at: string | null }>>({})
   const [stockOpen, setStockOpen] = useState(false)
   const [togglingId, setTogglingId] = useState<number | null>(null)
   const [isOpen, setIsOpen] = useState(true)
@@ -296,7 +297,8 @@ function KitchenVendor({ rid }: { rid: number }) {
     const { data: m } = await supabase.from('menu_items').select('*').eq('restaurant_id', rid).order('category').order('name')
     setMenu(m ?? [])
     const { data: o } = await supabase.from('orders').select('*')
-      .eq('restaurant_id', rid).not('status', 'in', '("Delivered","Cancelled","Failed_Delivery")')
+      .eq('restaurant_id', rid)
+      .not('status', 'in', '("Delivered","Cancelled","Failed_Delivery","awaiting_payment")')
       .order('id', { ascending: false }).limit(30)
     setOrders(o ?? [])
 
@@ -317,6 +319,19 @@ function KitchenVendor({ rid }: { rid: number }) {
       const grouped: Record<number, OrderItem[]> = {}
       for (const it of its ?? []) (grouped[it.order_id] ??= []).push(it)
       setItems(grouped)
+
+      const { data: das } = await supabase.from('delivery_assignments')
+        .select('order_id, status, arrived_at_restaurant_at, out_for_delivery_at, drivers(name)')
+        .in('order_id', allIds)
+        .in('status', ['Accepted', 'Picked_Up', 'Out_for_Delivery', 'Delivered'])
+      const delivMap: typeof deliveryByOrder = {}
+      for (const d of das ?? []) {
+        delivMap[d.order_id] = {
+          status: d.status, driver_name: (d as any).drivers?.name ?? 'المندوب',
+          arrived_at_restaurant_at: d.arrived_at_restaurant_at, out_for_delivery_at: d.out_for_delivery_at
+        }
+      }
+      setDeliveryByOrder(delivMap)
     }
   }
 
@@ -347,6 +362,7 @@ function KitchenVendor({ rid }: { rid: number }) {
   }
 
   async function advance(o: Order, next: string) {
+    if (navigator.vibrate) navigator.vibrate(15)
     if (next === 'ready') {
       await supabase.rpc('vendor_ready', { p_order_id: o.id })
     } else if (next === 'preparing') {
@@ -358,7 +374,9 @@ function KitchenVendor({ rid }: { rid: number }) {
   }
 
   async function delay(o: Order) {
-    await supabase.rpc('vendor_delay', { p_order_id: o.id, p_minutes: 10 })
+    if (navigator.vibrate) navigator.vibrate(15)
+    const { error } = await supabase.rpc('vendor_delay', { p_order_id: o.id, p_minutes: 5 })
+    if (error?.message.includes('delay_limit_reached')) { alert('وصلت لأقصى عدد تأجيلات مسموح (3) للطلب ده'); return }
     load()
   }
 
@@ -422,8 +440,8 @@ function KitchenVendor({ rid }: { rid: number }) {
         )}
 
         {!completed && remaining(o) !== null && o.kitchen_status !== 'ready' && (
-          <p className={`text-sm mt-2 ${remaining(o)! < 0 ? 'text-red-600' : 'text-mist'}`}>
-            {remaining(o)! < 0 ? `متأخر ${Math.abs(remaining(o)!)} دقيقة` : `المفروض يجهز خلال ${remaining(o)} دقيقة`}
+          <p className={`mt-2 font-bold ${remaining(o)! <= 2 ? 'text-red-600 text-lg' : 'text-mist text-base'}`}>
+            {remaining(o)! < 0 ? `⏰ متأخر ${Math.abs(remaining(o)!)} دقيقة` : `⏱️ المفروض يجهز خلال ${remaining(o)} دقيقة`}
           </p>
         )}
 
@@ -442,11 +460,25 @@ function KitchenVendor({ rid }: { rid: number }) {
           <>
             {stage.next && (
               <div className="flex gap-2.5 mt-3">
-                <button className="btn-sea flex-1" onClick={() => advance(o, stage.next!)}>{stage.action}</button>
-                <button className="btn-ghost" onClick={() => delay(o)}>+10 دقائق</button>
+                <button className="btn-sea flex-1 active:scale-95 transition-transform" onClick={() => advance(o, stage.next!)}>{stage.action}</button>
+                {o.delay_count < 3 && (
+                  <button className="btn-ghost active:scale-95 transition-transform" onClick={() => delay(o)}>+5 دقائق</button>
+                )}
               </div>
             )}
-            {!stage.next && <p className="text-emerald-700 text-center text-sm mt-3">✅ في انتظار المندوب</p>}
+            {!stage.next && (() => {
+              const d = deliveryByOrder[o.id]
+              if (!d) return <p className="text-emerald-700 text-center text-sm mt-3">✅ في انتظار المندوب</p>
+              const minsSince = (t: string | null) => t ? Math.max(0, Math.round((Date.now() - +new Date(t)) / 60000)) : null
+              const label =
+                d.status === 'Accepted' && d.arrived_at_restaurant_at ? `📍 ${d.driver_name} وصل المطعم`
+                : d.status === 'Accepted' ? `🛵 ${d.driver_name} في الطريق للمطعم`
+                : d.status === 'Picked_Up' ? `📦 ${d.driver_name} استلم الطلب`
+                : d.status === 'Out_for_Delivery' ? `🚗 ${d.driver_name} في الطريق للعميل${minsSince(d.out_for_delivery_at) !== null ? ` (من ${minsSince(d.out_for_delivery_at)} دقيقة)` : ''}`
+                : d.status === 'Delivered' ? '✅ تم التوصيل'
+                : '✅ في انتظار المندوب'
+              return <p className="text-emerald-700 text-center text-sm mt-3">{label}</p>
+            })()}
           </>
         )}
       </div>

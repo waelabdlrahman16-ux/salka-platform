@@ -113,6 +113,35 @@ export default function DriverPage() {
     load()
   }
 
+  async function markArrived(a: Assignment) {
+    if (navigator.vibrate) navigator.vibrate(15)
+    const { error } = await supabase.rpc('driver_arrived_at_restaurant', { p_assignment_id: a.id })
+    if (error) { alert('حصل خطأ، جرب تاني'); return }
+    load()
+  }
+
+  async function markCalledCustomer(a: Assignment) {
+    if (navigator.vibrate) navigator.vibrate(15)
+    const { error } = await supabase.rpc('driver_called_customer', { p_assignment_id: a.id })
+    if (error) { alert('حصل خطأ، جرب تاني'); return }
+    load()
+  }
+
+  async function reportNoAnswer(a: Assignment) {
+    if (!confirm('العميل فعلاً ما ردش بعد ما اتصلت؟ الإدارة هتشوف الطلب وتقرر.')) return
+    const { error } = await supabase.rpc('driver_report_no_answer', { p_assignment_id: a.id })
+    if (error) {
+      alert(
+        error.message.includes('must_call_customer_first') ? 'لازم تتصل بالعميل الأول'
+        : error.message.includes('too_early') ? 'لسه بدري، استنى 5 دقايق من وقت خروجك للتوصيل'
+        : 'حصل خطأ، جرب تاني'
+      )
+      return
+    }
+    alert('تم إبلاغ الإدارة، هيتواصلوا معاك بقرار')
+    load()
+  }
+
   async function requestSettlement() {
     setRequestingSettlement(true)
     await supabase.rpc('request_early_settlement')
@@ -154,11 +183,6 @@ export default function DriverPage() {
     load()
   }
 
-  async function markFailed(a: Assignment) {
-    if (!confirm('العميل ما ردش خلال 5 دقايق؟ هيتسجل الطلب كفاشل وهتاخد أجرة التوصيل كاملة.')) return
-    await supabase.rpc('mark_delivery_failed', { p_assignment_id: a.id })
-    load()
-  }
 
   async function reject() {
     if (!rejecting) return
@@ -368,12 +392,23 @@ export default function DriverPage() {
                     <button className="btn-danger flex-1" onClick={() => setRejecting(a)}>رفض</button>
                   </div>
                 )}
+                {a.status === 'Accepted' && !a.arrived_at_restaurant_at && (
+                  <button className="btn-ghost w-full mb-2" onClick={() => markArrived(a)}>📍 وصلت المطعم</button>
+                )}
                 {a.status === 'Accepted' && <button className="btn-sea w-full" onClick={() => setStatus(a, 'Picked_Up', { picked_up_at: new Date().toISOString() })}>استلمت الطلب</button>}
-                {a.status === 'Picked_Up' && <button className="btn-sea w-full" onClick={() => setStatus(a, 'Out_for_Delivery')}>خرجت للتوصيل</button>}
+                {a.status === 'Picked_Up' && <button className="btn-sea w-full" onClick={() => setStatus(a, 'Out_for_Delivery', { out_for_delivery_at: new Date().toISOString() })}>خرجت للتوصيل</button>}
                 {a.status === 'Out_for_Delivery' && (
-                  <div className="flex gap-2.5">
-                    <button className="btn-sea flex-1" onClick={() => setStatus(a, 'Delivered', { delivered_at: new Date().toISOString() })}>تم التسليم</button>
-                    <button className="btn-ghost text-sm" onClick={() => markFailed(a)}>العميل ما ردش</button>
+                  <div className="space-y-2">
+                    <button className="btn-sea w-full" onClick={() => setStatus(a, 'Delivered', { delivered_at: new Date().toISOString() })}>تم التسليم</button>
+                    {a.no_answer_reported_at ? (
+                      <p className="text-sand text-sm text-center">⏳ اتبلّغت الإدارة، مستنيين قرارهم</p>
+                    ) : !a.called_customer_at ? (
+                      <button className="btn-ghost w-full text-sm" onClick={() => markCalledCustomer(a)}>📞 اتصلت بالعميل ومردش</button>
+                    ) : (a.out_for_delivery_at && (Date.now() - +new Date(a.out_for_delivery_at)) >= 5 * 60000) ? (
+                      <button className="btn-danger w-full text-sm" onClick={() => reportNoAnswer(a)}>العميل لسه ما ردش — بلّغ الإدارة</button>
+                    ) : (
+                      <p className="text-mist text-xs text-center">✓ اتصلت — لو ما ردش خلال 5 دقايق من خروجك، هيظهر لك زرار الإبلاغ</p>
+                    )}
                   </div>
                 )}
                 {a.status === 'Delivered' && <p className="text-emerald-700 font-semibold text-center">اكتمل</p>}

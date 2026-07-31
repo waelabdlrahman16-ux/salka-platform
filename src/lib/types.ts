@@ -47,6 +47,7 @@ export interface Order {
   collect_amount: number | null
   instapay_claimed_at: string | null
   refund_status: 'pending' | 'refunded' | null
+  delay_count: number
   restaurants?: { name: string }
   compounds?: { name: string; latitude: number | null; longitude: number | null }
 }
@@ -69,6 +70,9 @@ export interface Assignment {
   status: string; offered_at: string; responded_at: string | null
   picked_up_at: string | null; delivered_at: string | null
   rejection_reason: string
+  out_for_delivery_at: string | null; arrived_at_restaurant_at: string | null
+  called_customer_at: string | null; no_answer_reported_at: string | null
+  no_answer_admin_action: string | null
   orders?: Order
   drivers?: Driver
 }
