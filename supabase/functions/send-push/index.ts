@@ -94,21 +94,26 @@ Deno.serve(async (req) => {
 
   const results: unknown[] = []
   for (const token of tokens) {
-    const fwRes = await fetch(
-      `https://fcm.googleapis.com/v1/projects/${serviceAccount.project_id}/messages:send`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${accessToken}` },
-        body: JSON.stringify({
-          message: {
-            token,
-            notification: { title, body: msgBody },
-            data: data ? Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)])) : undefined
-          }
-        })
-      }
-    )
-    results.push({ tokenPrefix: String(token).slice(0, 12) + "...", ok: fwRes.ok, status: fwRes.status })
+    try {
+      const fwRes = await fetch(
+        `https://fcm.googleapis.com/v1/projects/${serviceAccount.project_id}/messages:send`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${accessToken}` },
+          body: JSON.stringify({
+            message: {
+              token,
+              notification: { title, body: msgBody },
+              data: data ? Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)])) : undefined
+            }
+          })
+        }
+      )
+      results.push({ tokenPrefix: String(token).slice(0, 12) + "...", ok: fwRes.ok, status: fwRes.status })
+    } catch (e) {
+      // one bad/malformed token shouldn't abort delivery to the rest of the batch
+      results.push({ tokenPrefix: String(token).slice(0, 12) + "...", ok: false, error: String(e) })
+    }
   }
 
   return new Response(JSON.stringify({ results }), { headers: { "Content-Type": "application/json" } })

@@ -58,91 +58,96 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS_HEADERS })
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405)
 
-  const admin = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-  )
+  try {
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    )
 
-  let body: any
-  try { body = await req.json() } catch { return json({ error: "invalid_json" }, 400) }
-  const { action, phone } = body
+    let body: any
+    try { body = await req.json() } catch { return json({ error: "invalid_json" }, 400) }
+    const { action, phone } = body
 
-  if (!phone || typeof phone !== "string") return json({ error: "phone_required" }, 400)
-  const cleanPhone = normalizePhone(phone)
-  if (cleanPhone.length !== 10) return json({ error: "invalid_phone" }, 400)
+    if (!phone || typeof phone !== "string") return json({ error: "phone_required" }, 400)
+    const cleanPhone = normalizePhone(phone)
+    if (cleanPhone.length !== 10) return json({ error: "invalid_phone" }, 400)
 
-  if (action === "request") {
-    const { error: limitErr } = await admin.rpc("check_rate_limit", {
-      p_bucket: `login_otp:${cleanPhone}`, p_max: 5, p_window: "10 minutes"
-    })
-    if (limitErr) return json({ error: "rate_limited" }, 429)
+    if (action === "request") {
+      const { error: limitErr } = await admin.rpc("check_rate_limit", {
+        p_bucket: `login_otp:${cleanPhone}`, p_max: 5, p_window: "10 minutes"
+      })
+      if (limitErr) return json({ error: "rate_limited" }, 429)
 
-    const code = Math.floor(100000 + Math.random() * 900000).toString()
+      const code = Math.floor(100000 + Math.random() * 900000).toString()
 
-    const { error: insertErr } = await admin.from("customer_otp_codes").insert({
-      phone: cleanPhone, code, expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString()
-    })
-    if (insertErr) return json({ error: "otp_store_failed", detail: insertErr.message }, 500)
+      const { error: insertErr } = await admin.from("customer_otp_codes").insert({
+        phone: cleanPhone, code, expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString()
+      })
+      if (insertErr) return json({ error: "otp_store_failed", detail: insertErr.message }, 500)
 
-    const username = Deno.env.get("SMSMISR_USERNAME")
-    const password = Deno.env.get("SMSMISR_PASSWORD")
-    const sender = Deno.env.get("SMSMISR_SENDER")
-    const template = Deno.env.get("SMSMISR_OTP_TEMPLATE")
-    const environment = Deno.env.get("SMSMISR_ENV") ?? "2"
-    if (!username || !password || !sender || !template) {
-      return json({ error: "sms_not_configured" }, 500)
+      const username = Deno.env.get("SMSMISR_USERNAME")
+      const password = Deno.env.get("SMSMISR_PASSWORD")
+      const sender = Deno.env.get("SMSMISR_SENDER")
+      const template = Deno.env.get("SMSMISR_OTP_TEMPLATE")
+      const environment = Deno.env.get("SMSMISR_ENV") ?? "2"
+      if (!username || !password || !sender || !template) {
+        return json({ error: "sms_not_configured" }, 500)
+      }
+
+      const form = new URLSearchParams({
+        environment, username, password, sender,
+        mobile: toE164Egypt(cleanPhone),
+        template, otp: code
+      })
+      const smsRes = await fetch("https://smsmisr.com/api/OTP/", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: form
+      })
+      const smsData = await smsRes.json().catch(() => null)
+      if (!smsRes.ok || !smsData?.SMSID) return json({ error: "sms_send_failed", detail: smsData }, 502)
+
+      return json({ ok: true })
     }
 
-    const form = new URLSearchParams({
-      environment, username, password, sender,
-      mobile: toE164Egypt(cleanPhone),
-      template, otp: code
-    })
-    const smsRes = await fetch("https://smsmisr.com/api/OTP/", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: form
-    })
-    const smsData = await smsRes.json().catch(() => null)
-    if (!smsRes.ok || !smsData?.SMSID) return json({ error: "sms_send_failed", detail: smsData }, 502)
+    if (action === "verify") {
+      const { error: limitErr } = await admin.rpc("check_rate_limit", {
+        p_bucket: `verify_otp:${cleanPhone}`, p_max: 8, p_window: "10 minutes"
+      })
+      if (limitErr) return json({ error: "rate_limited" }, 429)
 
-    return json({ ok: true })
-  }
+      const { code, name } = body
+      if (!code) return json({ error: "code_required" }, 400)
 
-  if (action === "verify") {
-    const { error: limitErr } = await admin.rpc("check_rate_limit", {
-      p_bucket: `verify_otp:${cleanPhone}`, p_max: 8, p_window: "10 minutes"
-    })
-    if (limitErr) return json({ error: "rate_limited" }, 429)
+      const { data: otpRow } = await admin.from("customer_otp_codes").select("id")
+        .eq("phone", cleanPhone).eq("code", code).eq("used", false)
+        .gt("expires_at", new Date().toISOString())
+        .order("id", { ascending: false }).limit(1).maybeSingle()
+      if (!otpRow) return json({ error: "invalid_or_expired_code" }, 400)
 
-    const { code, name } = body
-    if (!code) return json({ error: "code_required" }, 400)
+      await admin.from("customer_otp_codes").update({ used: true }).eq("id", otpRow.id)
 
-    const { data: otpRow } = await admin.from("customer_otp_codes").select("id")
-      .eq("phone", cleanPhone).eq("code", code).eq("used", false)
-      .gt("expires_at", new Date().toISOString())
-      .order("id", { ascending: false }).limit(1).maybeSingle()
-    if (!otpRow) return json({ error: "invalid_or_expired_code" }, 400)
+      let { data: customer } = await admin.from("customers").select("*").eq("phone", cleanPhone).maybeSingle()
+      if (!customer) {
+        const { data: created, error: createErr } = await admin.from("customers")
+          .insert({ phone: cleanPhone, name: name || null }).select("*").single()
+        if (createErr) return json({ error: "customer_create_failed", detail: createErr.message }, 500)
+        customer = created
+      } else if (name && !customer.name) {
+        await admin.from("customers").update({ name }).eq("id", customer.id)
+        customer.name = name
+      }
 
-    await admin.from("customer_otp_codes").update({ used: true }).eq("id", otpRow.id)
+      const { data: session, error: sessErr } = await admin.from("customer_sessions")
+        .insert({ customer_id: customer.id }).select("token").single()
+      if (sessErr) return json({ error: "session_create_failed", detail: sessErr.message }, 500)
 
-    let { data: customer } = await admin.from("customers").select("*").eq("phone", cleanPhone).maybeSingle()
-    if (!customer) {
-      const { data: created, error: createErr } = await admin.from("customers")
-        .insert({ phone: cleanPhone, name: name || null }).select("*").single()
-      if (createErr) return json({ error: "customer_create_failed", detail: createErr.message }, 500)
-      customer = created
-    } else if (name && !customer.name) {
-      await admin.from("customers").update({ name }).eq("id", customer.id)
-      customer.name = name
+      return json({ token: session.token, customer: { id: customer.id, phone: customer.phone, name: customer.name } })
     }
 
-    const { data: session, error: sessErr } = await admin.from("customer_sessions")
-      .insert({ customer_id: customer.id }).select("token").single()
-    if (sessErr) return json({ error: "session_create_failed", detail: sessErr.message }, 500)
-
-    return json({ token: session.token, customer: { id: customer.id, phone: customer.phone, name: customer.name } })
+    return json({ error: "unknown_action" }, 400)
+  } catch (e) {
+    console.error("customer-otp unhandled error:", e)
+    return json({ error: "internal_error" }, 500)
   }
-
-  return json({ error: "unknown_action" }, 400)
 })
