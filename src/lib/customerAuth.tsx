@@ -1,12 +1,15 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { supabase } from './supabase'
 
-interface Customer { id: number; name: string | null; phone: string }
+interface Customer { id: number; name: string | null; phone: string | null; email?: string | null }
 interface CustomerAuthState {
   customer: Customer | null
   loading: boolean
   requestOtp: (phone: string) => Promise<{ ok: boolean; error?: string }>
   verifyOtp: (phone: string, code: string, name?: string) => Promise<{ ok: boolean; error?: string }>
+  signInWithGoogle: () => Promise<void>
+  requestEmailLink: (email: string) => Promise<{ ok: boolean; error?: string }>
+  updatePhone: (phone: string) => Promise<{ ok: boolean; error?: string }>
   logout: () => Promise<void>
 }
 
@@ -18,19 +21,40 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [loading, setLoading] = useState(true)
 
-  async function refresh() {
+  async function refreshFromAuthSession(): Promise<boolean> {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return false
+    const { data } = await supabase.rpc('my_customer_profile')
+    if (data) { setCustomer(data); return true }
+    return false
+  }
+
+  async function refreshFromLegacyToken() {
     const token = localStorage.getItem(TOKEN_KEY)
-    if (!token) { setLoading(false); return }
+    if (!token) return
     const { data } = await supabase.rpc('session_whoami', { p_token: token })
     if (data) {
       setCustomer({ id: data.customer_id, name: data.name, phone: data.phone })
     } else {
       localStorage.removeItem(TOKEN_KEY)
     }
-    setLoading(false)
   }
 
-  useEffect(() => { refresh() }, [])
+  useEffect(() => {
+    (async () => {
+      const viaAuth = await refreshFromAuthSession()
+      if (!viaAuth) await refreshFromLegacyToken()
+      setLoading(false)
+    })()
+
+    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session) {
+        const { data } = await supabase.rpc('my_customer_profile')
+        if (data) setCustomer(data)
+      }
+    })
+    return () => sub.subscription.unsubscribe()
+  }, [])
 
   async function requestOtp(phone: string) {
     const { data, error } = await supabase.functions.invoke('customer-otp', { body: { action: 'request', phone } })
@@ -46,7 +70,32 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     return { ok: true }
   }
 
+  async function signInWithGoogle() {
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin }
+    })
+  }
+
+  async function requestEmailLink(email: string) {
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: window.location.origin }
+    })
+    if (error) return { ok: false, error: error.message }
+    return { ok: true }
+  }
+
+  async function updatePhone(phone: string) {
+    const { error } = await supabase.rpc('update_my_customer_phone', { p_phone: phone })
+    if (error) return { ok: false, error: error.message }
+    setCustomer(c => c ? { ...c, phone } : c)
+    return { ok: true }
+  }
+
   async function logout() {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) await supabase.auth.signOut()
     const token = localStorage.getItem(TOKEN_KEY)
     if (token) await supabase.rpc('session_logout', { p_token: token })
     localStorage.removeItem(TOKEN_KEY)
@@ -54,7 +103,9 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <CustomerAuthContext.Provider value={{ customer, loading, requestOtp, verifyOtp, logout }}>
+    <CustomerAuthContext.Provider value={{
+      customer, loading, requestOtp, verifyOtp, signInWithGoogle, requestEmailLink, updatePhone, logout
+    }}>
       {children}
     </CustomerAuthContext.Provider>
   )

@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
       const password = genPassword()
 
       const { data: created, error: createErr } = await admin.auth.admin.createUser({
-        email, password, email_confirm: true
+        email, password, email_confirm: true, user_metadata: { is_staff: true }
       })
       if (createErr || !created?.user) return json({ error: "create_user_failed", detail: createErr?.message }, 500)
 
@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
       const password = genPassword()
 
       const { data: created, error: createErr } = await admin.auth.admin.createUser({
-        email, password, email_confirm: true
+        email, password, email_confirm: true, user_metadata: { is_staff: true }
       })
       if (createErr || !created?.user) return json({ error: "create_user_failed", detail: createErr?.message }, 500)
 

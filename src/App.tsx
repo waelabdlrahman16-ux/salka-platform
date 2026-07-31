@@ -15,7 +15,8 @@ import MyOrders from './pages/MyOrders'
 import Terms from './pages/Terms'
 import InstallPrompt from './components/InstallPrompt'
 import CustomerLogin from './components/CustomerLogin'
-import { CustomerAuthProvider } from './lib/customerAuth'
+import PhonePrompt from './components/PhonePrompt'
+import { CustomerAuthProvider, useCustomerAuth } from './lib/customerAuth'
 
 // Staff-only pages: not needed in the customer bundle, so they're loaded
 // on demand instead of shipping ~1500 lines of admin/vendor/driver code to
@@ -87,58 +88,71 @@ function BottomNav() {
   )
 }
 
-export default function App() {
+function AppShell() {
   const { pathname } = useLocation()
   const isStaff = ['/admin', '/driver', '/vendor', '/login'].some(p => pathname.startsWith(p))
-  const [showOnboarding, setShowOnboarding] = useState(
-    () => !isStaff && !localStorage.getItem('salka_onboarded')
-  )
+  const { customer, loading } = useCustomerAuth()
+  const [skipped, setSkipped] = useState(() => !!localStorage.getItem('salka_onboarded'))
 
+  // Wait for the initial auth check to resolve before deciding whether to
+  // show onboarding -- otherwise a customer returning from a Google OAuth
+  // redirect (or with an existing session) would flash the login screen
+  // again for a moment, or worse, be shown it a second time since the
+  // 'salka_onboarded' flag was never set before the full-page redirect away.
+  const showOnboarding = !isStaff && !loading && !customer && !skipped
+
+  return (
+    <div className="min-h-screen font-arabic">
+      {isStaff && <Header />}
+      {!isStaff && <InstallPrompt />}
+      {showOnboarding && (
+        <CustomerLogin
+          onDone={() => { localStorage.setItem('salka_onboarded', '1'); setSkipped(true) }}
+          // TEMPORARY: skippable until SMS OTP delivery is configured and verified end-to-end.
+          // Once that's done, remove onSkip entirely to make verification mandatory as intended.
+          onSkip={() => { localStorage.setItem('salka_onboarded', '1'); setSkipped(true) }}
+        />
+      )}
+      {!isStaff && !loading && customer && !customer.phone && <PhonePrompt />}
+      {(isStaff || loading || customer || skipped) && (
+        <main
+          className="max-w-5xl mx-auto px-4 pb-28"
+          style={{ paddingTop: isStaff ? '1.5rem' : 'max(1.5rem, calc(env(safe-area-inset-top) + 0.75rem))' }}
+        >
+          <Suspense fallback={<div className="text-center py-16 text-mist">جاري التحميل…</div>}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/restaurant/:id" element={<RestaurantDetail />} />
+              <Route path="/cart" element={<CartPage />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/custom-order" element={<CustomOrder />} />
+              <Route path="/my-orders" element={<MyOrders />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/track/:token" element={<Track />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/admin" element={<Protected role="admin"><Admin /></Protected>} />
+              <Route path="/driver" element={<Protected role="driver"><DriverPage /></Protected>} />
+              <Route path="/vendor" element={<Protected role="vendor"><Vendor /></Protected>} />
+            </Routes>
+          </Suspense>
+        </main>
+      )}
+      {!isStaff && (
+        <footer className="max-w-5xl mx-auto px-4 pb-8 text-center">
+          <Link to="/terms" className="text-xs text-mist hover:text-foam">الشروط وسياسة الخصوصية</Link>
+        </footer>
+      )}
+      <BottomNav />
+    </div>
+  )
+}
+
+export default function App() {
   return (
     <AuthProvider>
       <CustomerAuthProvider>
         <CartProvider>
-          <div className="min-h-screen font-arabic">
-            {isStaff && <Header />}
-            {!isStaff && <InstallPrompt />}
-            {showOnboarding && (
-              <CustomerLogin
-                onDone={() => { localStorage.setItem('salka_onboarded', '1'); setShowOnboarding(false) }}
-                // TEMPORARY: skippable until SMS OTP delivery is configured and verified end-to-end.
-                // Once that's done, remove onSkip entirely to make verification mandatory as intended.
-                onSkip={() => { localStorage.setItem('salka_onboarded', '1'); setShowOnboarding(false) }}
-              />
-            )}
-            {!showOnboarding && (
-              <main
-                className="max-w-5xl mx-auto px-4 pb-28"
-                style={{ paddingTop: isStaff ? '1.5rem' : 'max(1.5rem, calc(env(safe-area-inset-top) + 0.75rem))' }}
-              >
-                <Suspense fallback={<div className="text-center py-16 text-mist">جاري التحميل…</div>}>
-                  <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/restaurant/:id" element={<RestaurantDetail />} />
-                    <Route path="/cart" element={<CartPage />} />
-                    <Route path="/checkout" element={<CheckoutPage />} />
-                    <Route path="/custom-order" element={<CustomOrder />} />
-                    <Route path="/my-orders" element={<MyOrders />} />
-                    <Route path="/terms" element={<Terms />} />
-                    <Route path="/track/:token" element={<Track />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/admin" element={<Protected role="admin"><Admin /></Protected>} />
-                    <Route path="/driver" element={<Protected role="driver"><DriverPage /></Protected>} />
-                    <Route path="/vendor" element={<Protected role="vendor"><Vendor /></Protected>} />
-                  </Routes>
-                </Suspense>
-              </main>
-            )}
-            {!isStaff && (
-              <footer className="max-w-5xl mx-auto px-4 pb-8 text-center">
-                <Link to="/terms" className="text-xs text-mist hover:text-foam">الشروط وسياسة الخصوصية</Link>
-              </footer>
-            )}
-            <BottomNav />
-          </div>
+          <AppShell />
         </CartProvider>
       </CustomerAuthProvider>
     </AuthProvider>
