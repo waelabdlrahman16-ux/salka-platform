@@ -37,6 +37,7 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'instapay'>('cod')
   const [addressLoaded, setAddressLoaded] = useState(false)
   const [walletBalance, setWalletBalance] = useState(0)
+  const [codDepositThreshold, setCodDepositThreshold] = useState(300)
   const [useWallet, setUseWallet] = useState(true)
 
   useEffect(() => {
@@ -70,6 +71,8 @@ export default function CheckoutPage() {
     supabase.rpc('open_slots', { p_restaurant_id: cart.restaurantId }).then(({ data }) => setSlots((data as Slot[]) ?? []))
     supabase.from('discounts').select('*').eq('restaurant_id', cart.restaurantId).eq('active', true)
       .then(({ data }) => setDiscounts(data ?? []))
+    supabase.from('settings').select('value').eq('key', 'cod_deposit_threshold_egp').maybeSingle()
+      .then(({ data }) => { if (data?.value) setCodDepositThreshold(Number(data.value)) })
     ;(async () => {
       const ids = (await supabase.from('menu_items').select('id').eq('restaurant_id', cart.restaurantId)).data?.map(x => x.id) ?? []
       if (!ids.length) return
@@ -265,6 +268,11 @@ export default function CheckoutPage() {
             <span className="font-semibold flex-1">كاش عند الاستلام</span>
             <input type="radio" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} className="accent-sea w-4 h-4" />
           </label>
+          {paymentMethod === 'cod' && finalTotal > codDepositThreshold && (
+            <p className="text-xs text-sand -mt-1 px-1">
+              الطلب ده أكبر من {codDepositThreshold} ج.م، فهيتطلب عربون 50% ({Math.round(finalTotal / 2)} ج.م) عن طريق InstaPay قبل التجهيز، والباقي كاش عند الاستلام
+            </p>
+          )}
           <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${paymentMethod === 'instapay' ? 'border-sea bg-sea/5' : 'border-line'}`}>
             <span className="font-semibold flex-1">InstaPay</span>
             <input type="radio" checked={paymentMethod === 'instapay'} onChange={() => setPaymentMethod('instapay')} className="accent-sea w-4 h-4" />

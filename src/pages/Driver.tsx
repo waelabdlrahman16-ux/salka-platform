@@ -349,6 +349,8 @@ export default function DriverPage() {
                     {o.total} ج.م ·{' '}
                     {o.payment_method === 'instapay'
                       ? <span className="text-emerald-700 font-semibold">مدفوع InstaPay — متحصلش فلوس</span>
+                      : o.cod_deposit_amount != null
+                      ? <span className="text-sand font-semibold">حصّل بس {o.total - o.cod_deposit_amount} ج.م (باقي المبلغ، العربون اتدفع أونلاين)</span>
                       : 'كاش عند الاستلام'}
                   </p>
                 </div>

@@ -495,7 +495,8 @@ export default function Admin() {
   const vehicleLabel = (v: string) => v === 'van' ? '🚐 فان' : '🏍️ موتوسيكل'
   const fmtTime = (iso: string | null) => iso ? new Date(iso).toLocaleString('ar-EG', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : null
 
-  const pendingInstapay = orders.filter(o => o.payment_method === 'instapay' && o.status === 'awaiting_payment')
+  const pendingInstapay = orders.filter(o =>
+    (o.payment_method === 'instapay' || o.cod_deposit_amount != null) && o.status === 'awaiting_payment')
 
   async function resolveNoAnswer(a: Assignment, action: 'wait' | 'contact' | 'cancel') {
     if (action === 'cancel' && !confirm('إلغاء الطلب فعلاً؟ المندوب هياخد أجرة التوصيل كاملة.')) return
@@ -504,9 +505,12 @@ export default function Admin() {
     load()
   }
 
-  async function confirmInstapayPayment(orderId: number) {
-    setAccountBusy(`instapay-${orderId}`)
-    const { error } = await supabase.rpc('admin_confirm_instapay_payment', { p_order_id: orderId })
+  async function confirmInstapayPayment(o: Order) {
+    setAccountBusy(`instapay-${o.id}`)
+    const { error } = await supabase.rpc(
+      o.cod_deposit_amount != null ? 'admin_confirm_cod_deposit' : 'admin_confirm_instapay_payment',
+      { p_order_id: o.id }
+    )
     setAccountBusy(null)
     if (error) { alert('حصل خطأ، جرب تاني'); return }
     load()
@@ -560,7 +564,10 @@ export default function Admin() {
             {pendingInstapay.map(o => (
               <div key={o.id} className="bg-night border border-line rounded-xl p-3 flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-semibold text-sm">#{o.id} — {o.restaurants?.name} — {o.total} ج.م</p>
+                  <p className="font-semibold text-sm">
+                    #{o.id} — {o.restaurants?.name} —{' '}
+                    {o.cod_deposit_amount != null ? `عربون ${o.cod_deposit_amount} ج.م (من ${o.total})` : `${o.total} ج.م`}
+                  </p>
                   <p className="text-xs text-mist" dir="ltr">{o.customer_phone}</p>
                   <p className="text-xs mt-0.5">
                     {o.instapay_claimed_at
@@ -569,7 +576,7 @@ export default function Admin() {
                   </p>
                 </div>
                 <button className="btn-sea !py-1.5 !px-3.5 text-sm shrink-0" disabled={accountBusy === `instapay-${o.id}`}
-                  onClick={() => confirmInstapayPayment(o.id)}>
+                  onClick={() => confirmInstapayPayment(o)}>
                   {accountBusy === `instapay-${o.id}` ? '...' : 'تأكيد الاستلام'}
                 </button>
               </div>

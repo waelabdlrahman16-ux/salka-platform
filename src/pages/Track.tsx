@@ -27,6 +27,7 @@ interface TrackData {
     collect_amount: number | null
     payment_method: 'cod' | 'online' | 'instapay' | null
     online_payment_status: 'pending' | 'paid' | 'failed' | null
+    cod_deposit_amount: number | null
     instapay_claimed: boolean
   } | null
   items: { name: string; qty: number; total: number; image_url: string | null }[]
@@ -122,14 +123,19 @@ export default function Track() {
 
   const o = data.order
 
-  if (o.status === 'awaiting_payment' && o.payment_method === 'instapay') {
+  if (o.status === 'awaiting_payment' && (o.payment_method === 'instapay' || o.cod_deposit_amount != null)) {
+    const isDeposit = o.cod_deposit_amount != null
+    const payNow = isDeposit ? o.cod_deposit_amount! : o.total
     return (
       <div className="max-w-lg mx-auto">
         <Link to="/" className="text-sm text-mist hover:text-foam">← العودة للرئيسية</Link>
         <div className="card p-4 mt-3 text-center">
-          <h1 className="font-bold text-lg mb-1">حوّل المبلغ على InstaPay</h1>
+          <h1 className="font-bold text-lg mb-1">{isDeposit ? 'ادفع عربون 50% على InstaPay' : 'حوّل المبلغ على InstaPay'}</h1>
           <p className="text-mist text-sm mb-3">طلب #{o.id} من {o.restaurant_name}</p>
-          <p className="text-sea font-bold text-2xl mb-4">{o.total} ج.م</p>
+          <p className="text-sea font-bold text-2xl mb-1">{payNow} ج.م</p>
+          {isDeposit && (
+            <p className="text-mist text-sm mb-4">والباقي {o.total - payNow} ج.م كاش عند الاستلام</p>
+          )}
 
           {INSTAPAY_QR_URL && (
             <img src={INSTAPAY_QR_URL} alt="InstaPay QR" className="w-44 h-44 mx-auto mb-4 rounded-xl border border-line" />
