@@ -30,6 +30,23 @@ export default function Vendor() {
     registerPush(pushToken => { supabase.rpc('save_my_push_token', { p_push_token: pushToken }) })
   }, [rid])
 
+  // Ring for new orders regardless of which screen the vendor is currently
+  // on (main kitchen view, driver-request view, or history) -- this must
+  // live in the always-mounted parent, not inside KitchenVendor, since that
+  // component unmounts (and its polling/ring stops) whenever the vendor
+  // navigates away from the main view.
+  useEffect(() => {
+    if (!rid) return
+    async function checkNew() {
+      const { count } = await supabase.from('orders').select('id', { count: 'exact', head: true })
+        .eq('restaurant_id', rid).eq('kitchen_status', 'new')
+      if ((count ?? 0) > 0) startRinging(); else stopRinging()
+    }
+    checkNew()
+    const t = setInterval(checkNew, 8000)
+    return () => { clearInterval(t); stopRinging() }
+  }, [rid])
+
   if (!rid) return <p className="text-mist text-center py-10">حسابك غير مرتبط بمطعم. تواصل مع الإدارة.</p>
   if (!restaurant) return <p className="text-mist text-center py-10">جاري التحميل…</p>
 
@@ -309,9 +326,6 @@ function KitchenVendor({ rid }: { rid: number }) {
       .order('id', { ascending: false }).limit(50)
     setCompletedToday(done ?? [])
 
-    const hasNew = (o ?? []).some(x => (x.kitchen_status || 'new') === 'new')
-    if (hasNew) startRinging(); else stopRinging()
-
     const allIds = [...(o ?? []), ...(done ?? [])].map(x => x.id)
     if (allIds.length) {
       const { data: its } = await supabase.from('order_items').select('*')
@@ -341,7 +355,7 @@ function KitchenVendor({ rid }: { rid: number }) {
     document.addEventListener('click', unlock, { once: true })
     load()
     const t = setInterval(load, 8000)
-    return () => { clearInterval(t); stopRinging() }
+    return () => clearInterval(t)
   }, [rid])
 
   useEffect(() => {
