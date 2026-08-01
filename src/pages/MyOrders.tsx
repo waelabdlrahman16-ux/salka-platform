@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
 import { orderStatusLabel } from '../lib/statusLabels'
+import CustomerLogin from '../components/CustomerLogin'
 
 interface Row {
   id: number; public_token: string; total: number
@@ -14,6 +15,7 @@ export default function MyOrders() {
   const [phone, setPhone] = useState(() => customer?.phone ?? localStorage.getItem('salka_phone') ?? '')
   const [rows, setRows] = useState<Row[] | null>(null)
   const [busy, setBusy] = useState(false)
+  const [showLogin, setShowLogin] = useState(false)
 
   async function search() {
     setBusy(true)
@@ -29,6 +31,7 @@ export default function MyOrders() {
 
   return (
     <div className="max-w-sm mx-auto">
+      {showLogin && <CustomerLogin onDone={() => setShowLogin(false)} />}
       {customer ? (
         <div className="card p-4 mt-4 flex items-center justify-between">
           <div>
@@ -46,6 +49,9 @@ export default function MyOrders() {
             onKeyDown={e => e.key === 'Enter' && search()} />
           <button className="btn-sea w-full mt-3" disabled={!phone.trim() || busy} onClick={search}>
             {busy ? 'جاري البحث…' : 'بحث'}
+          </button>
+          <button className="text-sea text-sm font-semibold w-full text-center mt-3" onClick={() => setShowLogin(true)}>
+            أو سجّل دخولك بجوجل/الإيميل عشان تتابع طلباتك وتوصلك الفاتورة
           </button>
         </div>
       )}
