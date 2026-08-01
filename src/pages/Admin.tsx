@@ -133,7 +133,7 @@ export default function Admin() {
       supabase.from('shift_swap_requests').select('*, shifts(*), requester:drivers!shift_swap_requests_requested_by_fkey(name)')
         .eq('status', 'escalated').order('escalated_at', { ascending: false }),
       supabase.from('delivery_slots').select('*').order('restaurant_id').order('start_time'),
-      supabase.from('complaints').select('*, orders(customer_name, customer_phone, restaurants(name))').order('id', { ascending: false }),
+      supabase.from('complaints').select('*, orders(customer_name, customer_phone, restaurants(name)), drivers(name)').order('id', { ascending: false }),
       supabase.from('settlement_requests').select('*, drivers(name)').eq('status', 'pending').order('id', { ascending: false }),
       supabase.from('compounds').select('*').eq('active', true).order('direction').order('distance_km'),
       supabase.from('vendor_coverage').select('*'),
@@ -498,6 +498,18 @@ export default function Admin() {
   const pendingInstapay = orders.filter(o =>
     (o.payment_method === 'instapay' || o.cod_deposit_amount != null) && o.status === 'awaiting_payment')
 
+  const CATEGORY_LABEL: Record<string, string> = {
+    missing_item: '📦 نقص صنف', wrong_item: '❌ صنف غلط', driver_conduct: '🛵 مشكلة مع المندوب',
+    quality: '👎 جودة الطلب', other: '❓ حاجة تانية'
+  }
+
+  async function flagDriverDispute(c: Complaint) {
+    const note = prompt('ملاحظة عن المشكلة مع المندوب (اختياري):') ?? ''
+    const { error } = await supabase.rpc('admin_flag_driver_dispute', { p_complaint_id: c.id, p_note: note })
+    if (error) { alert('حصل خطأ، جرب تاني'); return }
+    alert('اتسجلت في سجل المندوب')
+  }
+
   async function resolveNoAnswer(a: Assignment, action: 'wait' | 'contact' | 'cancel') {
     if (action === 'cancel' && !confirm('إلغاء الطلب فعلاً؟ المندوب هياخد أجرة التوصيل كاملة.')) return
     const { error } = await supabase.rpc('admin_resolve_no_answer', { p_assignment_id: a.id, p_action: action })
@@ -671,13 +683,18 @@ export default function Admin() {
             {bulkResult && <p className="text-sm text-mist mt-2">{bulkResult}</p>}
           </div>
 
-          {drivers.map(d => (
+          {drivers.map(d => {
+            const disputeCount = earnings.filter(e => e.driver_id === d.id && e.disputed).length
+            return (
             <div key={d.id} className="card p-4">
               <div className="flex items-start justify-between">
                 <div>
                   <h2 className="font-bold">{d.name}</h2>
                   <p className="text-sm text-mist mt-0.5">★ {d.rating} · {d.total_deliveries} توصيلة · {vehicleLabel(d.vehicle_type)} · {d.vehicle_plate}</p>
                   <p className="text-sm text-mist mt-0.5" dir="ltr">{d.phone}</p>
+                  {disputeCount > 0 && (
+                    <p className="text-sm text-red-600 font-semibold mt-1">⚠️ {disputeCount} مشكلة مؤكدة في السجل</p>
+                  )}
                 </div>
                 <span className={d.active ? 'badge-open' : 'badge-closed'}>{driverStatusLabel(d.status)}</span>
               </div>
@@ -686,7 +703,8 @@ export default function Admin() {
                 <button className={`text-sm flex-1 ${d.active ? 'btn-danger' : 'btn-sea'}`} onClick={() => toggleDriver(d, 'active')}>{d.active ? 'إيقاف الحساب' : 'تفعيل الحساب'}</button>
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
@@ -1179,11 +1197,15 @@ export default function Admin() {
           )}
           {complaints.filter(c => showResolvedComplaints || c.status !== 'resolved').map(c => (
             <div key={c.id} className="card p-4">
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between gap-2">
                 <h2 className="font-bold">طلب #{c.order_id} — {c.orders?.restaurants?.name}</h2>
-                <span className={`text-xs font-semibold rounded-full px-2.5 py-1 ${c.status === 'open' ? 'bg-red-500/15 text-red-600' : c.status === 'reviewed' ? 'bg-sand/15 text-sand' : 'bg-emerald-500/15 text-emerald-700'}`}>
+                <span className={`text-xs font-semibold rounded-full px-2.5 py-1 shrink-0 ${c.status === 'open' ? 'bg-red-500/15 text-red-600' : c.status === 'reviewed' ? 'bg-sand/15 text-sand' : 'bg-emerald-500/15 text-emerald-700'}`}>
                   {c.status === 'open' ? 'جديدة' : c.status === 'reviewed' ? 'قيد المراجعة' : 'اتحلت'}
                 </span>
+              </div>
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                <span className="text-xs font-semibold bg-shellup rounded-full px-2 py-0.5">{CATEGORY_LABEL[c.category] ?? c.category}</span>
+                {c.drivers?.name && <span className="text-xs text-mist">🛵 {c.drivers.name}</span>}
               </div>
               <p className="text-sm mt-2">{c.description}</p>
               {c.orders && (
@@ -1195,6 +1217,9 @@ export default function Admin() {
                 {compensatedOrderIds.has(c.order_id)
                   ? <span className="text-sm font-semibold text-emerald-700 flex-1 text-center py-2">✓ اتعوّض</span>
                   : <button className="btn-ghost flex-1 text-sm" onClick={() => compensateFromComplaint(c)}>💳 تعويض العميل</button>}
+                {c.category === 'driver_conduct' && c.driver_id && (
+                  <button className="btn-ghost flex-1 text-sm !text-red-600" onClick={() => flagDriverDispute(c)}>⚠️ علّم في سجل المندوب</button>
+                )}
               </div>
             </div>
           ))}

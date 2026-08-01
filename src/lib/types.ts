@@ -81,6 +81,7 @@ export interface Earning {
   id: number; driver_id: number; order_id: number; assignment_id: number
   delivery_fee: number; driver_earning: number; admin_amount: number
   created_at: string; paid: boolean
+  disputed: boolean; dispute_note: string | null
   drivers?: { name: string }
 }
 export interface Zone { id: number; name: string }
@@ -117,7 +118,10 @@ export interface Region { id: number; name: string }
 export interface Complaint {
   id: number; order_id: number; description: string
   status: 'open' | 'reviewed' | 'resolved'; created_at: string
+  category: 'missing_item' | 'wrong_item' | 'driver_conduct' | 'quality' | 'other'
+  driver_id: number | null
   orders?: { customer_name: string; customer_phone: string; restaurants?: { name: string } }
+  drivers?: { name: string }
 }
 export interface SettlementRequest {
   id: number; driver_id: number; status: string; created_at: string

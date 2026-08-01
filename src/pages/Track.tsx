@@ -51,6 +51,7 @@ export default function Track() {
   const [restaurantRating, setRestaurantRating] = useState(0)
   const [ratingSent, setRatingSent] = useState(false)
   const [complaining, setComplaining] = useState(false)
+  const [complaintCategory, setComplaintCategory] = useState<'missing_item' | 'wrong_item' | 'driver_conduct' | 'quality' | 'other'>('other')
   const [complaintText, setComplaintText] = useState('')
   const [complaintSent, setComplaintSent] = useState(false)
   const [claimingPayment, setClaimingPayment] = useState(false)
@@ -93,7 +94,7 @@ export default function Track() {
 
   async function sendComplaint() {
     if (!token || !complaintText.trim()) return
-    await supabase.rpc('submit_complaint', { p_token: token, p_description: complaintText.trim() })
+    await supabase.rpc('submit_complaint', { p_token: token, p_description: complaintText.trim(), p_category: complaintCategory })
     setComplaintSent(true); setComplaining(false)
   }
 
@@ -362,6 +363,19 @@ export default function Track() {
       ) : complaining ? (
         <div className="card p-4 mb-4">
           <p className="text-sm font-semibold mb-2">إيه المشكلة؟</p>
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            {([
+              ['missing_item', '📦 نقص صنف'],
+              ['wrong_item', '❌ صنف غلط'],
+              ['driver_conduct', '🛵 مشكلة مع المندوب'],
+              ['quality', '👎 جودة الطلب'],
+              ['other', '❓ حاجة تانية'],
+            ] as const).map(([val, label]) => (
+              <button key={val} type="button"
+                className={`text-xs py-2 rounded-lg border-2 ${complaintCategory === val ? 'border-sea bg-sea/5' : 'border-line'}`}
+                onClick={() => setComplaintCategory(val)}>{label}</button>
+            ))}
+          </div>
           <textarea className="field h-20 resize-none" value={complaintText} onChange={e => setComplaintText(e.target.value)} placeholder="مثال: نقص صنف من الطلب" />
           <div className="flex gap-2.5 mt-2.5">
             <button className="btn-ghost flex-1 text-sm" onClick={() => setComplaining(false)}>إلغاء</button>
