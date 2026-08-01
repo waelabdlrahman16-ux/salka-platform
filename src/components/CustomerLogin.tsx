@@ -15,6 +15,12 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
   const [resendIn, setResendIn] = useState(0)
   const [emailLinkSent, setEmailLinkSent] = useState(false)
 
+  function goTo(next: 'main' | 'email' | 'phone' | 'code') {
+    setError('')
+    setEmailLinkSent(false)
+    setMode(next)
+  }
+
   async function sendCode() {
     if (!isValidEgyptPhone(phone)) return
     setSending(true); setError('')
@@ -67,11 +73,11 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
             </button>
 
             <button className="w-full !py-3 mb-4 rounded-xl border-2 border-line font-semibold hover:bg-shellup/60 transition-colors"
-              onClick={() => setMode('email')}>
+              onClick={() => goTo('email')}>
               📧 المتابعة بالإيميل
             </button>
 
-            <button className="text-xs text-mist hover:text-foam mb-1" onClick={() => setMode('phone')}>الدخول برقم الموبايل</button>
+            <button className="text-xs text-mist hover:text-foam mb-1" onClick={() => goTo('phone')}>الدخول برقم الموبايل</button>
 
             {onSkip && (
               <div className="mt-3">
@@ -102,7 +108,7 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
                 </button>
               </>
             )}
-            <button className="text-sm text-mist hover:text-foam" onClick={() => { setMode('main'); setEmailLinkSent(false) }}>رجوع</button>
+            <button className="text-sm text-mist hover:text-foam" onClick={() => goTo('main')}>رجوع</button>
           </>
         )}
 
@@ -130,7 +136,7 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
             <button className="btn-sea w-full !py-3 mb-2" disabled={!isValidEgyptPhone(phone) || sending} onClick={sendCode}>
               {sending ? 'جاري الإرسال…' : 'ابعتلي الكود'}
             </button>
-            <button className="text-sm text-mist hover:text-foam" onClick={() => setMode('main')}>رجوع</button>
+            <button className="text-sm text-mist hover:text-foam" onClick={() => goTo('main')}>رجوع</button>
           </>
         )}
 
@@ -150,7 +156,7 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
             </button>
 
             <div className="flex items-center justify-between text-sm">
-              <button className="text-mist hover:text-foam" onClick={() => setMode('phone')}>غيّر الرقم</button>
+              <button className="text-mist hover:text-foam" onClick={() => goTo('phone')}>غيّر الرقم</button>
               <button className="text-sea font-semibold disabled:opacity-40 disabled:pointer-events-none" disabled={resendIn > 0} onClick={sendCode}>
                 {resendIn > 0 ? `أعد الإرسال بعد ${resendIn}` : 'أعد الإرسال'}
               </button>
