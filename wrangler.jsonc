@@ -1,5 +1,5 @@
 {
-  "name": "gosalka-platform",
+  "name": "appgosalka-platform",
   "compatibility_date": "2026-07-26",
   "assets": {
     "directory": "./dist",
