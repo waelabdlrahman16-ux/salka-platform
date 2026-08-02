@@ -21,6 +21,7 @@ export default function DriverPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [rejecting, setRejecting] = useState<Assignment | null>(null)
   const [reason, setReason] = useState('')
+  const [cashConfirmed, setCashConfirmed] = useState<Set<number>>(new Set())
   const [pool, setPool] = useState<PoolOrder[]>([])
   const [claiming, setClaiming] = useState<number | null>(null)
   const [shifts, setShifts] = useState<Shift[]>([])
@@ -362,13 +363,17 @@ export default function DriverPage() {
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <h2 className="font-bold truncate">طلب #{o.id} — {o.restaurants?.name}</h2>
-                  <p className="text-sm text-mist mt-0.5">
-                    {o.total} ج.م ·{' '}
-                    {o.payment_method === 'instapay'
-                      ? <span className="text-emerald-700 font-semibold">مدفوع InstaPay — متحصلش فلوس</span>
-                      : o.cod_deposit_amount != null
-                      ? <span className="text-sand font-semibold">حصّل بس {o.total - o.cod_deposit_amount} ج.م (باقي المبلغ، العربون اتدفع أونلاين)</span>
-                      : 'كاش عند الاستلام'}
+                  <p className="text-sm mt-0.5">
+                    {o.payment_method === 'instapay' ? (
+                      <span className="inline-flex items-center gap-1 text-sea font-semibold">🔵 مدفوع أونلاين بالكامل — متحصلش فلوس</span>
+                    ) : o.cod_deposit_amount != null ? (
+                      <span className="inline-flex items-center gap-2 flex-wrap">
+                        <span className="text-sea font-semibold">🔵 عربون مدفوع: {o.cod_deposit_amount} ج.م</span>
+                        <span className="text-emerald-700 font-semibold">🟢 حصّل: {o.total - o.cod_deposit_amount} ج.م</span>
+                      </span>
+                    ) : (
+                      <span className="text-emerald-700 font-semibold">🟢 حصّل: {o.total} ج.م كاش</span>
+                    )}
                   </p>
                 </div>
                 <span className={`text-xs font-semibold rounded-full px-2.5 py-1 shrink-0 ${statusColor}`}>
@@ -418,20 +423,38 @@ export default function DriverPage() {
                   <button className="btn-sea w-full" onClick={() => markPickedUp(a)}>استلمت الطلب</button>
                 )}
                 {a.status === 'Picked_Up' && <button className="btn-sea w-full" onClick={() => markOutForDelivery(a)}>خرجت للتوصيل</button>}
-                {a.status === 'Out_for_Delivery' && (
-                  <div className="space-y-2">
-                    <button className="btn-sea w-full" onClick={() => setStatus(a, 'Delivered')}>تم التسليم</button>
-                    {a.no_answer_reported_at ? (
-                      <p className="text-sand text-sm text-center">⏳ اتبلّغت الإدارة، مستنيين قرارهم</p>
-                    ) : !a.called_customer_at ? (
-                      <button className="btn-ghost w-full text-sm" onClick={() => markCalledCustomer(a)}>📞 اتصلت بالعميل ومردش</button>
-                    ) : (a.out_for_delivery_at && (Date.now() - +new Date(a.out_for_delivery_at)) >= 5 * 60000) ? (
-                      <button className="btn-danger w-full text-sm" onClick={() => reportNoAnswer(a)}>العميل لسه ما ردش — بلّغ الإدارة</button>
-                    ) : (
-                      <p className="text-mist text-xs text-center">✓ اتصلت — لو ما ردش خلال 5 دقايق من خروجك، هيظهر لك زرار الإبلاغ</p>
-                    )}
-                  </div>
-                )}
+                {a.status === 'Out_for_Delivery' && (() => {
+                  const cashDue = o.payment_method === 'instapay' ? 0
+                    : o.cod_deposit_amount != null ? o.total - o.cod_deposit_amount
+                    : o.total
+                  const confirmed = cashDue === 0 || cashConfirmed.has(a.id)
+                  return (
+                    <div className="space-y-2">
+                      {cashDue > 0 && (
+                        <label className="flex items-center gap-2 text-sm bg-emerald-500/10 rounded-xl p-3 cursor-pointer">
+                          <input type="checkbox" className="w-5 h-5 accent-emerald-600 shrink-0"
+                            checked={cashConfirmed.has(a.id)}
+                            onChange={e => setCashConfirmed(s => {
+                              const next = new Set(s)
+                              if (e.target.checked) next.add(a.id); else next.delete(a.id)
+                              return next
+                            })} />
+                          <span className="text-emerald-800 font-semibold">أكدت إني استلمت {cashDue} ج.م كاش من العميل</span>
+                        </label>
+                      )}
+                      <button className="btn-sea w-full disabled:opacity-40" disabled={!confirmed} onClick={() => setStatus(a, 'Delivered')}>تم التسليم</button>
+                      {a.no_answer_reported_at ? (
+                        <p className="text-sand text-sm text-center">⏳ اتبلّغت الإدارة، مستنيين قرارهم</p>
+                      ) : !a.called_customer_at ? (
+                        <button className="btn-ghost w-full text-sm" onClick={() => markCalledCustomer(a)}>📞 اتصلت بالعميل ومردش</button>
+                      ) : (a.out_for_delivery_at && (Date.now() - +new Date(a.out_for_delivery_at)) >= 5 * 60000) ? (
+                        <button className="btn-danger w-full text-sm" onClick={() => reportNoAnswer(a)}>العميل لسه ما ردش — بلّغ الإدارة</button>
+                      ) : (
+                        <p className="text-mist text-xs text-center">✓ اتصلت — لو ما ردش خلال 5 دقايق من خروجك، هيظهر لك زرار الإبلاغ</p>
+                      )}
+                    </div>
+                  )
+                })()}
                 {a.status === 'Delivered' && <p className="text-emerald-700 font-semibold text-center">اكتمل</p>}
               </div>
 

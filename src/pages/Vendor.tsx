@@ -299,7 +299,7 @@ function KitchenVendor({ rid }: { rid: number }) {
   const [completedView, setCompletedView] = useState<'delivered' | 'rejected'>('delivered')
   const [items, setItems] = useState<Record<number, OrderItem[]>>({})
   const [menu, setMenu] = useState<MenuItem[]>([])
-  const [deliveryByOrder, setDeliveryByOrder] = useState<Record<number, { status: string; driver_name: string; arrived_at_restaurant_at: string | null; out_for_delivery_at: string | null }>>({})
+  const [deliveryByOrder, setDeliveryByOrder] = useState<Record<number, { status: string; driver_name: string; driver_phone: string | null; arrived_at_restaurant_at: string | null; out_for_delivery_at: string | null }>>({})
   const [stockOpen, setStockOpen] = useState(false)
   const [togglingId, setTogglingId] = useState<number | null>(null)
   const [isOpen, setIsOpen] = useState(true)
@@ -339,13 +339,14 @@ function KitchenVendor({ rid }: { rid: number }) {
       setItems(grouped)
 
       const { data: das } = await supabase.from('delivery_assignments')
-        .select('order_id, status, arrived_at_restaurant_at, out_for_delivery_at, drivers(name)')
+        .select('order_id, status, arrived_at_restaurant_at, out_for_delivery_at, drivers(name, phone)')
         .in('order_id', allIds)
         .in('status', ['Accepted', 'Picked_Up', 'Out_for_Delivery', 'Delivered'])
       const delivMap: typeof deliveryByOrder = {}
       for (const d of das ?? []) {
         delivMap[d.order_id] = {
           status: d.status, driver_name: (d as any).drivers?.name ?? 'المندوب',
+          driver_phone: (d as any).drivers?.phone ?? null,
           arrived_at_restaurant_at: d.arrived_at_restaurant_at, out_for_delivery_at: d.out_for_delivery_at
         }
       }
@@ -379,12 +380,12 @@ function KitchenVendor({ rid }: { rid: number }) {
     setMenu(prev => prev.map(m => m.id === it.id ? { ...m, available: !m.available } : m))
   }
 
-  async function advance(o: Order, next: string) {
+  async function advance(o: Order, next: string, prepMinutes?: number) {
     if (navigator.vibrate) navigator.vibrate(15)
     if (next === 'ready') {
       await supabase.rpc('vendor_ready', { p_order_id: o.id })
     } else if (next === 'preparing') {
-      await supabase.rpc('vendor_accept_order', { p_order_id: o.id })
+      await supabase.rpc('vendor_accept_order', { p_order_id: o.id, p_prep_minutes: prepMinutes ?? null })
     }
     load()
   }
@@ -455,6 +456,19 @@ function KitchenVendor({ rid }: { rid: number }) {
           <p className="text-sand text-sm mt-2 bg-sand/10 rounded-lg p-2.5">📝 {o.customer_note}</p>
         )}
 
+        <p className="text-sm mt-2">
+          {o.payment_method === 'instapay' ? (
+            <span className="text-sea font-semibold">🔵 مدفوع أونلاين بالكامل</span>
+          ) : o.cod_deposit_amount != null ? (
+            <span className="inline-flex items-center gap-2 flex-wrap">
+              <span className="text-sea font-semibold">🔵 عربون: {o.cod_deposit_amount} ج.م</span>
+              <span className="text-emerald-700 font-semibold">🟢 كاش: {o.total - o.cod_deposit_amount} ج.م</span>
+            </span>
+          ) : (
+            <span className="text-emerald-700 font-semibold">🟢 كاش: {o.total} ج.م</span>
+          )}
+        </p>
+
         {!completed && remaining(o) !== null && o.kitchen_status !== 'ready' && (
           <p className={`mt-2 font-bold ${remaining(o)! <= 2 ? 'text-red-600 text-lg' : 'text-mist text-base'}`}>
             {remaining(o)! < 0 ? `⏰ متأخر ${Math.abs(remaining(o)!)} دقيقة` : `⏱️ المفروض يجهز خلال ${remaining(o)} دقيقة`}
@@ -466,15 +480,33 @@ function KitchenVendor({ rid }: { rid: number }) {
             {completed}
           </p>
         ) : big ? (
-          <div className="flex gap-2.5 mt-4">
-            <button className="btn-sea flex-1 !text-lg !py-4" onClick={() => advance(o, stage.next!)}>
-              ✅ {stage.action}
-            </button>
-            <button className="btn-danger !text-lg !py-4 !px-5" onClick={() => setDeclining(o)}>✗</button>
+          <div className="mt-4">
+            {stage.next === 'preparing' ? (
+              <div className="flex gap-2">
+                {[15, 20, 30].map(m => (
+                  <button key={m} className="btn-sea flex-1 !text-base !py-3.5" onClick={() => advance(o, 'preparing', m)}>
+                    قبول · {m} د
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <button className="btn-sea w-full !text-lg !py-4" onClick={() => advance(o, stage.next!)}>
+                ✅ {stage.action}
+              </button>
+            )}
+            <button className="btn-danger w-full !text-base !py-2.5 mt-2" onClick={() => setDeclining(o)}>✗ رفض الطلب</button>
           </div>
         ) : (
           <>
-            {stage.next && (
+            {stage.next === 'preparing' ? (
+              <div className="flex gap-2 mt-3">
+                {[15, 20, 30].map(m => (
+                  <button key={m} className="btn-sea flex-1 !text-sm !py-2.5 active:scale-95 transition-transform" onClick={() => advance(o, 'preparing', m)}>
+                    قبول · {m} د
+                  </button>
+                ))}
+              </div>
+            ) : stage.next && (
               <div className="flex gap-2.5 mt-3">
                 <button className="btn-sea flex-1 active:scale-95 transition-transform" onClick={() => advance(o, stage.next!)}>{stage.action}</button>
                 {o.delay_count < 3 && (
@@ -493,7 +525,14 @@ function KitchenVendor({ rid }: { rid: number }) {
                 : d.status === 'Out_for_Delivery' ? `🚗 ${d.driver_name} في الطريق للعميل${minsSince(d.out_for_delivery_at) !== null ? ` (من ${minsSince(d.out_for_delivery_at)} دقيقة)` : ''}`
                 : d.status === 'Delivered' ? '✅ تم التوصيل'
                 : '✅ في انتظار المندوب'
-              return <p className="text-emerald-700 text-center text-sm mt-3">{label}</p>
+              return (
+                <div className="flex items-center justify-center gap-2 mt-3">
+                  <p className="text-emerald-700 text-sm">{label}</p>
+                  {d.driver_phone && d.status !== 'Delivered' && (
+                    <a href={`tel:${d.driver_phone}`} className="shrink-0 w-7 h-7 rounded-full bg-emerald-500/15 text-emerald-700 grid place-items-center" aria-label="اتصال بالمندوب">📞</a>
+                  )}
+                </div>
+              )
             })()}
           </>
         )}
