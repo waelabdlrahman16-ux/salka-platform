@@ -6,6 +6,9 @@ import { registerPush } from '../lib/push'
 import { startLocationReporting, stopLocationReporting } from '../lib/geolocation'
 import type { Assignment, Driver, Shift, SwapRequest } from '../lib/types'
 import Icon from '../components/Icon'
+import DriverActiveMap from '../components/DriverActiveMap'
+import SwipeToConfirm from '../components/SwipeToConfirm'
+import { haversineKm } from '../lib/geo'
 import { assignmentStatusLabel, driverStatusLabel } from '../lib/statusLabels'
 
 interface PoolOrder {
@@ -33,6 +36,10 @@ export default function DriverPage() {
   const [settlementSent, setSettlementSent] = useState(false)
   const [unpaidEarnings, setUnpaidEarnings] = useState(0)
   const [streakDays, setStreakDays] = useState(0)
+  const [todayEarnings, setTodayEarnings] = useState(0)
+  const [todayOrders, setTodayOrders] = useState(0)
+  const [justDelivered, setJustDelivered] = useState<{ orderId: number } | null>(null)
+  const [myPos, setMyPos] = useState<{ lat: number; lng: number } | null>(null)
 
   async function load() {
     if (!id) return
@@ -69,6 +76,12 @@ export default function DriverPage() {
     const { data: earn } = await supabase.from('driver_earnings').select('driver_earning').eq('driver_id', id).eq('paid', false)
     setUnpaidEarnings((earn ?? []).reduce((s, e) => s + Number(e.driver_earning), 0))
 
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
+    const { data: todayEarn } = await supabase.from('driver_earnings').select('driver_earning')
+      .eq('driver_id', id).gte('created_at', todayStart.toISOString())
+    setTodayOrders((todayEarn ?? []).length)
+    setTodayEarnings((todayEarn ?? []).reduce((s, e) => s + Number(e.driver_earning), 0))
+
     const { data: reqs } = await supabase.from('settlement_requests').select('id').eq('driver_id', id).eq('status', 'pending').limit(1)
     setSettlementSent((reqs ?? []).length > 0)
   }
@@ -84,6 +97,16 @@ export default function DriverPage() {
     if (!id) return
     registerPush(pushToken => { supabase.rpc('save_my_push_token', { p_push_token: pushToken }) })
   }, [id])
+
+  useEffect(() => {
+    if (!navigator.geolocation) return
+    const watchId = navigator.geolocation.watchPosition(
+      pos => setMyPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => { /* location unavailable -- ETA just won't show */ },
+      { enableHighAccuracy: true, maximumAge: 15000 }
+    )
+    return () => navigator.geolocation.clearWatch(watchId)
+  }, [])
 
   useEffect(() => {
     const isOutDelivering = assignments.some(a => a.status === 'Picked_Up' || a.status === 'Out_for_Delivery')
@@ -108,7 +131,9 @@ export default function DriverPage() {
     if (status === 'Delivered') {
       const { error } = await supabase.rpc('mark_delivered', { p_assignment_id: a.id, p_order_id: a.order_id })
       if (error) { alert('حصل خطأ، جرب تاني'); return }
+      setJustDelivered({ orderId: a.order_id })
       load()
+      setTimeout(() => setJustDelivered(null), 3000)
     }
   }
 
@@ -224,6 +249,33 @@ export default function DriverPage() {
           <p className="text-sm text-mist">★ {driver.rating} · {driver.total_deliveries} توصيلة{streakDays >= 2 ? ` · 🔥 ${streakDays} أيام متتالية` : ''}</p>
         </div>
         <span className={driver.available ? 'badge-open' : 'badge-closed'}>{driverStatusLabel(driver.status)}</span>
+      </div>
+
+      {justDelivered && (
+        <div className="fixed inset-0 z-50 bg-white grid place-items-center p-6">
+          <div className="text-center">
+            <div className="w-16 h-16 rounded-full bg-shellup grid place-items-center text-3xl mx-auto mb-4">✓</div>
+            <p className="text-lg font-bold text-foam">تم التسليم</p>
+            <p className="text-sm text-mist mt-1.5">+10 ج.م لأرباحك</p>
+            <div className="bg-shellup rounded-2xl px-5 py-3 mt-5">
+              <p className="text-xs text-mist">أرباح النهاردة</p>
+              <p className="text-lg font-bold text-sea mt-0.5">{todayEarnings} ج.م · {todayOrders} طلبات</p>
+            </div>
+            <button className="btn-sea w-full mt-5" onClick={() => setJustDelivered(null)}>↩ رجوع للرئيسية</button>
+            <p className="text-xs text-mist mt-2">هيرجعلك تلقائي خلال 3 ثواني</p>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="card p-4">
+          <p className="text-xs text-mist">أرباح النهاردة</p>
+          <p className="text-xl font-bold text-sea mt-1">{todayEarnings} ج.م</p>
+        </div>
+        <div className="card p-4">
+          <p className="text-xs text-mist">طلبات النهاردة</p>
+          <p className="text-xl font-bold text-foam mt-1">{todayOrders}</p>
+        </div>
       </div>
 
       <div className="card p-4 mb-5">
@@ -353,11 +405,21 @@ export default function DriverPage() {
         {assignments.map(a => {
           const o = a.orders
           if (!o) return null
-          const stages = ['Accepted', 'Picked_Up', 'Out_for_Delivery', 'Delivered']
-          const stageIndex = stages.indexOf(a.status)
+          const stages = [
+            { key: 'Accepted', label: 'قبلت' },
+            { key: 'Picked_Up', label: 'استلمت' },
+            { key: 'Out_for_Delivery', label: 'في الطريق' },
+            { key: 'Delivered', label: 'وصل' },
+          ]
+          const stageIndex = stages.findIndex(s => s.key === a.status)
           const statusColor = a.status === 'Delivered' ? 'bg-emerald-100 text-emerald-700'
             : a.status === 'Offered' ? 'bg-sand/15 text-sand'
             : 'bg-sea/10 text-sea'
+          const destLat = o.compounds?.latitude ?? null
+          const destLng = o.compounds?.longitude ?? null
+          const etaMin = (myPos && destLat != null && destLng != null && a.status === 'Out_for_Delivery')
+            ? Math.max(1, Math.round(haversineKm(myPos.lat, myPos.lng, destLat, destLng) / 25 * 60))
+            : null
           return (
             <div key={a.id} className="card p-4">
               <div className="flex items-start justify-between gap-2">
@@ -382,10 +444,41 @@ export default function DriverPage() {
               </div>
 
               {stageIndex >= 0 && (
-                <div className="flex gap-1 mt-3">
-                  {stages.map((s, i) => (
-                    <div key={s} className={`h-1.5 flex-1 rounded-full ${i <= stageIndex ? 'bg-sea' : 'bg-line'}`} />
-                  ))}
+                <div className="flex items-start justify-between mt-4 px-1">
+                  {stages.map((s, i) => {
+                    const isCashStage = s.key === 'Out_for_Delivery'
+                    const done = i < stageIndex
+                    const current = i === stageIndex
+                    const dotColor = !done && !current ? 'bg-line'
+                      : isCashStage && current ? 'bg-sand' : 'bg-sea'
+                    const labelColor = !done && !current ? 'text-mist'
+                      : isCashStage && current ? 'text-sand' : 'text-sea'
+                    return (
+                      <div key={s.key} className="flex flex-col items-center gap-1 flex-1">
+                        <div className="flex items-center w-full">
+                          {i > 0 && <div className={`flex-1 h-0.5 ${done || current ? 'bg-sea' : 'bg-line'}`} />}
+                          <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${dotColor}`} />
+                          {i < stages.length - 1 && <div className={`flex-1 h-0.5 ${done ? 'bg-sea' : 'bg-line'}`} />}
+                        </div>
+                        <span className={`text-[10px] font-semibold ${labelColor}`}>{s.label}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {(a.status === 'Accepted' || a.status === 'Out_for_Delivery') && (
+                <div className="mt-3 relative">
+                  <DriverActiveMap
+                    destLat={a.status === 'Out_for_Delivery' ? destLat : null}
+                    destLng={a.status === 'Out_for_Delivery' ? destLng : null}
+                    showRoute={a.status === 'Out_for_Delivery'}
+                  />
+                  {etaMin != null && (
+                    <div className="absolute top-2.5 right-2.5 bg-white rounded-xl px-3 py-1.5 text-xs font-bold text-sea shadow-sm">
+                      {etaMin} دقايق
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -393,18 +486,21 @@ export default function DriverPage() {
                 <p className="font-semibold">{o.customer_name}</p>
                 <p className="text-mist flex items-start gap-1.5">
                   <Icon name="locationDot" className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                  <span>{o.zone} — وحدة {o.unit_number}{o.address_notes ? ` — ${o.address_notes}` : ''}</span>
+                  <span>{o.zone} — وحدة {o.unit_number}</span>
                 </p>
+                {o.address_notes && (
+                  <p className="text-sea bg-sea/10 rounded-lg p-2 font-semibold">📝 {o.address_notes}</p>
+                )}
                 {o.customer_note && (
                   <p className="text-sand bg-sand/10 rounded-lg p-2">📝 {o.customer_note}</p>
                 )}
                 <div className="flex gap-2 pt-1">
                   <a className="btn-ghost !py-1.5 text-sm flex-1 text-center" href={`tel:${o.customer_phone}`}>اتصال</a>
                   <a className="btn-ghost !py-1.5 text-sm flex-1 text-center" href={`https://wa.me/${o.customer_phone.replace(/^0/, '20').replace('+', '')}`} target="_blank" rel="noreferrer">واتساب</a>
-                  {o.compounds?.latitude != null && o.compounds?.longitude != null && (
+                  {destLat != null && destLng != null && (
                     <a className="btn-sea !py-1.5 text-sm flex-1 text-center"
-                      href={`https://www.google.com/maps/dir/?api=1&destination=${o.compounds.latitude},${o.compounds.longitude}&travelmode=driving`}
-                      target="_blank" rel="noreferrer">🧭 الاتجاهات</a>
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=driving`}
+                      target="_blank" rel="noreferrer">🧭 خرائط جوجل</a>
                   )}
                 </div>
               </div>
@@ -442,7 +538,7 @@ export default function DriverPage() {
                           <span className="text-emerald-800 font-semibold">أكدت إني استلمت {cashDue} ج.م كاش من العميل</span>
                         </label>
                       )}
-                      <button className="btn-sea w-full disabled:opacity-40" disabled={!confirmed} onClick={() => setStatus(a, 'Delivered')}>تم التسليم</button>
+                      <SwipeToConfirm label="اسحب لتأكيد التسليم" disabled={!confirmed} onConfirm={() => setStatus(a, 'Delivered')} />
                       {a.no_answer_reported_at ? (
                         <p className="text-sand text-sm text-center">⏳ اتبلّغت الإدارة، مستنيين قرارهم</p>
                       ) : !a.called_customer_at ? (
