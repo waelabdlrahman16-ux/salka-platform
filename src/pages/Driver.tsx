@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
-import { ping, askNotificationPermission } from '../lib/notify'
+import { pingIds, askNotificationPermission } from '../lib/notify'
 import { registerPush } from '../lib/push'
 import { startLocationReporting, stopLocationReporting } from '../lib/geolocation'
 import type { Assignment, Driver, Shift, SwapRequest } from '../lib/types'
@@ -18,6 +18,30 @@ interface PoolOrder {
   ready_at: string | null; dispatch_at: string | null
   dest_lat: number | null; dest_lng: number | null
 }
+
+interface BonusInfo {
+  tiers: { orders: number; amount: number }[]
+  current_tier: number
+  earned_today: number
+  next_orders: number | null
+  next_amount: number | null
+  orders_to_next: number | null
+}
+
+interface DriverStats {
+  total_deliveries: number
+  streak_days: number
+  today_orders: number
+  today_earnings: number
+  today_tips: number
+  unpaid_earnings: number
+  cash_held: number
+  bonus: BonusInfo
+}
+
+// How long since the last successful sync before we tell the driver the screen
+// may be stale. Two missed polls.
+const STALE_AFTER_MS = 25000
 
 export default function DriverPage() {
   const { profile } = useAuth()
@@ -37,73 +61,108 @@ export default function DriverPage() {
   const [swapReason, setSwapReason] = useState<Record<number, string>>({})
   const [requestingSettlement, setRequestingSettlement] = useState(false)
   const [settlementSent, setSettlementSent] = useState(false)
-  const [unpaidEarnings, setUnpaidEarnings] = useState(0)
-  const [streakDays, setStreakDays] = useState(0)
-  const [todayEarnings, setTodayEarnings] = useState(0)
-  const [todayOrders, setTodayOrders] = useState(0)
-  const [todayTips, setTodayTips] = useState(0)
+  const [stats, setStats] = useState<DriverStats | null>(null)
   const [justDelivered, setJustDelivered] = useState<{ orderId: number } | null>(null)
   const [myPos, setMyPos] = useState<{ lat: number; lng: number } | null>(null)
+  const [gpsDenied, setGpsDenied] = useState(false)
+  const [syncFailed, setSyncFailed] = useState(false)
+  const [lastSyncAt, setLastSyncAt] = useState<number | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
+  const [busy, setBusy] = useState<string | null>(null)
   const justDeliveredTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const loadingRef = useRef(false)
+
+  const unpaidEarnings = stats?.unpaid_earnings ?? 0
+  const streakDays = stats?.streak_days ?? 0
+  const todayEarnings = stats?.today_earnings ?? 0
+  const todayOrders = stats?.today_orders ?? 0
+  const todayTips = stats?.today_tips ?? 0
+  const bonus = stats?.bonus ?? null
 
   useEffect(() => {
     return () => { if (justDeliveredTimeoutRef.current) clearTimeout(justDeliveredTimeoutRef.current) }
   }, [])
 
+  // Every query used to destructure only `data`, so a dropped request on weak
+  // signal set state to [] -- wiping the driver's in-progress delivery, the
+  // customer's address and phone, and every action button off the screen, and
+  // replacing it with "no orders". Indistinguishable from having no work.
+  //
+  // Now: errors are inspected, state is only replaced when the query actually
+  // succeeded, and a failed sync surfaces a banner instead of pretending the
+  // board is empty. The 12 sequential round trips are also parallelised -- on
+  // mobile data they routinely took longer than the 10s poll interval.
   async function load() {
-    if (!id) return
-    const { data: d } = await supabase.from('drivers').select('*').eq('id', id).single()
-    setDriver(d)
-    const { data: stats } = await supabase.rpc('my_driver_stats')
-    setStreakDays(stats?.streak_days ?? 0)
-    const { data: a } = await supabase.from('delivery_assignments')
-      .select('*, orders(*, restaurants(name), compounds(name, latitude, longitude))').eq('driver_id', id)
-      .in('status', ['Offered', 'Accepted', 'Picked_Up', 'Out_for_Delivery', 'Delivered'])
-      .order('id', { ascending: false }).limit(20)
-    setAssignments(a ?? [])
-    const { data: p } = await supabase.rpc('available_orders')
-    setPool((p as PoolOrder[]) ?? [])
+    if (!id || loadingRef.current) return
+    loadingRef.current = true
+    try {
+      const today = new Date().toISOString().slice(0, 10)
+      const [dRes, statsRes, aRes, pRes, shRes, swRes, mineRes, escRes, reqRes] = await Promise.all([
+        supabase.from('drivers').select('*').eq('id', id).single(),
+        supabase.rpc('my_driver_stats'),
+        supabase.from('delivery_assignments')
+          .select('*, orders(*, restaurants(name), compounds(name, latitude, longitude))').eq('driver_id', id)
+          .in('status', ['Offered', 'Accepted', 'Picked_Up', 'Out_for_Delivery', 'Delivered'])
+          .order('id', { ascending: false }).limit(20),
+        supabase.rpc('available_orders'),
+        supabase.from('shifts').select('*')
+          .eq('driver_id', id).gte('shift_date', today)
+          .neq('status', 'cancelled').order('shift_date').limit(10),
+        supabase.rpc('open_swaps'),
+        supabase.from('shift_swap_requests').select('id, shift_id').eq('requested_by', id).eq('status', 'open'),
+        supabase.from('shift_swap_requests').select('shift_id').eq('requested_by', id).eq('status', 'escalated'),
+        supabase.from('settlement_requests').select('id').eq('driver_id', id).eq('status', 'pending').limit(1),
+      ])
 
-    const today = new Date().toISOString().slice(0, 10)
-    const { data: sh } = await supabase.from('shifts').select('*')
-      .eq('driver_id', id).gte('shift_date', today)
-      .neq('status', 'cancelled').order('shift_date').limit(10)
-    setShifts(sh ?? [])
+      // The driver's own work is what must never be silently emptied. Shifts and
+      // swaps failing is cosmetic; assignments or the pool failing is not.
+      const coreFailed = !!(dRes.error || aRes.error || pRes.error)
 
-    const { data: sw } = await supabase.rpc('open_swaps')
-    setSwaps((sw as SwapRequest[]) ?? [])
+      if (!dRes.error && dRes.data) setDriver(dRes.data)
+      if (!statsRes.error && statsRes.data) setStats(statsRes.data as unknown as DriverStats)
+      if (!aRes.error) setAssignments(aRes.data ?? [])
+      if (!pRes.error) {
+        const p = (pRes.data as PoolOrder[]) ?? []
+        setPool(p)
+        pingIds('pool', p.map(o => o.id), 'طلب متاح', 'في طلب جديد متاح للاستلام', true)
+      }
+      if (!shRes.error) setShifts(shRes.data ?? [])
+      if (!swRes.error) setSwaps((swRes.data as SwapRequest[]) ?? [])
+      if (!mineRes.error) setMyOpenRequests(new Map((mineRes.data ?? []).map((x: any) => [x.shift_id, x.id])))
+      if (!escRes.error) setMyEscalated(new Set((escRes.data ?? []).map((x: any) => x.shift_id)))
+      if (!reqRes.error) setSettlementSent((reqRes.data ?? []).length > 0)
 
-    const { data: mine } = await supabase.from('shift_swap_requests')
-      .select('id, shift_id').eq('requested_by', id).eq('status', 'open')
-    setMyOpenRequests(new Map((mine ?? []).map((x: any) => [x.shift_id, x.id])))
+      setSyncFailed(coreFailed)
+      if (!coreFailed) setLastSyncAt(Date.now())
+    } catch {
+      setSyncFailed(true)
+    } finally {
+      loadingRef.current = false
+    }
+  }
 
-    const { data: esc } = await supabase.from('shift_swap_requests')
-      .select('shift_id').eq('requested_by', id).eq('status', 'escalated')
-    setMyEscalated(new Set((esc ?? []).map((x: any) => x.shift_id)))
-    ping('pool', ((p as PoolOrder[]) ?? []).length, 'طلب متاح', 'في طلب جديد متاح للاستلام')
-
-    const { data: earn } = await supabase.from('driver_earnings').select('driver_earning').eq('driver_id', id).eq('paid', false)
-    setUnpaidEarnings((earn ?? []).reduce((s, e) => s + Number(e.driver_earning), 0))
-
-    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
-    const { data: todayEarn } = await supabase.from('driver_earnings').select('driver_earning')
-      .eq('driver_id', id).gte('created_at', todayStart.toISOString())
-    setTodayOrders((todayEarn ?? []).length)
-    setTodayEarnings((todayEarn ?? []).reduce((s, e) => s + Number(e.driver_earning), 0))
-
-    const { data: tips } = await supabase.from('driver_tips').select('amount')
-      .eq('driver_id', id).gte('created_at', todayStart.toISOString())
-    setTodayTips((tips ?? []).reduce((s, t) => s + Number(t.amount), 0))
-
-    const { data: reqs } = await supabase.from('settlement_requests').select('id').eq('driver_id', id).eq('status', 'pending').limit(1)
-    setSettlementSent((reqs ?? []).length > 0)
+  async function manualRefresh() {
+    setRefreshing(true)
+    await load()
+    setRefreshing(false)
   }
 
   useEffect(() => {
     askNotificationPermission()
     load()
     const t = setInterval(load, 10000)
-    return () => clearInterval(t)
+    // Browsers throttle or suspend timers in a backgrounded tab, and push does
+    // not work yet, so a driver returning to the app could be looking at a
+    // minutes-old board. Re-sync the moment the screen comes back.
+    const onVisible = () => { if (document.visibilityState === 'visible') load() }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('online', onVisible)
+    return () => {
+      clearInterval(t)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('online', onVisible)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
   useEffect(() => {
@@ -111,90 +170,137 @@ export default function DriverPage() {
     registerPush(pushToken => { supabase.rpc('save_my_push_token', { p_push_token: pushToken }) })
   }, [id])
 
-  useEffect(() => {
-    if (!navigator.geolocation) return
-    const watchId = navigator.geolocation.watchPosition(
-      pos => setMyPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => { /* location unavailable -- ETA just won't show */ },
-      { enableHighAccuracy: true, maximumAge: 15000 }
-    )
-    return () => navigator.geolocation.clearWatch(watchId)
-  }, [])
+  // Only run the map/ETA watcher while there is something to navigate to.
+  // It previously ran for the whole time the page was mounted, including while
+  // idle with no orders, which is the dominant battery cost on a shift-long shift.
+  const hasActiveAssignment = assignments.some(
+    a => a.status === 'Accepted' || a.status === 'Picked_Up' || a.status === 'Out_for_Delivery'
+  )
 
   useEffect(() => {
-    const isOutDelivering = assignments.some(a => a.status === 'Picked_Up' || a.status === 'Out_for_Delivery')
+    if (!navigator.geolocation || !hasActiveAssignment) return
+    const watchId = navigator.geolocation.watchPosition(
+      pos => { setMyPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setGpsDenied(false) },
+      err => {
+        // Permission denied is actionable by the driver and must be visible;
+        // a momentary loss of fix is not. Previously all three were an empty
+        // callback, so "location off" looked identical to "still locating".
+        if (err.code === err.PERMISSION_DENIED) setGpsDenied(true)
+      },
+      { enableHighAccuracy: true, maximumAge: 15000, timeout: 20000 }
+    )
+    return () => navigator.geolocation.clearWatch(watchId)
+  }, [hasActiveAssignment])
+
+  // Depend on the derived boolean, not the assignments array. `assignments` is a
+  // fresh array object on every 10s poll, so this effect used to tear down and
+  // restart location reporting every single poll -- which is what let
+  // startLocationReporting orphan intervals.
+  const isOutDelivering = assignments.some(a => a.status === 'Picked_Up' || a.status === 'Out_for_Delivery')
+
+  useEffect(() => {
     if (isOutDelivering) startLocationReporting()
     else stopLocationReporting()
     return () => stopLocationReporting()
-  }, [assignments])
+  }, [isOutDelivering])
+
+  // Every stage button used to fire its RPC with no pending state. On a 3-5s
+  // mobile round trip the natural reaction is to tap again, which double-fires.
+  // runAction serialises them and gives the UI something to disable on.
+  async function runAction(key: string, fn: () => Promise<void>) {
+    if (busy) return
+    setBusy(key)
+    try { await fn() } finally { setBusy(null) }
+  }
 
   async function setStatus(a: Assignment, status: string) {
     if (!id) return
     if (status === 'Accepted') {
-      const { error } = await supabase.rpc('driver_accept_assignment', { p_assignment_id: a.id, p_order_id: a.order_id })
-      if (error) {
-        alert(error.message.includes('dispatch_rule_blocked')
-          ? 'وصلت للحد الأقصى (٣ طلبات) أو الطلب ده في اتجاه مختلف عن طلباتك الحالية'
-          : 'حصل خطأ، جرب تاني')
-        return
-      }
-      load()
+      await runAction(`accept:${a.id}`, async () => {
+        const { error } = await supabase.rpc('driver_accept_assignment', { p_assignment_id: a.id, p_order_id: a.order_id })
+        if (error) {
+          alert(error.message.includes('dispatch_rule_blocked')
+            ? 'وصلت للحد الأقصى (٣ طلبات) أو الطلب ده في اتجاه مختلف عن طلباتك الحالية'
+            : 'حصل خطأ، جرب تاني')
+          return
+        }
+        await load()
+      })
       return
     }
     if (status === 'Delivered') {
-      const { error } = await supabase.rpc('mark_delivered', { p_assignment_id: a.id, p_order_id: a.order_id })
-      if (error) { alert('حصل خطأ، جرب تاني'); return }
-      setJustDelivered({ orderId: a.order_id })
-      load()
-      justDeliveredTimeoutRef.current = setTimeout(() => setJustDelivered(null), 3000)
+      await runAction(`deliver:${a.id}`, async () => {
+        const { error } = await supabase.rpc('mark_delivered', { p_assignment_id: a.id, p_order_id: a.order_id })
+        if (error) { alert('حصل خطأ، جرب تاني'); return }
+        // Await the refresh before showing the summary -- the overlay used to
+        // render the pre-delivery totals for its whole 3s life, so the driver
+        // read "+10" next to a number that had not moved.
+        await load()
+        setJustDelivered({ orderId: a.order_id })
+        justDeliveredTimeoutRef.current = setTimeout(() => setJustDelivered(null), 3000)
+      })
     }
   }
 
   async function markArrived(a: Assignment) {
-    if (navigator.vibrate) navigator.vibrate(15)
-    const { error } = await supabase.rpc('driver_arrived_at_restaurant', { p_assignment_id: a.id })
-    if (error) { alert('حصل خطأ، جرب تاني'); return }
-    load()
+    await runAction(`arrived:${a.id}`, async () => {
+      if (navigator.vibrate) navigator.vibrate(15)
+      const { error } = await supabase.rpc('driver_arrived_at_restaurant', { p_assignment_id: a.id })
+      if (error) { alert('حصل خطأ، جرب تاني'); return }
+      await load()
+    })
   }
 
   async function markPickedUp(a: Assignment) {
-    if (navigator.vibrate) navigator.vibrate(15)
-    const { error } = await supabase.rpc('driver_mark_picked_up', { p_assignment_id: a.id })
-    if (error) {
-      alert(
-        error.message.includes('order_not_ready') ? 'الطلب لسه بيتحضر — استنى لحد ما المطعم يخليه جاهز'
-        : error.message.includes('must_arrive_first') ? 'لازم تسجل إنك وصلت المطعم الأول'
-        : 'حصل خطأ، جرب تاني'
-      )
-      return
-    }
-    load()
+    await runAction(`pickup:${a.id}`, async () => {
+      if (navigator.vibrate) navigator.vibrate(15)
+      const { error } = await supabase.rpc('driver_mark_picked_up', { p_assignment_id: a.id })
+      if (error) {
+        alert(
+          error.message.includes('order_not_ready') ? 'الطلب لسه بيتحضر — استنى لحد ما المطعم يخليه جاهز'
+          : error.message.includes('must_arrive_first') ? 'لازم تسجل إنك وصلت المطعم الأول'
+          : 'حصل خطأ، جرب تاني'
+        )
+        return
+      }
+      await load()
+    })
   }
 
   async function markOutForDelivery(a: Assignment) {
-    if (navigator.vibrate) navigator.vibrate(15)
-    const { error } = await supabase.rpc('driver_mark_out_for_delivery', { p_assignment_id: a.id })
-    if (error) { alert('حصل خطأ، جرب تاني'); return }
-    load()
+    await runAction(`out:${a.id}`, async () => {
+      if (navigator.vibrate) navigator.vibrate(15)
+      const { error } = await supabase.rpc('driver_mark_out_for_delivery', { p_assignment_id: a.id })
+      if (error) { alert('حصل خطأ، جرب تاني'); return }
+      await load()
+    })
   }
 
-  async function confirmCash(a: Assignment) {
-    if (navigator.vibrate) navigator.vibrate(15)
-    setCashConfirmed(s => new Set(s).add(a.id)) // optimistic
-    const { error } = await supabase.rpc('driver_confirm_cash_received', { p_assignment_id: a.id })
-    if (error) {
-      setCashConfirmed(s => { const next = new Set(s); next.delete(a.id); return next })
-      alert('حصل خطأ، جرب تاني')
-      return
-    }
-    load()
+  // Irreversible and financial: it permanently increases the driver's cash_held
+  // liability. A single mis-tap with three stacked order cards, one-handed, used
+  // to be enough. reportNoAnswer -- a far cheaper action -- already confirmed.
+  async function confirmCash(a: Assignment, cashDue: number) {
+    if (!confirm(`تأكيد إنك استلمت ${cashDue} ج.م كاش من العميل؟\n\nالمبلغ ده هيتسجل عليك لحد ما تسلّمه للإدارة، ومش هينفع تتراجع عنه.`)) return
+    await runAction(`cash:${a.id}`, async () => {
+      if (navigator.vibrate) navigator.vibrate(15)
+      setCashConfirmed(s => new Set(s).add(a.id)) // optimistic
+      const { error } = await supabase.rpc('driver_confirm_cash_received', { p_assignment_id: a.id })
+      if (error) {
+        setCashConfirmed(s => { const next = new Set(s); next.delete(a.id); return next })
+        alert('حصل خطأ، جرب تاني')
+        return
+      }
+      await load()
+    })
   }
 
   async function markCalledCustomer(a: Assignment) {
-    if (navigator.vibrate) navigator.vibrate(15)
-    const { error } = await supabase.rpc('driver_called_customer', { p_assignment_id: a.id })
-    if (error) { alert('حصل خطأ، جرب تاني'); return }
-    load()
+    await runAction(`called:${a.id}`, async () => {
+      if (navigator.vibrate) navigator.vibrate(15)
+      const { error } = await supabase.rpc('driver_called_customer', { p_assignment_id: a.id })
+      if (error) { alert('حصل خطأ، جرب تاني'); return }
+      await load()
+    })
   }
 
   async function reportNoAnswer(a: Assignment) {
@@ -214,8 +320,11 @@ export default function DriverPage() {
 
   async function requestSettlement() {
     setRequestingSettlement(true)
-    await supabase.rpc('request_early_settlement')
+    // The error was never read, so a failed request still showed the success
+    // message and hid the button until the next poll.
+    const { error } = await supabase.rpc('request_early_settlement')
     setRequestingSettlement(false)
+    if (error) { alert('مش قادرين نبعت طلب التسوية دلوقتي، جرب تاني'); return }
     setSettlementSent(true)
   }
 
@@ -234,15 +343,22 @@ export default function DriverPage() {
   }
 
   async function escalate(requestId: number) {
-    await supabase.rpc('escalate_swap', { p_request_id: requestId })
+    const { error } = await supabase.rpc('escalate_swap', { p_request_id: requestId })
+    if (error) { alert('حصل خطأ، جرب تاني'); return }
     load()
   }
 
   async function claim(orderId: number) {
+    // `claiming` held a single id, so while one claim was in flight every other
+    // pool card stayed enabled and two quick taps could land two orders.
+    if (claiming !== null) return
     setClaiming(orderId)
     const { error } = await supabase.rpc('claim_order', { p_order_id: orderId })
-    setClaiming(null)
     if (error) {
+      // Drop it from the local pool first. Between the RPC returning and load()
+      // finishing, the just-claimed order was still rendered with an enabled
+      // button; tapping it again hit the server's already_taken branch and told
+      // the driver "another driver took it" about an order they now own.
       alert(
         error.message.includes('already_taken') ? 'الطلب اتاخد من مندوب تاني'
         : error.message.includes('wrong_vehicle_type') ? 'الطلب ده محتاج فان'
@@ -250,7 +366,9 @@ export default function DriverPage() {
         : 'حصل خطأ، جرب تاني'
       )
     }
-    load()
+    setPool(p => p.filter(o => o.id !== orderId))
+    await load()
+    setClaiming(null)
   }
 
 
@@ -268,23 +386,60 @@ export default function DriverPage() {
 
   return (
     <div className="max-w-lg mx-auto">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h1 className="text-xl font-bold">🛵 {driver.name}</h1>
+      <div className="flex items-center justify-between mb-3">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold truncate">🛵 {driver.name}</h1>
           <p className="text-sm text-mist">★ {driver.rating} · {driver.total_deliveries} توصيلة{streakDays >= 2 ? ` · 🔥 ${streakDays} أيام متتالية` : ''}</p>
         </div>
-        <span className={driver.available ? 'badge-open' : 'badge-closed'}>{driverStatusLabel(driver.status)}</span>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className={driver.available ? 'badge-open' : 'badge-closed'}>{driverStatusLabel(driver.status)}</span>
+          {/* Push does not work yet and backgrounded tabs get their timers
+              throttled, so the driver needs a way to force a check. */}
+          <button
+            className="w-11 h-11 rounded-full bg-shellup grid place-items-center text-lg disabled:opacity-50"
+            aria-label="تحديث"
+            disabled={refreshing}
+            onClick={manualRefresh}>
+            <span className={refreshing ? 'inline-block animate-spin' : ''}>⟳</span>
+          </button>
+        </div>
       </div>
+
+      {(syncFailed || (lastSyncAt !== null && Date.now() - lastSyncAt > STALE_AFTER_MS)) && (
+        <div className="bg-sand/15 border border-sand/40 rounded-xl p-3 mb-4 flex items-center justify-between gap-3">
+          <p className="text-sm font-semibold text-foam">
+            📡 الاتصال ضعيف — اللي ظاهر قدامك ممكن يكون قديم
+          </p>
+          <button className="btn-ghost !py-2 text-sm shrink-0" disabled={refreshing} onClick={manualRefresh}>
+            {refreshing ? '…' : 'حدّث'}
+          </button>
+        </div>
+      )}
+
+      {gpsDenied && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 mb-4">
+          <p className="text-sm font-semibold text-red-700">
+            📍 الموقع مقفول — شغّل الـ GPS عشان الخريطة والوقت المتوقع يشتغلوا
+          </p>
+        </div>
+      )}
 
       {justDelivered && (
         <div className="fixed inset-0 z-50 bg-white grid place-items-center p-6">
           <div className="text-center">
             <div className="w-16 h-16 rounded-full bg-shellup grid place-items-center text-3xl mx-auto mb-4">✓</div>
             <p className="text-lg font-bold text-foam">تم التسليم</p>
-            <p className="text-sm text-mist mt-1.5">+10 ج.م لأرباحك</p>
             <div className="bg-shellup rounded-2xl px-5 py-3 mt-5">
               <p className="text-xs text-mist">أرباح النهاردة</p>
               <p className="text-lg font-bold text-sea mt-0.5">{todayEarnings} ج.م · {todayOrders} طلبات</p>
+              {/* Was a hardcoded "+10" that could disagree with the recorded
+                  earning. Show the tier progress instead -- it is the number
+                  that actually changes what the driver does next. */}
+              {bonus?.orders_to_next != null && bonus.next_amount != null && (
+                <p className="text-xs text-foam font-semibold mt-2">
+                  فاضل {bonus.orders_to_next} طلب لبونص {bonus.next_amount} ج.م
+                </p>
+              )}
             </div>
             <button className="btn-sea w-full mt-5" onClick={() => setJustDelivered(null)}>↩ رجوع للرئيسية</button>
             <p className="text-xs text-mist mt-2">هيرجعلك تلقائي خلال 3 ثواني</p>
@@ -292,17 +447,68 @@ export default function DriverPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className="grid grid-cols-2 gap-3 mb-3">
         <div className="card p-4">
           <p className="text-xs text-mist">أرباح النهاردة</p>
           <p className="text-xl font-bold text-sea mt-1">{todayEarnings} ج.م</p>
-          {todayTips > 0 && <p className="text-xs text-sand font-semibold mt-1">+ {todayTips} ج.م إكراميات</p>}
+          {todayTips > 0 && <p className="text-xs text-seadeep font-semibold mt-1">+ {todayTips} ج.م إكراميات</p>}
         </div>
         <div className="card p-4">
           <p className="text-xs text-mist">طلبات النهاردة</p>
           <p className="text-xl font-bold text-foam mt-1">{todayOrders}</p>
         </div>
       </div>
+
+      {/* The tiered daily bonus is the strongest lever in the pay model and had
+          no representation in the UI at all -- the driver could not see how
+          close they were to the next tier during the only window where it can
+          change what they do. */}
+      {bonus && (
+        <div className="card p-4 mb-4">
+          <div className="flex items-baseline justify-between mb-2.5">
+            <p className="text-xs text-mist">بونص النهاردة</p>
+            <p className="text-sm font-bold text-foam">
+              {bonus.earned_today > 0 ? `${bonus.earned_today} ج.م مضمونين` : 'لسه ما وصلتش أول مرحلة'}
+            </p>
+          </div>
+
+          <div className="relative h-2 rounded-full bg-shellup overflow-hidden">
+            <div
+              className="absolute inset-y-0 right-0 bg-sea rounded-full transition-[width] duration-500"
+              style={{
+                width: `${Math.min(100, Math.round(
+                  (todayOrders / Math.max(1, bonus.tiers[bonus.tiers.length - 1].orders)) * 100
+                ))}%`
+              }}
+            />
+          </div>
+
+          <div className="flex justify-between mt-2">
+            {bonus.tiers.map((t, i) => {
+              const reached = todayOrders >= t.orders
+              return (
+                <div key={t.orders} className={`text-center ${i === 0 ? 'text-right' : i === bonus.tiers.length - 1 ? 'text-left' : ''}`}>
+                  <p className={`text-[11px] font-bold ${reached ? 'text-sea' : 'text-mist'}`}>
+                    {reached ? '✓ ' : ''}{t.amount} ج.م
+                  </p>
+                  <p className="text-[10px] text-mist">{t.orders} طلب</p>
+                </div>
+              )
+            })}
+          </div>
+
+          {bonus.orders_to_next != null && bonus.next_amount != null && (
+            <p className="text-sm font-semibold text-foam mt-3 text-center bg-shellup rounded-lg py-2">
+              فاضل <span className="text-sea">{bonus.orders_to_next}</span> طلب توصل لبونص {bonus.next_amount} ج.م
+            </p>
+          )}
+          {bonus.orders_to_next == null && (
+            <p className="text-sm font-semibold text-sea mt-3 text-center bg-sea/10 rounded-lg py-2">
+              🎉 وصلت لأعلى بونص النهاردة
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="card p-4 mb-5">
         <div className="grid grid-cols-2 gap-3">
@@ -312,7 +518,10 @@ export default function DriverPage() {
           </div>
           <div>
             <p className="text-xs text-mist">كاش معاك دلوقتي</p>
-            <p className="text-lg font-bold text-sand mt-0.5">{driver.cash_held ?? 0} ج.م</p>
+            {/* text-sand is ~2.7:1 on white -- below WCAG AA, and this is read
+                in direct sunlight. seadeep carries the same "money you owe"
+                meaning at a legible contrast. */}
+            <p className="text-lg font-bold text-seadeep mt-0.5">{driver.cash_held ?? 0} ج.م</p>
           </div>
         </div>
         {settlementSent ? (
@@ -392,54 +601,6 @@ export default function DriverPage() {
           </div>
         </div>
       )}
-
-      {pool.length > 0 && (
-        <div className="mb-5">
-          <h2 className="font-bold text-mist mb-3">طلبات متاحة — أول واحد يقبل ياخدها</h2>
-          {pool.some(o => o.dest_lat != null && o.dest_lng != null) && (
-            <div className="mb-3">
-              <DriverPoolMap
-                pins={pool.filter(o => o.dest_lat != null && o.dest_lng != null)
-                  .map(o => ({ id: o.id, lat: o.dest_lat!, lng: o.dest_lng! }))}
-                selectedId={selectedPoolId}
-                onSelect={setSelectedPoolId}
-                myPos={myPos}
-              />
-            </div>
-          )}
-          <div className="space-y-3">
-            {pool.map(o => {
-              const notReadyYet = !!o.dispatch_at && new Date(o.dispatch_at) > new Date()
-              const minsLeft = notReadyYet ? Math.max(1, Math.round((+new Date(o.dispatch_at!) - Date.now()) / 60000)) : 0
-              const isSelected = selectedPoolId === o.id
-              return (
-                <div key={o.id}
-                  className={`card !rounded-2xl p-4 ${isSelected ? 'border-sea border-2' : notReadyYet ? 'border-line opacity-80' : 'border-sea/40'}`}
-                  onClick={() => setSelectedPoolId(o.id)}>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-bold">{o.restaurant_name}</h3>
-                      <p className="text-sm text-mist mt-0.5">📍 {o.zone}</p>
-                      <p className="text-xs text-mist mt-1">
-                        {notReadyYet ? `🕐 هيبقى جاهز خلال ${minsLeft} د`
-                          : o.kitchen_status === 'ready' ? '✅ جاهز للاستلام'
-                          : o.kitchen_status === 'preparing' ? '👨‍🍳 قيد التحضير' : '🕐 المطعم لسه ما بدأش'}
-                      </p>
-                    </div>
-                    <span className="font-bold text-sea">{o.total} ج.م</span>
-                  </div>
-                  <button className="btn-sea w-full mt-3" disabled={claiming === o.id || notReadyYet}
-                    onClick={e => { e.stopPropagation(); claim(o.id) }}>
-                    {claiming === o.id ? 'جاري القبول…' : notReadyYet ? 'لسه معلش' : 'أستلم الطلب'}
-                  </button>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {assignments.length === 0 && pool.length === 0 && <div className="card p-6 text-center text-mist">لا توجد طلبات حالياً</div>}
 
       <div className="space-y-3">
         {assignments.map(a => {
@@ -543,11 +704,14 @@ export default function DriverPage() {
                 {o.address_notes && (
                   <p className="text-sea bg-sea/10 rounded-lg p-2 font-semibold">📝 {o.address_notes}</p>
                 )}
+                {/* These three are tapped one-handed, outdoors, at the moment of
+                    arrival. The !py-1.5 + text-xs overrides dropped them to
+                    ~28px; min-h-[44px] restores the platform touch minimum. */}
                 <div className="flex gap-2 pt-1">
-                  <a className="btn-ghost !py-1.5 !px-2 text-xs flex-1 text-center whitespace-nowrap" href={`tel:${o.customer_phone}`}>اتصال</a>
-                  <a className="btn-ghost !py-1.5 !px-2 text-xs flex-1 text-center whitespace-nowrap" href={`https://wa.me/${o.customer_phone.replace(/^0/, '20').replace('+', '')}`} target="_blank" rel="noreferrer">واتساب</a>
+                  <a className="btn-ghost !px-2 text-sm flex-1 min-h-[44px] inline-flex items-center justify-center whitespace-nowrap" href={`tel:${o.customer_phone}`}>اتصال</a>
+                  <a className="btn-ghost !px-2 text-sm flex-1 min-h-[44px] inline-flex items-center justify-center whitespace-nowrap" href={`https://wa.me/${o.customer_phone.replace(/^0/, '20').replace('+', '')}`} target="_blank" rel="noreferrer">واتساب</a>
                   {destLat != null && destLng != null && (
-                    <a className="btn-sea !py-1.5 !px-2 text-xs flex-1 text-center whitespace-nowrap"
+                    <a className="btn-sea !px-2 text-sm flex-1 min-h-[44px] inline-flex items-center justify-center whitespace-nowrap"
                       href={`https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=driving`}
                       target="_blank" rel="noreferrer">خرائط</a>
                   )}
@@ -557,31 +721,46 @@ export default function DriverPage() {
               <div className="mt-3">
                 {a.status === 'Offered' && (
                   <div className="flex gap-3">
-                    <button className="btn-sea flex-1" onClick={() => setStatus(a, 'Accepted')}>قبول</button>
+                    <button className="btn-sea flex-1" disabled={busy === `accept:${a.id}`} onClick={() => setStatus(a, 'Accepted')}>
+                      {busy === `accept:${a.id}` ? 'لحظة…' : 'قبول'}
+                    </button>
                     <button className="btn-danger flex-1" onClick={() => setRejecting(a)}>رفض</button>
                   </div>
                 )}
                 {a.status === 'Accepted' && !a.arrived_at_restaurant_at && (
-                  <button className="btn-sea w-full" onClick={() => markArrived(a)}>📍 وصلت المطعم</button>
+                  <button className="btn-sea w-full" disabled={busy === `arrived:${a.id}`} onClick={() => markArrived(a)}>
+                    {busy === `arrived:${a.id}` ? 'لحظة…' : '📍 وصلت المطعم'}
+                  </button>
                 )}
                 {a.status === 'Accepted' && a.arrived_at_restaurant_at && (
-                  <button className="btn-sea w-full" onClick={() => markPickedUp(a)}>استلمت الطلب</button>
+                  <button className="btn-sea w-full" disabled={busy === `pickup:${a.id}`} onClick={() => markPickedUp(a)}>
+                    {busy === `pickup:${a.id}` ? 'لحظة…' : 'استلمت الطلب'}
+                  </button>
                 )}
-                {a.status === 'Picked_Up' && <button className="btn-sea w-full" onClick={() => markOutForDelivery(a)}>خرجت للتوصيل</button>}
+                {a.status === 'Picked_Up' && (
+                  <button className="btn-sea w-full" disabled={busy === `out:${a.id}`} onClick={() => markOutForDelivery(a)}>
+                    {busy === `out:${a.id}` ? 'لحظة…' : 'خرجت للتوصيل'}
+                  </button>
+                )}
                 {a.status === 'Out_for_Delivery' && (() => {
                   const confirmed = cashDue === 0 || !!a.cash_confirmed_at || cashConfirmed.has(a.id)
                   return (
                     <div className="space-y-2">
                       {cashDue > 0 && !a.cash_confirmed_at && (
-                        <label className="flex items-center gap-2 text-sm bg-emerald-500/10 rounded-xl p-3 cursor-pointer">
-                          <input type="checkbox" className="w-5 h-5 accent-emerald-600 shrink-0"
-                            checked={cashConfirmed.has(a.id)}
-                            onChange={e => { if (e.target.checked) confirmCash(a) }} />
-                          <span className="text-emerald-800 font-semibold">أكدت إني استلمت {cashDue} ج.م كاش من العميل</span>
-                        </label>
+                        <button
+                          className="w-full flex items-center gap-2 text-sm bg-emerald-500/10 rounded-xl p-3 text-right disabled:opacity-60"
+                          disabled={busy === `cash:${a.id}` || cashConfirmed.has(a.id)}
+                          onClick={() => confirmCash(a, cashDue)}>
+                          <span className={`w-5 h-5 rounded border-2 shrink-0 grid place-items-center ${cashConfirmed.has(a.id) ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-emerald-600'}`}>
+                            {cashConfirmed.has(a.id) ? '✓' : ''}
+                          </span>
+                          <span className="text-emerald-800 font-semibold">
+                            {busy === `cash:${a.id}` ? 'جاري التأكيد…' : `أكدت إني استلمت ${cashDue} ج.م كاش من العميل`}
+                          </span>
+                        </button>
                       )}
                       {cashDue > 0 && a.cash_confirmed_at && (
-                        <p className="text-sand bg-sand/10 rounded-xl p-3 text-sm font-semibold text-center">✓ استلمت الكاش</p>
+                        <p className="text-emerald-800 bg-emerald-500/10 rounded-xl p-3 text-sm font-semibold text-center">✓ استلمت الكاش</p>
                       )}
                       <SwipeToConfirm label="اسحب لتأكيد التسليم" disabled={!confirmed} onConfirm={() => setStatus(a, 'Delivered')} />
                       {a.no_answer_reported_at ? (
@@ -610,6 +789,72 @@ export default function DriverPage() {
           )
         })}
       </div>
+
+      {pool.length > 0 && (
+        <div className="mb-5">
+          <h2 className="font-bold text-mist mb-3">طلبات متاحة — أول واحد يقبل ياخدها</h2>
+          {pool.some(o => o.dest_lat != null && o.dest_lng != null) && (
+            <div className="mb-3">
+              <DriverPoolMap
+                pins={pool.filter(o => o.dest_lat != null && o.dest_lng != null)
+                  .map(o => ({ id: o.id, lat: o.dest_lat!, lng: o.dest_lng! }))}
+                selectedId={selectedPoolId}
+                onSelect={setSelectedPoolId}
+                myPos={myPos}
+              />
+            </div>
+          )}
+          <div className="space-y-3">
+            {pool.map(o => {
+              const notReadyYet = !!o.dispatch_at && new Date(o.dispatch_at) > new Date()
+              const minsLeft = notReadyYet ? Math.max(1, Math.round((+new Date(o.dispatch_at!) - Date.now()) / 60000)) : 0
+              const isSelected = selectedPoolId === o.id
+              return (
+                <div key={o.id}
+                  className={`card !rounded-2xl p-4 ${isSelected ? 'border-sea border-2' : notReadyYet ? 'border-line opacity-80' : 'border-sea/40'}`}
+                  onClick={() => setSelectedPoolId(o.id)}>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="font-bold">{o.restaurant_name}</h3>
+                      <p className="text-sm text-mist mt-0.5">📍 {o.zone}</p>
+                      <p className="text-xs text-mist mt-1">
+                        {notReadyYet ? `🕐 هيبقى جاهز خلال ${minsLeft} د`
+                          : o.kitchen_status === 'ready' ? '✅ جاهز للاستلام'
+                          : o.kitchen_status === 'preparing' ? '👨‍🍳 قيد التحضير' : '🕐 المطعم لسه ما بدأش'}
+                      </p>
+                    </div>
+                    {/* Order value is irrelevant to driver pay under the flat
+                        10 EGP model, but it was the boldest brand-coloured
+                        number on the card -- styled exactly like the earnings
+                        figure -- which reads as "this one pays more" and invites
+                        cherry-picking. Labelled and de-emphasised. */}
+                    <div className="text-left shrink-0">
+                      <p className="text-[10px] text-mist leading-none">قيمة الطلب</p>
+                      <p className="text-sm text-mist mt-0.5">{o.total} ج.م</p>
+                    </div>
+                  </div>
+                  <button className="btn-sea w-full mt-3" disabled={claiming !== null || notReadyYet}
+                    onClick={e => { e.stopPropagation(); claim(o.id) }}>
+                    {claiming === o.id ? 'جاري القبول…' : notReadyYet ? 'لسه معلش' : 'أستلم الطلب'}
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {assignments.length === 0 && pool.length === 0 && !syncFailed && (
+        <div className="card p-6 text-center text-mist">لا توجد طلبات حالياً</div>
+      )}
+      {assignments.length === 0 && pool.length === 0 && syncFailed && (
+        <div className="card p-6 text-center">
+          <p className="text-mist">مش قادرين نجيب الطلبات دلوقتي</p>
+          <button className="btn-ghost mt-3 text-sm" disabled={refreshing} onClick={manualRefresh}>
+            {refreshing ? '…' : 'حاول تاني'}
+          </button>
+        </div>
+      )}
 
       {rejecting && (
         <div className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" onClick={() => setRejecting(null)}>

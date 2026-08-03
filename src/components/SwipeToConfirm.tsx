@@ -12,6 +12,8 @@ export default function SwipeToConfirm({ label, onConfirm, disabled }: Props) {
   const [dragging, setDragging] = useState(false)
   const startX = useRef(0)
   const maxDrag = useRef(0)
+  const dragXRef = useRef(0)
+  const firedRef = useRef(false)
   const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -19,7 +21,7 @@ export default function SwipeToConfirm({ label, onConfirm, disabled }: Props) {
   }, [])
 
   function start(clientX: number) {
-    if (disabled) return
+    if (disabled || firedRef.current) return
     const track = trackRef.current
     if (!track) return
     maxDrag.current = track.clientWidth - 56
@@ -30,20 +32,35 @@ export default function SwipeToConfirm({ label, onConfirm, disabled }: Props) {
   function move(clientX: number) {
     let x = clientX - startX.current
     x = Math.max(0, Math.min(maxDrag.current, x))
+    dragXRef.current = x
     setDragX(x)
   }
 
+  // onConfirm() used to be called from inside a setDragX updater. React may run
+  // an updater more than once -- it deliberately double-invokes under
+  // StrictMode, which main.tsx enables -- so mark_delivered could fire twice
+  // from a single swipe. The decision is made from a ref outside React state,
+  // and firedRef latches so a second swipe during the reset cannot re-fire it.
   function end() {
     setDragging(false)
-    setDragX(current => {
-      if (current >= maxDrag.current * 0.85) {
-        if (navigator.vibrate) navigator.vibrate(20)
-        onConfirm()
-        resetTimeoutRef.current = setTimeout(() => setDragX(0), 400)
-        return maxDrag.current
-      }
-      return 0
-    })
+    const reached = dragXRef.current >= maxDrag.current * 0.85
+    if (reached && !firedRef.current) {
+      firedRef.current = true
+      if (navigator.vibrate) navigator.vibrate(20)
+      dragXRef.current = maxDrag.current
+      setDragX(maxDrag.current)
+      onConfirm()
+      resetTimeoutRef.current = setTimeout(() => {
+        dragXRef.current = 0
+        setDragX(0)
+        firedRef.current = false
+      }, 400)
+      return
+    }
+    if (!firedRef.current) {
+      dragXRef.current = 0
+      setDragX(0)
+    }
   }
 
   // Attach move/up listeners to the window while dragging, not just the small
