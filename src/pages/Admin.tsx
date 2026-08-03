@@ -332,8 +332,24 @@ export default function Admin() {
       invalid_email: 'الإيميل ده مش شكله صح',
       email_update_failed: 'حصل خطأ في تغيير الإيميل، جرب تاني',
       unknown_action: 'حصل خطأ غير متوقع',
+      // new guards in the edge function
+      cannot_target_self: 'مينفعش تعمل كده على حسابك إنت',
+      target_not_staff: 'العملية دي للمطاعم والمندوبين بس',
+      profile_not_found: 'الحساب ده مش موجود',
+      password_too_short: 'كلمة السر لازم تكون 8 حروف أو أكتر',
+      rate_limited: 'حاولت كتير في وقت قصير، استنى شوية',
+      rate_limit_check_failed: 'حصل خطأ مؤقت، جرب تاني',
+      profile_id_required: 'محتاج تحدد الحساب',
+      restaurant_id_required: 'محتاج تحدد المطعم',
+      driver_id_required: 'محتاج تحدد المندوب',
+      invalid_json: 'حصل خطأ في إرسال البيانات',
+      method_not_allowed: 'حصل خطأ غير متوقع',
+      internal_error: 'حصل خطأ في السيرفر، جرب تاني',
     }
-    return labels[code] ?? code
+    // Anything still unmapped is an English snake_case code, which is worse than
+    // useless in an RTL Arabic dialog -- log it and show something readable.
+    if (!labels[code]) console.warn('[admin-accounts] unmapped error code:', code)
+    return labels[code] ?? 'حصل خطأ، جرب تاني'
   }
 
   async function createVendorLogin(restaurantId: number) {

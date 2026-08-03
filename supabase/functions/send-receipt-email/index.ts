@@ -87,7 +87,15 @@ Deno.serve(async (req) => {
 
   try {
     const resendKey = Deno.env.get("RESEND_API_KEY")
-    if (!resendKey) return json({ error: "not_configured" }, 200)
+    // Was HTTP 200. The caller is a Postgres trigger via pg_net, which only
+    // inspects status codes -- so if RESEND_API_KEY is unset or rotated, every
+    // customer receipt silently stops being sent and nothing anywhere surfaces
+    // it. "no customer" and "no email on file" below are genuinely fine and stay
+    // 200; a missing key is a misconfiguration and must be distinguishable.
+    if (!resendKey) {
+      console.error("[send-receipt-email] not_configured: RESEND_API_KEY is unset")
+      return json({ error: "not_configured" }, 503)
+    }
 
     let body: any
     try { body = await req.json() } catch { return json({ error: "invalid_json" }, 400) }
@@ -127,7 +135,11 @@ Deno.serve(async (req) => {
       })
     })
     const sendData = await sendRes.json().catch(() => null)
-    if (!sendRes.ok) return json({ error: "resend_failed", detail: sendData }, 502)
+    if (!sendRes.ok) {
+      // sendData was forwarded verbatim, exposing the provider's raw response.
+      console.error("[send-receipt-email] resend_failed:", sendData)
+      return json({ error: "resend_failed" }, 502)
+    }
 
     return json({ ok: true })
   } catch (e) {

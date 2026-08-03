@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from "jsr:@supabase/supabase-js@2"
+import { secureNumericCode, clientIp, isRateLimitError, CORS_HEADERS, json, fail } from "../_shared/secure.ts"
 
 // Customer login via SMS OTP -- no password, no Supabase Auth account.
 // action=request  -> generates a code, stores it, sends it via SMS Misr's OTP API.
@@ -28,19 +29,6 @@ import { createClient } from "jsr:@supabase/supabase-js@2"
 // Both request and verify are rate-limited per phone number (via check_rate_limit).
 // verify is limited separately and more tightly than request, since a 6-digit code
 // is guessable if an attacker gets unlimited attempts within the 5-minute TTL.
-
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS"
-}
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS }
-  })
-}
 
 function normalizePhone(raw: string): string {
   return raw.replace(/[^0-9]/g, "").slice(-10)
@@ -73,17 +61,42 @@ Deno.serve(async (req) => {
     if (cleanPhone.length !== 10) return json({ error: "invalid_phone" }, 400)
 
     if (action === "request") {
-      const { error: limitErr } = await admin.rpc("check_rate_limit", {
-        p_bucket: `login_otp:${cleanPhone}`, p_max: 5, p_window: "10 minutes"
-      })
-      if (limitErr) return json({ error: "rate_limited" }, 429)
+      // Rate limiting keyed only on the phone number left this wide open: the
+      // endpoint is world-callable, so iterating phone numbers sent unlimited
+      // paid SMS from any origin. That is direct billing exposure with SMS Misr.
+      // Per-IP and global buckets sit alongside the per-phone one; the IP is
+      // spoofable, so it only ever *adds* a limit, never relaxes one.
+      const ip = clientIp(req)
+      for (const [bucket, max, window] of [
+        [`login_otp:${cleanPhone}`, 5, "10 minutes"],
+        [`login_otp_ip:${ip}`, 15, "10 minutes"],
+        ["login_otp_global", 200, "1 minute"],
+      ] as const) {
+        const { error: limitErr } = await admin.rpc("check_rate_limit", {
+          p_bucket: bucket, p_max: max, p_window: window
+        })
+        if (limitErr) {
+          // Only a real limit is "wait and retry". A missing function or a
+          // permission error is not, and telling the user to wait about a
+          // problem waiting cannot fix is worse than an honest failure.
+          if (isRateLimitError(limitErr)) return json({ error: "rate_limited" }, 429)
+          return fail("customer-otp", "rate_limit_check_failed", 500, limitErr)
+        }
+      }
 
-      const code = Math.floor(100000 + Math.random() * 900000).toString()
+      const code = secureNumericCode(6)
+
+      // Previously a new code was inserted without touching the old ones, while
+      // verify matched ANY unused unexpired row -- so up to 5 codes were valid
+      // at once, multiplying the hit rate of the 8 allowed guesses.
+      const { error: invalidateErr } = await admin.from("customer_otp_codes")
+        .update({ used: true }).eq("phone", cleanPhone).eq("used", false)
+      if (invalidateErr) return fail("customer-otp", "otp_store_failed", 500, invalidateErr)
 
       const { error: insertErr } = await admin.from("customer_otp_codes").insert({
         phone: cleanPhone, code, expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString()
       })
-      if (insertErr) return json({ error: "otp_store_failed", detail: insertErr.message }, 500)
+      if (insertErr) return fail("customer-otp", "otp_store_failed", 500, insertErr)
 
       const username = Deno.env.get("SMSMISR_USERNAME")
       const password = Deno.env.get("SMSMISR_PASSWORD")
@@ -105,16 +118,27 @@ Deno.serve(async (req) => {
         body: form
       })
       const smsData = await smsRes.json().catch(() => null)
-      if (!smsRes.ok || !smsData?.SMSID) return json({ error: "sms_send_failed", detail: smsData }, 502)
+      // smsData was forwarded to the client verbatim, exposing the provider's
+      // raw response. Log it, return the code only.
+      if (!smsRes.ok || !smsData?.SMSID) return fail("customer-otp", "sms_send_failed", 502, smsData)
 
       return json({ ok: true })
     }
 
     if (action === "verify") {
-      const { error: limitErr } = await admin.rpc("check_rate_limit", {
-        p_bucket: `verify_otp:${cleanPhone}`, p_max: 8, p_window: "10 minutes"
-      })
-      if (limitErr) return json({ error: "rate_limited" }, 429)
+      const ip = clientIp(req)
+      for (const [bucket, max, window] of [
+        [`verify_otp:${cleanPhone}`, 8, "10 minutes"],
+        [`verify_otp_ip:${ip}`, 30, "10 minutes"],
+      ] as const) {
+        const { error: limitErr } = await admin.rpc("check_rate_limit", {
+          p_bucket: bucket, p_max: max, p_window: window
+        })
+        if (limitErr) {
+          if (isRateLimitError(limitErr)) return json({ error: "rate_limited" }, 429)
+          return fail("customer-otp", "rate_limit_check_failed", 500, limitErr)
+        }
+      }
 
       const { code, name } = body
       if (!code) return json({ error: "code_required" }, 400)
@@ -131,7 +155,7 @@ Deno.serve(async (req) => {
       if (!customer) {
         const { data: created, error: createErr } = await admin.from("customers")
           .insert({ phone: cleanPhone, name: name || null }).select("*").single()
-        if (createErr) return json({ error: "customer_create_failed", detail: createErr.message }, 500)
+        if (createErr) return fail("customer-otp", "customer_create_failed", 500, createErr)
         customer = created
       } else if (name && !customer.name) {
         await admin.from("customers").update({ name }).eq("id", customer.id)
@@ -140,7 +164,7 @@ Deno.serve(async (req) => {
 
       const { data: session, error: sessErr } = await admin.from("customer_sessions")
         .insert({ customer_id: customer.id }).select("token").single()
-      if (sessErr) return json({ error: "session_create_failed", detail: sessErr.message }, 500)
+      if (sessErr) return fail("customer-otp", "session_create_failed", 500, sessErr)
 
       return json({ token: session.token, customer: { id: customer.id, phone: customer.phone, name: customer.name } })
     }
