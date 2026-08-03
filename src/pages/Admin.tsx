@@ -4,7 +4,9 @@ import type { Assignment, Compound, Complaint, Driver, DeliverySlotRow, Earning,
 import { ping, askNotificationPermission } from '../lib/notify'
 import { registerPush } from '../lib/push'
 import { uploadVendorImage } from '../lib/upload'
-import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel } from '../lib/statusLabels'
+import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel,
+         ORDER_STATUSES, TERMINAL_ORDER_STATUSES, UNPAID_ORDER_STATUSES, type OrderStatus } from '../lib/statusLabels'
+import { rpc } from '../lib/rpc'
 import Icon from '../components/Icon'
 import MenuItemEditor from '../components/MenuItemEditor'
 import AddMenuItemModal from '../components/AddMenuItemModal'
@@ -76,6 +78,15 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'accounts', label: 'حسابات الدخول' },
 ]
 
+interface StalledOrder {
+  id: number; status: string; vendor_name: string | null; compound_name: string | null
+  customer_name: string; customer_phone: string; total: number
+  payment_method: string | null; reference_at: string
+  minutes_stalled: number; threshold_minutes: number
+}
+
+const ORDERS_LIMIT = 500
+
 export default function Admin() {
   const [tab, setTab] = useState<Tab>('unassigned')
   const [orders, setOrders] = useState<Order[]>([])
@@ -119,13 +130,27 @@ export default function Admin() {
   const [newRestaurant, setNewRestaurant] = useState({ name: '', description: '', category: '', vendor_type: 'restaurant', prep_minutes: '20' })
   const [uploadingImage, setUploadingImage] = useState<string | null>(null)
   const [imageError, setImageError] = useState<string | null>(null)
+  const [stalled, setStalled] = useState<StalledOrder[]>([])
+  const [orderQuery, setOrderQuery] = useState('')
+  const [orderStatusFilter, setOrderStatusFilter] = useState<'all' | OrderStatus>('all')
+  const [reassigning, setReassigning] = useState<Assignment | null>(null)
+  const [actionError, setActionError] = useState('')
+  const loadingRef = useRef(false)
 
   async function load() {
-    const [o, a, d, e, r, m, st, sh, esc, sl, comp, sr, cpd, cov, lr, wt] = await Promise.all([
-      supabase.from('orders').select('*, restaurants(name)').order('id', { ascending: false }),
-      supabase.from('delivery_assignments').select('*, orders(*, restaurants(name)), drivers(*)').order('id', { ascending: false }),
+    // Overlapping polls piled up unbounded once a cycle exceeded 15s, and
+    // out-of-order responses could render stale state over fresh state.
+    if (loadingRef.current) return
+    loadingRef.current = true
+    try {
+    const [o, a, d, e, r, m, st, sh, esc, sl, comp, sr, cpd, cov, lr, wt, stalled, rel] = await Promise.all([
+      // These four had no limit at all: every order, every assignment with its
+      // full nested order and driver, and every earning row ever created were
+      // transferred every 15 seconds, degrading continuously with no ceiling.
+      supabase.from('orders').select('*, restaurants(name)').order('id', { ascending: false }).limit(ORDERS_LIMIT),
+      supabase.from('delivery_assignments').select('*, orders(*, restaurants(name)), drivers(*)').order('id', { ascending: false }).limit(300),
       supabase.from('drivers').select('*').order('id'),
-      supabase.from('driver_earnings').select('*, drivers(name)').order('id', { ascending: false }),
+      supabase.from('driver_earnings').select('*, drivers(name)').order('id', { ascending: false }).limit(300),
       supabase.from('restaurants').select('*').order('id'),
       supabase.from('menu_items').select('*').order('id'),
       supabase.from('settings').select('*').order('key'),
@@ -133,13 +158,17 @@ export default function Admin() {
       supabase.from('shift_swap_requests').select('*, shifts(*), requester:drivers!shift_swap_requests_requested_by_fkey(name)')
         .eq('status', 'escalated').order('escalated_at', { ascending: false }),
       supabase.from('delivery_slots').select('*').order('restaurant_id').order('start_time'),
-      supabase.from('complaints').select('*, orders(customer_name, customer_phone, restaurants(name)), drivers(name)').order('id', { ascending: false }),
+      supabase.from('complaints').select('*, orders(customer_name, customer_phone, restaurants(name)), drivers(name)').order('id', { ascending: false }).limit(200),
       supabase.from('settlement_requests').select('*, drivers(name)').eq('status', 'pending').order('id', { ascending: false }),
       supabase.from('compounds').select('*').eq('active', true).order('direction').order('distance_km'),
       supabase.from('vendor_coverage').select('*'),
       supabase.from('order_ratings').select('*, orders(customer_name, customer_phone, restaurants(name))')
         .or('driver_rating.lte.2,restaurant_rating.lte.2').order('id', { ascending: false }).limit(30),
       supabase.from('wallet_transactions').select('order_id').not('order_id', 'is', null).ilike('reason', 'تعويض%'),
+      supabase.rpc('admin_stalled_orders'),
+      // Was an N+1: restaurant_reliability() once per restaurant, sequentially
+      // awaited, inside the same 15s cycle.
+      supabase.rpc('restaurants_reliability_all'),
     ])
     setOrders(o.data ?? []); setAssignments(a.data ?? []); setDrivers(d.data ?? [])
     setEarnings(e.data ?? [])
@@ -150,18 +179,17 @@ export default function Admin() {
     setCompounds(cpd.data ?? []); setCoverage(cov.data ?? [])
     setLowRatings(lr.data ?? [])
     setCompensatedOrderIds(new Set((wt.data ?? []).map((t: any) => t.order_id)))
+    setStalled((stalled.data as StalledOrder[]) ?? [])
+    setReliability((rel.data as Record<number, Reliability>) ?? {})
     const { data: accounts } = await supabase.rpc('admin_list_accounts')
     setVendorAccounts(accounts?.vendors ?? []); setDriverAccounts(accounts?.drivers ?? [])
     ping('escalated_shifts', (esc.data ?? []).length, 'مندوب محتاج بديل', 'في وردية اتصعّدت للإدارة')
     ping('complaints', (comp.data ?? []).filter((c: Complaint) => c.status === 'open').length, 'شكوى جديدة', 'في عميل بلّغ عن مشكلة')
     ping('settlement_requests', (sr.data ?? []).length, 'طلب تسوية مبكرة', 'مندوب طالب تسوية قبل ميعاده')
-
-    const rel: Record<number, Reliability> = {}
-    for (const rest of (r.data ?? [])) {
-      const { data } = await supabase.rpc('restaurant_reliability', { p_restaurant_id: rest.id })
-      rel[rest.id] = data as Reliability
+    ping('stalled', ((stalled.data as StalledOrder[]) ?? []).length, 'طلب واقف', 'في طلب عدّى الوقت المسموح ومحدش حركه')
+    } finally {
+      loadingRef.current = false
     }
-    setReliability(rel)
   }
 
   useEffect(() => {
@@ -183,8 +211,13 @@ export default function Admin() {
 
   const activeStatuses = ['Offered', 'Accepted', 'Picked_Up', 'Out_for_Delivery']
   const assignedOrderIds = new Set(assignments.filter(a => activeStatuses.includes(a.status) || a.status === 'Delivered').map(a => a.order_id))
+  // Previously only Delivered/Cancelled were excluded, so an InstaPay order the
+  // customer had NOT paid for appeared here and could be dispatched to a driver
+  // -- while simultaneously sitting in the "بانتظار التأكيد" banner awaiting
+  // payment confirmation. Failed_Delivery silently re-entered the queue too.
+  const undispatchable = new Set<string>([...TERMINAL_ORDER_STATUSES, ...UNPAID_ORDER_STATUSES])
   const unassigned = orders
-    .filter(o => o.status !== 'Delivered' && o.status !== 'Cancelled' && !assignedOrderIds.has(o.id))
+    .filter(o => !undispatchable.has(o.status) && !assignedOrderIds.has(o.id))
     .sort((a, b) => Number(isCooking(a)) - Number(isCooking(b)))
   const active = assignments.filter(a => activeStatuses.includes(a.status))
   const noAnswerReports = assignments.filter(a => a.no_answer_reported_at && !a.no_answer_admin_action)
@@ -228,29 +261,35 @@ export default function Admin() {
     const patch: Record<string, unknown> = { [field]: !d[field] }
     if (field === 'active' && d.active) patch.status = 'Suspended'
     if (field === 'active' && !d.active) patch.status = 'Available'
-    await supabase.from('drivers').update(patch).eq('id', d.id)
+    const { error } = await supabase.from('drivers').update(patch).eq('id', d.id)
+    if (error) { setActionError('مش قادرين نحدّث المندوب دلوقتي'); return }
     load()
   }
 
   async function updatePrice(it: MenuItem, price: number) {
     if (!price || price === it.price) return
-    await supabase.from('menu_items').update({ price }).eq('id', it.id)
+    const { error } = await supabase.from('menu_items').update({ price }).eq('id', it.id)
+    if (error) { setActionError('السعر ماتحفظش — جرب تاني'); return }
     load()
   }
 
   async function toggleItem(it: MenuItem) {
-    await supabase.from('menu_items').update({ available: !it.available }).eq('id', it.id)
+    const { error } = await supabase.from('menu_items').update({ available: !it.available }).eq('id', it.id)
+    if (error) { setActionError('مش قادرين نغيّر التوفر دلوقتي'); return }
     load()
   }
 
   async function toggleRestaurant(r: Restaurant) {
-    await supabase.from('restaurants').update({ is_open: !r.is_open }).eq('id', r.id)
+    const { error } = await supabase.from('restaurants').update({ is_open: !r.is_open }).eq('id', r.id)
+    if (error) { setActionError('مش قادرين نفتح/نقفل المطعم دلوقتي'); return }
     load()
   }
 
   async function reassignShift(shiftId: number, driverId: number, requestId: number) {
-    await supabase.from('shifts').update({ driver_id: driverId, status: 'swapped' }).eq('id', shiftId)
-    await supabase.from('shift_swap_requests').update({ status: 'accepted', accepted_by: driverId, accepted_at: new Date().toISOString() }).eq('id', requestId)
+    const { error: e1 } = await supabase.from('shifts').update({ driver_id: driverId, status: 'swapped' }).eq('id', shiftId)
+    if (e1) { setActionError('مش قادرين نغيّر مندوب الوردية دلوقتي'); return }
+    const { error: e2 } = await supabase.from('shift_swap_requests').update({ status: 'accepted', accepted_by: driverId, accepted_at: new Date().toISOString() }).eq('id', requestId)
+    if (e2) { setActionError('الوردية اتغيّرت بس طلب الاستبدال لسه مفتوح — راجعه'); return }
     setReassignFor(null)
     load()
   }
@@ -265,7 +304,8 @@ export default function Admin() {
   }
 
   async function toggleSlot(slot: DeliverySlotRow) {
-    await supabase.from('delivery_slots').update({ active: !slot.active }).eq('id', slot.id)
+    const { error } = await supabase.from('delivery_slots').update({ active: !slot.active }).eq('id', slot.id)
+    if (error) { setActionError('مش قادرين نغيّر الفترة دلوقتي'); return }
     load()
   }
 
@@ -295,7 +335,8 @@ export default function Admin() {
   }
 
   async function updateRestaurant(r: Restaurant, patch: Record<string, unknown>) {
-    await supabase.from('restaurants').update(patch).eq('id', r.id)
+    const { error } = await supabase.from('restaurants').update(patch).eq('id', r.id)
+    if (error) { setActionError('مش قادرين نحفظ بيانات المطعم دلوقتي'); return }
     load()
   }
 
@@ -398,13 +439,15 @@ export default function Admin() {
     const { url, error } = await uploadVendorImage(file, `restaurants/${r.id}/logo`)
     setUploadingImage(null)
     if (error) { setImageError(error); return }
-    await supabase.from('restaurants').update({ logo_url: url }).eq('id', r.id)
+    const { error: linkError } = await supabase.from('restaurants').update({ logo_url: url }).eq('id', r.id)
+    if (linkError) { setActionError('الصورة اترفعت بس ماتربطتش بالمطعم — جرب تاني'); return }
     load()
   }
 
   async function removeLogo(r: Restaurant) {
     if (!confirm('إزالة شعار المطعم؟')) return
-    await supabase.from('restaurants').update({ logo_url: null }).eq('id', r.id)
+    const { error } = await supabase.from('restaurants').update({ logo_url: null }).eq('id', r.id)
+    if (error) { setActionError('مش قادرين نشيل الصورة دلوقتي'); return }
     load()
   }
 
@@ -413,7 +456,8 @@ export default function Admin() {
     const { url, error } = await uploadVendorImage(file, `menu-items/${it.id}/image`)
     setUploadingImage(null)
     if (error) { setImageError(error); return }
-    await supabase.from('menu_items').update({ image_url: url }).eq('id', it.id)
+    const { error: linkError } = await supabase.from('menu_items').update({ image_url: url }).eq('id', it.id)
+    if (linkError) { setActionError('الصورة اترفعت بس ماتربطتش بالصنف — جرب تاني'); return }
     load()
   }
 
@@ -433,7 +477,8 @@ export default function Admin() {
 
   async function archiveRestaurant(r: Restaurant, archived: boolean) {
     if (archived && !confirm(`تأكيد إخفاء ${r.name}؟ هيختفي من التطبيق للعملاء بس بياناته وطلباته القديمة هتفضل موجودة.`)) return
-    await supabase.from('restaurants').update({ archived }).eq('id', r.id)
+    const { error } = await supabase.from('restaurants').update({ archived }).eq('id', r.id)
+    if (error) { setActionError('مش قادرين نأرشف المطعم دلوقتي'); return }
     load()
   }
 
@@ -445,17 +490,62 @@ export default function Admin() {
 
   async function updateSetting(st: Setting, value: string) {
     if (value === st.value) return
-    await supabase.from('settings').update({ value }).eq('key', st.key)
+    const { error } = await supabase.from('settings').update({ value }).eq('key', st.key)
+    if (error) { setActionError('الإعداد ماتحفظش — جرب تاني'); return }
     load()
   }
 
-  async function settleCash(driverId: number) { await supabase.rpc('settle_driver_cash', { p_driver_id: driverId }); load() }
-  async function settleEarnings(driverId: number) { await supabase.rpc('settle_driver_earnings', { p_driver_id: driverId }); load() }
+  // Both move real money and are irreversible, and both fired on a single click
+  // with no confirm and no error check -- while markRefunded, which is cheaper,
+  // already confirmed.
+  async function settleCash(driverId: number) {
+    const d = drivers.find(x => x.id === driverId)
+    if (!confirm(`تأكيد استلام ${d?.cash_held ?? 0} ج.م كاش من ${d?.name ?? 'المندوب'}؟\n\nده هيصفّر الكاش المسجل عليه، ومش هينفع يتراجع.`)) return
+    setActionError('')
+    const res = await rpc('settle_driver_cash', { p_driver_id: driverId })
+    if (!res.ok) { setActionError(res.error); return }
+    load()
+  }
+
+  async function settleEarnings(driverId: number) {
+    const d = drivers.find(x => x.id === driverId)
+    const unpaid = earnings.filter(e => e.driver_id === d?.id && !e.paid).reduce((s, e) => s + Number(e.driver_earning), 0)
+    if (!confirm(`تأكيد دفع ${unpaid} ج.م أرباح لـ ${d?.name ?? 'المندوب'}؟\n\nمش هينفع يتراجع.`)) return
+    setActionError('')
+    const res = await rpc('settle_driver_earnings', { p_driver_id: driverId })
+    if (!res.ok) { setActionError(res.error); return }
+    load()
+  }
+
+  // The "توصيلات جارية" tab had no actions whatsoever, so a stalled delivery
+  // could be surfaced but not acted on.
+  async function unassignOrder(a: Assignment) {
+    const reason = prompt(`سحب الطلب #${a.order_id} من ${a.drivers?.name ?? 'المندوب'}؟\nالطلب هيرجع تاني لقائمة الطلبات المتاحة.\n\nالسبب (اختياري):`, '')
+    if (reason === null) return
+    setActionError('')
+    const res = await rpc('admin_unassign_order', { p_order_id: a.order_id, p_reason: reason || 'admin_unassigned' })
+    if (!res.ok) { setActionError(res.error); return }
+    load()
+  }
+
+  async function reassignOrder(a: Assignment, driver: Driver) {
+    setActionError('')
+    const res = await rpc('admin_reassign_order', {
+      p_order_id: a.order_id, p_driver_id: driver.id, p_reason: 'admin_reassigned'
+    }, { dispatch_rule_blocked: 'المندوب ده وصل للحد الأقصى (٣ طلبات) أو شغال في اتجاه مختلف' })
+    if (!res.ok) { setActionError(res.error); return }
+    setReassigning(null)
+    load()
+  }
   async function updatePayoutSchedule(d: Driver, schedule: string) {
-    await supabase.from('drivers').update({ payout_schedule: schedule }).eq('id', d.id); load()
+    const { error } = await supabase.from('drivers').update({ payout_schedule: schedule }).eq('id', d.id)
+    if (error) { setActionError('مش قادرين نحفظ جدول الدفع'); return }
+    load()
   }
   async function updateComplaintStatus(c: Complaint, status: string) {
-    await supabase.from('complaints').update({ status }).eq('id', c.id); load()
+    const { error } = await supabase.from('complaints').update({ status }).eq('id', c.id)
+    if (error) { setActionError('مش قادرين نحدّث الشكوى دلوقتي'); return }
+    load()
   }
   function compensateFromComplaint(c: Complaint) {
     setWalletPhone(c.orders?.customer_phone ?? '')
@@ -477,12 +567,23 @@ export default function Admin() {
   }
   async function toggleCoverage(restaurantId: number, compoundId: number) {
     const existing = coverage.find(c => c.restaurant_id === restaurantId && c.compound_id === compoundId)
-    if (existing) await supabase.from('vendor_coverage').delete().eq('id', existing.id)
-    else await supabase.from('vendor_coverage').insert({ restaurant_id: restaurantId, compound_id: compoundId })
+    setActionError('')
+    if (existing) {
+      // Removing coverage silently stops a vendor appearing for a whole compound.
+      const compound = compounds.find(c => c.id === compoundId)
+      if (!confirm(`إلغاء تغطية ${compound?.name ?? 'المكان ده'}؟\n\nالمطعم مش هيظهر لعملاء المكان ده.`)) return
+      const { error } = await supabase.from('vendor_coverage').delete().eq('id', existing.id)
+      if (error) { setActionError('مش قادرين نلغي التغطية دلوقتي'); return }
+    } else {
+      const { error } = await supabase.from('vendor_coverage').insert({ restaurant_id: restaurantId, compound_id: compoundId })
+      if (error) { setActionError('مش قادرين نضيف التغطية دلوقتي'); return }
+    }
     load()
   }
   async function sendWalletCredit() {
     if (!walletPhone.trim() || !walletAmount) return
+    // A typo in this free-typed phone credits a stranger with no reversal path.
+    if (!confirm(`إضافة ${walletAmount} ج.م لمحفظة ${walletPhone.trim()}؟\n\nاتأكد من الرقم — مفيش طريقة تتراجع.`)) return
     const { error } = await supabase.rpc('credit_wallet', {
       p_phone: walletPhone.trim(), p_amount: Number(walletAmount), p_reason: walletReason.trim() || 'admin credit',
       p_order_id: walletOrderId
@@ -496,7 +597,8 @@ export default function Admin() {
   }
 
   async function toggleRx(it: MenuItem) {
-    await supabase.from('menu_items').update({ requires_prescription: !it.requires_prescription }).eq('id', it.id)
+    const { error } = await supabase.from('menu_items').update({ requires_prescription: !it.requires_prescription }).eq('id', it.id)
+    if (error) { setActionError('مش قادرين نغيّر إعداد الروشتة دلوقتي'); return }
     load()
   }
 
@@ -551,6 +653,69 @@ export default function Admin() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-4">لوحة التحكم</h1>
+
+      {actionError && (
+        <div className="card p-3 mb-4 border-red-400/50 bg-red-500/5 flex items-center justify-between gap-3">
+          <p className="text-sm text-red-700 font-semibold">{actionError}</p>
+          <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0" onClick={() => setActionError('')}>تمام</button>
+        </div>
+      )}
+
+      {/* Third banner in the region that already does exactly this for
+          no-answer reports and pending InstaPay. Before this, the only lateness
+          detection anywhere in the admin surface applied to *unassigned* orders
+          -- once an order had a driver, nothing ever flagged it again, so the
+          60-minute Accepted and 90-minute Out_for_Delivery cases were invisible. */}
+      {stalled.length > 0 && (
+        <div className="card p-4 mb-4 border-red-400/50 bg-red-500/5">
+          <p className="font-bold mb-3">⏳ طلبات واقفة محتاجة تدخّل ({stalled.length})</p>
+          <div className="space-y-2.5">
+            {stalled.map(o => {
+              const hrs = Math.floor(o.minutes_stalled / 60)
+              const mins = o.minutes_stalled % 60
+              const since = hrs > 0 ? `${hrs} ساعة و${mins} دقيقة` : `${mins} دقيقة`
+              const assignment = assignments.find(a => a.order_id === o.id && activeStatuses.includes(a.status))
+              return (
+                <div key={o.id} className="bg-night border border-line rounded-xl p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm">طلب #{o.id} — {o.vendor_name} — {o.total} ج.م</p>
+                      <p className="text-xs text-mist mt-0.5">
+                        👤 {o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a>
+                      </p>
+                      <p className="text-xs text-mist mt-0.5">📍 {o.compound_name ?? '—'}</p>
+                    </div>
+                    <span className="text-xs font-semibold bg-red-500/10 text-red-700 rounded-full px-2.5 py-1 shrink-0">
+                      {orderStatusLabel(o.status)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-red-700 font-semibold mt-1.5">
+                    واقف من {since} (الحد {o.threshold_minutes} دقيقة)
+                    {o.payment_method === 'cod' ? ' · كاش' : o.payment_method === 'instapay' ? ' · إنستاباي' : ''}
+                  </p>
+                  <div className="flex gap-2 mt-2.5 flex-wrap">
+                    <a className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem] text-center" href={`tel:${o.customer_phone}`}>اتصل بالعميل</a>
+                    {assignment && (
+                      <>
+                        <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem]" onClick={() => setReassigning(assignment)}>
+                          غيّر المندوب
+                        </button>
+                        <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem]" onClick={() => unassignOrder(assignment)}>
+                          اسحب الطلب
+                        </button>
+                      </>
+                    )}
+                    <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem]"
+                      onClick={() => { setTab('orders'); setOrderQuery(String(o.id)) }}>
+                      افتح الطلب
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {noAnswerReports.length > 0 && (
         <div className="card p-4 mb-4 border-red-400/50 bg-red-500/5">
@@ -669,6 +834,13 @@ export default function Admin() {
                         <span className="text-xs font-semibold bg-shellup rounded-full px-2.5 py-1">{assignmentStatusLabel(a.status)}</span>
                       </div>
                       {a.orders && customer(a.orders)}
+                      {/* This tab previously rendered a header, a driver name, a
+                          status badge and a customer block -- and nothing else.
+                          No reassign, no unassign, no cancel. */}
+                      <div className="flex gap-2 mt-3">
+                        <button className="btn-ghost !py-1.5 text-xs flex-1" onClick={() => setReassigning(a)}>غيّر المندوب</button>
+                        <button className="btn-ghost !py-1.5 text-xs flex-1" onClick={() => unassignOrder(a)}>اسحب الطلب</button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -720,9 +892,39 @@ export default function Admin() {
 
       {tab === 'orders' && (
         <div className="space-y-6">
+          {/* Finding an order by number or a customer by phone previously meant
+              scrolling the entire order history. */}
+          <div className="card p-3 flex flex-col sm:flex-row gap-2">
+            <input className="field flex-1" value={orderQuery} onChange={e => setOrderQuery(e.target.value)}
+              placeholder="دوّر برقم الطلب، اسم العميل، تليفونه، أو المطعم…" />
+            <select className="field sm:w-52" value={orderStatusFilter}
+              onChange={e => setOrderStatusFilter(e.target.value as 'all' | OrderStatus)}>
+              <option value="all">كل الحالات</option>
+              {ORDER_STATUSES.map(st => <option key={st} value={st}>{orderStatusLabel(st)}</option>)}
+            </select>
+            {(orderQuery || orderStatusFilter !== 'all') && (
+              <button className="btn-ghost shrink-0" onClick={() => { setOrderQuery(''); setOrderStatusFilter('all') }}>
+                مسح
+              </button>
+            )}
+          </div>
+
           {(() => {
+            const q = orderQuery.trim().toLowerCase()
+            const filteredOrders = orders.filter(o => {
+              if (orderStatusFilter !== 'all' && o.status !== orderStatusFilter) return false
+              if (!q) return true
+              return String(o.id).includes(q)
+                || (o.customer_name ?? '').toLowerCase().includes(q)
+                || (o.customer_phone ?? '').includes(q)
+                || (o.restaurants?.name ?? '').toLowerCase().includes(q)
+                || (o.zone ?? '').toLowerCase().includes(q)
+            })
+            if (filteredOrders.length === 0) return (
+              <p className="text-mist text-center py-8">مفيش طلبات بالبحث ده</p>
+            )
             const groups: { label: string; items: typeof orders }[] = []
-            for (const o of orders) {
+            for (const o of filteredOrders) {
               const label = new Date(o.created_at).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' })
               const last = groups[groups.length - 1]
               if (last && last.label === label) last.items.push(o)
@@ -1425,6 +1627,37 @@ export default function Admin() {
               })}
             </div>
             <button className="btn-ghost w-full mt-4" onClick={() => setAssigning(null)}>إلغاء</button>
+          </div>
+        </div>
+      )}
+
+      {reassigning && (
+        <div className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true"
+          onClick={() => setReassigning(null)}>
+          <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold mb-1">تغيير المندوب — طلب #{reassigning.order_id}</h3>
+            <p className="text-sm text-mist mb-4">
+              دلوقتي مع {reassigning.drivers?.name ?? 'مندوب'} · {assignmentStatusLabel(reassigning.status)}
+            </p>
+            {availableDrivers.filter(d => d.id !== reassigning.driver_id).length === 0 && (
+              <p className="text-mist text-sm">لا يوجد مندوب تاني متاح حالياً</p>
+            )}
+            <div className="space-y-2.5">
+              {availableDrivers.filter(d => d.id !== reassigning.driver_id).map(d => {
+                const driverActiveCount = active.filter(a => a.driver_id === d.id).length
+                return (
+                  <button key={d.id} className="w-full card !bg-night p-3.5 text-right hover:border-sea/50 transition-colors"
+                    onClick={() => reassignOrder(reassigning, d)}>
+                    <p className="font-semibold">{d.name}</p>
+                    <p className="text-sm text-mist mt-0.5">★ {d.rating} · {vehicleLabel(d.vehicle_type)} · {d.vehicle_plate}</p>
+                    {driverActiveCount > 0 && (
+                      <p className="text-xs text-sand mt-1">شغال دلوقتي على {driverActiveCount} طلب</p>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+            <button className="btn-ghost w-full mt-4" onClick={() => setReassigning(null)}>إلغاء</button>
           </div>
         </div>
       )}
