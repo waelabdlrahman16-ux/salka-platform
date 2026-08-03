@@ -42,6 +42,8 @@ interface DriverStats {
 // How long since the last successful sync before we tell the driver the screen
 // may be stale. Two missed polls.
 const STALE_AFTER_MS = 25000
+// Per-request ceiling inside a load cycle -- see the comment at withTimeout.
+const LOAD_TIMEOUT_MS = 15000
 
 export default function DriverPage() {
   const { profile } = useAuth()
@@ -68,16 +70,32 @@ export default function DriverPage() {
   const [syncFailed, setSyncFailed] = useState(false)
   const [lastSyncAt, setLastSyncAt] = useState<number | null>(null)
   const [refreshing, setRefreshing] = useState(false)
-  const [busy, setBusy] = useState<string | null>(null)
+  // A single global slot meant that acting on order A silently swallowed every
+  // action on orders B and C (a driver holds up to 3). The worst case was two
+  // orders at the same compound: confirming cash on A made B's cash checkbox
+  // no-op after the driver had already agreed to the irreversible dialog, and B's
+  // delivery swipe stayed disabled with nothing on screen explaining why.
+  const [busy, setBusy] = useState<Set<string>>(new Set())
+  const isBusy = (key: string) => busy.has(key)
   const justDeliveredTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const loadingRef = useRef(false)
+  const inFlightRef = useRef<Promise<void> | null>(null)
+  // Mirrors `busy` so runAction's guard reads the current value rather than a
+  // value captured when the handler was created.
+  const busyRef = useRef<Set<string>>(new Set())
 
+  // Every money figure on this screen comes from my_driver_stats. If that call
+  // fails -- or the server predates the migration that widened its shape -- a
+  // `?? 0` default turns the failure into a confident lie: "0 ج.م" and "0 طلبات"
+  // after a full shift, with early settlement disabled because unpaid === 0.
+  // Render an em dash instead, and let coreFailed raise the banner.
+  const haveStats = stats !== null
   const unpaidEarnings = stats?.unpaid_earnings ?? 0
   const streakDays = stats?.streak_days ?? 0
   const todayEarnings = stats?.today_earnings ?? 0
   const todayOrders = stats?.today_orders ?? 0
   const todayTips = stats?.today_tips ?? 0
   const bonus = stats?.bonus ?? null
+  const money = (n: number) => (haveStats ? `${n} ج.م` : '— ج.م')
 
   useEffect(() => {
     return () => { if (justDeliveredTimeoutRef.current) clearTimeout(justDeliveredTimeoutRef.current) }
@@ -92,31 +110,63 @@ export default function DriverPage() {
   // succeeded, and a failed sync surfaces a banner instead of pretending the
   // board is empty. The 12 sequential round trips are also parallelised -- on
   // mobile data they routinely took longer than the 10s poll interval.
-  async function load() {
-    if (!id || loadingRef.current) return
-    loadingRef.current = true
+  // A plain `if (inFlight) return` guard turns every `await load()` after a
+  // mutation into a silent no-op whenever the 10s poll happens to be running --
+  // which on weak data is most of the time. That left stale cards (a card still
+  // offering قبول for an order the driver had just accepted), a refresh button
+  // that spun for one frame and did nothing, and a post-delivery overlay showing
+  // pre-delivery totals. Callers that need fresh data pass force.
+  async function load(force = false): Promise<void> {
+    if (inFlightRef.current) {
+      if (!force) return inFlightRef.current
+      // Wait out the in-flight poll, then fetch again -- its snapshot predates
+      // the mutation we just made, so reusing it would show stale state.
+      await inFlightRef.current.catch(() => {})
+    }
+    const p = runLoad().finally(() => { if (inFlightRef.current === p) inFlightRef.current = null })
+    inFlightRef.current = p
+    return p
+  }
+
+  async function runLoad() {
+    if (!id) return
     try {
       const today = new Date().toISOString().slice(0, 10)
+      // supabase-js is created with no timeout, so a request that never settles
+      // would pin inFlightRef forever: every later load() would wait on a dead
+      // promise, no setState would run, the component would never re-render, and
+      // the staleness banner (which is computed during render) would never
+      // appear. The driver would be staring at a frozen but confident-looking
+      // board with a dead refresh button.
+      const withTimeout = <T,>(p: PromiseLike<T>): Promise<T | { error: Error; data: null }> =>
+        Promise.race([
+          Promise.resolve(p),
+          new Promise<{ error: Error; data: null }>(resolve =>
+            setTimeout(() => resolve({ error: new Error('timeout'), data: null }), LOAD_TIMEOUT_MS)),
+        ]) as Promise<T | { error: Error; data: null }>
+
       const [dRes, statsRes, aRes, pRes, shRes, swRes, mineRes, escRes, reqRes] = await Promise.all([
-        supabase.from('drivers').select('*').eq('id', id).single(),
-        supabase.rpc('my_driver_stats'),
-        supabase.from('delivery_assignments')
+        withTimeout(supabase.from('drivers').select('*').eq('id', id).single()),
+        withTimeout(supabase.rpc('my_driver_stats')),
+        withTimeout(supabase.from('delivery_assignments')
           .select('*, orders(*, restaurants(name), compounds(name, latitude, longitude))').eq('driver_id', id)
           .in('status', ['Offered', 'Accepted', 'Picked_Up', 'Out_for_Delivery', 'Delivered'])
-          .order('id', { ascending: false }).limit(20),
-        supabase.rpc('available_orders'),
-        supabase.from('shifts').select('*')
+          .order('id', { ascending: false }).limit(20)),
+        withTimeout(supabase.rpc('available_orders')),
+        withTimeout(supabase.from('shifts').select('*')
           .eq('driver_id', id).gte('shift_date', today)
-          .neq('status', 'cancelled').order('shift_date').limit(10),
-        supabase.rpc('open_swaps'),
-        supabase.from('shift_swap_requests').select('id, shift_id').eq('requested_by', id).eq('status', 'open'),
-        supabase.from('shift_swap_requests').select('shift_id').eq('requested_by', id).eq('status', 'escalated'),
-        supabase.from('settlement_requests').select('id').eq('driver_id', id).eq('status', 'pending').limit(1),
+          .neq('status', 'cancelled').order('shift_date').limit(10)),
+        withTimeout(supabase.rpc('open_swaps')),
+        withTimeout(supabase.from('shift_swap_requests').select('id, shift_id').eq('requested_by', id).eq('status', 'open')),
+        withTimeout(supabase.from('shift_swap_requests').select('shift_id').eq('requested_by', id).eq('status', 'escalated')),
+        withTimeout(supabase.from('settlement_requests').select('id').eq('driver_id', id).eq('status', 'pending').limit(1)),
       ])
 
-      // The driver's own work is what must never be silently emptied. Shifts and
-      // swaps failing is cosmetic; assignments or the pool failing is not.
-      const coreFailed = !!(dRes.error || aRes.error || pRes.error)
+      // The driver's own work and their money must never be silently emptied.
+      // Shifts and swaps failing is cosmetic; assignments, the pool, or stats
+      // failing is not -- every earnings figure now comes from stats, so a
+      // failure there would otherwise render a confident 0 ج.م.
+      const coreFailed = !!(dRes.error || aRes.error || pRes.error || statsRes.error)
 
       if (!dRes.error && dRes.data) setDriver(dRes.data)
       if (!statsRes.error && statsRes.data) setStats(statsRes.data as unknown as DriverStats)
@@ -136,14 +186,12 @@ export default function DriverPage() {
       if (!coreFailed) setLastSyncAt(Date.now())
     } catch {
       setSyncFailed(true)
-    } finally {
-      loadingRef.current = false
     }
   }
 
   async function manualRefresh() {
     setRefreshing(true)
-    await load()
+    await load(true)
     setRefreshing(false)
   }
 
@@ -177,8 +225,14 @@ export default function DriverPage() {
     a => a.status === 'Accepted' || a.status === 'Picked_Up' || a.status === 'Out_for_Delivery'
   )
 
+  // Watch while there is anything to position against. Gating on an active
+  // assignment alone blinded the pool map: an idle driver browsing available
+  // orders had no 🛵 marker, which is the one thing that tells them which order
+  // is worth claiming, and accepting one then started the watch cold.
+  const needsPosition = hasActiveAssignment || pool.length > 0
+
   useEffect(() => {
-    if (!navigator.geolocation || !hasActiveAssignment) return
+    if (!navigator.geolocation || !needsPosition) return
     const watchId = navigator.geolocation.watchPosition(
       pos => { setMyPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setGpsDenied(false) },
       err => {
@@ -189,8 +243,14 @@ export default function DriverPage() {
       },
       { enableHighAccuracy: true, maximumAge: 15000, timeout: 20000 }
     )
-    return () => navigator.geolocation.clearWatch(watchId)
-  }, [hasActiveAssignment])
+    return () => {
+      navigator.geolocation.clearWatch(watchId)
+      // Otherwise the last fix keeps rendering as the driver's live position
+      // long after the watch stopped -- a 🛵 pin sitting at the previous
+      // customer's door while they ride away.
+      setMyPos(null)
+    }
+  }, [needsPosition])
 
   // Depend on the derived boolean, not the assignments array. `assignments` is a
   // fresh array object on every 10s poll, so this effect used to tear down and
@@ -199,18 +259,31 @@ export default function DriverPage() {
   const isOutDelivering = assignments.some(a => a.status === 'Picked_Up' || a.status === 'Out_for_Delivery')
 
   useEffect(() => {
-    if (isOutDelivering) startLocationReporting()
-    else stopLocationReporting()
-    return () => stopLocationReporting()
+    if (!isOutDelivering) { stopLocationReporting(); return }
+    startLocationReporting()
+    // isOutDelivering stays true across a whole stack of orders, so the effect
+    // fires once. If that one attempt fails -- the driver dismisses the OS
+    // permission prompt while getting on the bike, or location is off at that
+    // moment -- nothing would ever try again, and dispatch's map would show them
+    // frozen for the rest of the block with no indication on their side.
+    // startLocationReporting() is idempotent, so retrying is cheap; this does
+    // not reintroduce the teardown churn that caused the orphaned intervals,
+    // because the effect itself no longer re-runs on every poll.
+    const retry = setInterval(startLocationReporting, 60000)
+    return () => { clearInterval(retry); stopLocationReporting() }
   }, [isOutDelivering])
 
   // Every stage button used to fire its RPC with no pending state. On a 3-5s
   // mobile round trip the natural reaction is to tap again, which double-fires.
   // runAction serialises them and gives the UI something to disable on.
   async function runAction(key: string, fn: () => Promise<void>) {
-    if (busy) return
-    setBusy(key)
-    try { await fn() } finally { setBusy(null) }
+    if (busyRef.current.has(key)) return // same action, not the whole page
+    busyRef.current.add(key)
+    setBusy(new Set(busyRef.current))
+    try { await fn() } finally {
+      busyRef.current.delete(key)
+      setBusy(new Set(busyRef.current))
+    }
   }
 
   async function setStatus(a: Assignment, status: string) {
@@ -224,7 +297,7 @@ export default function DriverPage() {
             : 'حصل خطأ، جرب تاني')
           return
         }
-        await load()
+        await load(true)
       })
       return
     }
@@ -232,11 +305,12 @@ export default function DriverPage() {
       await runAction(`deliver:${a.id}`, async () => {
         const { error } = await supabase.rpc('mark_delivered', { p_assignment_id: a.id, p_order_id: a.order_id })
         if (error) { alert('حصل خطأ، جرب تاني'); return }
-        // Await the refresh before showing the summary -- the overlay used to
-        // render the pre-delivery totals for its whole 3s life, so the driver
-        // read "+10" next to a number that had not moved.
-        await load()
+        // Show it immediately -- gating on load() left the driver swiping a
+        // control that gave no sign of life for several seconds on mobile data.
+        // The totals inside refresh when the reload lands, still within the 3s.
         setJustDelivered({ orderId: a.order_id })
+        load(true)
+        if (justDeliveredTimeoutRef.current) clearTimeout(justDeliveredTimeoutRef.current)
         justDeliveredTimeoutRef.current = setTimeout(() => setJustDelivered(null), 3000)
       })
     }
@@ -247,7 +321,7 @@ export default function DriverPage() {
       if (navigator.vibrate) navigator.vibrate(15)
       const { error } = await supabase.rpc('driver_arrived_at_restaurant', { p_assignment_id: a.id })
       if (error) { alert('حصل خطأ، جرب تاني'); return }
-      await load()
+      await load(true)
     })
   }
 
@@ -263,7 +337,7 @@ export default function DriverPage() {
         )
         return
       }
-      await load()
+      await load(true)
     })
   }
 
@@ -272,7 +346,7 @@ export default function DriverPage() {
       if (navigator.vibrate) navigator.vibrate(15)
       const { error } = await supabase.rpc('driver_mark_out_for_delivery', { p_assignment_id: a.id })
       if (error) { alert('حصل خطأ، جرب تاني'); return }
-      await load()
+      await load(true)
     })
   }
 
@@ -290,7 +364,7 @@ export default function DriverPage() {
         alert('حصل خطأ، جرب تاني')
         return
       }
-      await load()
+      await load(true)
     })
   }
 
@@ -299,7 +373,7 @@ export default function DriverPage() {
       if (navigator.vibrate) navigator.vibrate(15)
       const { error } = await supabase.rpc('driver_called_customer', { p_assignment_id: a.id })
       if (error) { alert('حصل خطأ، جرب تاني'); return }
-      await load()
+      await load(true)
     })
   }
 
@@ -315,7 +389,7 @@ export default function DriverPage() {
       return
     }
     alert('تم إبلاغ الإدارة، هيتواصلوا معاك بقرار')
-    load()
+    load(true)
   }
 
   async function requestSettlement() {
@@ -333,19 +407,19 @@ export default function DriverPage() {
       p_shift_id: shiftId, p_reason: swapReason[shiftId] || ''
     })
     if (error) alert('حصل خطأ، جرب تاني')
-    load()
+    load(true)
   }
 
   async function acceptSwap(requestId: number) {
     const { error } = await supabase.rpc('accept_swap', { p_request_id: requestId })
     if (error) alert(error.message.includes('unavailable') ? 'حد تاني سبقك' : 'حصل خطأ')
-    load()
+    load(true)
   }
 
   async function escalate(requestId: number) {
     const { error } = await supabase.rpc('escalate_swap', { p_request_id: requestId })
     if (error) { alert('حصل خطأ، جرب تاني'); return }
-    load()
+    load(true)
   }
 
   async function claim(orderId: number) {
@@ -355,19 +429,22 @@ export default function DriverPage() {
     setClaiming(orderId)
     const { error } = await supabase.rpc('claim_order', { p_order_id: orderId })
     if (error) {
-      // Drop it from the local pool first. Between the RPC returning and load()
-      // finishing, the just-claimed order was still rendered with an enabled
-      // button; tapping it again hit the server's already_taken branch and told
-      // the driver "another driver took it" about an order they now own.
       alert(
         error.message.includes('already_taken') ? 'الطلب اتاخد من مندوب تاني'
         : error.message.includes('wrong_vehicle_type') ? 'الطلب ده محتاج فان'
         : error.message.includes('not_ready_yet') ? 'الطلب لسه بيتحضر، استنى شوية'
         : 'حصل خطأ، جرب تاني'
       )
+    } else {
+      // Only on success. Between the RPC returning and load() finishing, the
+      // just-claimed order was still rendered with an enabled button; tapping it
+      // again hit the server's already_taken branch and told the driver "another
+      // driver took it" about an order they now own. Dropping it on failure too
+      // would make a rejected claim (e.g. not_ready_yet) read as "someone else
+      // got it" until the next poll put it back.
+      setPool(p => p.filter(o => o.id !== orderId))
     }
-    setPool(p => p.filter(o => o.id !== orderId))
-    await load()
+    await load(true)
     setClaiming(null)
   }
 
@@ -376,7 +453,7 @@ export default function DriverPage() {
     if (!rejecting) return
     const { error } = await supabase.rpc('driver_reject_assignment', { p_assignment_id: rejecting.id, p_reason: reason.trim() })
     if (error) { alert('حصل خطأ، جرب تاني'); return }
-    setRejecting(null); setReason(''); load()
+    setRejecting(null); setReason(''); load(true)
   }
 
   if (!id) return <p className="text-mist text-center py-10">حسابك غير مرتبط بمندوب. تواصل مع الإدارة.</p>
@@ -450,12 +527,12 @@ export default function DriverPage() {
       <div className="grid grid-cols-2 gap-3 mb-3">
         <div className="card p-4">
           <p className="text-xs text-mist">أرباح النهاردة</p>
-          <p className="text-xl font-bold text-sea mt-1">{todayEarnings} ج.م</p>
+          <p className="text-xl font-bold text-sea mt-1">{money(todayEarnings)}</p>
           {todayTips > 0 && <p className="text-xs text-seadeep font-semibold mt-1">+ {todayTips} ج.م إكراميات</p>}
         </div>
         <div className="card p-4">
           <p className="text-xs text-mist">طلبات النهاردة</p>
-          <p className="text-xl font-bold text-foam mt-1">{todayOrders}</p>
+          <p className="text-xl font-bold text-foam mt-1">{haveStats ? todayOrders : '—'}</p>
         </div>
       </div>
 
@@ -463,7 +540,7 @@ export default function DriverPage() {
           no representation in the UI at all -- the driver could not see how
           close they were to the next tier during the only window where it can
           change what they do. */}
-      {bonus && (
+      {bonus && Array.isArray(bonus.tiers) && bonus.tiers.length > 0 && (
         <div className="card p-4 mb-4">
           <div className="flex items-baseline justify-between mb-2.5">
             <p className="text-xs text-mist">بونص النهاردة</p>
@@ -514,7 +591,7 @@ export default function DriverPage() {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <p className="text-xs text-mist">أرباح لسه ما اتصرفتش</p>
-            <p className="text-lg font-bold text-sea mt-0.5">{unpaidEarnings} ج.م</p>
+            <p className="text-lg font-bold text-sea mt-0.5">{money(unpaidEarnings)}</p>
           </div>
           <div>
             <p className="text-xs text-mist">كاش معاك دلوقتي</p>
@@ -527,7 +604,7 @@ export default function DriverPage() {
         {settlementSent ? (
           <p className="text-emerald-700 text-sm text-center mt-3">✅ طلب التسوية المبكرة وصل للإدارة</p>
         ) : (
-          <button className="btn-ghost w-full mt-3 text-sm" disabled={requestingSettlement || unpaidEarnings === 0} onClick={requestSettlement}>
+          <button className="btn-ghost w-full mt-3 text-sm" disabled={requestingSettlement || !haveStats || unpaidEarnings === 0} onClick={requestSettlement}>
             {requestingSettlement ? 'جاري الإرسال…' : 'اطلب تسوية مبكرة'}
           </button>
         )}
@@ -721,25 +798,25 @@ export default function DriverPage() {
               <div className="mt-3">
                 {a.status === 'Offered' && (
                   <div className="flex gap-3">
-                    <button className="btn-sea flex-1" disabled={busy === `accept:${a.id}`} onClick={() => setStatus(a, 'Accepted')}>
-                      {busy === `accept:${a.id}` ? 'لحظة…' : 'قبول'}
+                    <button className="btn-sea flex-1" disabled={isBusy(`accept:${a.id}`)} onClick={() => setStatus(a, 'Accepted')}>
+                      {isBusy(`accept:${a.id}`) ? 'لحظة…' : 'قبول'}
                     </button>
                     <button className="btn-danger flex-1" onClick={() => setRejecting(a)}>رفض</button>
                   </div>
                 )}
                 {a.status === 'Accepted' && !a.arrived_at_restaurant_at && (
-                  <button className="btn-sea w-full" disabled={busy === `arrived:${a.id}`} onClick={() => markArrived(a)}>
-                    {busy === `arrived:${a.id}` ? 'لحظة…' : '📍 وصلت المطعم'}
+                  <button className="btn-sea w-full" disabled={isBusy(`arrived:${a.id}`)} onClick={() => markArrived(a)}>
+                    {isBusy(`arrived:${a.id}`) ? 'لحظة…' : '📍 وصلت المطعم'}
                   </button>
                 )}
                 {a.status === 'Accepted' && a.arrived_at_restaurant_at && (
-                  <button className="btn-sea w-full" disabled={busy === `pickup:${a.id}`} onClick={() => markPickedUp(a)}>
-                    {busy === `pickup:${a.id}` ? 'لحظة…' : 'استلمت الطلب'}
+                  <button className="btn-sea w-full" disabled={isBusy(`pickup:${a.id}`)} onClick={() => markPickedUp(a)}>
+                    {isBusy(`pickup:${a.id}`) ? 'لحظة…' : 'استلمت الطلب'}
                   </button>
                 )}
                 {a.status === 'Picked_Up' && (
-                  <button className="btn-sea w-full" disabled={busy === `out:${a.id}`} onClick={() => markOutForDelivery(a)}>
-                    {busy === `out:${a.id}` ? 'لحظة…' : 'خرجت للتوصيل'}
+                  <button className="btn-sea w-full" disabled={isBusy(`out:${a.id}`)} onClick={() => markOutForDelivery(a)}>
+                    {isBusy(`out:${a.id}`) ? 'لحظة…' : 'خرجت للتوصيل'}
                   </button>
                 )}
                 {a.status === 'Out_for_Delivery' && (() => {
@@ -749,24 +826,29 @@ export default function DriverPage() {
                       {cashDue > 0 && !a.cash_confirmed_at && (
                         <button
                           className="w-full flex items-center gap-2 text-sm bg-emerald-500/10 rounded-xl p-3 text-right disabled:opacity-60"
-                          disabled={busy === `cash:${a.id}` || cashConfirmed.has(a.id)}
+                          disabled={isBusy(`cash:${a.id}`) || cashConfirmed.has(a.id)}
                           onClick={() => confirmCash(a, cashDue)}>
                           <span className={`w-5 h-5 rounded border-2 shrink-0 grid place-items-center ${cashConfirmed.has(a.id) ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-emerald-600'}`}>
                             {cashConfirmed.has(a.id) ? '✓' : ''}
                           </span>
                           <span className="text-emerald-800 font-semibold">
-                            {busy === `cash:${a.id}` ? 'جاري التأكيد…' : `أكدت إني استلمت ${cashDue} ج.م كاش من العميل`}
+                            {isBusy(`cash:${a.id}`) ? 'جاري التأكيد…' : `أكدت إني استلمت ${cashDue} ج.م كاش من العميل`}
                           </span>
                         </button>
                       )}
                       {cashDue > 0 && a.cash_confirmed_at && (
                         <p className="text-emerald-800 bg-emerald-500/10 rounded-xl p-3 text-sm font-semibold text-center">✓ استلمت الكاش</p>
                       )}
-                      <SwipeToConfirm label="اسحب لتأكيد التسليم" disabled={!confirmed} onConfirm={() => setStatus(a, 'Delivered')} />
+                      <SwipeToConfirm
+                        label={isBusy(`deliver:${a.id}`) ? 'جاري التأكيد…' : "اسحب لتأكيد التسليم"}
+                        disabled={!confirmed || isBusy(`deliver:${a.id}`)}
+                        onConfirm={() => setStatus(a, 'Delivered')} />
                       {a.no_answer_reported_at ? (
                         <p className="text-sand text-sm text-center">⏳ اتبلّغت الإدارة، مستنيين قرارهم</p>
                       ) : !a.called_customer_at ? (
-                        <button className="btn-ghost w-full text-sm" onClick={() => markCalledCustomer(a)}>📞 اتصلت بالعميل ومردش</button>
+                        <button className="btn-ghost w-full text-sm" disabled={isBusy(`called:${a.id}`)} onClick={() => markCalledCustomer(a)}>
+                          {isBusy(`called:${a.id}`) ? 'لحظة…' : '📞 اتصلت بالعميل ومردش'}
+                        </button>
                       ) : (a.out_for_delivery_at && (Date.now() - +new Date(a.out_for_delivery_at)) >= 5 * 60000) ? (
                         <button className="btn-danger w-full text-sm" onClick={() => reportNoAnswer(a)}>العميل لسه ما ردش — بلّغ الإدارة</button>
                       ) : (
