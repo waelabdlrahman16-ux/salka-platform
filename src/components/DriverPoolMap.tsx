@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -20,25 +20,15 @@ interface Props {
   selectedId: number | null
   onSelect: (id: number) => void
   heightPx?: number
+  myPos: { lat: number; lng: number } | null
 }
 
-export default function DriverPoolMap({ pins, selectedId, onSelect, heightPx = 220 }: Props) {
+export default function DriverPoolMap({ pins, selectedId, onSelect, heightPx = 220, myPos }: Props) {
   const mapRef = useRef<L.Map | null>(null)
   const driverMarkerRef = useRef<L.Marker | null>(null)
   const orderMarkersRef = useRef<Map<number, L.Marker>>(new Map())
   const containerRef = useRef<HTMLDivElement>(null)
-  const [myPos, setMyPos] = useState<{ lat: number; lng: number } | null>(null)
   const hasFitBounds = useRef(false)
-
-  useEffect(() => {
-    if (!navigator.geolocation) return
-    const watchId = navigator.geolocation.watchPosition(
-      pos => setMyPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => { /* location unavailable -- map centers on orders only */ },
-      { enableHighAccuracy: true, maximumAge: 15000 }
-    )
-    return () => navigator.geolocation.clearWatch(watchId)
-  }, [])
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return

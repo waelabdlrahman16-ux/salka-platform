@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -16,25 +16,15 @@ interface Props {
   destLng: number | null
   showRoute?: boolean
   heightPx?: number
+  myPos: { lat: number; lng: number } | null
 }
 
-export default function DriverActiveMap({ destLat, destLng, showRoute, heightPx = 180 }: Props) {
+export default function DriverActiveMap({ destLat, destLng, showRoute, heightPx = 180, myPos }: Props) {
   const mapRef = useRef<L.Map | null>(null)
   const driverMarkerRef = useRef<L.Marker | null>(null)
   const destMarkerRef = useRef<L.Marker | null>(null)
   const lineRef = useRef<L.Polyline | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const [myPos, setMyPos] = useState<{ lat: number; lng: number } | null>(null)
-
-  useEffect(() => {
-    if (!navigator.geolocation) return
-    const watchId = navigator.geolocation.watchPosition(
-      pos => setMyPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => { /* location unavailable -- map just won't show the driver dot yet */ },
-      { enableHighAccuracy: true, maximumAge: 10000 }
-    )
-    return () => navigator.geolocation.clearWatch(watchId)
-  }, [])
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return

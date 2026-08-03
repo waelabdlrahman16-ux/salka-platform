@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { ping, askNotificationPermission } from '../lib/notify'
@@ -43,6 +43,11 @@ export default function DriverPage() {
   const [todayOrders, setTodayOrders] = useState(0)
   const [justDelivered, setJustDelivered] = useState<{ orderId: number } | null>(null)
   const [myPos, setMyPos] = useState<{ lat: number; lng: number } | null>(null)
+  const justDeliveredTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => { if (justDeliveredTimeoutRef.current) clearTimeout(justDeliveredTimeoutRef.current) }
+  }, [])
 
   async function load() {
     if (!id) return
@@ -136,7 +141,7 @@ export default function DriverPage() {
       if (error) { alert('حصل خطأ، جرب تاني'); return }
       setJustDelivered({ orderId: a.order_id })
       load()
-      setTimeout(() => setJustDelivered(null), 3000)
+      justDeliveredTimeoutRef.current = setTimeout(() => setJustDelivered(null), 3000)
     }
   }
 
@@ -392,6 +397,7 @@ export default function DriverPage() {
                   .map(o => ({ id: o.id, lat: o.dest_lat!, lng: o.dest_lng! }))}
                 selectedId={selectedPoolId}
                 onSelect={setSelectedPoolId}
+                myPos={myPos}
               />
             </div>
           )}
@@ -512,6 +518,7 @@ export default function DriverPage() {
                     destLat={a.status === 'Out_for_Delivery' ? destLat : null}
                     destLng={a.status === 'Out_for_Delivery' ? destLng : null}
                     showRoute={a.status === 'Out_for_Delivery'}
+                    myPos={myPos}
                   />
                   {etaMin != null && (
                     <div className="absolute top-2.5 right-2.5 bg-white rounded-xl px-3 py-1.5 text-xs font-bold text-sea shadow-sm">
