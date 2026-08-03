@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { estimateDeliveryFee } from '../lib/deliveryFee'
+import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { artFor } from '../lib/categoryArt'
 import { getSessionToken } from '../lib/customerAuth'
@@ -83,9 +83,11 @@ export default function CustomOrder() {
   }
 
   const selectedCompound = compounds.find(c => c.id === compoundId)
-  const deliveryFee = selectedCompound ? estimateDeliveryFee(selectedCompound.distance_km) : 0
+  const { fee: deliveryFee, quote, loading: feeLoading, failed: feeFailed, retry: retryFee } =
+    useDeliveryQuote(compoundId)
   const scheduled = vendor?.vendor_type === 'supermarket'
-  const valid = vendor && name.trim() && isValidEgyptPhone(phone) && compoundId && unit.trim() && list.trim() && (!scheduled || !!slot)
+  const valid = vendor && name.trim() && isValidEgyptPhone(phone) && compoundId && unit.trim()
+    && list.trim() && deliveryFee !== null && (!scheduled || !!slot)
 
   async function submit() {
     if (!vendor || !valid) return
@@ -97,7 +99,7 @@ export default function CustomOrder() {
       p_zone: selectedCompound?.name ?? '',
       p_unit_number: unit.trim(),
       p_address_notes: addrNotes.trim(),
-      p_delivery_fee: deliveryFee,
+      p_delivery_fee: deliveryFee ?? 0, // server recomputes and ignores this
       p_request_items: [],
       p_request_notes: list.trim(),
       p_compound_id: compoundId,
@@ -204,14 +206,38 @@ export default function CustomOrder() {
           <input className="field" value={addrNotes} onChange={e => setAddrNotes(e.target.value)} placeholder="مثال: بجوار حمام السباحة" /></div>
       </div>
 
+      {/* Delivery is known up front even though the items aren't priced yet --
+          the customer used to first see this charge on the tracking page. */}
+      {compoundId && (
+        <div className="card p-3.5 mb-3">
+          <div className="flex justify-between text-sm">
+            <span className="text-mist">رسوم التوصيل{quote ? ` (${quote.distance_km} كم)` : ''}</span>
+            <span className="font-semibold">
+              {deliveryFee !== null ? `${deliveryFee} ج.م`
+                : feeLoading ? '…'
+                : <button className="text-sea underline" onClick={retryFee}>إعادة المحاولة</button>}
+            </span>
+          </div>
+        </div>
+      )}
+
       <p className="text-sm text-mist bg-shellup/60 rounded-xl p-3 mb-4">
-        💬 السعر النهائي هيتحدد لما نتصل بيك نأكد الطلب — مفيش دفع دلوقتي
+        💬 سعر الأصناف هيتحدد لما نتصل بيك نأكد الطلب — مفيش دفع دلوقتي
       </p>
+
+      {feeFailed && compoundId && (
+        <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">
+          مش قادرين نحسب رسوم التوصيل دلوقتي.{' '}
+          <button className="underline font-semibold" onClick={retryFee}>جرب تاني</button>
+        </p>
+      )}
 
       {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">{error}</p>}
 
       <button className="btn-sea w-full !py-3.5" disabled={!valid || saving} onClick={submit}>
-        {saving ? 'جاري الإرسال…' : 'إرسال الطلب'}
+        {saving ? 'جاري الإرسال…'
+          : deliveryFee === null && compoundId ? 'بنحسب التوصيل…'
+          : 'إرسال الطلب'}
       </button>
     </div>
   )

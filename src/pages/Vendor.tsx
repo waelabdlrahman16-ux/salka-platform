@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { startRinging, stopRinging } from '../lib/ring'
 import { ping, askNotificationPermission } from '../lib/notify'
-import { estimateDeliveryFee } from '../lib/deliveryFee'
+import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { registerPush } from '../lib/push'
 import { orderStatusLabel } from '../lib/statusLabels'
@@ -168,10 +168,11 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
   }, [restaurant.id])
 
   const selectedCompound = compounds.find(c => c.id === compoundId)
-  const deliveryFee = selectedCompound ? estimateDeliveryFee(selectedCompound.distance_km) : 0
+  const { fee: deliveryFee, quote, loading: feeLoading, failed: feeFailed, retry: retryFee } =
+    useDeliveryQuote(compoundId)
   const amount = Number(collectAmount) || 0
   const valid = name.trim() && isValidEgyptPhone(phone) && compoundId && unit.trim()
-    && (paymentMode === 'prepaid' || amount > 0)
+    && deliveryFee !== null && (paymentMode === 'prepaid' || amount > 0)
 
   async function submit() {
     if (!valid) return
@@ -183,7 +184,7 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
       p_zone: selectedCompound?.name ?? '',
       p_unit_number: unit.trim(),
       p_address_notes: addrNotes.trim(),
-      p_delivery_fee: deliveryFee,
+      p_delivery_fee: deliveryFee ?? 0, // server recomputes and ignores this
       p_payment_mode: paymentMode,
       p_collect_amount: paymentMode === 'driver_pays' ? amount : null,
       p_request_notes: orderNotes.trim(),
@@ -257,19 +258,35 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
           <input className="field" value={addrNotes} onChange={e => setAddrNotes(e.target.value)} placeholder="مثال: بجوار حمام السباحة" /></div>
       </div>
 
-      {deliveryFee > 0 && (
+      {compoundId && (
         <div className="card p-4 mb-4 space-y-2">
-          <div className="flex justify-between text-sm"><span>رسوم التوصيل{selectedCompound ? ` (${selectedCompound.distance_km} كم)` : ''}</span><span>{deliveryFee} ج.م</span></div>
+          <div className="flex justify-between text-sm">
+            <span>رسوم التوصيل{quote ? ` (${quote.distance_km} كم)` : ''}</span>
+            <span>
+              {deliveryFee !== null ? `${deliveryFee} ج.م`
+                : feeLoading ? '…'
+                : <button className="text-sea underline" onClick={retryFee}>إعادة المحاولة</button>}
+            </span>
+          </div>
           {paymentMode === 'driver_pays' && (
             <div className="flex justify-between text-sm"><span>قيمة الأوردر (كاش للمندوب)</span><span>{amount || 0} ج.م</span></div>
           )}
         </div>
       )}
 
+      {feeFailed && compoundId && (
+        <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">
+          مش قادرين نحسب رسوم التوصيل دلوقتي.{' '}
+          <button className="underline font-semibold" onClick={retryFee}>جرب تاني</button>
+        </p>
+      )}
+
       {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">{error}</p>}
 
       <button className="btn-sea w-full !py-3.5 mb-5" disabled={!valid || saving} onClick={submit}>
-        {saving ? 'جاري الإرسال…' : 'اطلب مندوب الآن'}
+        {saving ? 'جاري الإرسال…'
+          : deliveryFee === null && compoundId ? 'بنحسب التوصيل…'
+          : 'اطلب مندوب الآن'}
       </button>
 
       {recent.length > 0 && (

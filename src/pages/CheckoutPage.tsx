@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { useCart } from '../lib/cart'
-import { estimateDeliveryFee } from '../lib/deliveryFee'
+import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
 import { isItemAvailableNow } from '../lib/itemAvailability'
 import { applyDiscount, effectiveDiscount } from '../lib/discounts'
@@ -126,12 +126,17 @@ export default function CheckoutPage() {
   const scheduled = restaurant?.vendor_type === 'supermarket'
   const hasRx = lines.some(l => priceFor(l.menuItemId, l.sizeId, l.addonIds).item?.requires_prescription)
   const selectedCompound = compounds.find(c => c.id === compoundId)
-  const deliveryFee = selectedCompound ? estimateDeliveryFee(selectedCompound.distance_km) : 0
+  // Authoritative fee from the server. null while loading or on failure -- we
+  // never substitute 0 or a local estimate, because every number below it
+  // (wallet applied, COD deposit threshold, the confirm button) would be wrong.
+  const { fee: deliveryFee, quote, loading: feeLoading, failed: feeFailed, retry: retryFee } =
+    useDeliveryQuote(compoundId)
   const serviceFee = Math.round(subtotal * 0.02)
-  const preWalletTotal = subtotal + deliveryFee + serviceFee
+  const preWalletTotal = subtotal + (deliveryFee ?? 0) + serviceFee
   const walletApplied = useWallet ? Math.min(walletBalance, preWalletTotal) : 0
   const finalTotal = preWalletTotal - walletApplied
-  const valid = name.trim() && isValidEgyptPhone(phone) && compoundId && unit.trim() && (!scheduled || !!slot)
+  const valid = name.trim() && isValidEgyptPhone(phone) && compoundId && unit.trim()
+    && deliveryFee !== null && (!scheduled || !!slot)
 
   const isInstapay = paymentMethod === 'instapay'
 
@@ -147,7 +152,7 @@ export default function CheckoutPage() {
       p_zone: selectedCompound?.name ?? '',
       p_unit_number: unit.trim(),
       p_address_notes: notes.trim(),
-      p_delivery_fee: deliveryFee,
+      p_delivery_fee: deliveryFee ?? 0, // server recomputes and ignores this
       p_items: payload,
       p_slot_id: slot?.id ?? null,
       p_scheduled_date: slot?.scheduled_date ?? null,
@@ -339,7 +344,15 @@ export default function CheckoutPage() {
             </div>
           )
         })}
-        <div className="flex justify-between text-sm text-mist"><span>التوصيل{selectedCompound ? ` (${selectedCompound.distance_km} كم)` : ''}</span><span>{deliveryFee} ج.م</span></div>
+        <div className="flex justify-between text-sm text-mist">
+          <span>التوصيل{quote ? ` (${quote.distance_km} كم)` : ''}</span>
+          <span>
+            {deliveryFee !== null ? `${deliveryFee} ج.م`
+              : feeLoading ? '…'
+              : compoundId ? <button className="text-sea underline" onClick={retryFee}>إعادة المحاولة</button>
+              : '—'}
+          </span>
+        </div>
         <div className="flex justify-between text-sm text-mist"><span>رسوم الخدمة</span><span>{serviceFee} ج.م</span></div>
         {walletApplied > 0 && (
           <div className="flex justify-between text-sm text-emerald-700"><span>من رصيدك</span><span>-{walletApplied} ج.م</span></div>
@@ -347,10 +360,19 @@ export default function CheckoutPage() {
         <div className="flex justify-between font-bold border-t border-line pt-2"><span>الإجمالي</span><span className="text-sea">{finalTotal} ج.م</span></div>
       </div>
 
+      {feeFailed && compoundId && (
+        <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">
+          مش قادرين نحسب رسوم التوصيل دلوقتي.{' '}
+          <button className="underline font-semibold" onClick={retryFee}>جرب تاني</button>
+        </p>
+      )}
+
       {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">{error}</p>}
 
       <button className="btn-sea w-full !py-3.5" disabled={!valid || saving} onClick={placeOrder}>
-        {saving ? 'جاري التجهيز…' : `تأكيد الطلب · ${finalTotal} ج.م`}
+        {saving ? 'جاري التجهيز…'
+          : deliveryFee === null ? (feeLoading ? 'بنحسب التوصيل…' : 'تأكيد الطلب')
+          : `تأكيد الطلب · ${finalTotal} ج.م`}
       </button>
 
       <p className="text-xs text-mist text-center mt-3">

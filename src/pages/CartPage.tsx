@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useCart } from '../lib/cart'
 import { artFor } from '../lib/categoryArt'
-import { estimateDeliveryFee } from '../lib/deliveryFee'
+import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { isItemAvailableNow } from '../lib/itemAvailability'
 import { applyDiscount, effectiveDiscount } from '../lib/discounts'
 import Icon from '../components/Icon'
-import type { Compound, Discount, MenuItem, MenuItemAddon, MenuItemSize, Restaurant } from '../lib/types'
+import type { Discount, MenuItem, MenuItemAddon, MenuItemSize, Restaurant } from '../lib/types'
 
 export default function CartPage() {
   const nav = useNavigate()
@@ -17,7 +17,7 @@ export default function CartPage() {
   const [addons, setAddons] = useState<MenuItemAddon[]>([])
   const [discounts, setDiscounts] = useState<Discount[]>([])
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
-  const [compound, setCompound] = useState<Compound | null>(null)
+  const [compoundId, setCompoundId] = useState<number | null>(null)
   const [removedNotice, setRemovedNotice] = useState('')
 
   useEffect(() => {
@@ -41,9 +41,8 @@ export default function CartPage() {
   }, [cart.restaurantId])
 
   useEffect(() => {
-    const compoundId = sessionStorage.getItem('salka_compound_id')
-    if (!compoundId) return
-    supabase.from('compounds').select('*').eq('id', Number(compoundId)).single().then(({ data }) => setCompound(data))
+    const saved = sessionStorage.getItem('salka_compound_id')
+    setCompoundId(saved ? Number(saved) : null)
   }, [])
 
   function priceFor(menuItemId: number, sizeId: number | null, addonIds: number[]): { unit: number; original: number | null; name: string; sizeName: string | null; addonNames: string[] } {
@@ -79,9 +78,13 @@ export default function CartPage() {
 
   const validLines = cart.lines.filter(l => items.some(i => i.id === l.menuItemId))
   const subtotal = validLines.reduce((s, l) => s + priceFor(l.menuItemId, l.sizeId, l.addonIds).unit * l.qty, 0)
-  const deliveryFee = compound ? estimateDeliveryFee(compound.distance_km) : null
+  const { fee: deliveryFee, quote, loading: feeLoading } = useDeliveryQuote(compoundId)
   const serviceFee = Math.round(subtotal * 0.02)
-  const grandTotal = subtotal + (deliveryFee ?? 0) + serviceFee
+  // Only a complete total when delivery is actually known. Previously the fee
+  // was silently omitted from grandTotal whenever no compound was stored, so the
+  // sticky CTA understated the price by the entire delivery charge.
+  const grandTotal = deliveryFee !== null ? subtotal + deliveryFee + serviceFee : null
+  const partialTotal = subtotal + serviceFee
 
   if (!cart.restaurantId || validLines.length === 0) {
     return (
@@ -139,18 +142,25 @@ export default function CartPage() {
       <div className="card p-3.5 mb-24 space-y-1.5">
         <div className="flex justify-between text-sm text-mist"><span>المنتجات</span><span>{subtotal} ج.م</span></div>
         <div className="flex justify-between text-sm text-mist">
-          <span>التوصيل{compound ? ` (${compound.distance_km} كم)` : ''}</span>
-          <span>{deliveryFee ?? '—'} ج.م</span>
+          <span>التوصيل{quote ? ` (${quote.distance_km} كم)` : ''}</span>
+          <span>
+            {deliveryFee !== null ? `${deliveryFee} ج.م`
+              : feeLoading ? '…'
+              : 'يتحدد بعد اختيار مكانك'}
+          </span>
         </div>
         <div className="flex justify-between text-sm text-mist"><span>رسوم الخدمة</span><span>{serviceFee} ج.م</span></div>
-        <div className="flex justify-between font-bold border-t border-line pt-2"><span>الإجمالي</span><span className="text-sea">{grandTotal} ج.م</span></div>
+        <div className="flex justify-between font-bold border-t border-line pt-2">
+          <span>{grandTotal !== null ? 'الإجمالي' : 'الإجمالي قبل التوصيل'}</span>
+          <span className="text-sea">{grandTotal ?? partialTotal} ج.م</span>
+        </div>
       </div>
 
       <div className="fixed bottom-[calc(4.5rem_+_env(safe-area-inset-bottom)_+_0.75rem)] inset-x-4 z-40 max-w-5xl mx-auto">
         <button className="btn-sea w-full !rounded-xl !py-4 shadow-lg shadow-sea/20 flex items-center justify-between px-4"
           onClick={() => nav('/checkout')}>
           <span>روح للدفع</span>
-          <span className="font-bold">{grandTotal} ج.م</span>
+          {grandTotal !== null && <span className="font-bold">{grandTotal} ج.م</span>}
         </button>
       </div>
     </div>
