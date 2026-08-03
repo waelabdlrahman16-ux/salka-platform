@@ -1,0 +1,95 @@
+import { useEffect, useState } from 'react'
+import { supabase } from './supabase'
+
+// The delivery fee is owned by the server. place_order / submit_custom_order /
+// request_pickup all recompute it from the compound's distance and ignore
+// whatever the client sends, so the ONLY safe way to show a price is to ask.
+//
+// This deliberately replaces the old lib/deliveryFee.ts, which kept a local copy
+// of the pricing formula. That copy silently drifted the moment the server tiers
+// changed and quoted customers up to 150 EGP under what they were charged. Never
+// mirror server pricing in the client again -- fetch it.
+
+export type DeliveryQuote = {
+  compound_id: number
+  compound_name: string
+  distance_km: number
+  delivery_fee: number
+  sla_minutes: number
+}
+
+// Fees change rarely (an admin edits a settings row), so a session-lifetime
+// cache is fine and keeps the checkout snappy. inflight dedupes the burst of
+// concurrent callers you get when several components mount at once.
+const cache = new Map<number, DeliveryQuote>()
+const inflight = new Map<number, Promise<DeliveryQuote | null>>()
+
+export async function fetchDeliveryQuote(compoundId: number): Promise<DeliveryQuote | null> {
+  const cached = cache.get(compoundId)
+  if (cached) return cached
+
+  const pending = inflight.get(compoundId)
+  if (pending) return pending
+
+  const request = (async () => {
+    const { data, error } = await supabase.rpc('delivery_quote', { p_compound_id: compoundId })
+    if (error || !data) return null
+    const quote = data as DeliveryQuote
+    cache.set(compoundId, quote)
+    return quote
+  })()
+
+  inflight.set(compoundId, request)
+  try {
+    return await request
+  } finally {
+    inflight.delete(compoundId)
+  }
+}
+
+export function clearDeliveryQuoteCache() {
+  cache.clear()
+}
+
+export type UseDeliveryQuote = {
+  quote: DeliveryQuote | null
+  /** fee in EGP, or null while unknown -- never fall back to 0 or a guess */
+  fee: number | null
+  loading: boolean
+  failed: boolean
+  retry: () => void
+}
+
+export function useDeliveryQuote(compoundId: number | null | undefined): UseDeliveryQuote {
+  const [quote, setQuote] = useState<DeliveryQuote | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const [attempt, setAttempt] = useState(0)
+
+  useEffect(() => {
+    if (!compoundId) {
+      setQuote(null); setLoading(false); setFailed(false)
+      return
+    }
+    let cancelled = false
+    setLoading(true); setFailed(false)
+    fetchDeliveryQuote(compoundId).then(result => {
+      if (cancelled) return
+      setQuote(result)
+      setFailed(result === null)
+      setLoading(false)
+    })
+    return () => { cancelled = true }
+  }, [compoundId, attempt])
+
+  return {
+    quote,
+    fee: quote ? quote.delivery_fee : null,
+    loading,
+    failed,
+    retry: () => {
+      if (compoundId) cache.delete(compoundId)
+      setAttempt(a => a + 1)
+    }
+  }
+}
