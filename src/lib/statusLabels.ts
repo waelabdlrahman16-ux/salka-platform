@@ -13,9 +13,17 @@ export const ORDER_STATUSES = [
 ] as const
 export type OrderStatus = typeof ORDER_STATUSES[number]
 
-/** Terminal: never dispatchable, never "in progress". */
-export const TERMINAL_ORDER_STATUSES: OrderStatus[] = ['Delivered', 'Cancelled', 'Failed_Delivery']
-/** Not yet payable-for, so must not enter the driver dispatch queue. */
+/**
+ * Finished with: no further operational action is possible.
+ *
+ * Note that Failed_Delivery is deliberately NOT here. It is an end state for a
+ * delivery *attempt*, but the order is still live and must be re-dispatchable --
+ * treating it as terminal left failed deliveries invisible to every admin
+ * surface that could have sent another driver.
+ */
+export const CLOSED_ORDER_STATUSES: OrderStatus[] = ['Delivered', 'Cancelled']
+
+/** Not yet paid for, so must not enter the driver dispatch queue. */
 export const UNPAID_ORDER_STATUSES: OrderStatus[] = ['awaiting_payment']
 
 const ORDER_STATUS_AR: Record<string, string> = {
