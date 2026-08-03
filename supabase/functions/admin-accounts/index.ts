@@ -58,7 +58,9 @@ Deno.serve(async (req) => {
 
     // This endpoint creates and destroys logins and had no rate limiting at all.
     const { error: limitErr } = await admin.rpc("check_rate_limit", {
-      p_bucket: `admin_accounts:${userData.user.id}`, p_max: 60, p_window: "10 minutes"
+      // Generous enough for bulk onboarding (one call per restaurant/driver at
+      // launch) while still bounding a runaway script.
+      p_bucket: `admin_accounts:${userData.user.id}`, p_max: 200, p_window: "10 minutes"
     })
     if (limitErr) {
       if (isRateLimitError(limitErr)) return json({ error: "rate_limited" }, 429)

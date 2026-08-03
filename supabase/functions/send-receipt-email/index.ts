@@ -10,9 +10,18 @@ import { createClient } from "jsr:@supabase/supabase-js@2"
 // (guest/phone-only checkouts have nowhere to send a receipt).
 //
 // Requires RESEND_API_KEY (Supabase dashboard -> Edge Functions -> Secrets).
-// Best-effort by design: if the key isn't set yet, returns 200/not_configured
-// rather than an error, so it never blocks the delivery-status update that
-// triggered it.
+//
+// Best-effort, but not uniformly so -- the distinction matters operationally:
+//   200  nothing to do, and that is correct: no customer on the order, or no
+//        email on file. Never blocks the delivery-status update that fired it.
+//   503  misconfigured: RESEND_API_KEY is unset or was rotated away. This USED
+//        to return 200, and because the caller is a Postgres trigger via pg_net
+//        which only inspects status codes, every customer receipt could stop
+//        being sent with nothing anywhere surfacing it.
+//   502  Resend rejected the send. Logged server-side with the provider's
+//        response; the client only ever sees the code.
+// pg_net does not retry, so a non-2xx cannot cause a retry storm and the
+// trigger is fire-and-forget, so it cannot block the status update either.
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",

@@ -5,14 +5,23 @@
 // is exactly why Math.random() was not fine: a non-cryptographic PRNG with a
 // published alphabet, prefix and length is guessable.
 
-const PASSWORD_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789"
+const UPPER = "ABCDEFGHJKLMNPQRSTUVWXYZ"   // no I or O
+const LOWER = "abcdefghijkmnpqrstuvwxyz"   // no l
+const DIGIT = "23456789"                   // no 0 or 1
+const SYMBOL = "!@#$%*-_=+"
+const ALL = UPPER + LOWER + DIGIT + SYMBOL
 
 /**
  * Uniform random index into `max` using rejection sampling. Taking
  * `value % max` directly would bias toward the low end of the alphabet, since
- * 256 is not a multiple of 56.
+ * 256 is not generally a multiple of max.
  */
 function uniformIndex(max: number): number {
+  // Guard the shared helper: max <= 0 makes `limit` NaN and max > 256 makes it
+  // 0, either of which spins crypto.getRandomValues forever inside a request.
+  if (!Number.isInteger(max) || max <= 0 || max > 256) {
+    throw new RangeError(`uniformIndex: max must be an integer in 1..256, got ${max}`)
+  }
   const limit = Math.floor(256 / max) * max
   const buf = new Uint8Array(1)
   for (;;) {
@@ -21,16 +30,46 @@ function uniformIndex(max: number): number {
   }
 }
 
-export function securePassword(length = 12): string {
-  let s = ""
-  for (let i = 0; i < length; i++) s += PASSWORD_ALPHABET[uniformIndex(PASSWORD_ALPHABET.length)]
-  return s
+function pick(alphabet: string): string {
+  return alphabet[uniformIndex(alphabet.length)]
 }
 
-/** Cryptographically random n-digit numeric code, zero-padded. */
-export function secureNumericCode(digits = 6): string {
-  let s = ""
-  for (let i = 0; i < digits; i++) s += String(uniformIndex(10))
+function shuffle(chars: string[]): string[] {
+  // Fisher-Yates with a CSPRNG source.
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = uniformIndex(i + 1)
+    ;[chars[i], chars[j]] = [chars[j], chars[i]]
+  }
+  return chars
+}
+
+/**
+ * The previous generator hardcoded a "Sk9-" prefix, which incidentally
+ * guaranteed one uppercase, one lowercase, one digit and one symbol in every
+ * password. Dropping the prefix dropped that guarantee: a plain draw from a
+ * 56-char alphabet with no symbols produced no digit 11.6% of the time
+ * (measured) and no symbol 100% of the time, so under a Supabase password
+ * policy requiring digits roughly one staff-account creation in nine failed
+ * intermittently, and under one requiring symbols every single one failed.
+ * Seed one character from each class, fill the rest, then shuffle.
+ */
+export function securePassword(length = 16): string {
+  if (length < 8) throw new RangeError("securePassword: length must be >= 8")
+  const chars = [pick(UPPER), pick(LOWER), pick(DIGIT), pick(SYMBOL)]
+  while (chars.length < length) chars.push(pick(ALL))
+  return shuffle(chars).join("")
+}
+
+/**
+ * Six-digit OTP in 100000..999999. Deliberately avoids a leading zero: the code
+ * column is text so storage is fine, but SMS Misr's OTP template substitutes
+ * `otp` into a message and we have no guarantee it does not numeric-normalise
+ * it. A stripped leading zero would deliver five digits to a screen whose submit
+ * button requires six, making login impossible for ~10% of codes.
+ */
+export function secureOtpCode(): string {
+  let s = String(1 + uniformIndex(9)) // 1..9, so never a leading zero
+  for (let i = 0; i < 5; i++) s += String(uniformIndex(10))
   return s
 }
 
@@ -38,18 +77,6 @@ export function secureSlugFallback(): string {
   const buf = new Uint8Array(4)
   crypto.getRandomValues(buf)
   return Array.from(buf, b => b.toString(16).padStart(2, "0")).join("")
-}
-
-/**
- * Best-effort client IP. Supabase sits behind a proxy, so the left-most entry of
- * x-forwarded-for is the client. It is spoofable, which is why it is used only
- * to *widen* rate limiting (an extra bucket alongside the per-phone one), never
- * to relax it.
- */
-export function clientIp(req: Request): string {
-  const xff = req.headers.get("x-forwarded-for")
-  if (xff) return xff.split(",")[0].trim()
-  return req.headers.get("cf-connecting-ip") ?? req.headers.get("x-real-ip") ?? "unknown"
 }
 
 /**

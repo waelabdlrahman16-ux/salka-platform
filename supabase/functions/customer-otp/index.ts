@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from "jsr:@supabase/supabase-js@2"
-import { secureNumericCode, clientIp, isRateLimitError, CORS_HEADERS, json, fail } from "../_shared/secure.ts"
+import { secureOtpCode, isRateLimitError, CORS_HEADERS, json, fail } from "../_shared/secure.ts"
 
 // Customer login via SMS OTP -- no password, no Supabase Auth account.
 // action=request  -> generates a code, stores it, sends it via SMS Misr's OTP API.
@@ -61,19 +61,38 @@ Deno.serve(async (req) => {
     if (cleanPhone.length !== 10) return json({ error: "invalid_phone" }, 400)
 
     if (action === "request") {
-      // Rate limiting keyed only on the phone number left this wide open: the
-      // endpoint is world-callable, so iterating phone numbers sent unlimited
-      // paid SMS from any origin. That is direct billing exposure with SMS Misr.
-      // Per-IP and global buckets sit alongside the per-phone one; the IP is
-      // spoofable, so it only ever *adds* a limit, never relaxes one.
-      const ip = clientIp(req)
+      // Ordering matters. check_rate_limit INSERTS a row on every non-limited
+      // call, so a check that runs *after* another has already spent that
+      // bucket's budget. The service-wide circuit breakers therefore run FIRST:
+      // if the platform is being hammered, a legitimate customer gets a clean
+      // "busy, try shortly" without also burning one of their own five attempts.
+      //
+      // The per-IP bucket that used to sit here has been removed. It was
+      // bypassable (x-forwarded-for is client-supplied, so an attacker rotates
+      // it freely) and harmful (Egyptian carriers run large-scale CGNAT, so
+      // thousands of real subscribers share one address and would lock each
+      // other out). It gave the appearance of protection while doing neither.
       for (const [bucket, max, window] of [
-        [`login_otp:${cleanPhone}`, 5, "10 minutes"],
-        [`login_otp_ip:${ip}`, 15, "10 minutes"],
-        ["login_otp_global", 200, "1 minute"],
+        ["login_otp_burst", 30, "1 minute"],
+        ["login_otp_daily", 500, "24 hours"],
       ] as const) {
         const { error: limitErr } = await admin.rpc("check_rate_limit", {
           p_bucket: bucket, p_max: max, p_window: window
+        })
+        if (limitErr) {
+          if (isRateLimitError(limitErr)) {
+            // Distinct from the per-user code: this is us, not them, and it
+            // needs to be loud in the logs because it caps real SMS spend.
+            console.error(`[customer-otp] circuit breaker tripped: ${bucket}`)
+            return json({ error: "service_busy" }, 503)
+          }
+          return fail("customer-otp", "rate_limit_check_failed", 500, limitErr)
+        }
+      }
+
+      {
+        const { error: limitErr } = await admin.rpc("check_rate_limit", {
+          p_bucket: `login_otp:${cleanPhone}`, p_max: 5, p_window: "10 minutes"
         })
         if (limitErr) {
           // Only a real limit is "wait and retry". A missing function or a
@@ -84,20 +103,6 @@ Deno.serve(async (req) => {
         }
       }
 
-      const code = secureNumericCode(6)
-
-      // Previously a new code was inserted without touching the old ones, while
-      // verify matched ANY unused unexpired row -- so up to 5 codes were valid
-      // at once, multiplying the hit rate of the 8 allowed guesses.
-      const { error: invalidateErr } = await admin.from("customer_otp_codes")
-        .update({ used: true }).eq("phone", cleanPhone).eq("used", false)
-      if (invalidateErr) return fail("customer-otp", "otp_store_failed", 500, invalidateErr)
-
-      const { error: insertErr } = await admin.from("customer_otp_codes").insert({
-        phone: cleanPhone, code, expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString()
-      })
-      if (insertErr) return fail("customer-otp", "otp_store_failed", 500, insertErr)
-
       const username = Deno.env.get("SMSMISR_USERNAME")
       const password = Deno.env.get("SMSMISR_PASSWORD")
       const sender = Deno.env.get("SMSMISR_SENDER")
@@ -106,6 +111,20 @@ Deno.serve(async (req) => {
       if (!username || !password || !sender || !template) {
         return json({ error: "sms_not_configured" }, 500)
       }
+
+      const code = secureOtpCode()
+
+      // Store the new code first, send second, and only invalidate the OLD ones
+      // once the send is confirmed. Invalidating up front meant a provider blip
+      // on a resend destroyed the code already sitting on the user's handset --
+      // they would type a code they had genuinely received and be told it was
+      // invalid, with the replacement never arriving. The file header notes the
+      // SMSID success check is itself unreliable, which makes that path likely,
+      // not theoretical.
+      const { data: inserted, error: insertErr } = await admin.from("customer_otp_codes")
+        .insert({ phone: cleanPhone, code, expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString() })
+        .select("id").single()
+      if (insertErr || !inserted) return fail("customer-otp", "otp_store_failed", 500, insertErr)
 
       const form = new URLSearchParams({
         environment, username, password, sender,
@@ -118,26 +137,32 @@ Deno.serve(async (req) => {
         body: form
       })
       const smsData = await smsRes.json().catch(() => null)
-      // smsData was forwarded to the client verbatim, exposing the provider's
-      // raw response. Log it, return the code only.
-      if (!smsRes.ok || !smsData?.SMSID) return fail("customer-otp", "sms_send_failed", 502, smsData)
+      if (!smsRes.ok || !smsData?.SMSID) {
+        // Retire the code we just stored but never delivered, leaving whatever
+        // the user already holds still valid.
+        await admin.from("customer_otp_codes").update({ used: true }).eq("id", inserted.id)
+        // smsData was forwarded to the client verbatim, exposing the provider's
+        // raw response. Log it, return the code only.
+        return fail("customer-otp", "sms_send_failed", 502, smsData)
+      }
+
+      // Delivered. Now retire every earlier code so only this one verifies --
+      // previously up to five were live at once against eight allowed guesses.
+      const { error: invalidateErr } = await admin.from("customer_otp_codes")
+        .update({ used: true })
+        .eq("phone", cleanPhone).eq("used", false).neq("id", inserted.id)
+      if (invalidateErr) console.error("[customer-otp] failed to retire older codes:", invalidateErr)
 
       return json({ ok: true })
     }
 
     if (action === "verify") {
-      const ip = clientIp(req)
-      for (const [bucket, max, window] of [
-        [`verify_otp:${cleanPhone}`, 8, "10 minutes"],
-        [`verify_otp_ip:${ip}`, 30, "10 minutes"],
-      ] as const) {
-        const { error: limitErr } = await admin.rpc("check_rate_limit", {
-          p_bucket: bucket, p_max: max, p_window: window
-        })
-        if (limitErr) {
-          if (isRateLimitError(limitErr)) return json({ error: "rate_limited" }, 429)
-          return fail("customer-otp", "rate_limit_check_failed", 500, limitErr)
-        }
+      const { error: limitErr } = await admin.rpc("check_rate_limit", {
+        p_bucket: `verify_otp:${cleanPhone}`, p_max: 8, p_window: "10 minutes"
+      })
+      if (limitErr) {
+        if (isRateLimitError(limitErr)) return json({ error: "rate_limited" }, 429)
+        return fail("customer-otp", "rate_limit_check_failed", 500, limitErr)
       }
 
       const { code, name } = body

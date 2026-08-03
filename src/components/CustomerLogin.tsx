@@ -39,9 +39,9 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
     return () => window.removeEventListener('keydown', onKey)
   }, [onSkip, mode])
 
-  function startResendCountdown() {
+  function startResendCountdown(seconds = 30) {
     if (resendTimerRef.current) clearInterval(resendTimerRef.current)
-    setResendIn(30)
+    setResendIn(seconds)
     resendTimerRef.current = setInterval(() => {
       setResendIn(s => {
         if (s <= 1) {
@@ -68,9 +68,16 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
     if (!res.ok) {
       setError(
         res.error === 'sms_not_configured' ? 'خدمة الرسائل لسه مش متفعّلة، جرب تسجّل بالإيميل أو جوجل'
-          : res.error === 'rate_limited' ? 'حاولت كتير، استنى شوية وجرب تاني'
+          : res.error === 'rate_limited' ? 'حاولت كتير، استنى 10 دقايق وجرب تاني — أو ادخل بجوجل/الإيميل'
+          : res.error === 'service_busy' ? 'الخدمة مزحومة دلوقتي، جرب كمان شوية أو ادخل بجوجل/الإيميل'
+          : res.error === 'invalid_phone' ? 'رقم الموبايل مش مظبوط'
+          : res.error === 'sms_send_failed' ? 'مش قادرين نبعت الكود دلوقتي، جرب تاني أو ادخل بجوجل/الإيميل'
           : 'حصل خطأ، جرب تاني'
       )
+      // Neither a rate limit nor a tripped circuit breaker is fixed by tapping
+      // again, and the phone screen has no cooldown of its own -- so impose one
+      // rather than inviting the user to burn the rest of their five attempts.
+      if (res.error === 'rate_limited' || res.error === 'service_busy') startResendCountdown(60)
       return
     }
     setMode('code')
@@ -181,8 +188,8 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
 
             {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">{error}</p>}
 
-            <button className="btn-sea w-full !py-3 mb-2" disabled={!isValidEgyptPhone(phone) || sending} onClick={sendCode}>
-              {sending ? 'جاري الإرسال…' : 'ابعتلي الكود'}
+            <button className="btn-sea w-full !py-3 mb-2" disabled={!isValidEgyptPhone(phone) || sending || resendIn > 0} onClick={sendCode}>
+              {sending ? 'جاري الإرسال…' : resendIn > 0 ? `استنى ${resendIn} ثانية` : 'ابعتلي الكود'}
             </button>
             <button className="text-sm text-mist hover:text-foam" onClick={() => goTo('main')}>رجوع</button>
           </>

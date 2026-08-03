@@ -56,15 +56,32 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe()
   }, [])
 
+  // supabase-js returns { data: null, error } for ANY non-2xx response, and its
+  // error.message is a fixed generic wrapper. So `data?.error` was always
+  // undefined on failure and every error collapsed to the literal 'send_failed'
+  // -- which made the rate_limited and sms_not_configured branches in
+  // CustomerLogin dead code, and told a rate-limited user to retry immediately
+  // on a screen with no cooldown. The real code is in the response body.
+  // Admin.tsx has used this pattern for admin-accounts all along.
+  async function edgeErrorCode(error: unknown, fallback: string): Promise<string> {
+    try {
+      const body = await (error as { context?: { json?: () => Promise<{ error?: string }> } })?.context?.json?.()
+      if (body?.error) return body.error
+    } catch { /* body wasn't JSON, or was already consumed */ }
+    return fallback
+  }
+
   async function requestOtp(phone: string) {
     const { data, error } = await supabase.functions.invoke('customer-otp', { body: { action: 'request', phone } })
-    if (error || data?.error) return { ok: false, error: data?.error ?? 'send_failed' }
+    if (error) return { ok: false, error: await edgeErrorCode(error, 'send_failed') }
+    if (data?.error) return { ok: false, error: data.error }
     return { ok: true }
   }
 
   async function verifyOtp(phone: string, code: string, name?: string) {
     const { data, error } = await supabase.functions.invoke('customer-otp', { body: { action: 'verify', phone, code, name } })
-    if (error || data?.error || !data?.token) return { ok: false, error: data?.error ?? 'verify_failed' }
+    if (error) return { ok: false, error: await edgeErrorCode(error, 'verify_failed') }
+    if (data?.error || !data?.token) return { ok: false, error: data?.error ?? 'verify_failed' }
     localStorage.setItem(TOKEN_KEY, data.token)
     setCustomer(data.customer)
     return { ok: true }
