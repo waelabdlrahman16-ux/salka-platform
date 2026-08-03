@@ -63,12 +63,12 @@ export default function ProductCard({
           disabled={disabled}
           onClick={onAdd}><span className="flex items-center gap-1.5"><Icon name="plus" className="w-3 h-3" /> إضافة</span></button>
       ) : (
-        <div className="w-full h-10 rounded-lg bg-shellup flex items-center justify-between px-1.5">
-          <button className="w-7 h-7 rounded-md grid place-items-center text-foam hover:bg-white transition-colors"
-            onClick={onRemove} aria-label="تقليل"><Icon name="minus" className="w-3 h-3" /></button>
+        <div className="w-full h-11 rounded-lg bg-shellup flex items-center justify-between px-1">
+          <button className="w-9 h-9 rounded-md grid place-items-center text-foam hover:bg-white transition-colors"
+            onClick={onRemove} aria-label="تقليل"><Icon name="minus" className="w-3.5 h-3.5" /></button>
           <span className="font-bold text-sm">{qty}</span>
-          <button className="w-7 h-7 rounded-md grid place-items-center text-white bg-sea hover:bg-seadeep transition-colors"
-            onClick={onAdd} aria-label="زيادة"><Icon name="plus" className="w-3 h-3" /></button>
+          <button className="w-9 h-9 rounded-md grid place-items-center text-white bg-sea hover:bg-seadeep transition-colors"
+            onClick={onAdd} aria-label="زيادة"><Icon name="plus" className="w-3.5 h-3.5" /></button>
         </div>
       )}
     </div>

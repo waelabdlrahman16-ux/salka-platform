@@ -12,6 +12,7 @@ import CustomOrder from './pages/CustomOrder'
 import Track from './pages/Track'
 import Login from './pages/Login'
 import MyOrders from './pages/MyOrders'
+import Profile from './pages/Profile'
 import Terms from './pages/Terms'
 import InstallPrompt from './components/InstallPrompt'
 import CustomerLogin from './components/CustomerLogin'
@@ -127,6 +128,7 @@ function AppShell() {
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/custom-order" element={<CustomOrder />} />
               <Route path="/my-orders" element={<MyOrders />} />
+              <Route path="/profile" element={<Profile />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/track/:token" element={<Track />} />
               <Route path="/login" element={<Login />} />

@@ -33,12 +33,15 @@ export default function MyOrders() {
     <div className="max-w-sm mx-auto">
       {showLogin && <CustomerLogin onDone={() => setShowLogin(false)} />}
       {customer ? (
-        <div className="card p-4 mt-4 flex items-center justify-between">
-          <div>
-            <p className="font-semibold">{customer.name || 'حسابك'}</p>
-            <p className="text-xs text-mist mt-0.5" dir="ltr">{customer.phone}</p>
+        <div className="card p-4 mt-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-semibold">{customer.name || 'حسابك'}</p>
+              <p className="text-xs text-mist mt-0.5" dir="ltr">{customer.phone}</p>
+            </div>
+            <button className="btn-ghost !py-1.5 !px-3 text-sm" onClick={logout}>خروج</button>
           </div>
-          <button className="btn-ghost !py-1.5 !px-3 text-sm" onClick={logout}>خروج</button>
+          <Link to="/profile" className="btn-ghost w-full mt-3 text-sm !flex items-center justify-center">📍 عناويني ومحفظتي</Link>
         </div>
       ) : (
         <div className="card p-6 mt-4">

@@ -75,12 +75,12 @@ export default function ProductDetailSheet({
                 <span className="flex items-center justify-center gap-1.5"><Icon name="plus" className="w-3 h-3" /> إضافة للسلة</span>
               </button>
             ) : (
-              <div className="w-full h-11 rounded-xl bg-shellup flex items-center justify-between px-2">
-                <button className="w-8 h-8 rounded-lg grid place-items-center hover:bg-white" onClick={() => onRemove(active)}>
+              <div className="w-full h-11 rounded-xl bg-shellup flex items-center justify-between px-1.5">
+                <button className="w-9 h-9 rounded-lg grid place-items-center hover:bg-white" onClick={() => onRemove(active)}>
                   <Icon name="minus" className="w-3.5 h-3.5" />
                 </button>
                 <span className="font-bold">{qty}</span>
-                <button className="w-8 h-8 rounded-lg grid place-items-center bg-sea text-white" onClick={() => onAdd(active)}>
+                <button className="w-9 h-9 rounded-lg grid place-items-center bg-sea text-white" onClick={() => onAdd(active)}>
                   <Icon name="plus" className="w-3.5 h-3.5" />
                 </button>
               </div>

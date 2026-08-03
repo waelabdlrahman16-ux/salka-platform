@@ -26,8 +26,13 @@ export default function Home() {
       .then(({ data }) => {
         setCompounds(data ?? [])
         const saved = sessionStorage.getItem(STORAGE_KEY)
-        if (saved) setCompoundId(Number(saved))
-        else setPicking(true)
+        if (saved) { setCompoundId(Number(saved)); return }
+        setPicking(true)
+        // try detecting location automatically on first visit rather than
+        // making everyone tap a button first -- useMyLocation already has its
+        // own permission-denied/error handling, which leaves the manual
+        // picker/search showing as a graceful fallback
+        useMyLocation(data ?? [])
       })
   }, [])
 
@@ -53,14 +58,14 @@ export default function Home() {
     setPicking(false)
   }
 
-  function useMyLocation() {
+  function useMyLocation(compoundsList: Compound[] = compounds) {
     if (!navigator.geolocation) { setLocationError('المتصفح ده مش بيدعم تحديد الموقع'); return }
     setLocating(true); setLocationError('')
     navigator.geolocation.getCurrentPosition(
       pos => {
         const { latitude, longitude, accuracy } = pos.coords
         setMyCoords({ lat: latitude, lng: longitude })
-        const withCoords = compounds.filter(c => c.latitude != null && c.longitude != null)
+        const withCoords = compoundsList.filter(c => c.latitude != null && c.longitude != null)
         const ranked = [...withCoords].sort((a, b) =>
           haversineKm(latitude, longitude, a.latitude!, a.longitude!) -
           haversineKm(latitude, longitude, b.latitude!, b.longitude!))
@@ -159,7 +164,7 @@ export default function Home() {
                   onChange={e => { setSearch(e.target.value); if (e.target.value.trim()) setNearby(null) }}
                   placeholder="دوّر على اسم المكان…" />
               </div>
-              <button className="w-12 h-12 rounded-xl border border-line bg-night grid place-items-center shrink-0" disabled={locating} onClick={useMyLocation}
+              <button className="w-12 h-12 rounded-xl border border-line bg-night grid place-items-center shrink-0" disabled={locating} onClick={() => useMyLocation()}
                 title="استخدم موقعي الحالي" aria-label="استخدم موقعي الحالي">
                 {locating ? '…' : <Icon name="locationDot" className="w-4 h-4" />}
               </button>
