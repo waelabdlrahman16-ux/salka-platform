@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { useCustomerAuth } from '../lib/customerAuth'
+import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
 import { orderStatusLabel } from '../lib/statusLabels'
+import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
+import { describeError, rpc } from '../lib/rpc'
 import type { Compound } from '../lib/types'
 
 interface Address {
@@ -27,6 +29,7 @@ export default function Profile() {
   const [unit, setUnit] = useState('')
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
+  const [addressError, setAddressError] = useState('')
 
   async function load() {
     const { data } = await supabase.rpc('my_customer_addresses')
@@ -39,11 +42,18 @@ export default function Profile() {
     supabase.rpc('my_customer_orders').then(({ data }) => setOrders((data as OrderRow[]) ?? []))
     supabase.from('compounds').select('*').eq('active', true).order('name').then(({ data }) => setCompounds(data ?? []))
     if (customer.phone) {
-      supabase.rpc('wallet_balance_for_phone', { p_phone: customer.phone }).then(({ data }) => setWalletBalance(Number(data) || 0))
+      // Pass the session token like checkout does. Without it the RPC falls
+      // through to the anonymous path and burns the phone_lookup rate limit on
+      // a customer who is already signed in.
+      supabase.rpc('wallet_balance_for_phone', { p_phone: customer.phone, p_session_token: getSessionToken() })
+        .then(({ data, error }) => { if (!error) setWalletBalance(Number(data) || 0) })
     }
   }, [customer])
 
   function startEdit(a: Address | 'new') {
+    // Otherwise a failure from remove()/makeDefault() reappears inside the edit
+    // card as though it were about the form the user just opened.
+    setAddressError('')
     if (a === 'new') {
       setLabel(''); setCompoundId(null); setUnit(''); setNotes('')
     } else {
@@ -52,31 +62,38 @@ export default function Profile() {
     setEditing(a)
   }
 
+  // All four of these discarded their error and called load(), so a rejected
+  // write was repainted with server state and looked like it had succeeded.
   async function save() {
     if (!compoundId || !unit.trim()) return
-    setSaving(true)
-    if (editing === 'new') {
-      await supabase.rpc('add_customer_address', {
-        p_label: label, p_compound_id: compoundId, p_unit_number: unit, p_notes: notes || null
-      })
-    } else if (editing) {
-      await supabase.rpc('update_customer_address', {
-        p_id: editing.id, p_label: label, p_compound_id: compoundId, p_unit_number: unit, p_notes: notes || null
-      })
-    }
+    setSaving(true); setAddressError('')
+    const res = editing === 'new'
+      ? await rpc('add_customer_address', {
+          p_label: label, p_compound_id: compoundId, p_unit_number: unit, p_notes: notes || null
+        })
+      : editing
+        ? await rpc('update_customer_address', {
+            p_id: editing.id, p_label: label, p_compound_id: compoundId, p_unit_number: unit, p_notes: notes || null
+          })
+        : { ok: true as const, data: null }
     setSaving(false)
+    if (!res.ok) { setAddressError(res.error); return }
     setEditing(null)
     load()
   }
 
   async function remove(a: Address) {
     if (!confirm(`حذف "${a.label}"؟`)) return
-    await supabase.rpc('delete_customer_address', { p_id: a.id })
+    setAddressError('')
+    const res = await rpc('delete_customer_address', { p_id: a.id })
+    if (!res.ok) { setAddressError(res.error); return }
     load()
   }
 
   async function makeDefault(a: Address) {
-    await supabase.rpc('set_default_address', { p_id: a.id })
+    setAddressError('')
+    const res = await rpc('set_default_address', { p_id: a.id })
+    if (!res.ok) { setAddressError(res.error); return }
     load()
   }
 
@@ -137,6 +154,11 @@ export default function Profile() {
           )}
         </div>
 
+        {/* remove()/makeDefault() failures happen outside the edit card */}
+        {addressError && !editing && (
+          <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3">{addressError}</p>
+        )}
+
         {editing && (
           <div className="card p-4 mb-3 space-y-3">
             <div><label className="label">اسم العنوان</label>
@@ -150,6 +172,7 @@ export default function Profile() {
               <input className="field" value={unit} onChange={e => setUnit(e.target.value)} placeholder="مثال: B4 - 204" /></div>
             <div><label className="label">علامة مميزة (اختياري)</label>
               <input className="field" value={notes} onChange={e => setNotes(e.target.value)} placeholder="مثال: بجوار حمام السباحة" /></div>
+            {addressError && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3">{addressError}</p>}
             <div className="flex gap-2">
               <button className="btn-ghost flex-1 text-sm" onClick={() => setEditing(null)}>إلغاء</button>
               <button className="btn-sea flex-1 text-sm" disabled={!compoundId || !unit.trim() || saving} onClick={save}>
@@ -203,16 +226,30 @@ export default function Profile() {
 function PhoneInline({ onSave }: { onSave: (phone: string) => Promise<{ ok: boolean; error?: string }> }) {
   const [phone, setPhone] = useState('')
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  // The result of onSave was discarded entirely, so a rejected number just made
+  // the spinner blink. It also skipped isValidEgyptPhone, which every other
+  // phone field in the app enforces, so invalid input reached the RPC.
   async function save() {
-    if (!phone.trim()) return
-    setSaving(true)
-    await onSave(phone)
+    if (!isValidEgyptPhone(phone)) { setError(PHONE_HINT); return }
+    setSaving(true); setError('')
+    const res = await onSave(phone)
     setSaving(false)
+    if (!res.ok) setError(describeError(res.error))
   }
+
   return (
-    <div className="flex gap-2">
-      <input className="field" dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} placeholder="01xxxxxxxxx" maxLength={13} />
-      <button className="btn-sea shrink-0 !px-4" disabled={saving} onClick={save}>{saving ? '...' : 'حفظ'}</button>
+    <div>
+      <div className="flex gap-2">
+        <input className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-red-400' : ''}`}
+          dir="ltr" value={phone} onChange={e => { setPhone(e.target.value); setError('') }}
+          placeholder="01xxxxxxxxx" maxLength={13} />
+        <button className="btn-sea shrink-0 !px-4" disabled={saving || !isValidEgyptPhone(phone)} onClick={save}>
+          {saving ? '...' : 'حفظ'}
+        </button>
+      </div>
+      {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
     </div>
   )
 }

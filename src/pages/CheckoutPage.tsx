@@ -39,13 +39,21 @@ export default function CheckoutPage() {
   const [addressLoaded, setAddressLoaded] = useState(false)
   const [addressExpanded, setAddressExpanded] = useState(false)
   const [walletBalance, setWalletBalance] = useState(0)
+  const [walletFailed, setWalletFailed] = useState(false)
+  const [compoundsFailed, setCompoundsFailed] = useState(false)
   const [codDepositThreshold, setCodDepositThreshold] = useState(300)
   const [useWallet, setUseWallet] = useState(true)
 
   useEffect(() => {
-    if (!isValidEgyptPhone(phone)) { setWalletBalance(0); return }
+    if (!isValidEgyptPhone(phone)) { setWalletBalance(0); setWalletFailed(false); return }
+    // A failed lookup used to be indistinguishable from an empty wallet, so the
+    // customer's credit was silently not offered at checkout.
     supabase.rpc('wallet_balance_for_phone', { p_phone: phone.trim(), p_session_token: getSessionToken() })
-      .then(({ data }) => setWalletBalance(Number(data) || 0))
+      .then(({ data, error }) => {
+        if (error) { setWalletFailed(true); setWalletBalance(0); return }
+        setWalletFailed(false)
+        setWalletBalance(Number(data) || 0)
+      })
   }, [phone])
 
   useEffect(() => {
@@ -71,8 +79,11 @@ export default function CheckoutPage() {
     if (!cart.restaurantId) return
     supabase.from('restaurants').select('*').eq('id', cart.restaurantId).single().then(({ data }) => setRestaurant(data))
     supabase.from('menu_items').select('*').eq('restaurant_id', cart.restaurantId).then(({ data }) => setItems(data ?? []))
+    // `valid` requires selectedCompound, so a silent failure here would leave
+    // the confirm button permanently disabled with an empty place dropdown and
+    // no explanation. Surface it.
     supabase.from('compounds').select('*').eq('active', true).order('direction').order('distance_km')
-      .then(({ data }) => setCompounds(data ?? []))
+      .then(({ data, error }) => { setCompoundsFailed(!!error); setCompounds(data ?? []) })
     supabase.rpc('open_slots', { p_restaurant_id: cart.restaurantId }).then(({ data }) => setSlots((data as Slot[]) ?? []))
     supabase.from('discounts').select('*').eq('restaurant_id', cart.restaurantId).eq('active', true)
       .then(({ data }) => setDiscounts(data ?? []))
@@ -135,8 +146,17 @@ export default function CheckoutPage() {
   const preWalletTotal = subtotal + (deliveryFee ?? 0) + serviceFee
   const walletApplied = useWallet ? Math.min(walletBalance, preWalletTotal) : 0
   const finalTotal = preWalletTotal - walletApplied
-  const valid = name.trim() && isValidEgyptPhone(phone) && compoundId && unit.trim()
+  // selectedCompound, not just compoundId: a saved id that no longer matches an
+  // active compound used to pass validation, submit with an empty p_zone, and
+  // fail into the catch-all error.
+  const valid = name.trim() && isValidEgyptPhone(phone) && !!selectedCompound && unit.trim()
     && deliveryFee !== null && (!scheduled || !!slot)
+
+  // Changing the place here never wrote back, so the cart and home stayed priced
+  // for the previous compound.
+  useEffect(() => {
+    if (compoundId) sessionStorage.setItem('salka_compound_id', String(compoundId))
+  }, [compoundId])
 
   const isInstapay = paymentMethod === 'instapay'
 
@@ -359,6 +379,19 @@ export default function CheckoutPage() {
         )}
         <div className="flex justify-between font-bold border-t border-line pt-2"><span>الإجمالي</span><span className="text-sea">{finalTotal} ج.م</span></div>
       </div>
+
+      {compoundsFailed && compounds.length === 0 && (
+        <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">
+          مش قادرين نجيب قايمة الأماكن دلوقتي —{' '}
+          <button className="underline font-semibold" onClick={() => window.location.reload()}>حدّث الصفحة</button>
+        </p>
+      )}
+
+      {walletFailed && (
+        <p className="text-sm text-sand bg-sand/10 rounded-xl p-3 mb-4">
+          مش قادرين نشوف رصيد محفظتك دلوقتي — لو عندك رصيد مش هيتخصم من الطلب ده
+        </p>
+      )}
 
       {feeFailed && compoundId && (
         <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">
