@@ -65,6 +65,7 @@ export interface Driver {
   vehicle_type: 'motorcycle' | 'van'; vehicle_plate: string
   rating: number; total_deliveries: number; commission_value: number
   cash_held: number; payout_schedule: 'daily' | 'weekly'
+  instapay_number: string | null
 }
 export interface Assignment {
   id: number; order_id: number; driver_id: number; attempt_number: number

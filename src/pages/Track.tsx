@@ -33,6 +33,7 @@ interface TrackData {
   items: { name: string; qty: number; total: number; image_url: string | null }[]
   assignment: {
     status: string; driver_name: string | null; driver_phone: string | null
+    driver_instapay: string | null
     driver_lat: number | null; driver_lng: number | null; driver_location_updated_at: string | null
   } | null
 }
@@ -51,6 +52,10 @@ export default function Track() {
   const [restaurantRating, setRestaurantRating] = useState(0)
   const [ratingSent, setRatingSent] = useState(false)
   const [complaining, setComplaining] = useState(false)
+  const [showTipPrompt, setShowTipPrompt] = useState(false)
+  const [tipAmount, setTipAmount] = useState<number | null>(null)
+  const [customTip, setCustomTip] = useState('')
+  const [tipSent, setTipSent] = useState(false)
   const [complaintCategory, setComplaintCategory] = useState<'missing_item' | 'wrong_item' | 'driver_conduct' | 'quality' | 'other'>('other')
   const [complaintText, setComplaintText] = useState('')
   const [complaintSent, setComplaintSent] = useState(false)
@@ -90,6 +95,19 @@ export default function Track() {
       p_token: token, p_driver_rating: driverRating || null, p_restaurant_rating: restaurantRating || null
     })
     setRatingSent(true)
+    if (driverRating > 0 && driverRating <= 2) {
+      setComplaintCategory('driver_conduct')
+      setComplaining(true)
+    } else if (driverRating >= 4) {
+      setShowTipPrompt(true)
+    }
+  }
+
+  async function sendTip() {
+    const amount = tipAmount ?? Number(customTip)
+    if (!token || !amount || amount <= 0) return
+    await supabase.rpc('submit_tip', { p_token: token, p_amount: amount })
+    setTipSent(true)
   }
 
   async function sendComplaint() {
@@ -349,7 +367,34 @@ export default function Track() {
           <button className="btn-sea w-full mt-3 text-sm" disabled={!driverRating && !restaurantRating} onClick={sendRating}>إرسال التقييم</button>
         </div>
       )}
-      {ratingSent && <p className="text-emerald-700 text-sm text-center mb-4">✅ شكرًا لتقييمك</p>}
+      {ratingSent && !showTipPrompt && <p className="text-emerald-700 text-sm text-center mb-4">✅ شكرًا لتقييمك</p>}
+
+      {showTipPrompt && !tipSent && (
+        <div className="card p-4 mb-4">
+          <p className="text-sm font-semibold mb-1">حابب تكرّم المندوب؟ 🙏</p>
+          <p className="text-xs text-mist mb-3">الإكرامية بتتحول مباشرة لحساب المندوب على إنستاباي — مش من غير سالكة</p>
+          <div className="grid grid-cols-4 gap-2 mb-3">
+            {[10, 20, 50].map(amt => (
+              <button key={amt} className={`text-sm font-semibold py-2.5 rounded-xl border-2 ${tipAmount === amt ? 'border-sea bg-sea/5 text-sea' : 'border-line text-mist'}`}
+                onClick={() => { setTipAmount(amt); setCustomTip('') }}>{amt} ج.م</button>
+            ))}
+            <input className={`text-sm text-center rounded-xl border-2 ${tipAmount === null && customTip ? 'border-sea' : 'border-line'}`}
+              placeholder="تاني" inputMode="numeric" value={customTip}
+              onChange={e => { setCustomTip(e.target.value.replace(/\D/g, '')); setTipAmount(null) }} />
+          </div>
+          {(tipAmount || Number(customTip) > 0) && data.assignment?.driver_instapay && (
+            <div className="bg-sea/10 rounded-xl p-3 mb-3 text-center">
+              <p className="text-xs text-mist mb-1">حوّل على رقم إنستاباي بتاع {data.assignment.driver_name}</p>
+              <p className="font-bold text-sea" dir="ltr">{data.assignment.driver_instapay}</p>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <button className="btn-ghost flex-1 text-sm" onClick={() => setShowTipPrompt(false)}>لأ شكرًا</button>
+            <button className="btn-sea flex-1 text-sm" disabled={!tipAmount && !(Number(customTip) > 0)} onClick={sendTip}>حوّلت الإكرامية</button>
+          </div>
+        </div>
+      )}
+      {tipSent && <p className="text-emerald-700 text-sm text-center mb-4">✅ شكرًا لكرمك، المندوب هيقدرها</p>}
 
       {canCancel && (
         <button className="btn-danger w-full mb-2" disabled={cancelling} onClick={cancelOrder}>

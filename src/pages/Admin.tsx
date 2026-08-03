@@ -216,6 +216,14 @@ export default function Admin() {
     setAssigning(null); load()
   }
 
+  async function editInstapay(d: Driver) {
+    const value = prompt('رقم إنستاباي بتاع المندوب (اسيبه فاضي لو زي رقم الموبايل):', d.instapay_number ?? '')
+    if (value === null) return
+    const { error } = await supabase.from('drivers').update({ instapay_number: value.trim() || null }).eq('id', d.id)
+    if (error) { alert('حصل خطأ، جرب تاني'); return }
+    load()
+  }
+
   async function toggleDriver(d: Driver, field: 'active' | 'available') {
     const patch: Record<string, unknown> = { [field]: !d[field] }
     if (field === 'active' && d.active) patch.status = 'Suspended'
@@ -692,6 +700,7 @@ export default function Admin() {
                   <h2 className="font-bold">{d.name}</h2>
                   <p className="text-sm text-mist mt-0.5">★ {d.rating} · {d.total_deliveries} توصيلة · {vehicleLabel(d.vehicle_type)} · {d.vehicle_plate}</p>
                   <p className="text-sm text-mist mt-0.5" dir="ltr">{d.phone}</p>
+                  <p className="text-xs text-mist mt-1">إنستاباي: {d.instapay_number || d.phone}</p>
                   {disputeCount > 0 && (
                     <p className="text-sm text-red-600 font-semibold mt-1">⚠️ {disputeCount} مشكلة مؤكدة في السجل</p>
                   )}
@@ -701,6 +710,7 @@ export default function Admin() {
               <div className="flex gap-2.5 mt-3">
                 <button className="btn-ghost text-sm flex-1" onClick={() => toggleDriver(d, 'available')}>{d.available ? 'إيقاف مؤقت' : 'إتاحة'}</button>
                 <button className={`text-sm flex-1 ${d.active ? 'btn-danger' : 'btn-sea'}`} onClick={() => toggleDriver(d, 'active')}>{d.active ? 'إيقاف الحساب' : 'تفعيل الحساب'}</button>
+                <button className="btn-ghost text-sm flex-1" onClick={() => editInstapay(d)}>تعديل إنستاباي</button>
               </div>
             </div>
             )

@@ -7,6 +7,7 @@ import { estimateDeliveryFee } from '../lib/deliveryFee'
 import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
 import { isItemAvailableNow } from '../lib/itemAvailability'
 import { applyDiscount, effectiveDiscount } from '../lib/discounts'
+import LocationPreviewMap from '../components/LocationPreviewMap'
 import type { Compound, Discount, MenuItem, MenuItemAddon, MenuItemSize, Restaurant, Slot } from '../lib/types'
 
 export default function CheckoutPage() {
@@ -234,15 +235,20 @@ export default function CheckoutPage() {
           )}</div>
 
         {!addressExpanded && selectedCompound ? (
-          <button type="button" className="w-full flex items-center gap-3 rounded-xl border-2 border-sea/40 bg-sea/5 px-4 py-3.5 text-right"
-            onClick={() => setAddressExpanded(true)}>
-            <span className="text-2xl shrink-0">📍</span>
-            <span className="flex-1 min-w-0">
-              <span className="block font-bold truncate">{selectedCompound.name}{unit.trim() ? ` — شاليه ${unit}` : ''}</span>
-              {notes.trim() && <span className="block text-xs text-mist truncate mt-0.5">{notes}</span>}
-            </span>
-            <span className="text-sea text-sm font-semibold shrink-0">تغيير</span>
-          </button>
+          <>
+            <button type="button" className="w-full flex items-center gap-3 rounded-xl border-2 border-sea/40 bg-sea/5 px-4 py-3.5 text-right"
+              onClick={() => setAddressExpanded(true)}>
+              <span className="text-2xl shrink-0">📍</span>
+              <span className="flex-1 min-w-0">
+                <span className="block font-bold truncate">{selectedCompound.name}{unit.trim() ? ` — شاليه ${unit}` : ''}</span>
+                {notes.trim() && <span className="block text-xs text-mist truncate mt-0.5">{notes}</span>}
+              </span>
+              <span className="text-sea text-sm font-semibold shrink-0">تغيير</span>
+            </button>
+            {selectedCompound.latitude != null && selectedCompound.longitude != null && (
+              <LocationPreviewMap lat={selectedCompound.latitude} lng={selectedCompound.longitude} />
+            )}
+          </>
         ) : (
           <>
             <div><label className="label">المكان *</label>
@@ -264,8 +270,22 @@ export default function CheckoutPage() {
         )}
 
         <div><label className="label">ملاحظات على الطلب (اختياري)</label>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {['من غير بصل', 'حار زيادة', 'اتصل قبل الوصول', 'اترك عند الباب'].map(preset => {
+              const included = customerNote.split('، ').includes(preset)
+              return (
+                <button key={preset} type="button"
+                  className={`text-xs px-3 py-1.5 rounded-full border-2 ${included ? 'border-sea bg-sea/5 text-sea font-semibold' : 'border-line text-mist'}`}
+                  onClick={() => {
+                    const parts = customerNote.split('، ').map(s => s.trim()).filter(Boolean)
+                    const next = included ? parts.filter(p => p !== preset) : [...parts, preset]
+                    setCustomerNote(next.join('، '))
+                  }}>{preset}</button>
+              )
+            })}
+          </div>
           <textarea className="field" rows={2} value={customerNote} onChange={e => setCustomerNote(e.target.value)}
-            placeholder="مثال: من غير بصل، اتصل قبل ما توصل" /></div>
+            placeholder="اكتب أي حاجة تانية…" /></div>
       </div>
 
       {walletBalance > 0 && (

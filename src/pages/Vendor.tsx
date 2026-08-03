@@ -470,9 +470,12 @@ function KitchenVendor({ rid }: { rid: number }) {
         </p>
 
         {!completed && remaining(o) !== null && o.kitchen_status !== 'ready' && (
-          <p className={`mt-2 font-bold ${remaining(o)! <= 2 ? 'text-red-600 text-lg' : 'text-mist text-base'}`}>
-            {remaining(o)! < 0 ? `⏰ متأخر ${Math.abs(remaining(o)!)} دقيقة` : `⏱️ المفروض يجهز خلال ${remaining(o)} دقيقة`}
-          </p>
+          <div className={`mt-3 rounded-2xl p-3 text-center ${remaining(o)! <= 2 ? 'bg-red-500/10' : 'bg-shellup'}`}>
+            <p className={`font-bold leading-none ${remaining(o)! <= 2 ? 'text-red-600 text-3xl' : 'text-sea text-3xl'}`}>
+              {remaining(o)! < 0 ? `متأخر ${Math.abs(remaining(o)!)} د` : `${remaining(o)} د`}
+            </p>
+            <p className="text-xs text-mist mt-1">{remaining(o)! < 0 ? '⏰ متأخر عن الوقت المتوقع' : 'متبقي للتجهيز'}</p>
+          </div>
         )}
 
         {completed ? (
@@ -516,20 +519,27 @@ function KitchenVendor({ rid }: { rid: number }) {
             )}
             {!stage.next && (() => {
               const d = deliveryByOrder[o.id]
-              if (!d) return <p className="text-emerald-700 text-center text-sm mt-3">✅ في انتظار المندوب</p>
+              if (!d) return (
+                <div className="mt-3 rounded-2xl bg-shellup p-3.5 text-center">
+                  <p className="text-sea text-sm font-semibold">✅ في انتظار المندوب</p>
+                </div>
+              )
               const minsSince = (t: string | null) => t ? Math.max(0, Math.round((Date.now() - +new Date(t)) / 60000)) : null
               const label =
-                d.status === 'Accepted' && d.arrived_at_restaurant_at ? `📍 ${d.driver_name} وصل المطعم`
-                : d.status === 'Accepted' ? `🛵 ${d.driver_name} في الطريق للمطعم`
-                : d.status === 'Picked_Up' ? `📦 ${d.driver_name} استلم الطلب`
-                : d.status === 'Out_for_Delivery' ? `🚗 ${d.driver_name} في الطريق للعميل${minsSince(d.out_for_delivery_at) !== null ? ` (من ${minsSince(d.out_for_delivery_at)} دقيقة)` : ''}`
+                d.status === 'Accepted' && d.arrived_at_restaurant_at ? '📍 وصل المطعم'
+                : d.status === 'Accepted' ? '🛵 في الطريق للمطعم'
+                : d.status === 'Picked_Up' ? '📦 استلم الطلب'
+                : d.status === 'Out_for_Delivery' ? `🚗 في الطريق للعميل${minsSince(d.out_for_delivery_at) !== null ? ` — من ${minsSince(d.out_for_delivery_at)} دقيقة` : ''}`
                 : d.status === 'Delivered' ? '✅ تم التوصيل'
                 : '✅ في انتظار المندوب'
               return (
-                <div className="flex items-center justify-center gap-2 mt-3">
-                  <p className="text-emerald-700 text-sm">{label}</p>
+                <div className="mt-3 rounded-2xl bg-shellup p-3.5 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-bold truncate">{d.driver_name}</p>
+                    <p className="text-sea text-sm font-semibold mt-0.5">{label}</p>
+                  </div>
                   {d.driver_phone && d.status !== 'Delivered' && (
-                    <a href={`tel:${d.driver_phone}`} className="shrink-0 w-7 h-7 rounded-full bg-emerald-500/15 text-emerald-700 grid place-items-center" aria-label="اتصال بالمندوب">📞</a>
+                    <a href={`tel:${d.driver_phone}`} className="shrink-0 w-10 h-10 rounded-full bg-emerald-500/15 text-emerald-700 grid place-items-center" aria-label="اتصال بالمندوب">📞</a>
                   )}
                 </div>
               )

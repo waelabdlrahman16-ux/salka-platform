@@ -41,6 +41,7 @@ export default function DriverPage() {
   const [streakDays, setStreakDays] = useState(0)
   const [todayEarnings, setTodayEarnings] = useState(0)
   const [todayOrders, setTodayOrders] = useState(0)
+  const [todayTips, setTodayTips] = useState(0)
   const [justDelivered, setJustDelivered] = useState<{ orderId: number } | null>(null)
   const [myPos, setMyPos] = useState<{ lat: number; lng: number } | null>(null)
   const justDeliveredTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -89,6 +90,10 @@ export default function DriverPage() {
       .eq('driver_id', id).gte('created_at', todayStart.toISOString())
     setTodayOrders((todayEarn ?? []).length)
     setTodayEarnings((todayEarn ?? []).reduce((s, e) => s + Number(e.driver_earning), 0))
+
+    const { data: tips } = await supabase.from('driver_tips').select('amount')
+      .eq('driver_id', id).gte('created_at', todayStart.toISOString())
+    setTodayTips((tips ?? []).reduce((s, t) => s + Number(t.amount), 0))
 
     const { data: reqs } = await supabase.from('settlement_requests').select('id').eq('driver_id', id).eq('status', 'pending').limit(1)
     setSettlementSent((reqs ?? []).length > 0)
@@ -291,6 +296,7 @@ export default function DriverPage() {
         <div className="card p-4">
           <p className="text-xs text-mist">أرباح النهاردة</p>
           <p className="text-xl font-bold text-sea mt-1">{todayEarnings} ج.م</p>
+          {todayTips > 0 && <p className="text-xs text-sand font-semibold mt-1">+ {todayTips} ج.م إكراميات</p>}
         </div>
         <div className="card p-4">
           <p className="text-xs text-mist">طلبات النهاردة</p>
