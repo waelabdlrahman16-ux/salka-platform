@@ -420,7 +420,7 @@ function KitchenVendor({ rid }: { rid: number }) {
     const stage = KITCHEN.find(k => k.key === (o.kitchen_status || 'new'))!
     const completed = COMPLETED_LABEL[o.status]
     return (
-      <div key={o.id} className={`card p-4 ${big ? 'border-sand ring-2 ring-sand/50' : ''}`}>
+      <div key={o.id} className={`card !rounded-2xl p-4 ${big ? 'border-sand ring-2 ring-sand/50' : ''}`}>
         <div className="flex items-start justify-between">
           <div>
             <h2 className="font-bold text-lg">طلب #{o.id}</h2>
@@ -432,7 +432,7 @@ function KitchenVendor({ rid }: { rid: number }) {
           </div>
         </div>
 
-        <div className="mt-3 bg-night border border-line rounded-xl p-3.5 text-sm space-y-1.5">
+        <div className="mt-3 bg-night border border-line !rounded-2xl p-3.5 text-sm space-y-1.5">
           {(items[o.id] ?? []).map(it => (
             <div key={it.id} className="flex justify-between">
               <span>
@@ -487,33 +487,33 @@ function KitchenVendor({ rid }: { rid: number }) {
             {stage.next === 'preparing' ? (
               <div className="flex gap-2">
                 {[15, 20, 30].map(m => (
-                  <button key={m} className="btn-sea flex-1 !text-base !py-3.5" onClick={() => advance(o, 'preparing', m)}>
+                  <button key={m} className="btn-sea flex-1 !rounded-2xl !text-base !py-3.5" onClick={() => advance(o, 'preparing', m)}>
                     قبول · {m} د
                   </button>
                 ))}
               </div>
             ) : (
-              <button className="btn-sea w-full !text-lg !py-4" onClick={() => advance(o, stage.next!)}>
+              <button className="btn-sea w-full !rounded-2xl !text-lg !py-4" onClick={() => advance(o, stage.next!)}>
                 ✅ {stage.action}
               </button>
             )}
-            <button className="btn-danger w-full !text-base !py-2.5 mt-2" onClick={() => setDeclining(o)}>✗ رفض الطلب</button>
+            <button className="w-full !text-sm !py-2.5 mt-2 text-red-600 font-semibold" onClick={() => setDeclining(o)}>رفض الطلب</button>
           </div>
         ) : (
           <>
             {stage.next === 'preparing' ? (
               <div className="flex gap-2 mt-3">
                 {[15, 20, 30].map(m => (
-                  <button key={m} className="btn-sea flex-1 !text-sm !py-2.5 active:scale-95 transition-transform" onClick={() => advance(o, 'preparing', m)}>
+                  <button key={m} className="btn-sea flex-1 !rounded-2xl !text-sm !py-2.5 active:scale-95 transition-transform" onClick={() => advance(o, 'preparing', m)}>
                     قبول · {m} د
                   </button>
                 ))}
               </div>
             ) : stage.next && (
               <div className="flex gap-2.5 mt-3">
-                <button className="btn-sea flex-1 active:scale-95 transition-transform" onClick={() => advance(o, stage.next!)}>{stage.action}</button>
+                <button className="btn-sea flex-1 !rounded-2xl active:scale-95 transition-transform" onClick={() => advance(o, stage.next!)}>{stage.action}</button>
                 {o.delay_count < 3 && (
-                  <button className="btn-ghost active:scale-95 transition-transform" onClick={() => delay(o)}>+5 دقائق</button>
+                  <button className="btn-ghost !rounded-2xl active:scale-95 transition-transform" onClick={() => delay(o)}>+5 دقائق</button>
                 )}
               </div>
             )}
@@ -632,12 +632,12 @@ function KitchenVendor({ rid }: { rid: number }) {
 
       {declining && (
         <div className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" onClick={() => setDeclining(null)}>
-          <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
+          <div className="card !rounded-2xl w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold mb-2">رفض الطلب #{declining.id}</h3>
             <p className="text-sm text-mist mb-4">هيتم إلغاء الطلب وإخطار العميل. متاح فقط قبل بدء التحضير.</p>
             <div className="flex gap-3">
-              <button className="btn-ghost flex-1" onClick={() => setDeclining(null)}>تراجع</button>
-              <button className="btn-danger flex-1" onClick={decline}>تأكيد الرفض</button>
+              <button className="btn-ghost !rounded-2xl flex-1" onClick={() => setDeclining(null)}>تراجع</button>
+              <button className="btn-danger !rounded-2xl flex-1" onClick={decline}>تأكيد الرفض</button>
             </div>
           </div>
         </div>
