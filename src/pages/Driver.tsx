@@ -168,6 +168,18 @@ export default function DriverPage() {
     load()
   }
 
+  async function confirmCash(a: Assignment) {
+    if (navigator.vibrate) navigator.vibrate(15)
+    setCashConfirmed(s => new Set(s).add(a.id)) // optimistic
+    const { error } = await supabase.rpc('driver_confirm_cash_received', { p_assignment_id: a.id })
+    if (error) {
+      setCashConfirmed(s => { const next = new Set(s); next.delete(a.id); return next })
+      alert('حصل خطأ، جرب تاني')
+      return
+    }
+    load()
+  }
+
   async function markCalledCustomer(a: Assignment) {
     if (navigator.vibrate) navigator.vibrate(15)
     const { error } = await supabase.rpc('driver_called_customer', { p_assignment_id: a.id })
@@ -421,13 +433,24 @@ export default function DriverPage() {
         {assignments.map(a => {
           const o = a.orders
           if (!o) return null
-          const stages = [
+          const cashDue = o.payment_method === 'instapay' ? 0
+            : o.cod_deposit_amount != null ? o.total - o.cod_deposit_amount
+            : o.total
+          const stages = cashDue > 0 ? [
+            { key: 'Accepted', label: 'قبلت' },
+            { key: 'Picked_Up', label: 'استلمت' },
+            { key: 'Out_for_Delivery', label: 'في الطريق' },
+            { key: 'Cash_Confirmed', label: 'استلمت الكاش' },
+            { key: 'Delivered', label: 'وصل' },
+          ] : [
             { key: 'Accepted', label: 'قبلت' },
             { key: 'Picked_Up', label: 'استلمت' },
             { key: 'Out_for_Delivery', label: 'في الطريق' },
             { key: 'Delivered', label: 'وصل' },
           ]
-          const stageIndex = stages.findIndex(s => s.key === a.status)
+          const stageIndex = a.status === 'Out_for_Delivery' && cashDue > 0 && a.cash_confirmed_at
+            ? stages.findIndex(s => s.key === 'Cash_Confirmed')
+            : stages.findIndex(s => s.key === a.status)
           const statusColor = a.status === 'Delivered' ? 'bg-emerald-100 text-emerald-700'
             : a.status === 'Offered' ? 'bg-sand/15 text-sand'
             : 'bg-sea/10 text-sea'
@@ -465,7 +488,7 @@ export default function DriverPage() {
                   <div className="absolute top-[5px] h-0.5 bg-sea" style={{ right: 8, width: `calc(${stageIndex / (stages.length - 1)} * (100% - 16px))` }} />
                   <div className="relative flex justify-between">
                     {stages.map((s, i) => {
-                      const isCashStage = s.key === 'Out_for_Delivery'
+                      const isCashStage = s.key === 'Cash_Confirmed'
                       const done = i < stageIndex
                       const current = i === stageIndex
                       const dotColor = !done && !current ? 'bg-line'
@@ -473,7 +496,7 @@ export default function DriverPage() {
                       const labelColor = !done && !current ? 'text-mist'
                         : isCashStage && current ? 'text-sand' : 'text-sea'
                       return (
-                        <div key={s.key} className="flex flex-col items-center gap-1" style={{ width: '25%' }}>
+                        <div key={s.key} className="flex flex-col items-center gap-1" style={{ width: `${100 / stages.length}%` }}>
                           <div className={`w-2.5 h-2.5 rounded-full ${dotColor}`} />
                           <span className={`text-[10px] font-semibold text-center ${labelColor}`}>{s.label}</span>
                         </div>
@@ -533,23 +556,19 @@ export default function DriverPage() {
                 )}
                 {a.status === 'Picked_Up' && <button className="btn-sea w-full" onClick={() => markOutForDelivery(a)}>خرجت للتوصيل</button>}
                 {a.status === 'Out_for_Delivery' && (() => {
-                  const cashDue = o.payment_method === 'instapay' ? 0
-                    : o.cod_deposit_amount != null ? o.total - o.cod_deposit_amount
-                    : o.total
-                  const confirmed = cashDue === 0 || cashConfirmed.has(a.id)
+                  const confirmed = cashDue === 0 || !!a.cash_confirmed_at || cashConfirmed.has(a.id)
                   return (
                     <div className="space-y-2">
-                      {cashDue > 0 && (
+                      {cashDue > 0 && !a.cash_confirmed_at && (
                         <label className="flex items-center gap-2 text-sm bg-emerald-500/10 rounded-xl p-3 cursor-pointer">
                           <input type="checkbox" className="w-5 h-5 accent-emerald-600 shrink-0"
                             checked={cashConfirmed.has(a.id)}
-                            onChange={e => setCashConfirmed(s => {
-                              const next = new Set(s)
-                              if (e.target.checked) next.add(a.id); else next.delete(a.id)
-                              return next
-                            })} />
+                            onChange={e => { if (e.target.checked) confirmCash(a) }} />
                           <span className="text-emerald-800 font-semibold">أكدت إني استلمت {cashDue} ج.م كاش من العميل</span>
                         </label>
+                      )}
+                      {cashDue > 0 && a.cash_confirmed_at && (
+                        <p className="text-sand bg-sand/10 rounded-xl p-3 text-sm font-semibold text-center">✓ استلمت الكاش</p>
                       )}
                       <SwipeToConfirm label="اسحب لتأكيد التسليم" disabled={!confirmed} onConfirm={() => setStatus(a, 'Delivered')} />
                       {a.no_answer_reported_at ? (

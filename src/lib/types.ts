@@ -74,6 +74,7 @@ export interface Assignment {
   out_for_delivery_at: string | null; arrived_at_restaurant_at: string | null
   called_customer_at: string | null; no_answer_reported_at: string | null
   no_answer_admin_action: string | null
+  cash_confirmed_at: string | null
   orders?: Order
   drivers?: Driver
 }
