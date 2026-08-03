@@ -17,5 +17,5 @@ const MAP: Record<string, { emoji: string; tint: string }> = {
 }
 
 export function artFor(category: string) {
-  return MAP[category] ?? { emoji: '🍽️', tint: '#EAF1F0' }
+  return MAP[category] ?? { emoji: '🍽️', tint: '#F4EEE3' }
 }
