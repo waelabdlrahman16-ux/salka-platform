@@ -73,14 +73,14 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   async function signInWithGoogle() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin }
+      options: { redirectTo: window.location.origin + window.location.pathname }
     })
   }
 
   async function requestEmailLink(email: string) {
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: window.location.origin }
+      options: { emailRedirectTo: window.location.origin + window.location.pathname }
     })
     if (error) return { ok: false, error: error.message }
     return { ok: true }
