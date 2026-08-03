@@ -414,7 +414,7 @@ export default function DriverPage() {
               const isSelected = selectedPoolId === o.id
               return (
                 <div key={o.id}
-                  className={`card p-4 ${isSelected ? 'border-sea border-2' : notReadyYet ? 'border-line opacity-80' : 'border-sea/40'}`}
+                  className={`card !rounded-2xl p-4 ${isSelected ? 'border-sea border-2' : notReadyYet ? 'border-line opacity-80' : 'border-sea/40'}`}
                   onClick={() => setSelectedPoolId(o.id)}>
                   <div className="flex items-start justify-between">
                     <div>
@@ -472,7 +472,7 @@ export default function DriverPage() {
             ? Math.max(1, Math.round(haversineKm(myPos.lat, myPos.lng, destLat, destLng) / 25 * 60))
             : null
           return (
-            <div key={a.id} className="card p-4">
+            <div key={a.id} className="card !rounded-2xl p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <h2 className="font-bold truncate">طلب #{o.id} — {o.restaurants?.name}</h2>
