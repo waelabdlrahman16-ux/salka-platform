@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { estimateDeliveryFee } from '../lib/deliveryFee'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
@@ -9,6 +9,8 @@ import type { Compound, MenuItem, Restaurant, Slot } from '../lib/types'
 
 export default function CustomOrder() {
   const nav = useNavigate()
+  const [searchParams] = useSearchParams()
+  const typeFilter = searchParams.get('type') // 'pharmacy' | 'supermarket' | null -- deep-link from Home's category tiles
   const [vendors, setVendors] = useState<Restaurant[]>([])
   const [vendor, setVendor] = useState<Restaurant | null>(null)
   const [categories, setCategories] = useState<string[]>([])
@@ -46,7 +48,14 @@ export default function CustomOrder() {
 
   useEffect(() => {
     supabase.from('restaurants').select('*').eq('order_mode', 'custom_request').eq('is_open', true).eq('archived', false)
-      .then(({ data }) => setVendors((data as Restaurant[]) ?? []))
+      .then(({ data }) => {
+        const list = (data as Restaurant[]) ?? []
+        setVendors(list)
+        if (typeFilter) {
+          const matches = list.filter(v => v.vendor_type === typeFilter)
+          if (matches.length === 1) setVendor(matches[0])
+        }
+      })
     supabase.from('compounds').select('*').eq('active', true).order('direction').order('distance_km')
       .then(({ data }) => setCompounds(data ?? []))
   }, [])
@@ -107,12 +116,15 @@ export default function CustomOrder() {
 
   // Step 1 — pick the vendor
   if (!vendor) {
+    const shownVendors = typeFilter ? vendors.filter(v => v.vendor_type === typeFilter) : vendors
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-1">طلب خاص</h1>
+        <h1 className="text-2xl font-bold mb-1">
+          {typeFilter === 'pharmacy' ? 'الصيدلية' : typeFilter === 'supermarket' ? 'السوبر ماركت' : 'طلب خاص'}
+        </h1>
         <p className="text-mist text-sm mb-4">قول لنا اللي محتاجه، وإحنا هنجهزه معاك — من غير ما تدور في قايمة طويلة</p>
         <div className="grid grid-cols-2 gap-4">
-          {vendors.map(v => {
+          {shownVendors.map(v => {
             const art = artFor(v.vendor_type === 'pharmacy' ? 'أدوية' : 'خضار وفاكهة')
             return (
               <button key={v.id} className="card p-4 text-right" onClick={() => setVendor(v)}>
@@ -124,7 +136,7 @@ export default function CustomOrder() {
               </button>
             )
           })}
-          {vendors.length === 0 && <p className="text-mist col-span-full">مفيش خدمة طلب خاص متاحة حالياً</p>}
+          {shownVendors.length === 0 && <p className="text-mist col-span-full">مفيش خدمة متاحة حالياً</p>}
         </div>
       </div>
     )

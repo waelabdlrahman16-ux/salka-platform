@@ -2,17 +2,23 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useCustomerAuth } from '../lib/customerAuth'
+import { orderStatusLabel } from '../lib/statusLabels'
 import type { Compound } from '../lib/types'
 
 interface Address {
   id: number; label: string; compound_id: number; compound_name: string
   unit_number: string; notes: string | null; is_default: boolean
 }
+interface OrderRow {
+  id: number; public_token: string; total: number
+  status: string; created_at: string; restaurant_name: string
+}
 
 export default function Profile() {
   const nav = useNavigate()
   const { customer, logout, updatePhone } = useCustomerAuth()
   const [addresses, setAddresses] = useState<Address[]>([])
+  const [orders, setOrders] = useState<OrderRow[]>([])
   const [compounds, setCompounds] = useState<Compound[]>([])
   const [walletBalance, setWalletBalance] = useState<number | null>(null)
   const [editing, setEditing] = useState<Address | 'new' | null>(null)
@@ -30,6 +36,7 @@ export default function Profile() {
   useEffect(() => {
     if (!customer) return
     load()
+    supabase.rpc('my_customer_orders').then(({ data }) => setOrders((data as OrderRow[]) ?? []))
     supabase.from('compounds').select('*').eq('active', true).order('name').then(({ data }) => setCompounds(data ?? []))
     if (customer.phone) {
       supabase.rpc('wallet_balance_for_phone', { p_phone: customer.phone }).then(({ data }) => setWalletBalance(Number(data) || 0))
@@ -105,6 +112,23 @@ export default function Profile() {
         <p className="text-2xl font-bold text-sea mt-1">{walletBalance ?? '—'} ج.م</p>
       </div>
 
+      {orders.length > 0 && (
+        <div>
+          <h2 className="font-bold mb-2.5">طلباتي</h2>
+          <div className="space-y-2">
+            {orders.slice(0, 5).map(o => (
+              <Link key={o.id} to={`/track/${o.public_token}`} className="card p-3.5 flex items-center justify-between hover:border-sea/50 transition-colors">
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm truncate">#{o.id} — {o.restaurant_name}</p>
+                  <p className="text-xs text-mist mt-0.5">{orderStatusLabel(o.status)}</p>
+                </div>
+                <span className="text-sea font-bold text-sm shrink-0">{o.total} ج.م</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div>
         <div className="flex items-center justify-between mb-2.5">
           <h2 className="font-bold">عناويني المحفوظة</h2>
@@ -163,6 +187,15 @@ export default function Profile() {
           ))}
         </div>
       </div>
+
+      <a href="https://wa.me/201040444477" target="_blank" rel="noreferrer"
+        className="card p-4 flex items-center gap-3 hover:border-sea/50 transition-colors">
+        <span className="w-11 h-11 rounded-xl grid place-items-center text-xl shrink-0 bg-emerald-500/10">💬</span>
+        <div>
+          <p className="font-bold">تحتاج مساعدة؟</p>
+          <p className="text-xs text-mist mt-0.5">كلّمنا على واتساب</p>
+        </div>
+      </a>
     </div>
   )
 }

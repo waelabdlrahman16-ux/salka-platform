@@ -102,7 +102,7 @@ export default function Home() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4 gap-3">
-        <h1 className="text-2xl font-bold shrink-0">المطاعم</h1>
+        <h1 className="text-2xl font-bold shrink-0">سالكة</h1>
         <button className="btn-ghost text-sm shrink-0 max-w-[55%]" onClick={() => setPicking(true)}>
           <span className="flex items-center gap-1">
             <Icon name="locationDot" className="w-3.5 h-3.5 shrink-0" />
@@ -111,10 +111,32 @@ export default function Home() {
         </button>
       </div>
 
+      {!picking && !loading && compoundId && (
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <a href="#restaurants" className="card p-4 flex items-center gap-3 hover:border-sea/50 transition-colors">
+            <span className="w-11 h-11 rounded-xl grid place-items-center text-2xl shrink-0" style={{ background: 'rgba(10,95,94,.1)' }}>🍔</span>
+            <span className="font-bold">مطاعم</span>
+          </a>
+          <Link to="/custom-order?type=supermarket" className="card p-4 flex items-center gap-3 hover:border-sea/50 transition-colors">
+            <span className="w-11 h-11 rounded-xl grid place-items-center text-2xl shrink-0" style={{ background: 'rgba(212,163,42,.12)' }}>🛒</span>
+            <span className="font-bold">سوبر ماركت</span>
+          </Link>
+          <Link to="/custom-order?type=pharmacy" className="card p-4 flex items-center gap-3 hover:border-sea/50 transition-colors">
+            <span className="w-11 h-11 rounded-xl grid place-items-center text-2xl shrink-0" style={{ background: 'rgba(200,60,60,.1)' }}>💊</span>
+            <span className="font-bold">صيدلية</span>
+          </Link>
+          <Link to="/custom-order" className="card p-4 flex items-center gap-3 hover:border-sea/50 transition-colors">
+            <span className="w-11 h-11 rounded-xl grid place-items-center text-2xl shrink-0" style={{ background: 'rgba(100,113,111,.12)' }}>📝</span>
+            <span className="font-bold">طلب خاص</span>
+          </Link>
+        </div>
+      )}
+
       {!picking && loading && <p className="text-mist">جاري التحميل…</p>}
 
       {!picking && !loading && compoundId && (
-        <div>
+        <div id="restaurants">
+          <h2 className="text-lg font-bold mb-3">المطاعم</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {catalogRestaurants.length === 0 && (
               <p className="text-mist col-span-full">لا يوجد مطاعم بتوصل لمكانك حاليًا</p>

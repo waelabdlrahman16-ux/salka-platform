@@ -13,6 +13,7 @@ import Track from './pages/Track'
 import Login from './pages/Login'
 import MyOrders from './pages/MyOrders'
 import Profile from './pages/Profile'
+import Offers from './pages/Offers'
 import Terms from './pages/Terms'
 import InstallPrompt from './components/InstallPrompt'
 import CustomerLogin from './components/CustomerLogin'
@@ -59,9 +60,9 @@ function BottomNav() {
 
   const items = [
     { to: '/', label: 'الرئيسية', icon: 'house' as const },
-    { to: '/custom-order', label: 'طلب خاص', icon: 'penToSquare' as const },
+    { to: '/offers', label: 'العروض', icon: 'moneyBill' as const },
     { to: '/cart', label: 'عربتي', icon: 'bagShopping' as const, badge: cart.count },
-    { to: '/my-orders', label: 'طلباتي', icon: 'rectangleList' as const },
+    { to: '/profile', label: 'حسابي', icon: 'rectangleList' as const },
   ]
 
   return (
@@ -129,6 +130,7 @@ function AppShell() {
               <Route path="/custom-order" element={<CustomOrder />} />
               <Route path="/my-orders" element={<MyOrders />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/offers" element={<Offers />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/track/:token" element={<Track />} />
               <Route path="/login" element={<Login />} />
