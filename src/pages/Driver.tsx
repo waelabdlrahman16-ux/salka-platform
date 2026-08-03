@@ -7,6 +7,7 @@ import { startLocationReporting, stopLocationReporting } from '../lib/geolocatio
 import type { Assignment, Driver, Shift, SwapRequest } from '../lib/types'
 import Icon from '../components/Icon'
 import DriverActiveMap from '../components/DriverActiveMap'
+import DriverPoolMap from '../components/DriverPoolMap'
 import SwipeToConfirm from '../components/SwipeToConfirm'
 import { haversineKm } from '../lib/geo'
 import { assignmentStatusLabel, driverStatusLabel } from '../lib/statusLabels'
@@ -15,6 +16,7 @@ interface PoolOrder {
   id: number; total: number; zone: string
   kitchen_status: string; restaurant_name: string; created_at: string
   ready_at: string | null; dispatch_at: string | null
+  dest_lat: number | null; dest_lng: number | null
 }
 
 export default function DriverPage() {
@@ -26,6 +28,7 @@ export default function DriverPage() {
   const [reason, setReason] = useState('')
   const [cashConfirmed, setCashConfirmed] = useState<Set<number>>(new Set())
   const [pool, setPool] = useState<PoolOrder[]>([])
+  const [selectedPoolId, setSelectedPoolId] = useState<number | null>(null)
   const [claiming, setClaiming] = useState<number | null>(null)
   const [shifts, setShifts] = useState<Shift[]>([])
   const [swaps, setSwaps] = useState<SwapRequest[]>([])
@@ -370,12 +373,25 @@ export default function DriverPage() {
       {pool.length > 0 && (
         <div className="mb-5">
           <h2 className="font-bold text-mist mb-3">طلبات متاحة — أول واحد يقبل ياخدها</h2>
+          {pool.some(o => o.dest_lat != null && o.dest_lng != null) && (
+            <div className="mb-3">
+              <DriverPoolMap
+                pins={pool.filter(o => o.dest_lat != null && o.dest_lng != null)
+                  .map(o => ({ id: o.id, lat: o.dest_lat!, lng: o.dest_lng! }))}
+                selectedId={selectedPoolId}
+                onSelect={setSelectedPoolId}
+              />
+            </div>
+          )}
           <div className="space-y-3">
             {pool.map(o => {
               const notReadyYet = !!o.dispatch_at && new Date(o.dispatch_at) > new Date()
               const minsLeft = notReadyYet ? Math.max(1, Math.round((+new Date(o.dispatch_at!) - Date.now()) / 60000)) : 0
+              const isSelected = selectedPoolId === o.id
               return (
-                <div key={o.id} className={`card p-4 ${notReadyYet ? 'border-line opacity-80' : 'border-sea/40'}`}>
+                <div key={o.id}
+                  className={`card p-4 ${isSelected ? 'border-sea border-2' : notReadyYet ? 'border-line opacity-80' : 'border-sea/40'}`}
+                  onClick={() => setSelectedPoolId(o.id)}>
                   <div className="flex items-start justify-between">
                     <div>
                       <h3 className="font-bold">{o.restaurant_name}</h3>
@@ -389,7 +405,7 @@ export default function DriverPage() {
                     <span className="font-bold text-sea">{o.total} ج.م</span>
                   </div>
                   <button className="btn-sea w-full mt-3" disabled={claiming === o.id || notReadyYet}
-                    onClick={() => claim(o.id)}>
+                    onClick={e => { e.stopPropagation(); claim(o.id) }}>
                     {claiming === o.id ? 'جاري القبول…' : notReadyYet ? 'لسه معلش' : 'أستلم الطلب'}
                   </button>
                 </div>
@@ -444,26 +460,26 @@ export default function DriverPage() {
               </div>
 
               {stageIndex >= 0 && (
-                <div className="flex items-start justify-between mt-4 px-1">
-                  {stages.map((s, i) => {
-                    const isCashStage = s.key === 'Out_for_Delivery'
-                    const done = i < stageIndex
-                    const current = i === stageIndex
-                    const dotColor = !done && !current ? 'bg-line'
-                      : isCashStage && current ? 'bg-sand' : 'bg-sea'
-                    const labelColor = !done && !current ? 'text-mist'
-                      : isCashStage && current ? 'text-sand' : 'text-sea'
-                    return (
-                      <div key={s.key} className="flex flex-col items-center gap-1 flex-1">
-                        <div className="flex items-center w-full">
-                          {i > 0 && <div className={`flex-1 h-0.5 ${done || current ? 'bg-sea' : 'bg-line'}`} />}
-                          <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${dotColor}`} />
-                          {i < stages.length - 1 && <div className={`flex-1 h-0.5 ${done ? 'bg-sea' : 'bg-line'}`} />}
+                <div className="relative mt-4 px-2">
+                  <div className="absolute top-[5px] right-2 left-2 h-0.5 bg-line" />
+                  <div className="absolute top-[5px] h-0.5 bg-sea" style={{ right: 8, width: `calc(${stageIndex / (stages.length - 1)} * (100% - 16px))` }} />
+                  <div className="relative flex justify-between">
+                    {stages.map((s, i) => {
+                      const isCashStage = s.key === 'Out_for_Delivery'
+                      const done = i < stageIndex
+                      const current = i === stageIndex
+                      const dotColor = !done && !current ? 'bg-line'
+                        : isCashStage && current ? 'bg-sand' : 'bg-sea'
+                      const labelColor = !done && !current ? 'text-mist'
+                        : isCashStage && current ? 'text-sand' : 'text-sea'
+                      return (
+                        <div key={s.key} className="flex flex-col items-center gap-1" style={{ width: '25%' }}>
+                          <div className={`w-2.5 h-2.5 rounded-full ${dotColor}`} />
+                          <span className={`text-[10px] font-semibold text-center ${labelColor}`}>{s.label}</span>
                         </div>
-                        <span className={`text-[10px] font-semibold ${labelColor}`}>{s.label}</span>
-                      </div>
-                    )
-                  })}
+                      )
+                    })}
+                  </div>
                 </div>
               )}
 
@@ -491,16 +507,13 @@ export default function DriverPage() {
                 {o.address_notes && (
                   <p className="text-sea bg-sea/10 rounded-lg p-2 font-semibold">📝 {o.address_notes}</p>
                 )}
-                {o.customer_note && (
-                  <p className="text-sand bg-sand/10 rounded-lg p-2">📝 {o.customer_note}</p>
-                )}
                 <div className="flex gap-2 pt-1">
-                  <a className="btn-ghost !py-1.5 text-sm flex-1 text-center" href={`tel:${o.customer_phone}`}>اتصال</a>
-                  <a className="btn-ghost !py-1.5 text-sm flex-1 text-center" href={`https://wa.me/${o.customer_phone.replace(/^0/, '20').replace('+', '')}`} target="_blank" rel="noreferrer">واتساب</a>
+                  <a className="btn-ghost !py-1.5 !px-2 text-xs flex-1 text-center whitespace-nowrap" href={`tel:${o.customer_phone}`}>اتصال</a>
+                  <a className="btn-ghost !py-1.5 !px-2 text-xs flex-1 text-center whitespace-nowrap" href={`https://wa.me/${o.customer_phone.replace(/^0/, '20').replace('+', '')}`} target="_blank" rel="noreferrer">واتساب</a>
                   {destLat != null && destLng != null && (
-                    <a className="btn-sea !py-1.5 text-sm flex-1 text-center"
+                    <a className="btn-sea !py-1.5 !px-2 text-xs flex-1 text-center whitespace-nowrap"
                       href={`https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=driving`}
-                      target="_blank" rel="noreferrer">🧭 خرائط جوجل</a>
+                      target="_blank" rel="noreferrer">خرائط</a>
                   )}
                 </div>
               </div>

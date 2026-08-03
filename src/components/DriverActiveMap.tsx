@@ -76,8 +76,11 @@ export default function DriverActiveMap({ destLat, destLng, showRoute, heightPx 
       {!myPos && (
         <div className="absolute inset-0 bg-shellup grid place-items-center text-sm text-mist">جاري تحديد موقعك…</div>
       )}
-      <button onClick={recenter} className="absolute bottom-2.5 left-2.5 bg-white rounded-xl px-3 py-2 text-xs font-semibold text-sea shadow-sm">
-        📍 رجّع للموقع
+      <button onClick={recenter} aria-label="رجّع للموقع" className="absolute bottom-2.5 left-2.5 bg-white rounded-full w-9 h-9 grid place-items-center shadow-sm">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#0A5F5E" strokeWidth="2">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 2v4M12 18v4M2 12h4M18 12h4" strokeLinecap="round" />
+        </svg>
       </button>
     </div>
   )
