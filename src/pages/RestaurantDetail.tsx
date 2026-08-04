@@ -149,7 +149,11 @@ export default function RestaurantDetail() {
         </div>
       ) : (
         <>
-          {/* category pills */}
+          {/* Category pills, hidden when there is only one category: KFC has all
+              seven of its items under a single "وجبات", so the bar rendered as
+              "الكل | وجبات" -- two controls that filter to the same list and
+              cost a row of vertical space to say nothing. */}
+          {categories.length > 1 && (
           <div className="flex gap-2 overflow-x-auto pb-1 mb-4 -mx-4 px-4 scrollbar-none">
             <button className={`tab shrink-0 ${activeCat === ALL ? 'tab-active' : 'bg-shellup/60'}`} onClick={() => setActiveCat(ALL)}>الكل</button>
             {categories.map(cat => (
@@ -158,6 +162,7 @@ export default function RestaurantDetail() {
                 onClick={() => setActiveCat(cat)}>{cat}</button>
             ))}
           </div>
+          )}
 
           {(activeCat === ALL ? categories : [activeCat]).map(cat => shown(cat).length === 0 ? null : (
             <section key={cat} className="mb-6">

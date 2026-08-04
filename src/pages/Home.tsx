@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useDismissable } from '../lib/useDismissable'
 import { haversineKm } from '../lib/geo'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
+import { BROWSE_KINDS, vendorKind, type VendorKind } from '../lib/categoryArt'
 import Icon from '../components/Icon'
 import type { Compound, Discount, Restaurant } from '../lib/types'
 
@@ -16,6 +17,7 @@ export default function Home() {
   const [discountedRestaurantIds, setDiscountedRestaurantIds] = useState<Set<number>>(new Set())
   const [loading, setLoading] = useState(true)
   const [picking, setPicking] = useState(false)
+  const [kind, setKind] = useState<VendorKind | null>(null)
   // Escape only closes the picker when there is something to fall back to --
   // the same guard the backdrop uses. With no compound chosen and the query
   // working, closing it would leave the page with no address at all.
@@ -126,6 +128,13 @@ export default function Home() {
   const eta = (r: Restaurant) => selected ? r.prep_minutes + selected.est_travel_minutes : r.prep_minutes
   const catalogRestaurants = restaurants.filter(r =>
     r.order_mode !== 'custom_request' && r.vendor_type !== 'pharmacy' && r.vendor_type !== 'supermarket')
+  // Only offer a kind that actually has a vendor delivering to this compound --
+  // a chip that leads to an empty list is worse than no chip.
+  const availableKinds = BROWSE_KINDS.filter(({ kind: k }) =>
+    catalogRestaurants.some(r => vendorKind(r.category) === k))
+  const shownRestaurants = kind
+    ? catalogRestaurants.filter(r => vendorKind(r.category) === kind)
+    : catalogRestaurants
   const filtered = search.trim() ? compounds.filter(c => c.name.toLowerCase().includes(search.toLowerCase())) : []
 
   return (
@@ -182,12 +191,38 @@ export default function Home() {
 
       {!picking && !loading && compoundId && (
         <div id="restaurants">
-          <h2 className="text-lg font-bold mb-3">المطاعم</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {catalogRestaurants.length === 0 && (
-              <p className="text-mist col-span-full">لا يوجد مطاعم بتوصل لمكانك حاليًا</p>
+          <div className="flex items-baseline justify-between gap-3 mb-3">
+            <h2 className="text-lg font-bold">المطاعم</h2>
+            {kind && (
+              <button className="text-sm text-seadeep font-semibold" onClick={() => setKind(null)}>
+                إلغاء الفلتر
+              </button>
             )}
-            {catalogRestaurants.map(r => (
+          </div>
+
+          {/* Browse by kind. Until now the only way to find food was to already
+              know which restaurant sold it -- there was no way to ask "who does
+              seafood?". Only kinds that actually have a vendor delivering here
+              are offered, so tapping one can never land on an empty list. */}
+          {availableKinds.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-1 mb-4 -mx-4 px-4 scrollbar-none">
+              {availableKinds.map(({ kind: k, emoji }) => (
+                <button key={k}
+                  className={`tab shrink-0 ${kind === k ? 'tab-active' : 'bg-shellup/60'}`}
+                  onClick={() => setKind(kind === k ? null : k)}>
+                  <span className="flex items-center gap-1.5"><span aria-hidden="true">{emoji}</span>{k}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {shownRestaurants.length === 0 && (
+              <p className="text-mist col-span-full">
+                {kind ? `مفيش مطاعم ${kind} بتوصل لمكانك حاليًا` : 'لا يوجد مطاعم بتوصل لمكانك حاليًا'}
+              </p>
+            )}
+            {shownRestaurants.map(r => (
               <Link key={r.id} to={`/restaurant/${r.id}`} className="card p-4 hover:border-sea/50 transition-colors">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-3 min-w-0">

@@ -534,161 +534,6 @@ export default function DriverPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3 mb-3">
-        <div className="card p-4">
-          <p className="text-xs text-mist">أرباح النهاردة</p>
-          <p className="text-xl font-bold text-sea mt-1">{money(todayEarnings)}</p>
-          {todayTips > 0 && <p className="text-xs text-seadeep font-semibold mt-1">+ {todayTips} ج.م إكراميات</p>}
-        </div>
-        <div className="card p-4">
-          <p className="text-xs text-mist">طلبات النهاردة</p>
-          <p className="text-xl font-bold text-foam mt-1">{haveStats ? todayOrders : '—'}</p>
-        </div>
-      </div>
-
-      {/* The tiered daily bonus is the strongest lever in the pay model and had
-          no representation in the UI at all -- the driver could not see how
-          close they were to the next tier during the only window where it can
-          change what they do. */}
-      {bonus && Array.isArray(bonus.tiers) && bonus.tiers.length > 0 && (
-        <div className="card p-4 mb-4">
-          <div className="flex items-baseline justify-between mb-2.5">
-            <p className="text-xs text-mist">بونص النهاردة</p>
-            <p className="text-sm font-bold text-foam">
-              {bonus.earned_today > 0 ? `${bonus.earned_today} ج.م مضمونين` : 'لسه ما وصلتش أول مرحلة'}
-            </p>
-          </div>
-
-          <div className="relative h-2 rounded-full bg-shellup overflow-hidden">
-            <div
-              className="absolute inset-y-0 right-0 bg-sea rounded-full transition-[width] duration-500"
-              style={{
-                width: `${Math.min(100, Math.round(
-                  (todayOrders / Math.max(1, bonus.tiers[bonus.tiers.length - 1].orders)) * 100
-                ))}%`
-              }}
-            />
-          </div>
-
-          <div className="flex justify-between mt-2">
-            {bonus.tiers.map((t, i) => {
-              const reached = todayOrders >= t.orders
-              return (
-                <div key={t.orders} className={`text-center ${i === 0 ? 'text-right' : i === bonus.tiers.length - 1 ? 'text-left' : ''}`}>
-                  <p className={`text-[11px] font-bold ${reached ? 'text-sea' : 'text-mist'}`}>
-                    {reached ? '✓ ' : ''}{t.amount} ج.م
-                  </p>
-                  <p className="text-[10px] text-mist">{t.orders} طلب</p>
-                </div>
-              )
-            })}
-          </div>
-
-          {bonus.orders_to_next != null && bonus.next_amount != null && (
-            <p className="text-sm font-semibold text-foam mt-3 text-center bg-shellup rounded-lg py-2">
-              فاضل <span className="text-sea">{bonus.orders_to_next}</span> طلب توصل لبونص {bonus.next_amount} ج.م
-            </p>
-          )}
-          {bonus.orders_to_next == null && (
-            <p className="text-sm font-semibold text-sea mt-3 text-center bg-sea/10 rounded-lg py-2">
-              🎉 وصلت لأعلى بونص النهاردة
-            </p>
-          )}
-        </div>
-      )}
-
-      <div className="card p-4 mb-5">
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <p className="text-xs text-mist">أرباح لسه ما اتصرفتش</p>
-            <p className="text-lg font-bold text-sea mt-0.5">{money(unpaidEarnings)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-mist">كاش معاك دلوقتي</p>
-            {/* text-sandink is ~2.7:1 on white -- below WCAG AA, and this is read
-                in direct sunlight. seadeep carries the same "money you owe"
-                meaning at a legible contrast. */}
-            <p className="text-lg font-bold text-seadeep mt-0.5">{driver.cash_held ?? 0} ج.م</p>
-          </div>
-        </div>
-        {settlementSent ? (
-          <p className="text-emerald-700 text-sm text-center mt-3">✅ طلب التسوية المبكرة وصل للإدارة</p>
-        ) : (
-          <button className="btn-ghost w-full mt-3 text-sm" disabled={requestingSettlement || !haveStats || unpaidEarnings === 0} onClick={requestSettlement}>
-            {requestingSettlement ? 'جاري الإرسال…' : 'اطلب تسوية مبكرة'}
-          </button>
-        )}
-      </div>
-
-      {shifts.length > 0 && (
-        <div className="mb-5">
-          <h2 className="font-bold text-mist mb-3">ورديتك القادمة</h2>
-          <div className="space-y-3">
-            {shifts.map(sh => {
-              const requested = myOpenRequests.has(sh.id)
-              const myRequestId = myOpenRequests.get(sh.id)
-              return (
-                <div key={sh.id} className="card p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold">
-                        {new Date(sh.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'numeric' })}
-                      </p>
-                      <p className="text-sm text-mist mt-0.5">{sh.start_time.slice(0,5)} — {sh.end_time.slice(0,5)}</p>
-                    </div>
-                    {sh.status === 'swapped' && <span className="badge-closed">اتبدلت</span>}
-                  </div>
-
-                  {sh.status === 'scheduled' && !requested && !myEscalated.has(sh.id) && (
-                    <div className="mt-3 flex gap-2">
-                      <input className="field !py-1.5 text-sm" placeholder="سبب الاستبدال (اختياري)"
-                        value={swapReason[sh.id] || ''}
-                        onChange={e => setSwapReason({ ...swapReason, [sh.id]: e.target.value })} />
-                      <button className="btn-ghost !py-1.5 text-sm shrink-0" onClick={() => requestSwap(sh.id)}>
-                        طلب استبدال
-                      </button>
-                    </div>
-                  )}
-                  {requested && myRequestId && (
-                    <div className="mt-3">
-                      <p className="text-sandink text-sm">⏳ طلب الاستبدال معروض على باقي المندوبين</p>
-                      <button className="btn-danger w-full mt-2 text-sm"
-                        onClick={() => escalate(myRequestId)}>
-                        محدش وافق — بلّغ الإدارة
-                      </button>
-                    </div>
-                  )}
-                  {myEscalated.has(sh.id) && (
-                    <p className="text-emerald-700 text-sm mt-3">✅ تم إبلاغ الإدارة — في انتظار تعيين مندوب بديل</p>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {swaps.filter(s => !myOpenRequests.has(s.shift_id)).length > 0 && (
-        <div className="mb-5">
-          <h2 className="font-bold text-mist mb-3">ورديات محتاجة مندوب بديل</h2>
-          <div className="space-y-3">
-            {swaps.filter(s => !myOpenRequests.has(s.shift_id)).map(sw => (
-              <div key={sw.request_id} className="card p-4 border-sand/40">
-                <p className="font-semibold">
-                  {new Date(sw.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'numeric' })}
-                  {' '}· {sw.start_time.slice(0,5)}–{sw.end_time.slice(0,5)}
-                </p>
-                <p className="text-sm text-mist mt-1">مطلوبة من {sw.requested_by_name}</p>
-                {sw.reason && <p className="text-sm text-mist mt-0.5">"{sw.reason}"</p>}
-                <button className="btn-sea w-full mt-3" onClick={() => acceptSwap(sw.request_id)}>
-                  أقبل الوردية
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       <div className="space-y-3">
         {assignments.map(a => {
           const o = a.orders
@@ -881,6 +726,181 @@ export default function DriverPage() {
           )
         })}
       </div>
+
+      {/* Everything below this point is reference, not work.
+
+          It used to sit ABOVE the order being delivered: today's earnings, the
+          bonus meter, unpaid balance, the next shift and shift-swap requests --
+          then, after all of that, the address and phone number of the customer
+          waiting right now. A driver on a motorbike had to scroll past five
+          cards of information they cannot act on to reach the one they can.
+
+          Nothing is removed. It is collapsed, and it opens by default when
+          there is no active delivery, which is exactly when a driver is
+          looking at their earnings and shifts anyway. */}
+      <details className="mb-5" open={assignments.length === 0}>
+        <summary className="card px-4 py-3 cursor-pointer list-none flex items-center justify-between select-none min-h-[44px]">
+          <span className="font-semibold text-sm">💰 الأرباح والورديات</span>
+          <span className="text-mist text-xs">{money(todayEarnings)} · اضغط للتفاصيل</span>
+        </summary>
+        <div className="mt-3">
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <div className="card p-4">
+          <p className="text-xs text-mist">أرباح النهاردة</p>
+          <p className="text-xl font-bold text-sea mt-1">{money(todayEarnings)}</p>
+          {todayTips > 0 && <p className="text-xs text-seadeep font-semibold mt-1">+ {todayTips} ج.م إكراميات</p>}
+        </div>
+        <div className="card p-4">
+          <p className="text-xs text-mist">طلبات النهاردة</p>
+          <p className="text-xl font-bold text-foam mt-1">{haveStats ? todayOrders : '—'}</p>
+        </div>
+      </div>
+
+      {/* The tiered daily bonus is the strongest lever in the pay model and had
+          no representation in the UI at all -- the driver could not see how
+          close they were to the next tier during the only window where it can
+          change what they do. */}
+      {bonus && Array.isArray(bonus.tiers) && bonus.tiers.length > 0 && (
+        <div className="card p-4 mb-4">
+          <div className="flex items-baseline justify-between mb-2.5">
+            <p className="text-xs text-mist">بونص النهاردة</p>
+            <p className="text-sm font-bold text-foam">
+              {bonus.earned_today > 0 ? `${bonus.earned_today} ج.م مضمونين` : 'لسه ما وصلتش أول مرحلة'}
+            </p>
+          </div>
+
+          <div className="relative h-2 rounded-full bg-shellup overflow-hidden">
+            <div
+              className="absolute inset-y-0 right-0 bg-sea rounded-full transition-[width] duration-500"
+              style={{
+                width: `${Math.min(100, Math.round(
+                  (todayOrders / Math.max(1, bonus.tiers[bonus.tiers.length - 1].orders)) * 100
+                ))}%`
+              }}
+            />
+          </div>
+
+          <div className="flex justify-between mt-2">
+            {bonus.tiers.map((t, i) => {
+              const reached = todayOrders >= t.orders
+              return (
+                <div key={t.orders} className={`text-center ${i === 0 ? 'text-right' : i === bonus.tiers.length - 1 ? 'text-left' : ''}`}>
+                  <p className={`text-[11px] font-bold ${reached ? 'text-sea' : 'text-mist'}`}>
+                    {reached ? '✓ ' : ''}{t.amount} ج.م
+                  </p>
+                  <p className="text-[10px] text-mist">{t.orders} طلب</p>
+                </div>
+              )
+            })}
+          </div>
+
+          {bonus.orders_to_next != null && bonus.next_amount != null && (
+            <p className="text-sm font-semibold text-foam mt-3 text-center bg-shellup rounded-lg py-2">
+              فاضل <span className="text-sea">{bonus.orders_to_next}</span> طلب توصل لبونص {bonus.next_amount} ج.م
+            </p>
+          )}
+          {bonus.orders_to_next == null && (
+            <p className="text-sm font-semibold text-sea mt-3 text-center bg-sea/10 rounded-lg py-2">
+              🎉 وصلت لأعلى بونص النهاردة
+            </p>
+          )}
+        </div>
+      )}
+
+      <div className="card p-4 mb-5">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-xs text-mist">أرباح لسه ما اتصرفتش</p>
+            <p className="text-lg font-bold text-sea mt-0.5">{money(unpaidEarnings)}</p>
+          </div>
+          <div>
+            <p className="text-xs text-mist">كاش معاك دلوقتي</p>
+            {/* text-sandink is ~2.7:1 on white -- below WCAG AA, and this is read
+                in direct sunlight. seadeep carries the same "money you owe"
+                meaning at a legible contrast. */}
+            <p className="text-lg font-bold text-seadeep mt-0.5">{driver.cash_held ?? 0} ج.م</p>
+          </div>
+        </div>
+        {settlementSent ? (
+          <p className="text-emerald-700 text-sm text-center mt-3">✅ طلب التسوية المبكرة وصل للإدارة</p>
+        ) : (
+          <button className="btn-ghost w-full mt-3 text-sm" disabled={requestingSettlement || !haveStats || unpaidEarnings === 0} onClick={requestSettlement}>
+            {requestingSettlement ? 'جاري الإرسال…' : 'اطلب تسوية مبكرة'}
+          </button>
+        )}
+      </div>
+
+      {shifts.length > 0 && (
+        <div className="mb-5">
+          <h2 className="font-bold text-mist mb-3">ورديتك القادمة</h2>
+          <div className="space-y-3">
+            {shifts.map(sh => {
+              const requested = myOpenRequests.has(sh.id)
+              const myRequestId = myOpenRequests.get(sh.id)
+              return (
+                <div key={sh.id} className="card p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold">
+                        {new Date(sh.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'numeric' })}
+                      </p>
+                      <p className="text-sm text-mist mt-0.5">{sh.start_time.slice(0,5)} — {sh.end_time.slice(0,5)}</p>
+                    </div>
+                    {sh.status === 'swapped' && <span className="badge-closed">اتبدلت</span>}
+                  </div>
+
+                  {sh.status === 'scheduled' && !requested && !myEscalated.has(sh.id) && (
+                    <div className="mt-3 flex gap-2">
+                      <input className="field !py-1.5 text-sm" placeholder="سبب الاستبدال (اختياري)"
+                        value={swapReason[sh.id] || ''}
+                        onChange={e => setSwapReason({ ...swapReason, [sh.id]: e.target.value })} />
+                      <button className="btn-ghost !py-1.5 text-sm shrink-0" onClick={() => requestSwap(sh.id)}>
+                        طلب استبدال
+                      </button>
+                    </div>
+                  )}
+                  {requested && myRequestId && (
+                    <div className="mt-3">
+                      <p className="text-sandink text-sm">⏳ طلب الاستبدال معروض على باقي المندوبين</p>
+                      <button className="btn-danger w-full mt-2 text-sm"
+                        onClick={() => escalate(myRequestId)}>
+                        محدش وافق — بلّغ الإدارة
+                      </button>
+                    </div>
+                  )}
+                  {myEscalated.has(sh.id) && (
+                    <p className="text-emerald-700 text-sm mt-3">✅ تم إبلاغ الإدارة — في انتظار تعيين مندوب بديل</p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {swaps.filter(s => !myOpenRequests.has(s.shift_id)).length > 0 && (
+        <div className="mb-5">
+          <h2 className="font-bold text-mist mb-3">ورديات محتاجة مندوب بديل</h2>
+          <div className="space-y-3">
+            {swaps.filter(s => !myOpenRequests.has(s.shift_id)).map(sw => (
+              <div key={sw.request_id} className="card p-4 border-sand/40">
+                <p className="font-semibold">
+                  {new Date(sw.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'numeric' })}
+                  {' '}· {sw.start_time.slice(0,5)}–{sw.end_time.slice(0,5)}
+                </p>
+                <p className="text-sm text-mist mt-1">مطلوبة من {sw.requested_by_name}</p>
+                {sw.reason && <p className="text-sm text-mist mt-0.5">"{sw.reason}"</p>}
+                <button className="btn-sea w-full mt-3" onClick={() => acceptSwap(sw.request_id)}>
+                  أقبل الوردية
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+        </div>
+      </details>
+
 
       {pool.length > 0 && (
         <div className="mb-5">

@@ -62,6 +62,19 @@ const MAP: Record<string, Art> = {
   'فطار': { emoji: '🍳', tint: TINT.bake },
   'بيض': { emoji: '🍳', tint: TINT.bake },
   'فول وطعمية': { emoji: '🥙', tint: TINT.bake },
+  // Added when the 2026-08-04 category cleanup split أرابياتا's five
+  // "سندوتشات X" tabs down to the filling alone. Substring matching only works
+  // in one direction -- a short key like "فول" cannot match the longer
+  // "فول وطعمية" entry -- so each short form needs its own line.
+  'فول': { emoji: '🥙', tint: TINT.bake },
+  'طعمية': { emoji: '🥙', tint: TINT.bake },
+  'متنوعة': { emoji: '🥙', tint: TINT.bake },
+  'ساندويتشات لحم': { emoji: '🥙', tint: TINT.meat },
+  'ساندويتشات دجاج': { emoji: '🥙', tint: TINT.chicken },
+  'سينابون رولز': { emoji: '🍩', tint: TINT.bake },
+  'تشيز كيك سيناميكس': { emoji: '🍰', tint: TINT.bake },
+  'رول-اون-ذا-جو': { emoji: '🥐', tint: TINT.bake },
+  'ماتشا': { emoji: '🍵', tint: TINT.veg },
   'مقبلات': { emoji: '🥗', tint: TINT.veg },
   'سلطات': { emoji: '🥗', tint: TINT.veg },
   'أطباق جانبية': { emoji: '🥔', tint: TINT.fries },
@@ -132,3 +145,71 @@ export function artFor(category: string): Art {
   }
   return DEFAULT
 }
+
+// ---------------------------------------------------------------------------
+// Cross-vendor browse
+//
+// A customer can only find food by already knowing which restaurant sells it.
+// There is no way to ask "who does seafood?".
+//
+// A first attempt derived the answer from item categories, and testing killed
+// it: كنتاكي files all seven of its items under "وجبات", and هارت أتاك uses
+// "وجبات عائلية / فردية / أطفال". Those words describe a portion size, not a
+// food, so two whole vendors matched nothing. Item categories are written by
+// vendors for their own menu, and they are not comparable across vendors.
+//
+// restaurants.category already is comparable -- it is curated per vendor and is
+// printed on every restaurant card today. It only needs its spelling folded:
+// "فاست فود" and "فاست فوود" are the same thing, as are "أسماك وبحري" and
+// "سي فوود".
+// ---------------------------------------------------------------------------
+
+export type VendorKind = 'فاست فود' | 'بيتزا' | 'بحري' | 'شرقي' | 'مشويات' | 'حلويات' | 'أخرى'
+
+const KIND_MAP: Record<string, VendorKind> = {
+  'فاست فود': 'فاست فود',
+  'فاست فوود': 'فاست فود',
+  'برجر': 'فاست فود',
+  'بيتزا': 'بيتزا',
+  'اسماك وبحري': 'بحري',
+  'سي فوود': 'بحري',
+  'اسماك': 'بحري',
+  'ماكولات بحرية': 'بحري',
+  'فطار واكل شرقي': 'شرقي',
+  'اكل شرقي': 'شرقي',
+  'فطار': 'شرقي',
+  'مشويات': 'مشويات',
+  'حلويات': 'حلويات',
+  'مخبوزات': 'حلويات',
+}
+
+const KIND_ENTRIES: Array<[string, VendorKind]> = Object.entries(KIND_MAP)
+  .map(([k, v]) => [normalise(k), v] as [string, VendorKind])
+  .sort((a, b) => b[0].length - a[0].length)
+
+const KIND_EXACT = new Map(KIND_ENTRIES)
+
+/** Which browse bucket a vendor belongs to, from its own curated category. */
+export function vendorKind(category: string | null | undefined): VendorKind {
+  const key = normalise(category ?? '')
+  if (!key) return 'أخرى'
+
+  const exact = KIND_EXACT.get(key)
+  if (exact) return exact
+
+  for (const [k, kind] of KIND_ENTRIES) {
+    if (key.includes(k)) return kind
+  }
+  return 'أخرى'
+}
+
+/** Display order and icon for the browse row. 'أخرى' is deliberately absent:
+ *  it is a fallback for matching, never something to offer as a filter. */
+export const BROWSE_KINDS: Array<{ kind: VendorKind; emoji: string }> = [
+  { kind: 'فاست فود', emoji: '🍔' },
+  { kind: 'بيتزا', emoji: '🍕' },
+  { kind: 'بحري', emoji: '🦐' },
+  { kind: 'شرقي', emoji: '🍳' },
+  { kind: 'مشويات', emoji: '🔥' },
+  { kind: 'حلويات', emoji: '🍰' },
+]

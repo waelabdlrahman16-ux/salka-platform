@@ -439,11 +439,29 @@ function KitchenVendor({ rid }: { rid: number }) {
   const card = (o: Order, big = false) => {
     const stage = KITCHEN.find(k => k.key === (o.kitchen_status || 'new'))!
     const completed = COMPLETED_LABEL[o.status]
+    // How long this order has been sitting unanswered. remaining() already
+    // counts DOWN to ready_at, but that only matters once cooking has started --
+    // nothing on the screen said how long a NEW order had been waiting, so a
+    // ticket that arrived two minutes ago and one that arrived twenty looked
+    // identical. The server already tracks a 30-minute stall threshold; this
+    // shows the vendor the same clock before it trips.
+    const waitedMin = big && o.created_at
+      ? Math.max(0, Math.round((Date.now() - +new Date(o.created_at)) / 60000))
+      : null
+    const late = waitedMin !== null && waitedMin >= 10
     return (
       <div key={o.id} className={`card !rounded-2xl p-4 ${big ? 'border-sand ring-2 ring-sand/50' : ''}`}>
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="font-bold text-lg">طلب #{o.id}</h2>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="font-bold text-lg">طلب #{o.id}</h2>
+              {waitedMin !== null && (
+                <span className={`text-xs font-bold rounded-full px-2.5 py-1 ${
+                  late ? 'bg-red-500/15 text-red-600' : 'bg-sand/20 text-sandink'}`}>
+                  {waitedMin < 1 ? 'دلوقتي حالًا' : `مستني ${waitedMin} دقيقة`}
+                </span>
+              )}
+            </div>
             <p className="text-sm text-mist mt-0.5">{o.zone} — وحدة {o.unit_number}</p>
           </div>
           <div className="text-left">
@@ -608,7 +626,7 @@ function KitchenVendor({ rid }: { rid: number }) {
 
       {newOrders.length > 0 && (
         <div className="mb-5 space-y-3">
-          <p className="text-sandink font-bold animate-pulse">🔔 طلب جديد — {newOrders.length}</p>
+          <p className="text-sandink font-bold animate-pulse">🔔 محتاج ردّك — {newOrders.length}</p>
           {newOrders.map(o => card(o, true))}
         </div>
       )}
