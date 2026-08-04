@@ -26,12 +26,33 @@ import { CustomerAuthProvider, useCustomerAuth } from './lib/customerAuth'
 const Admin = lazy(() => import('./pages/Admin'))
 const DriverPage = lazy(() => import('./pages/Driver'))
 const Vendor = lazy(() => import('./pages/Vendor'))
+const Catalog = lazy(() => import('./pages/Catalog'))
 import { useState } from 'react'
+
+// Every staff workspace, in one place. This list used to be inlined in three
+// separate components with two different contents, and /catalog was added to
+// none of them: the app therefore classified the catalogue workspace as a
+// customer page, so a catalogue employee logging in got the customer signup
+// sheet, the customer bottom nav, and -- if they signed in with Google rather
+// than skipping -- an undismissable PhonePrompt covering the whole screen.
+// The route itself never mounted. Add new staff routes here and only here.
+const STAFF_PATHS = ['/admin', '/driver', '/vendor', '/catalog']
+
+/** A staff workspace: shows the staff header, hides customer chrome. */
+function isStaffWorkspace(pathname: string): boolean {
+  return STAFF_PATHS.some(p => pathname.startsWith(p))
+}
+
+/** Staff workspaces plus the staff login screen. /login is not a workspace,
+ *  but it must also skip customer onboarding and the customer bottom nav. */
+function isStaffRoute(pathname: string): boolean {
+  return isStaffWorkspace(pathname) || pathname.startsWith('/login')
+}
 
 function Header() {
   const { pathname } = useLocation()
   const { session, profile, signOut } = useAuth()
-  const isStaff = ['/admin', '/driver', '/vendor'].some(p => pathname.startsWith(p))
+  const isStaff = isStaffWorkspace(pathname)
 
   return (
     <header className="sticky top-0 z-40 bg-night/90 backdrop-blur border-b border-line" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
@@ -55,7 +76,7 @@ function Header() {
 function BottomNav() {
   const { pathname } = useLocation()
   const cart = useCart()
-  const isStaff = ['/admin', '/driver', '/vendor', '/login'].some(p => pathname.startsWith(p))
+  const isStaff = isStaffRoute(pathname)
   if (isStaff) return null
 
   const items = [
@@ -92,7 +113,7 @@ function BottomNav() {
 
 function AppShell() {
   const { pathname } = useLocation()
-  const isStaff = ['/admin', '/driver', '/vendor', '/login'].some(p => pathname.startsWith(p))
+  const isStaff = isStaffRoute(pathname)
   const { customer, loading } = useCustomerAuth()
   const [skipped, setSkipped] = useState(() => !!localStorage.getItem('salka_onboarded'))
 
@@ -137,6 +158,7 @@ function AppShell() {
               <Route path="/admin" element={<Protected role="admin"><Admin /></Protected>} />
               <Route path="/driver" element={<Protected role="driver"><DriverPage /></Protected>} />
               <Route path="/vendor" element={<Protected role="vendor"><Vendor /></Protected>} />
+              <Route path="/catalog" element={<Protected role="catalog"><Catalog /></Protected>} />
             </Routes>
           </Suspense>
         </main>

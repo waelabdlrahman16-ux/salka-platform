@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { supabase } from '../lib/supabase'
 import { Link } from 'react-router-dom'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { useCustomerAuth } from '../lib/customerAuth'
@@ -14,6 +15,70 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
   const [error, setError] = useState('')
   const [resendIn, setResendIn] = useState(0)
   const [emailLinkSent, setEmailLinkSent] = useState(false)
+  const resendTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // SMS OTP is built but cannot work until SMS Misr approves the sender ID and
+  // template, so the entry point is hidden behind a settings flag rather than
+  // removed -- flipping it in the admin panel is the whole rollout.
+  //
+  // Defaults to hidden and only opens on an explicit 'true'. A failed or slow
+  // settings read therefore hides the option, which is the safe direction: a
+  // missing login method is a smaller harm than one that always errors.
+  const [smsEnabled, setSmsEnabled] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    supabase.from('settings').select('value').eq('key', 'sms_login_enabled').maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled || error) return
+        setSmsEnabled(data?.value === 'true')
+      })
+    return () => { cancelled = true }
+  }, [])
+
+  // Guard the state as well as the button: if the flag is turned off while
+  // someone is mid-flow, drop them back rather than leaving them on a screen
+  // whose submit can only fail.
+  useEffect(() => {
+    if (!smsEnabled && (mode === 'phone' || mode === 'code')) setMode('main')
+  }, [smsEnabled, mode])
+
+  // The resend countdown was started with a bare setInterval outside any effect
+  // and never cleared. confirmCode() calls onDone(), which unmounts this
+  // component immediately on success, leaving the timer ticking against an
+  // unmounted tree for up to 30 seconds.
+  useEffect(() => {
+    return () => { if (resendTimerRef.current) clearInterval(resendTimerRef.current) }
+  }, [])
+
+  // Escape steps back through the flow, and only dismisses from the top level.
+  // A blanket dismiss would be destructive mid-OTP: App.tsx's onSkip writes
+  // salka_onboarded, so pressing Escape while typing a code the user had just
+  // been texted would close onboarding for good and waste that code.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (mode === 'code') { goTo('phone'); return }
+      if (mode === 'phone' || mode === 'email') { goTo('main'); return }
+      if (onSkip) onSkip()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onSkip, mode])
+
+  function startResendCountdown(seconds = 30) {
+    if (resendTimerRef.current) clearInterval(resendTimerRef.current)
+    setResendIn(seconds)
+    resendTimerRef.current = setInterval(() => {
+      setResendIn(s => {
+        if (s <= 1) {
+          if (resendTimerRef.current) clearInterval(resendTimerRef.current)
+          resendTimerRef.current = null
+          return 0
+        }
+        return s - 1
+      })
+    }, 1000)
+  }
 
   function goTo(next: 'main' | 'email' | 'phone' | 'code') {
     setError('')
@@ -29,14 +94,20 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
     if (!res.ok) {
       setError(
         res.error === 'sms_not_configured' ? 'خدمة الرسائل لسه مش متفعّلة، جرب تسجّل بالإيميل أو جوجل'
-          : res.error === 'rate_limited' ? 'حاولت كتير، استنى شوية وجرب تاني'
+          : res.error === 'rate_limited' ? 'حاولت كتير، استنى 10 دقايق وجرب تاني — أو ادخل بجوجل/الإيميل'
+          : res.error === 'service_busy' ? 'الخدمة مزحومة دلوقتي، جرب كمان شوية أو ادخل بجوجل/الإيميل'
+          : res.error === 'invalid_phone' ? 'رقم الموبايل مش مظبوط'
+          : res.error === 'sms_send_failed' ? 'مش قادرين نبعت الكود دلوقتي، جرب تاني أو ادخل بجوجل/الإيميل'
           : 'حصل خطأ، جرب تاني'
       )
+      // Neither a rate limit nor a tripped circuit breaker is fixed by tapping
+      // again, and the phone screen has no cooldown of its own -- so impose one
+      // rather than inviting the user to burn the rest of their five attempts.
+      if (res.error === 'rate_limited' || res.error === 'service_busy') startResendCountdown(60)
       return
     }
     setMode('code')
-    setResendIn(30)
-    const t = setInterval(() => setResendIn(s => { if (s <= 1) { clearInterval(t); return 0 } return s - 1 }), 1000)
+    startResendCountdown()
   }
 
   async function confirmCode() {
@@ -58,8 +129,18 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-night grid place-items-center p-4">
-      <div className="card w-full max-w-sm p-6 text-center">
+    <div className="fixed inset-0 z-50 bg-night grid place-items-center p-4" role="dialog" aria-modal="true">
+      <div className="card w-full max-w-sm p-6 text-center relative">
+        {/* Only at the top level -- the sub-steps already have their own
+            "رجوع", and a dismiss from mid-OTP would burn the code just sent. */}
+        {onSkip && mode === 'main' && (
+          <button
+            className="absolute top-2 left-2 w-11 h-11 grid place-items-center text-mist hover:text-foam text-xl"
+            aria-label="إغلاق"
+            onClick={onSkip}>
+            ✕
+          </button>
+        )}
         {mode === 'main' && (
           <>
             <div className="text-4xl mb-3">👋</div>
@@ -77,7 +158,9 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
               📧 المتابعة بالإيميل
             </button>
 
-            <button className="text-xs text-mist hover:text-foam mb-1" onClick={() => goTo('phone')}>الدخول برقم الموبايل</button>
+            {smsEnabled && (
+              <button className="text-xs text-mist hover:text-foam mb-1" onClick={() => goTo('phone')}>الدخول برقم الموبايل</button>
+            )}
 
             {onSkip && (
               <div className="mt-3">
@@ -133,8 +216,8 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
 
             {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">{error}</p>}
 
-            <button className="btn-sea w-full !py-3 mb-2" disabled={!isValidEgyptPhone(phone) || sending} onClick={sendCode}>
-              {sending ? 'جاري الإرسال…' : 'ابعتلي الكود'}
+            <button className="btn-sea w-full !py-3 mb-2" disabled={!isValidEgyptPhone(phone) || sending || resendIn > 0} onClick={sendCode}>
+              {sending ? 'جاري الإرسال…' : resendIn > 0 ? `استنى ${resendIn} ثانية` : 'ابعتلي الكود'}
             </button>
             <button className="text-sm text-mist hover:text-foam" onClick={() => goTo('main')}>رجوع</button>
           </>

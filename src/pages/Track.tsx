@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { rpc } from '../lib/rpc'
 import { registerPush } from '../lib/push'
 import { INSTAPAY_QR_URL, INSTAPAY_LINK } from '../lib/instapay'
 import LiveMap from '../components/LiveMap'
@@ -62,24 +63,62 @@ export default function Track() {
   const [claimingPayment, setClaimingPayment] = useState(false)
   const [copied, setCopied] = useState(false)
 
+  // Scoped so the message renders next to the control that failed. A single
+  // top-of-page banner is invisible for the cancel/rating/tip/complaint
+  // buttons, which sit several screens below the fold.
+  const [actionError, setActionError] = useState<{ scope: string; message: string } | null>(null)
+  const errFor = (scope: string) => (actionError?.scope === scope ? actionError.message : '')
+  const [staleSince, setStaleSince] = useState<number | null>(null)
+
   async function claimInstapayPayment() {
     if (!token) return
-    setClaimingPayment(true)
-    await supabase.rpc('mark_instapay_claimed', { p_token: token })
+    setClaimingPayment(true); setActionError(null)
+    const res = await rpc('mark_instapay_claimed', { p_token: token })
     setClaimingPayment(false)
+    // The customer's money is already gone at this point. A failure here used
+    // to silently redraw the same button with no explanation.
+    if (!res.ok) { setActionError({ scope: 'instapay', message: res.error }); return }
     load()
   }
 
+  // The polling effect captures `load` from the first render, so reading `data`
+  // directly here would always see its initial null and re-latch not-found on
+  // any later failure. Mirror it in a ref.
+  const dataRef = useRef<TrackData | null>(null)
+
   async function load() {
-    const { data: res, error } = await supabase.rpc('track_order', { p_token: token })
-    if (error || !res || !(res as TrackData).order) { setNotFound(true); return }
-    setData(res as TrackData)
+    const res = await rpc<TrackData>('track_order', { p_token: token })
+
+    // A transient poll failure used to set notFound permanently -- one lift ride
+    // replaced a live order with "الطلب غير موجود" and it never recovered,
+    // because network errors and "this token is invalid" were conflated.
+    //
+    // Latch not-found ONLY on a definitive answer from the server. Anything
+    // else -- unknown code, transport failure, 500 -- is treated as transient.
+    // Deciding by *exclusion* ("not a network error") is unsafe here, because
+    // postgrest resolves rather than rejects on a dropped fetch and
+    // navigator.onLine lies inside a Capacitor webview, so an unrecognised
+    // failure is far more likely to be a bad connection than a bad token.
+    if (!res.ok) {
+      if (res.code === 'order_not_found' || res.code === 'not_authorized') {
+        setNotFound(true)
+        return
+      }
+      setStaleSince(prev => prev ?? Date.now())
+      return
+    }
+    if (!res.data || !res.data.order) { setNotFound(true); return }
+    dataRef.current = res.data
+    setNotFound(false)
+    setStaleSince(null)
+    setData(res.data)
   }
 
   useEffect(() => {
     load()
     const t = setInterval(load, 10000)
     return () => clearInterval(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
   useEffect(() => {
@@ -89,11 +128,16 @@ export default function Track() {
     })
   }, [token])
 
+  // These four all used to discard their error and set the success flag
+  // regardless, so a failed rating, tip or complaint told the customer it had
+  // been sent and there was no way to discover otherwise or retry.
   async function sendRating() {
     if (!token || (!driverRating && !restaurantRating)) return
-    await supabase.rpc('submit_rating', {
+    setActionError(null)
+    const res = await rpc('submit_rating', {
       p_token: token, p_driver_rating: driverRating || null, p_restaurant_rating: restaurantRating || null
     })
+    if (!res.ok) { setActionError({ scope: 'rating', message: res.error }); return }
     setRatingSent(true)
     if (driverRating > 0 && driverRating <= 2) {
       setComplaintCategory('driver_conduct')
@@ -106,22 +150,30 @@ export default function Track() {
   async function sendTip() {
     const amount = tipAmount ?? Number(customTip)
     if (!token || !amount || amount <= 0) return
-    await supabase.rpc('submit_tip', { p_token: token, p_amount: amount })
+    setActionError(null)
+    const res = await rpc('submit_tip', { p_token: token, p_amount: amount })
+    if (!res.ok) { setActionError({ scope: 'tip', message: res.error }); return }
     setTipSent(true)
   }
 
   async function sendComplaint() {
     if (!token || !complaintText.trim()) return
-    await supabase.rpc('submit_complaint', { p_token: token, p_description: complaintText.trim(), p_category: complaintCategory })
+    setActionError(null)
+    const res = await rpc('submit_complaint', {
+      p_token: token, p_description: complaintText.trim(), p_category: complaintCategory
+    })
+    if (!res.ok) { setActionError({ scope: 'complaint', message: res.error }); return }
     setComplaintSent(true); setComplaining(false)
   }
 
   async function cancelOrder() {
     if (!data?.order || !confirm('تأكيد إلغاء الطلب؟')) return
-    setCancelling(true)
-    const { error } = await supabase.rpc('cancel_order', { p_order_id: data.order.id, p_reason: 'customer_cancelled', p_token: token })
+    setCancelling(true); setActionError(null)
+    const res = await rpc('cancel_order', {
+      p_order_id: data.order.id, p_reason: 'customer_cancelled', p_token: token
+    })
     setCancelling(false)
-    if (error) { alert('الطلب بدأ تجهيزه بالفعل، محدش يقدر يلغيه غير الإدارة'); return }
+    if (!res.ok) { setActionError({ scope: 'cancel', message: res.error }); return }
     setCancelled(true)
   }
 
@@ -138,7 +190,18 @@ export default function Track() {
       <Link className="text-sea text-sm mt-2 inline-block" to="/">العودة للرئيسية</Link>
     </div>
   )
-  if (!data || !data.order) return <p className="text-mist">جاري التحميل…</p>
+  // A failed *first* load used to sit on "جاري التحميل…" forever.
+  if (!data || !data.order) {
+    if (staleSince !== null) return (
+      <div className="card p-6 text-center max-w-sm mx-auto">
+        <p className="font-semibold">مش قادرين نجيب حالة الطلب دلوقتي</p>
+        <p className="text-sm text-mist mt-1.5">اتأكد من الاتصال بالنت</p>
+        <button className="btn-sea mt-4" onClick={load}>جرب تاني</button>
+        <Link className="text-sea text-sm mt-3 block" to="/">العودة للرئيسية</Link>
+      </div>
+    )
+    return <p className="text-mist">جاري التحميل…</p>
+  }
 
   const o = data.order
 
@@ -148,6 +211,9 @@ export default function Track() {
     return (
       <div className="max-w-lg mx-auto">
         <Link to="/" className="text-sm text-mist hover:text-foam">← العودة للرئيسية</Link>
+        {errFor('instapay') && (
+          <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mt-3">{errFor('instapay')}</p>
+        )}
         <div className="card p-4 mt-3 text-center">
           <h1 className="font-bold text-lg mb-1">{isDeposit ? 'ادفع عربون 50% على InstaPay' : 'حوّل المبلغ على InstaPay'}</h1>
           <p className="text-mist text-sm mb-3">طلب #{o.id} من {o.restaurant_name}</p>
@@ -188,6 +254,19 @@ export default function Track() {
         <Link to="/" className="text-sm text-mist hover:text-foam">← العودة</Link>
         <span className="text-sm font-semibold text-mist">طلب #{o.id}</span>
       </div>
+
+      {/* Polling stopped succeeding but we keep the last known order on screen
+          rather than replacing it with a not-found card. */}
+      {staleSince !== null && (
+        <div className="bg-sand/15 border border-sand/40 rounded-xl p-3 mb-4 flex items-center justify-between gap-3">
+          <p className="text-sm font-semibold text-foam">📡 مش قادرين نحدّث الحالة — ممكن تكون قديمة</p>
+          <button className="btn-ghost !py-2 text-sm shrink-0" onClick={load}>حدّث</button>
+        </div>
+      )}
+
+      {errFor('instapay') && (
+        <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">{errFor('instapay')}</p>
+      )}
 
       {isCancelled(o.status) || cancelled ? (
         <div className="card p-4 text-center mb-4">
@@ -364,6 +443,7 @@ export default function Track() {
               </div>
             </div>
           </div>
+          {errFor('rating') && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-2">{errFor('rating')}</p>}
           <button className="btn-sea w-full mt-3 text-sm" disabled={!driverRating && !restaurantRating} onClick={sendRating}>إرسال التقييم</button>
         </div>
       )}
@@ -388,6 +468,7 @@ export default function Track() {
               <p className="font-bold text-sea" dir="ltr">{data.assignment.driver_instapay}</p>
             </div>
           )}
+          {errFor('tip') && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-2">{errFor('tip')}</p>}
           <div className="flex gap-2">
             <button className="btn-ghost flex-1 text-sm" onClick={() => setShowTipPrompt(false)}>لأ شكرًا</button>
             <button className="btn-sea flex-1 text-sm" disabled={!tipAmount && !(Number(customTip) > 0)} onClick={sendTip}>حوّلت الإكرامية</button>
@@ -397,9 +478,12 @@ export default function Track() {
       {tipSent && <p className="text-emerald-700 text-sm text-center mb-4">✅ شكرًا لكرمك، المندوب هيقدرها</p>}
 
       {canCancel && (
-        <button className="btn-danger w-full mb-2" disabled={cancelling} onClick={cancelOrder}>
-          {cancelling ? 'جاري الإلغاء…' : 'إلغاء الطلب'}
-        </button>
+        <>
+          {errFor('cancel') && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-2">{errFor('cancel')}</p>}
+          <button className="btn-danger w-full mb-2" disabled={cancelling} onClick={cancelOrder}>
+            {cancelling ? 'جاري الإلغاء…' : 'إلغاء الطلب'}
+          </button>
+        </>
       )}
       {canCancel && <p className="text-center text-xs text-mist mb-4">تقدر تلغي الطلب طول ما لسه قيد الانتظار</p>}
 
@@ -422,6 +506,7 @@ export default function Track() {
             ))}
           </div>
           <textarea className="field h-20 resize-none" value={complaintText} onChange={e => setComplaintText(e.target.value)} placeholder="مثال: نقص صنف من الطلب" />
+          {errFor('complaint') && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-2">{errFor('complaint')}</p>}
           <div className="flex gap-2.5 mt-2.5">
             <button className="btn-ghost flex-1 text-sm" onClick={() => setComplaining(false)}>إلغاء</button>
             <button className="btn-danger flex-1 text-sm" disabled={!complaintText.trim()} onClick={sendComplaint}>إرسال</button>

@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from "jsr:@supabase/supabase-js@2"
+import { secureOtpCode, isRateLimitError, CORS_HEADERS, json, fail } from "../_shared/secure.ts"
 
 // Customer login via SMS OTP -- no password, no Supabase Auth account.
 // action=request  -> generates a code, stores it, sends it via SMS Misr's OTP API.
@@ -28,19 +29,6 @@ import { createClient } from "jsr:@supabase/supabase-js@2"
 // Both request and verify are rate-limited per phone number (via check_rate_limit).
 // verify is limited separately and more tightly than request, since a 6-digit code
 // is guessable if an attacker gets unlimited attempts within the 5-minute TTL.
-
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS"
-}
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS }
-  })
-}
 
 function normalizePhone(raw: string): string {
   return raw.replace(/[^0-9]/g, "").slice(-10)
@@ -73,17 +61,47 @@ Deno.serve(async (req) => {
     if (cleanPhone.length !== 10) return json({ error: "invalid_phone" }, 400)
 
     if (action === "request") {
-      const { error: limitErr } = await admin.rpc("check_rate_limit", {
-        p_bucket: `login_otp:${cleanPhone}`, p_max: 5, p_window: "10 minutes"
-      })
-      if (limitErr) return json({ error: "rate_limited" }, 429)
+      // Ordering matters. check_rate_limit INSERTS a row on every non-limited
+      // call, so a check that runs *after* another has already spent that
+      // bucket's budget. The service-wide circuit breakers therefore run FIRST:
+      // if the platform is being hammered, a legitimate customer gets a clean
+      // "busy, try shortly" without also burning one of their own five attempts.
+      //
+      // The per-IP bucket that used to sit here has been removed. It was
+      // bypassable (x-forwarded-for is client-supplied, so an attacker rotates
+      // it freely) and harmful (Egyptian carriers run large-scale CGNAT, so
+      // thousands of real subscribers share one address and would lock each
+      // other out). It gave the appearance of protection while doing neither.
+      for (const [bucket, max, window] of [
+        ["login_otp_burst", 30, "1 minute"],
+        ["login_otp_daily", 500, "24 hours"],
+      ] as const) {
+        const { error: limitErr } = await admin.rpc("check_rate_limit", {
+          p_bucket: bucket, p_max: max, p_window: window
+        })
+        if (limitErr) {
+          if (isRateLimitError(limitErr)) {
+            // Distinct from the per-user code: this is us, not them, and it
+            // needs to be loud in the logs because it caps real SMS spend.
+            console.error(`[customer-otp] circuit breaker tripped: ${bucket}`)
+            return json({ error: "service_busy" }, 503)
+          }
+          return fail("customer-otp", "rate_limit_check_failed", 500, limitErr)
+        }
+      }
 
-      const code = Math.floor(100000 + Math.random() * 900000).toString()
-
-      const { error: insertErr } = await admin.from("customer_otp_codes").insert({
-        phone: cleanPhone, code, expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString()
-      })
-      if (insertErr) return json({ error: "otp_store_failed", detail: insertErr.message }, 500)
+      {
+        const { error: limitErr } = await admin.rpc("check_rate_limit", {
+          p_bucket: `login_otp:${cleanPhone}`, p_max: 5, p_window: "10 minutes"
+        })
+        if (limitErr) {
+          // Only a real limit is "wait and retry". A missing function or a
+          // permission error is not, and telling the user to wait about a
+          // problem waiting cannot fix is worse than an honest failure.
+          if (isRateLimitError(limitErr)) return json({ error: "rate_limited" }, 429)
+          return fail("customer-otp", "rate_limit_check_failed", 500, limitErr)
+        }
+      }
 
       const username = Deno.env.get("SMSMISR_USERNAME")
       const password = Deno.env.get("SMSMISR_PASSWORD")
@@ -93,6 +111,20 @@ Deno.serve(async (req) => {
       if (!username || !password || !sender || !template) {
         return json({ error: "sms_not_configured" }, 500)
       }
+
+      const code = secureOtpCode()
+
+      // Store the new code first, send second, and only invalidate the OLD ones
+      // once the send is confirmed. Invalidating up front meant a provider blip
+      // on a resend destroyed the code already sitting on the user's handset --
+      // they would type a code they had genuinely received and be told it was
+      // invalid, with the replacement never arriving. The file header notes the
+      // SMSID success check is itself unreliable, which makes that path likely,
+      // not theoretical.
+      const { data: inserted, error: insertErr } = await admin.from("customer_otp_codes")
+        .insert({ phone: cleanPhone, code, expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString() })
+        .select("id").single()
+      if (insertErr || !inserted) return fail("customer-otp", "otp_store_failed", 500, insertErr)
 
       const form = new URLSearchParams({
         environment, username, password, sender,
@@ -105,7 +137,21 @@ Deno.serve(async (req) => {
         body: form
       })
       const smsData = await smsRes.json().catch(() => null)
-      if (!smsRes.ok || !smsData?.SMSID) return json({ error: "sms_send_failed", detail: smsData }, 502)
+      if (!smsRes.ok || !smsData?.SMSID) {
+        // Retire the code we just stored but never delivered, leaving whatever
+        // the user already holds still valid.
+        await admin.from("customer_otp_codes").update({ used: true }).eq("id", inserted.id)
+        // smsData was forwarded to the client verbatim, exposing the provider's
+        // raw response. Log it, return the code only.
+        return fail("customer-otp", "sms_send_failed", 502, smsData)
+      }
+
+      // Delivered. Now retire every earlier code so only this one verifies --
+      // previously up to five were live at once against eight allowed guesses.
+      const { error: invalidateErr } = await admin.from("customer_otp_codes")
+        .update({ used: true })
+        .eq("phone", cleanPhone).eq("used", false).neq("id", inserted.id)
+      if (invalidateErr) console.error("[customer-otp] failed to retire older codes:", invalidateErr)
 
       return json({ ok: true })
     }
@@ -114,7 +160,10 @@ Deno.serve(async (req) => {
       const { error: limitErr } = await admin.rpc("check_rate_limit", {
         p_bucket: `verify_otp:${cleanPhone}`, p_max: 8, p_window: "10 minutes"
       })
-      if (limitErr) return json({ error: "rate_limited" }, 429)
+      if (limitErr) {
+        if (isRateLimitError(limitErr)) return json({ error: "rate_limited" }, 429)
+        return fail("customer-otp", "rate_limit_check_failed", 500, limitErr)
+      }
 
       const { code, name } = body
       if (!code) return json({ error: "code_required" }, 400)
@@ -131,7 +180,7 @@ Deno.serve(async (req) => {
       if (!customer) {
         const { data: created, error: createErr } = await admin.from("customers")
           .insert({ phone: cleanPhone, name: name || null }).select("*").single()
-        if (createErr) return json({ error: "customer_create_failed", detail: createErr.message }, 500)
+        if (createErr) return fail("customer-otp", "customer_create_failed", 500, createErr)
         customer = created
       } else if (name && !customer.name) {
         await admin.from("customers").update({ name }).eq("id", customer.id)
@@ -140,7 +189,7 @@ Deno.serve(async (req) => {
 
       const { data: session, error: sessErr } = await admin.from("customer_sessions")
         .insert({ customer_id: customer.id }).select("token").single()
-      if (sessErr) return json({ error: "session_create_failed", detail: sessErr.message }, 500)
+      if (sessErr) return fail("customer-otp", "session_create_failed", 500, sessErr)
 
       return json({ token: session.token, customer: { id: customer.id, phone: customer.phone, name: customer.name } })
     }

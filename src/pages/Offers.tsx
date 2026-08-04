@@ -24,7 +24,27 @@ export default function Offers() {
       const { data: restaurants } = await supabase.from('restaurants').select('*')
         .in('id', restaurantIds).eq('is_open', true).eq('archived', false)
 
-      const grouped = (restaurants ?? []).map(r => ({
+      // Home filters vendors through restaurants_for_compound(); this page did
+      // not, so a customer could browse an offer, fill a cart and enter their
+      // address before being told at the final tap that the vendor does not
+      // deliver to them. Apply the same coverage filter here.
+      let visible = restaurants ?? []
+      const savedCompound = sessionStorage.getItem('salka_compound_id')
+      if (savedCompound) {
+        const { data: covering, error: coverErr } = await supabase.rpc('restaurants_for_compound', {
+          p_compound_id: Number(savedCompound)
+        })
+        // Branch on the error, not on an empty result. "Zero vendors cover this
+        // compound" is a real and now-common answer (Home no longer hides far
+        // compounds), and treating it as a failed lookup would show offers the
+        // customer cannot order -- exactly the trap this filter exists to close.
+        if (!coverErr) {
+          const coveringIds = new Set(((covering as Restaurant[]) ?? []).map(r => r.id))
+          visible = visible.filter(r => coveringIds.has(r.id))
+        }
+      }
+
+      const grouped = visible.map(r => ({
         restaurant: r,
         discounts: live.filter(d => d.restaurant_id === r.id)
       })).filter(g => g.discounts.length > 0)

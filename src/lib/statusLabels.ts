@@ -5,6 +5,27 @@
 // translated here. Falls back to the raw value if something new/unmapped
 // ever shows up, rather than showing nothing.
 
+// Mixed casing is inherited from the database and deliberately preserved --
+// these are the literal values stored in orders.status.
+export const ORDER_STATUSES = [
+  'pending', 'awaiting_payment', 'Accepted', 'Picked_Up',
+  'Out_for_Delivery', 'Delivered', 'Cancelled', 'Failed_Delivery',
+] as const
+export type OrderStatus = typeof ORDER_STATUSES[number]
+
+/**
+ * Finished with: no further operational action is possible.
+ *
+ * Note that Failed_Delivery is deliberately NOT here. It is an end state for a
+ * delivery *attempt*, but the order is still live and must be re-dispatchable --
+ * treating it as terminal left failed deliveries invisible to every admin
+ * surface that could have sent another driver.
+ */
+export const CLOSED_ORDER_STATUSES: OrderStatus[] = ['Delivered', 'Cancelled']
+
+/** Not yet paid for, so must not enter the driver dispatch queue. */
+export const UNPAID_ORDER_STATUSES: OrderStatus[] = ['awaiting_payment']
+
 const ORDER_STATUS_AR: Record<string, string> = {
   pending: 'قيد الانتظار',
   awaiting_payment: 'بانتظار الدفع',
@@ -13,6 +34,7 @@ const ORDER_STATUS_AR: Record<string, string> = {
   Out_for_Delivery: 'في الطريق إليك',
   Delivered: 'تم التوصيل',
   Cancelled: 'ملغي',
+  Failed_Delivery: 'فشل التوصيل',
 }
 
 const ASSIGNMENT_STATUS_AR: Record<string, string> = {

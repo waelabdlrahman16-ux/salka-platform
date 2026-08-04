@@ -5,6 +5,12 @@ import { supabase } from './supabase'
 const REPORT_INTERVAL_MS = 20000 // every 20s while actively delivering
 
 let intervalId: ReturnType<typeof setInterval> | null = null
+// Bumped by every stop() and every start(). An in-flight start compares its own
+// token against this after each await and bails if it has been superseded --
+// otherwise a start that is still waiting on a 15s GPS fix can install its
+// interval after a stop() has already run, leaving an orphan nobody can clear.
+let generation = 0
+let starting = false
 
 async function reportOnce() {
   try {
@@ -26,7 +32,14 @@ async function reportOnce() {
 // of however often the OS decides to fire location-change events.
 export async function startLocationReporting() {
   if (!Capacitor.isNativePlatform()) return
-  if (intervalId) return // already running
+  // `starting` must be checked and set synchronously. The old guard tested only
+  // intervalId, which is assigned *after* two awaits (permissions, then a
+  // reportOnce with a 15s timeout) -- so a second call arriving inside that
+  // window sailed past the guard and overwrote the handle, orphaning the first
+  // interval permanently. The driver page re-ran this effect every 10s poll.
+  if (intervalId || starting) return
+  starting = true
+  const myGeneration = ++generation
 
   try {
     const perm = await Geolocation.checkPermissions()
@@ -36,15 +49,21 @@ export async function startLocationReporting() {
       granted = req.location === 'granted'
     }
     if (!granted) return
+    if (myGeneration !== generation) return // stopped while we were awaiting
 
     await reportOnce()
+    if (myGeneration !== generation) return
+
     intervalId = setInterval(reportOnce, REPORT_INTERVAL_MS)
   } catch (e) {
     console.error('location reporting failed to start', e)
+  } finally {
+    starting = false
   }
 }
 
 export function stopLocationReporting() {
+  generation++ // invalidate any start still waiting on a GPS fix
   if (intervalId) {
     clearInterval(intervalId)
     intervalId = null
