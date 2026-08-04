@@ -86,6 +86,13 @@ export default function DriverPage() {
   // value captured when the handler was created.
   const busyRef = useRef<Set<string>>(new Set())
 
+  // Whether the earnings/shifts panel is expanded. Latched from the first load
+  // that actually returned data: a driver with nothing to deliver gets it open,
+  // a driver mid-delivery gets it closed. After that it is theirs -- see the
+  // comment at the <details> for why this cannot be a derived prop.
+  const [refsOpen, setRefsOpen] = useState(false)
+  const refsInitialised = useRef(false)
+
   // Every money figure on this screen comes from my_driver_stats. If that call
   // fails -- or the server predates the migration that widened its shape -- a
   // `?? 0` default turns the failure into a confident lie: "0 ج.م" and "0 طلبات"
@@ -103,6 +110,12 @@ export default function DriverPage() {
   useEffect(() => {
     return () => { if (justDeliveredTimeoutRef.current) clearTimeout(justDeliveredTimeoutRef.current) }
   }, [])
+
+  useEffect(() => {
+    if (refsInitialised.current || !haveStats) return
+    refsInitialised.current = true
+    setRefsOpen(assignments.length === 0)
+  }, [haveStats, assignments.length])
 
   // Every query used to destructure only `data`, so a dropped request on weak
   // signal set state to [] -- wiping the driver's in-progress delivery, the
@@ -738,7 +751,14 @@ export default function DriverPage() {
           Nothing is removed. It is collapsed, and it opens by default when
           there is no active delivery, which is exactly when a driver is
           looking at their earnings and shifts anyway. */}
-      <details className="mb-5" open={assignments.length === 0}>
+      {/* Controlled, with the initial value latched once -- NOT open={assignments.length === 0}.
+          That reads correctly and is wrong in the field: `open` is a controlled
+          prop, so the moment a new assignment arrived (0 -> 1) React flipped it
+          to false and slammed the panel shut under the thumb of a driver who
+          was reading their earnings. The 8s poll would do it again on every
+          change. Now the driver's own toggle always wins. */}
+      <details className="mb-5" open={refsOpen}
+        onToggle={e => setRefsOpen((e.currentTarget as HTMLDetailsElement).open)}>
         <summary className="card px-4 py-3 cursor-pointer list-none flex items-center justify-between select-none min-h-[44px]">
           <span className="font-semibold text-sm">💰 الأرباح والورديات</span>
           <span className="text-mist text-xs">{money(todayEarnings)} · اضغط للتفاصيل</span>

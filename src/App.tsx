@@ -19,6 +19,7 @@ import InstallPrompt from './components/InstallPrompt'
 import CustomerLogin from './components/CustomerLogin'
 import PhonePrompt from './components/PhonePrompt'
 import { CustomerAuthProvider, useCustomerAuth } from './lib/customerAuth'
+import { useScrollRestoration } from './lib/useScrollRestoration'
 
 // Staff-only pages: not needed in the customer bundle, so they're loaded
 // on demand instead of shipping ~1500 lines of admin/vendor/driver code to
@@ -115,6 +116,7 @@ function AppShell() {
   const { pathname } = useLocation()
   const isStaff = isStaffRoute(pathname)
   const { customer, loading } = useCustomerAuth()
+  useScrollRestoration()
   const [skipped, setSkipped] = useState(() => !!localStorage.getItem('salka_onboarded'))
 
   // Wait for the initial auth check to resolve before deciding whether to

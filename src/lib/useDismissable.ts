@@ -81,8 +81,45 @@ export function useDismissable<T extends HTMLElement = HTMLDivElement>(
 
     // Capture phase, so the trap runs before any field's own key handling.
     document.addEventListener('keydown', onKey, true)
+
+    // ---- the Android/iOS equivalent of Escape ----------------------------
+    // Escape is a keyboard key, and almost nobody using Salka has a keyboard.
+    // On a phone the gesture that means "close this" is the system Back button
+    // or the edge swipe, and nothing in the app was listening for it: every
+    // sheet, picker and dialog let Back fall through to the router, so a
+    // customer with an item sheet open who tapped Back left the restaurant
+    // entirely, and a driver reading a reject dialog was thrown off the driver
+    // page mid-shift.
+    //
+    // Pushing one throwaway history entry while the overlay is open gives Back
+    // something to consume. `marker` identifies OUR entry so the cleanup can
+    // tell the difference between "closed by button/Escape/backdrop" (pop our
+    // entry so the user's next Back still goes back a page) and "the route
+    // changed underneath us" (leave history alone -- calling back() there would
+    // undo the navigation the user just made).
+    const dismissable = !!onDismissRef.current
+    const marker = dismissable ? `salka-overlay-${Date.now()}-${Math.random()}` : null
+    let closedByBack = false
+
+    const onPop = () => {
+      closedByBack = true
+      onDismissRef.current?.()
+    }
+
+    if (marker) {
+      history.pushState({ salkaOverlay: marker }, '')
+      window.addEventListener('popstate', onPop)
+    }
+
     return () => {
       document.removeEventListener('keydown', onKey, true)
+      if (marker) {
+        window.removeEventListener('popstate', onPop)
+        // Only unwind the entry if it is still the one on top. If the user
+        // navigated away, history.state belongs to the router now and going
+        // back would cancel their navigation.
+        if (!closedByBack && history.state?.salkaOverlay === marker) history.back()
+      }
       // The opener is often unmounted along with the overlay (a row that was
       // filtered away by the refresh the dialog triggered), in which case
       // focus() is a no-op and the browser falls back to <body>.

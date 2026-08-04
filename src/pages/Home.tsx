@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useDismissable } from '../lib/useDismissable'
 import { haversineKm } from '../lib/geo'
@@ -17,7 +17,16 @@ export default function Home() {
   const [discountedRestaurantIds, setDiscountedRestaurantIds] = useState<Set<number>>(new Set())
   const [loading, setLoading] = useState(true)
   const [picking, setPicking] = useState(false)
-  const [kind, setKind] = useState<VendorKind | null>(null)
+  // In the URL for the same reason as the restaurant categories: on a phone,
+  // Back is how people undo a filter, and as state it would instead take them
+  // off the home screen entirely.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const kind = (searchParams.get('kind') as VendorKind | null) || null
+  const setKind = (k: VendorKind | null) => {
+    const next = new URLSearchParams(searchParams)
+    if (k) next.set('kind', k); else next.delete('kind')
+    setSearchParams(next)
+  }
   // Escape only closes the picker when there is something to fall back to --
   // the same guard the backdrop uses. With no compound chosen and the query
   // working, closing it would leave the page with no address at all.

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useCart } from '../lib/cart'
 import ProductCard from '../components/ProductCard'
@@ -26,7 +26,21 @@ export default function RestaurantDetail() {
   const [customizing, setCustomizing] = useState<MenuItem | null>(null)
   const [detailItem, setDetailItem] = useState<MenuItem | null>(null)
   const [compounds, setCompounds] = useState<Compound[]>([])
-  const [activeCat, setActiveCat] = useState<string>(ALL)
+  // The chosen category lives in the URL, not in component state.
+  //
+  // As state, tapping a category then pressing the phone's Back button left the
+  // restaurant completely -- Back had nothing of ours to consume, so it fell
+  // through to the router. On Android, where Back is the primary navigation
+  // gesture, a customer filtering to "دجاج" and then wanting the full menu
+  // again got thrown out to the restaurant list instead. In the URL, Back
+  // returns them to "الكل", and a link to a filtered menu can be shared.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeCat = searchParams.get('cat') || ALL
+  const setActiveCat = (cat: string) => {
+    const next = new URLSearchParams(searchParams)
+    if (cat === ALL) next.delete('cat'); else next.set('cat', cat)
+    setSearchParams(next)
+  }
   const [loadFailed, setLoadFailed] = useState(false)
 
   useEffect(() => {
