@@ -25,12 +25,19 @@ export default function SwipeToConfirm({ label, onConfirm, disabled }: Props) {
     const track = trackRef.current
     if (!track) return
     maxDrag.current = track.clientWidth - 56
-    startX.current = clientX - dragX
+    // The thumb is pinned to the RIGHT edge and travels LEFT (the label shows
+    // an ← arrow, and the whole app is RTL), so progress grows as clientX
+    // DECREASES. The original `clientX - startX` measured the opposite: a
+    // leftward swipe produced a negative value, which Math.max(0, …) then
+    // clamped to zero, so the thumb never moved and mark_delivered could not
+    // be reached at all. The only way to move it was to swipe right, which
+    // sent the thumb left, away from the finger.
+    startX.current = clientX + dragX
     setDragging(true)
   }
 
   function move(clientX: number) {
-    let x = clientX - startX.current
+    let x = startX.current - clientX
     x = Math.max(0, Math.min(maxDrag.current, x))
     dragXRef.current = x
     setDragX(x)
