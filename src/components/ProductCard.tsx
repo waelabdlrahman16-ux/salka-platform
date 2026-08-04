@@ -19,20 +19,15 @@ export default function ProductCard({
   isFromPrice?: boolean
 }) {
   const art = artFor(item.category)
-  const hasPhoto = !!item.image_url
 
-  // A photo earns a full square. A category tile does not: 74 of 189 items have
-  // no photograph, and five vendors have none at all, so on those menus an
-  // aspect-square tile meant two items filled a phone screen and the rest of
-  // the square was flat colour. Half the height fits twice as many items, and
-  // the emoji is scaled up so the tile still reads as deliberate rather than
-  // like a picture that failed to load.
-  const tileShape = hasPhoto ? 'aspect-square text-4xl' : 'h-24 text-5xl'
-
+  // The tile stays a full square whether or not there is a photo. A shorter
+  // tile for photoless items was tried and reverted on 2026-08-04 at Wael's
+  // call: a uniform grid is worth more than the extra items per screen, and
+  // photography is coming, at which point every tile is a square anyway.
   return (
     <div className="card p-3 flex flex-col">
       <button className="text-right" onClick={onOpenDetail}>
-        <div className={`relative rounded-xl grid place-items-center mb-3 overflow-hidden ${tileShape}`}
+        <div className="relative rounded-xl aspect-square grid place-items-center text-4xl mb-3 overflow-hidden"
           style={{ background: art.tint }}>
           {item.image_url
             ? <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
