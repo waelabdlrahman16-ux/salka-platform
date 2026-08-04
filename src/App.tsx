@@ -122,7 +122,17 @@ function AppShell() {
   // redirect (or with an existing session) would flash the login screen
   // again for a moment, or worse, be shown it a second time since the
   // 'salka_onboarded' flag was never set before the full-page redirect away.
-  const showOnboarding = !isStaff && !loading && !customer && !skipped
+  //
+  // Also wait until a place has been chosen. Home opens its own "فين مكانك؟"
+  // picker whenever no compound is stored, which for a first-time visitor is
+  // always -- so with <main> now rendering underneath, the two modals stacked
+  // and the very first thing anyone saw was a login card with a location
+  // picker on top of it. The picker has to win: nothing in the app works
+  // without a compound, whereas signing in is optional. Re-read on navigation
+  // rather than subscribing, so the prompt surfaces on the customer's next
+  // move after picking instead of interrupting them the instant they choose.
+  const hasPlace = !!sessionStorage.getItem('salka_compound_id')
+  const showOnboarding = !isStaff && !loading && !customer && !skipped && hasPlace
 
   return (
     <div className="min-h-screen font-arabic">
