@@ -42,7 +42,10 @@ function esc(s: unknown): string {
 
 function buildInvoiceHtml(order: any, items: any[]): string {
   const itemRows = items.map(it => {
-    const details = [it.size_name, ...(it.addon_names ?? [])].filter(Boolean).join(" · ")
+    // combo_name first: this is the artifact a customer forwards when they
+    // dispute a charge, and without it a 130 ج.م line sits against a 75 ج.م
+    // menu price with nothing explaining the difference.
+    const details = [it.combo_name && `كومبو ${it.combo_name}`, it.size_name, ...(it.addon_names ?? [])].filter(Boolean).join(" · ")
     return `
       <tr>
         <td style="padding:10px 0;border-bottom:1px solid #eee;">
@@ -126,7 +129,7 @@ Deno.serve(async (req) => {
     if (!customer?.email) return json({ error: "no_email_no_receipt" }, 200)
 
     const { data: items } = await admin.from("order_items")
-      .select("name, qty, total, size_name, addon_names").eq("order_id", order_id)
+      .select("name, qty, total, size_name, combo_name, addon_names").eq("order_id", order_id)
 
     const html = buildInvoiceHtml(
       { ...order, restaurant_name: (order as any).restaurants?.name ?? "" },
