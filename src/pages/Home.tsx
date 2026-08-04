@@ -19,13 +19,29 @@ export default function Home() {
   const [myCoords, setMyCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [locating, setLocating] = useState(false)
   const [locationError, setLocationError] = useState('')
+  const [compoundsFailed, setCompoundsFailed] = useState(false)
 
-  useEffect(() => {
-    supabase.from('compounds').select('*').eq('active', true).lte('distance_km', 30)
+  function loadCompounds() {
+    setCompoundsFailed(false)
+    // Was .lte('distance_km', 30), which silently hid the furthest compounds
+    // here while the checkout dropdown still offered them -- so the set of
+    // selectable places differed by screen. Coverage is decided server-side by
+    // vendor_covers_compound(), not by a magic number in the home picker.
+    supabase.from('compounds').select('*').eq('active', true)
       .order('distance_km')
-      .then(({ data }) => {
-        setCompounds(data ?? [])
+      .then(({ data, error }) => {
         const saved = sessionStorage.getItem(STORAGE_KEY)
+        if (error) {
+          setCompoundsFailed(true)
+          // Restore the saved choice even on failure. Returning customers keep
+          // a usable app (and their in-flight order page) instead of being
+          // pinned behind a modal they cannot dismiss; only open the picker for
+          // someone who has no place selected at all.
+          if (saved) { setCompoundId(Number(saved)); return }
+          setPicking(true)
+          return
+        }
+        setCompounds(data ?? [])
         if (saved) { setCompoundId(Number(saved)); return }
         setPicking(true)
         // try detecting location automatically on first visit rather than
@@ -34,6 +50,11 @@ export default function Home() {
         // picker/search showing as a graceful fallback
         useMyLocation(data ?? [])
       })
+  }
+
+  useEffect(() => {
+    loadCompounds()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -174,10 +195,26 @@ export default function Home() {
       )}
 
       {picking && (
-        <div className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" onClick={() => selected && setPicking(false)}>
-          <div className="card w-full max-w-md p-5 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true"
+          onClick={() => (selected || compoundsFailed) && setPicking(false)}>
+          <div className="card w-full max-w-md p-5 max-h-[85vh] overflow-y-auto relative" onClick={e => e.stopPropagation()}>
+            {/* The only way to dismiss this was tapping the backdrop *while a
+                compound was already selected*. If the compound query failed the
+                list was empty, nothing could be selected, and the overlay became
+                permanent -- a search box that can never match anything. */}
+            {(selected || compoundsFailed) && (
+              <button className="absolute top-2 left-2 w-11 h-11 grid place-items-center text-mist hover:text-foam text-xl"
+                aria-label="إغلاق" onClick={() => setPicking(false)}>✕</button>
+            )}
             <h3 className="font-bold text-lg mb-1">فين مكانك؟</h3>
             <p className="text-sm text-mist mb-3">هنعرض بس المطاعم اللي بتوصل لمنطقتك</p>
+
+            {compoundsFailed && (
+              <div className="bg-red-500/10 rounded-xl p-3 mb-3 text-center">
+                <p className="text-sm text-red-600">مش قادرين نجيب الأماكن دلوقتي</p>
+                <button className="btn-ghost mt-2 text-sm" onClick={loadCompounds}>جرب تاني</button>
+              </div>
+            )}
 
             <div className="flex items-center gap-2 mb-4">
               <div className="field flex-1 flex items-center gap-2 !px-3.5">

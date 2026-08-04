@@ -34,8 +34,11 @@ export default function CustomOrder() {
     if (!isValidEgyptPhone(phone) || addressLoaded) return
     const t = setTimeout(async () => {
       const { data } = await supabase.rpc('last_address_for_phone', { p_phone: phone, p_session_token: getSessionToken() })
+      // Was set inside `if (data)`, so a first-time customer with no saved
+      // address never latched the flag and this debounced RPC re-fired on every
+      // subsequent keystroke in the phone field, forever.
+      setAddressLoaded(true)
       if (data) {
-        setAddressLoaded(true)
         if (!name.trim() && data.customer_name) setName(data.customer_name)
         if (!unit.trim() && data.unit_number) setUnit(data.unit_number)
         if (!addrNotes.trim() && data.address_notes) setAddrNotes(data.address_notes)

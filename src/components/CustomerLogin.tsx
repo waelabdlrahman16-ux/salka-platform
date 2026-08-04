@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { useCustomerAuth } from '../lib/customerAuth'
@@ -14,6 +14,45 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
   const [error, setError] = useState('')
   const [resendIn, setResendIn] = useState(0)
   const [emailLinkSent, setEmailLinkSent] = useState(false)
+  const resendTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // The resend countdown was started with a bare setInterval outside any effect
+  // and never cleared. confirmCode() calls onDone(), which unmounts this
+  // component immediately on success, leaving the timer ticking against an
+  // unmounted tree for up to 30 seconds.
+  useEffect(() => {
+    return () => { if (resendTimerRef.current) clearInterval(resendTimerRef.current) }
+  }, [])
+
+  // Escape steps back through the flow, and only dismisses from the top level.
+  // A blanket dismiss would be destructive mid-OTP: App.tsx's onSkip writes
+  // salka_onboarded, so pressing Escape while typing a code the user had just
+  // been texted would close onboarding for good and waste that code.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (mode === 'code') { goTo('phone'); return }
+      if (mode === 'phone' || mode === 'email') { goTo('main'); return }
+      if (onSkip) onSkip()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onSkip, mode])
+
+  function startResendCountdown() {
+    if (resendTimerRef.current) clearInterval(resendTimerRef.current)
+    setResendIn(30)
+    resendTimerRef.current = setInterval(() => {
+      setResendIn(s => {
+        if (s <= 1) {
+          if (resendTimerRef.current) clearInterval(resendTimerRef.current)
+          resendTimerRef.current = null
+          return 0
+        }
+        return s - 1
+      })
+    }, 1000)
+  }
 
   function goTo(next: 'main' | 'email' | 'phone' | 'code') {
     setError('')
@@ -35,8 +74,7 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
       return
     }
     setMode('code')
-    setResendIn(30)
-    const t = setInterval(() => setResendIn(s => { if (s <= 1) { clearInterval(t); return 0 } return s - 1 }), 1000)
+    startResendCountdown()
   }
 
   async function confirmCode() {
@@ -58,8 +96,18 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-night grid place-items-center p-4">
-      <div className="card w-full max-w-sm p-6 text-center">
+    <div className="fixed inset-0 z-50 bg-night grid place-items-center p-4" role="dialog" aria-modal="true">
+      <div className="card w-full max-w-sm p-6 text-center relative">
+        {/* Only at the top level -- the sub-steps already have their own
+            "رجوع", and a dismiss from mid-OTP would burn the code just sent. */}
+        {onSkip && mode === 'main' && (
+          <button
+            className="absolute top-2 left-2 w-11 h-11 grid place-items-center text-mist hover:text-foam text-xl"
+            aria-label="إغلاق"
+            onClick={onSkip}>
+            ✕
+          </button>
+        )}
         {mode === 'main' && (
           <>
             <div className="text-4xl mb-3">👋</div>

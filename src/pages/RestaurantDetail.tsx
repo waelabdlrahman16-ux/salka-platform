@@ -26,9 +26,17 @@ export default function RestaurantDetail() {
   const [detailItem, setDetailItem] = useState<MenuItem | null>(null)
   const [compounds, setCompounds] = useState<Compound[]>([])
   const [activeCat, setActiveCat] = useState<string>(ALL)
+  const [loadFailed, setLoadFailed] = useState(false)
 
   useEffect(() => {
-    supabase.from('restaurants').select('*').eq('id', id).single().then(({ data }) => setRestaurant(data))
+    // The error was discarded, so a bad id, an RLS denial or being offline all
+    // produced restaurant === null and an eternal "جاري التحميل…" with no
+    // message and no way back (the back link sits below the early return).
+    setLoadFailed(false)
+    supabase.from('restaurants').select('*').eq('id', id).single().then(({ data, error }) => {
+      if (error || !data) { setLoadFailed(true); return }
+      setRestaurant(data)
+    })
     supabase.from('menu_items').select('*').eq('restaurant_id', id).eq('available', true).then(async ({ data }) => {
       const list = data ?? []
       setItems(list)
@@ -58,6 +66,14 @@ export default function RestaurantDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurant?.id])
 
+  // Pharmacy/supermarket go through the Custom Order flow. This used to call
+  // nav() directly in the render body, which is a router state update during
+  // render -- React warns, and the redirect can double-fire under StrictMode.
+  useEffect(() => {
+    if (restaurant?.order_mode === 'custom_request') nav('/custom-order', { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restaurant?.order_mode])
+
   const categories = useMemo(() => {
     const seen = new Set<string>()
     const list: string[] = []
@@ -70,13 +86,16 @@ export default function RestaurantDetail() {
   const selectedCompound = compounds.find(c => String(c.id) === compoundId)
   const totalEta = restaurant && selectedCompound ? restaurant.prep_minutes + selectedCompound.est_travel_minutes : null
 
-  if (!restaurant) return <p className="text-mist">جاري التحميل…</p>
+  if (loadFailed) return (
+    <div className="card p-6 text-center max-w-sm mx-auto mt-6">
+      <p className="font-semibold">مش قادرين نفتح المطعم ده</p>
+      <p className="text-sm text-mist mt-1.5">يمكن يكون اتقفل أو في مشكلة في الاتصال</p>
+      <Link to="/" className="btn-sea mt-4 inline-block">العودة للمطاعم</Link>
+    </div>
+  )
 
-  if (restaurant.order_mode === 'custom_request') {
-    // pharmacy/supermarket now go through the Custom Order flow instead
-    nav('/custom-order', { replace: true })
-    return null
-  }
+  if (!restaurant) return <p className="text-mist">جاري التحميل…</p>
+  if (restaurant.order_mode === 'custom_request') return null // redirect runs in the effect above
 
   return (
     <div>
