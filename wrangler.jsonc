@@ -1,5 +1,11 @@
 {
   "name": "appgosalka-platform",
+  // Not a credential -- the account ID appears in every Cloudflare dashboard
+  // URL and is useless without an API token. Pinning it here means the deploy
+  // workflow needs exactly one repo secret instead of two, and it also stops a
+  // deploy from silently targeting the wrong account if another is ever added
+  // to this login.
+  "account_id": "564c74a9622ccf1aead91ebfb97faea4",
   "compatibility_date": "2026-07-26",
   "assets": {
     "directory": "./dist",

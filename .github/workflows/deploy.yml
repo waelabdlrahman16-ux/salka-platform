@@ -10,10 +10,11 @@ name: Deploy
 # URL and the publishable anon key, and VITE_SENTRY_DSN is optional (Sentry
 # stays inert without it). Add repo secrets only if that ever changes.
 #
-# Required repo secrets (Settings -> Secrets and variables -> Actions):
-#   CLOUDFLARE_API_TOKEN   -- dash.cloudflare.com/profile/api-tokens,
-#                             "Edit Cloudflare Workers" template
-#   CLOUDFLARE_ACCOUNT_ID  -- Workers & Pages overview, right-hand sidebar
+# Required repo secret (Settings -> Secrets and variables -> Actions):
+#   CLOUDFLARE_API_TOKEN -- dash.cloudflare.com/profile/api-tokens,
+#                           "Edit Cloudflare Workers" template
+#
+# The account ID is not a secret and lives in wrangler.jsonc.
 
 on:
   push:
@@ -56,8 +57,7 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # No command argument: wrangler reads wrangler.jsonc, which names the
-          # worker (appgosalka-platform) and points assets at ./dist with
+          # No accountId here: wrangler reads wrangler.jsonc, which also names
+          # the worker (appgosalka-platform) and points assets at ./dist with
           # single-page-application not-found handling.
           command: deploy
