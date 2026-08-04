@@ -27,28 +27,42 @@ firebase.initializeApp({
   appId: '1:298864964514:web:ffa48ef7432992fdc538fb',
 })
 
-// Deliberately NOT calling showNotification here.
+// This worker owns the display, and send-push (v12+) sends DATA-ONLY messages
+// so that it is the only thing displaying. Established by testing delivery:
 //
-// A message carrying a `notification` block is auto-displayed by the browser,
-// and onBackgroundMessage fires for that same message. Displaying it here as
-// well produced TWO banners per order -- confirmed by sending one message and
-// reading back two entries from registration.getNotifications(): one bare
-// (tag "", dir "auto", no icon) from the SDK, one styled from this handler.
+//   * `notification` block + showNotification here -> TWO banners per message,
+//     read back from registration.getNotifications(): one bare (tag "",
+//     dir "auto", no icon) and one styled.
+//   * `notification` block + no showNotification here -> FCM returns ok:true
+//     and the browser displays NOTHING, with or without title/body repeated
+//     under webpush.notification.
 //
-// The styling now travels with the message instead, in send-push's `webpush`
-// block (icon, badge, dir rtl, lang ar, tag order-<id>, renotify), so the
-// single auto-displayed banner is the correct-looking one. See send-push v10.
-//
-// Registering firebase.messaging() at all is still required: without it the
-// SDK does not install its push listener and background messages are dropped.
-firebase.messaging()
+// Data-only removes the ambiguity: the SDK never displays anything itself, it
+// just wakes this handler, and exactly one correctly-styled banner appears.
+// Title and body therefore arrive in payload.data, not payload.notification.
+firebase.messaging().onBackgroundMessage(payload => {
+  const d = payload?.data || {}
+  self.registration.showNotification(d.title || 'سالكة', {
+    body: d.body || '',
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    dir: 'rtl',
+    lang: 'ar',
+    // Orders are the only thing that pushes. Tagging by order id means a
+    // status change replaces that order's banner rather than stacking five of
+    // them on a driver's lock screen.
+    tag: d.order_id ? `order-${d.order_id}` : 'salka',
+    renotify: true,
+    data: d,
+  })
+})
 
 // Tapping the banner should land on the relevant screen, and should focus an
 // already-open tab rather than opening a second copy of the app.
 self.addEventListener('notificationclick', event => {
   event.notification.close()
   const orderId = event.notification?.data?.order_id
-  const target = orderId ? `/driver?order=${orderId}` : '/'
+  const target = event.notification?.data?.link || (orderId ? `/driver?order=${orderId}` : '/')
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
