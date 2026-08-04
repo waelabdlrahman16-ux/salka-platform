@@ -26,4 +26,5 @@ export const firebaseConfig = {
 // without it. Until it is filled in, web push stays inert -- registerPush()
 // and enablePush() both return without prompting, so nothing breaks and no
 // customer sees a permission dialog that could never work.
-export const VAPID_PUBLIC_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY || ''
+export const VAPID_PUBLIC_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY
+  || 'BJIvssygNS3m1iK4swx2KvswTujO3ZD37WEaRI0YiMJ235DsGOvREFm_pVXt-JTXSEijAUF8320lKDf70JNgc3Q'
