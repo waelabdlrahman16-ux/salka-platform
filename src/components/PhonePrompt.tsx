@@ -1,9 +1,14 @@
 import { useState } from 'react'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { useCustomerAuth } from '../lib/customerAuth'
+import { useDismissable } from '../lib/useDismissable'
 
 export default function PhonePrompt() {
   const { updatePhone, logout } = useCustomerAuth()
+  // null: deliberately unskippable -- an order cannot be delivered without a
+  // phone number. It still gets the focus trap, so Tab cannot wander into the
+  // page underneath, which is what made this feel like a hang.
+  const overlayRef = useDismissable<HTMLDivElement>(null)
   const [phone, setPhone] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -17,7 +22,7 @@ export default function PhonePrompt() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-night grid place-items-center p-4">
+    <div ref={overlayRef} className="fixed inset-0 z-50 bg-night grid place-items-center p-4" role="dialog" aria-modal="true">
       <div className="card w-full max-w-sm p-6 text-center">
         <div className="text-4xl mb-3">📱</div>
         <h1 className="text-xl font-bold mb-1">رقم موبايلك؟</h1>

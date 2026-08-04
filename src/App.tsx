@@ -165,7 +165,7 @@ function AppShell() {
       )}
       {!isStaff && (
         <footer className="max-w-5xl mx-auto px-4 pb-8 text-center">
-          <Link to="/terms" className="text-xs text-mist hover:text-foam">الشروط وسياسة الخصوصية</Link>
+          <Link to="/terms" className="inline-flex items-center justify-center min-h-[44px] px-3 text-xs text-mist hover:text-foam">الشروط وسياسة الخصوصية</Link>
         </footer>
       )}
       <BottomNav />

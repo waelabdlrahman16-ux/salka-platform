@@ -47,7 +47,7 @@ export default function AddonsCard({
                 <p className="font-semibold text-sm">{g.name}</p>
                 <p className="text-xs text-mist mt-0.5">
                   {isSwap ? '🔁 تبديل — اختيار واحد بس' : '➕ إضافات — أكتر من واحدة'}
-                  {g.min_select > 0 && <span className="text-sand"> · مطلوب</span>}
+                  {g.min_select > 0 && <span className="text-sandink"> · مطلوب</span>}
                   {!isSwap && g.max_select != null && <span> · حد أقصى {g.max_select}</span>}
                 </p>
               </div>

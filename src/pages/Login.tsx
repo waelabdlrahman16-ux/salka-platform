@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useId } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth, homeFor } from '../lib/auth'
 
 export default function Login() {
+  const fid = useId()
   const { signIn, session, profile, loading } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -28,14 +29,14 @@ export default function Login() {
 
         <div className="space-y-3 mt-5">
           <div>
-            <label className="label">البريد الإلكتروني</label>
-            <input className="field" dir="ltr" type="email" value={email}
+            <label className="label" htmlFor={`${fid}-1`}>البريد الإلكتروني</label>
+            <input id={`${fid}-1`} className="field" dir="ltr" type="email" value={email}
               onChange={e => setEmail(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && submit()} placeholder="you@salka.app" />
           </div>
           <div>
-            <label className="label">كلمة المرور</label>
-            <input className="field" dir="ltr" type="password" value={password}
+            <label className="label" htmlFor={`${fid}-2`}>كلمة المرور</label>
+            <input id={`${fid}-2`} className="field" dir="ltr" type="password" value={password}
               onChange={e => setPassword(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && submit()} placeholder="••••••••" />
           </div>

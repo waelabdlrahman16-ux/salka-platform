@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useId } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
@@ -17,6 +17,7 @@ interface OrderRow {
 }
 
 export default function Profile() {
+  const fid = useId()
   const nav = useNavigate()
   const { customer, logout, updatePhone } = useCustomerAuth()
   const [addresses, setAddresses] = useState<Address[]>([])
@@ -161,17 +162,17 @@ export default function Profile() {
 
         {editing && (
           <div className="card p-4 mb-3 space-y-3">
-            <div><label className="label">اسم العنوان</label>
-              <input className="field" value={label} onChange={e => setLabel(e.target.value)} placeholder="المنزل / الشغل" /></div>
-            <div><label className="label">المكان *</label>
-              <select className="field" value={compoundId ?? ''} onChange={e => setCompoundId(Number(e.target.value) || null)}>
+            <div><label className="label" htmlFor={`${fid}-1`}>اسم العنوان</label>
+              <input id={`${fid}-1`} className="field" value={label} onChange={e => setLabel(e.target.value)} placeholder="المنزل / الشغل" /></div>
+            <div><label className="label" htmlFor={`${fid}-2`}>المكان *</label>
+              <select id={`${fid}-2`} className="field" value={compoundId ?? ''} onChange={e => setCompoundId(Number(e.target.value) || null)}>
                 <option value="">اختر مكانك…</option>
                 {compounds.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select></div>
-            <div><label className="label">رقم الشاليه / الفيلا *</label>
-              <input className="field" value={unit} onChange={e => setUnit(e.target.value)} placeholder="مثال: B4 - 204" /></div>
-            <div><label className="label">علامة مميزة (اختياري)</label>
-              <input className="field" value={notes} onChange={e => setNotes(e.target.value)} placeholder="مثال: بجوار حمام السباحة" /></div>
+            <div><label className="label" htmlFor={`${fid}-3`}>رقم الشاليه / الفيلا *</label>
+              <input id={`${fid}-3`} className="field" value={unit} onChange={e => setUnit(e.target.value)} placeholder="مثال: B4 - 204" /></div>
+            <div><label className="label" htmlFor={`${fid}-4`}>علامة مميزة (اختياري)</label>
+              <input id={`${fid}-4`} className="field" value={notes} onChange={e => setNotes(e.target.value)} placeholder="مثال: بجوار حمام السباحة" /></div>
             {addressError && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3">{addressError}</p>}
             <div className="flex gap-2">
               <button className="btn-ghost flex-1 text-sm" onClick={() => setEditing(null)}>إلغاء</button>

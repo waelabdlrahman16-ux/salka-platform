@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useId } from 'react'
 import { supabase } from '../lib/supabase'
+import { useDismissable } from '../lib/useDismissable'
 import { useAuth } from '../lib/auth'
 import { startRinging, stopRinging } from '../lib/ring'
 import { ping, askNotificationPermission } from '../lib/notify'
@@ -126,7 +127,7 @@ function RideHistoryPanel({ restaurantId }: { restaurantId: number }) {
           </div>
           <p className="text-mist text-xs mt-0.5">{o.zone} — وحدة {o.unit_number}</p>
           <p className="text-xs text-mist mt-1">
-            {new Date(o.created_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })}
+            {new Date(o.created_at).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short' })}
             {o.payment_mode === 'driver_pays' ? ` · المندوب دفع ${o.collect_amount} ج.م` : ' · مدفوع مقدمًا'}
           </p>
         </div>
@@ -138,6 +139,7 @@ function RideHistoryPanel({ restaurantId }: { restaurantId: number }) {
 // ── Shared "request a driver" form — used as the whole screen for own-system
 //    vendors, and as a secondary panel for regular vendors with an off-platform order.
 function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: Restaurant; standalone?: boolean; onClose?: () => void }) {
+  const fid = useId()
   const [compounds, setCompounds] = useState<Compound[]>([])
   const [recent, setRecent] = useState<Order[]>([])
 
@@ -226,36 +228,36 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
         </div>
         {paymentMode === 'driver_pays' && (
           <div className="mt-3">
-            <label className="label">قيمة الأوردر اللي المندوب هيدفعها *</label>
-            <input className="field" type="number" inputMode="decimal" value={collectAmount}
+            <label className="label" htmlFor={`${fid}-1`}>قيمة الأوردر اللي المندوب هيدفعها *</label>
+            <input id={`${fid}-1`} className="field" type="number" inputMode="decimal" value={collectAmount}
               onChange={e => setCollectAmount(e.target.value)} placeholder="مثال: 250" />
           </div>
         )}
       </div>
 
       <div className="mb-4">
-        <label className="label">تفاصيل الأوردر (رقمه، أي حاجة تفيد المندوب)</label>
-        <textarea className="field min-h-[70px]" value={orderNotes} onChange={e => setOrderNotes(e.target.value)}
+        <label className="label" htmlFor={`${fid}-2`}>تفاصيل الأوردر (رقمه، أي حاجة تفيد المندوب)</label>
+        <textarea id={`${fid}-2`} className="field min-h-[70px]" value={orderNotes} onChange={e => setOrderNotes(e.target.value)}
           placeholder="مثال: أوردر رقم 1234" />
       </div>
 
       <div className="card p-4 mb-4 space-y-3">
         <h2 className="font-bold">عنوان العميل</h2>
-        <div><label className="label">اسم العميل *</label>
-          <input className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
-        <div><label className="label">رقم موبايل العميل *</label>
-          <input className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-red-400' : ''}`}
+        <div><label className="label" htmlFor={`${fid}-3`}>اسم العميل *</label>
+          <input id={`${fid}-3`} className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
+        <div><label className="label" htmlFor={`${fid}-4`}>رقم موبايل العميل *</label>
+          <input id={`${fid}-4`} className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-red-400' : ''}`}
             dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} placeholder="01xxxxxxxxx" maxLength={13} />
           {phone.trim() && !isValidEgyptPhone(phone) && <p className="text-xs text-red-600 mt-1">{PHONE_HINT}</p>}</div>
-        <div><label className="label">المكان *</label>
-          <select className="field" value={compoundId ?? ''} onChange={e => setCompoundId(Number(e.target.value) || null)}>
+        <div><label className="label" htmlFor={`${fid}-5`}>المكان *</label>
+          <select id={`${fid}-5`} className="field" value={compoundId ?? ''} onChange={e => setCompoundId(Number(e.target.value) || null)}>
             <option value="">اختر المكان…</option>
             {compounds.map(c => <option key={c.id} value={c.id}>{c.name} (~{c.est_travel_minutes} د)</option>)}
           </select></div>
-        <div><label className="label">رقم الشاليه / الفيلا *</label>
-          <input className="field" value={unit} onChange={e => setUnit(e.target.value)} placeholder="مثال: B4 - 204" /></div>
-        <div><label className="label">علامة مميزة (اختياري)</label>
-          <input className="field" value={addrNotes} onChange={e => setAddrNotes(e.target.value)} placeholder="مثال: بجوار حمام السباحة" /></div>
+        <div><label className="label" htmlFor={`${fid}-6`}>رقم الشاليه / الفيلا *</label>
+          <input id={`${fid}-6`} className="field" value={unit} onChange={e => setUnit(e.target.value)} placeholder="مثال: B4 - 204" /></div>
+        <div><label className="label" htmlFor={`${fid}-7`}>علامة مميزة (اختياري)</label>
+          <input id={`${fid}-7`} className="field" value={addrNotes} onChange={e => setAddrNotes(e.target.value)} placeholder="مثال: بجوار حمام السباحة" /></div>
       </div>
 
       {compoundId && (
@@ -322,6 +324,7 @@ function KitchenVendor({ rid }: { rid: number }) {
   const [isOpen, setIsOpen] = useState(true)
   const [name, setName] = useState('')
   const [declining, setDeclining] = useState<Order | null>(null)
+  const decliningRef = useDismissable(() => setDeclining(null), !!declining)
   const [reliability, setReliability] = useState<{ avg_accept_minutes: number | null; total_orders: number } | null>(null)
   const audioUnlocked = useRef(false)
   const stockRef = useRef<HTMLDivElement>(null)
@@ -466,11 +469,11 @@ function KitchenVendor({ rid }: { rid: number }) {
         </div>
 
         {(items[o.id] ?? []).some(it => it.requires_prescription) && (
-          <p className="text-sand text-sm mt-2">💊 الطلب فيه صنف يحتاج روشتة — أكّد مع العميل قبل التجهيز</p>
+          <p className="text-sandink text-sm mt-2">💊 الطلب فيه صنف يحتاج روشتة — أكّد مع العميل قبل التجهيز</p>
         )}
 
         {o.customer_note && (
-          <p className="text-sand text-sm mt-2 bg-sand/10 rounded-lg p-2.5">📝 {o.customer_note}</p>
+          <p className="text-sandink text-sm mt-2 bg-sand/10 rounded-lg p-2.5">📝 {o.customer_note}</p>
         )}
 
         <p className="text-sm mt-2">
@@ -605,7 +608,7 @@ function KitchenVendor({ rid }: { rid: number }) {
 
       {newOrders.length > 0 && (
         <div className="mb-5 space-y-3">
-          <p className="text-sand font-bold animate-pulse">🔔 طلب جديد — {newOrders.length}</p>
+          <p className="text-sandink font-bold animate-pulse">🔔 طلب جديد — {newOrders.length}</p>
           {newOrders.map(o => card(o, true))}
         </div>
       )}
@@ -648,7 +651,7 @@ function KitchenVendor({ rid }: { rid: number }) {
       })()}
 
       {declining && (
-        <div className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" onClick={() => setDeclining(null)}>
+        <div ref={decliningRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true" onClick={() => setDeclining(null)}>
           <div className="card !rounded-2xl w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold mb-2">رفض الطلب #{declining.id}</h3>
             <p className="text-sm text-mist mb-4">هيتم إلغاء الطلب وإخطار العميل. متاح فقط قبل بدء التحضير.</p>

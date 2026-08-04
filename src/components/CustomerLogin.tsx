@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useId } from 'react'
 import { supabase } from '../lib/supabase'
 import { Link } from 'react-router-dom'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { useCustomerAuth } from '../lib/customerAuth'
 
 export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; onSkip?: () => void }) {
+  const fid = useId()
   const { requestOtp, verifyOtp, signInWithGoogle, requestEmailLink } = useCustomerAuth()
   const [mode, setMode] = useState<'main' | 'email' | 'phone' | 'code'>('main')
   const [phone, setPhone] = useState('')
@@ -164,7 +165,7 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
 
             {onSkip && (
               <div className="mt-3">
-                <button className="text-sm text-mist hover:text-foam" onClick={onSkip}>تخطي دلوقتي</button>
+                <button className="inline-flex items-center justify-center min-h-[44px] px-4 text-sm text-mist hover:text-foam" onClick={onSkip}>تخطي دلوقتي</button>
               </div>
             )}
           </>
@@ -203,12 +204,12 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
 
             <div className="text-right space-y-3 mb-5">
               <div>
-                <label className="label">الاسم</label>
-                <input className="field" value={name} onChange={e => setName(e.target.value)} placeholder="اسمك بالكامل" />
+                <label className="label" htmlFor={`${fid}-1`}>الاسم</label>
+                <input id={`${fid}-1`} className="field" value={name} onChange={e => setName(e.target.value)} placeholder="اسمك بالكامل" />
               </div>
               <div>
-                <label className="label">رقم الموبايل</label>
-                <input className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-red-400' : ''}`}
+                <label className="label" htmlFor={`${fid}-2`}>رقم الموبايل</label>
+                <input id={`${fid}-2`} className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-red-400' : ''}`}
                   dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} placeholder="01xxxxxxxxx" maxLength={13} />
                 {phone.trim() && !isValidEgyptPhone(phone) && <p className="text-xs text-red-600 mt-1">{PHONE_HINT}</p>}
               </div>

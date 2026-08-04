@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { uploadVendorImage } from '../lib/upload'
+import { useDismissable } from '../lib/useDismissable'
 import BasicInfoCard from './menuItemEditor/BasicInfoCard'
 import SizesCard from './menuItemEditor/SizesCard'
 import AddonsCard from './menuItemEditor/AddonsCard'
@@ -17,6 +18,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
    *  rest of the editor without a section whose writes RLS would reject. */
   canManageDiscounts?: boolean
 }) {
+  const overlayRef = useDismissable(onClose)
   const [name, setName] = useState(item.name)
   const [description, setDescription] = useState(item.description ?? '')
   const [category, setCategory] = useState(item.category)
@@ -144,7 +146,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 grid place-items-end sm:place-items-center p-0 sm:p-4" onClick={onClose}>
+    <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 grid place-items-end sm:place-items-center p-0 sm:p-4" onClick={onClose}>
       <div className="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto bg-shellup rounded-t-2xl sm:rounded-2xl p-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3 px-1">
           <h2 className="font-bold text-lg text-foam">تعديل الصنف</h2>

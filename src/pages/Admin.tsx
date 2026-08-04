@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { useDismissable } from '../lib/useDismissable'
 import type { Assignment, Compound, Complaint, Driver, DeliverySlotRow, Earning, MenuItem, Order, OrderRating, Reliability, Restaurant, Setting, SettlementRequest, Shift, VendorCoverage } from '../lib/types'
 import { ping, askNotificationPermission } from '../lib/notify'
 import { registerPush } from '../lib/push'
@@ -96,6 +97,7 @@ export default function Admin() {
   const [drivers, setDrivers] = useState<Driver[]>([])
   const [earnings, setEarnings] = useState<Earning[]>([])
   const [assigning, setAssigning] = useState<Order | null>(null)
+  const assigningRef = useDismissable(() => setAssigning(null), !!assigning)
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [menu, setMenu] = useState<MenuItem[]>([])
   const [openRest, setOpenRest] = useState<number | null>(null)
@@ -131,6 +133,7 @@ export default function Admin() {
   const [newCatalogName, setNewCatalogName] = useState('')
   const [accountBusy, setAccountBusy] = useState<string | null>(null)
   const [newCreds, setNewCreds] = useState<{ email: string; password: string } | null>(null)
+  const credsRef = useDismissable(() => setNewCreds(null), !!newCreds)
   const [newRestaurant, setNewRestaurant] = useState({ name: '', description: '', category: '', vendor_type: 'restaurant', prep_minutes: '20' })
   const [uploadingImage, setUploadingImage] = useState<string | null>(null)
   const [imageError, setImageError] = useState<string | null>(null)
@@ -140,6 +143,7 @@ export default function Admin() {
   const [orderSearching, setOrderSearching] = useState(false)
   const [orderStatusFilter, setOrderStatusFilter] = useState<'all' | OrderStatus>('all')
   const [reassigning, setReassigning] = useState<Assignment | null>(null)
+  const reassigningRef = useDismissable(() => setReassigning(null), !!reassigning)
   const [reassignBusy, setReassignBusy] = useState(false)
   const [actionError, setActionError] = useState('')
   // Rendered INSIDE the reassign modal. The page-level banner sits at the very
@@ -804,7 +808,7 @@ export default function Admin() {
   }
 
   const vehicleLabel = (v: string) => v === 'van' ? '🚐 فان' : '🏍️ موتوسيكل'
-  const fmtTime = (iso: string | null) => iso ? new Date(iso).toLocaleString('ar-EG', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : null
+  const fmtTime = (iso: string | null) => iso ? new Date(iso).toLocaleString('ar-EG-u-nu-latn', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : null
 
   const pendingInstapay = orders.filter(o =>
     (o.payment_method === 'instapay' || o.cod_deposit_amount != null) && o.status === 'awaiting_payment')
@@ -847,7 +851,7 @@ export default function Admin() {
     <div className="mt-2.5 bg-night border border-line rounded-xl p-3 text-sm space-y-1">
       <p>👤 {o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
       <p>📍 {addr(o)}</p>
-      {o.customer_note && <p className="text-sand">📝 {o.customer_note}</p>}
+      {o.customer_note && <p className="text-sandink">📝 {o.customer_note}</p>}
     </div>
   )
 
@@ -930,7 +934,7 @@ export default function Admin() {
                   <p className="font-semibold text-sm">طلب #{o.id} — {o.restaurants?.name} — {o.total} ج.م</p>
                   <p className="text-xs text-mist mt-0.5">👤 {o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
                   <p className="text-xs text-mist mt-0.5">📍 {addr(o)}</p>
-                  <p className="text-xs text-sand mt-1">المندوب اتصل ومردش حد، اتبلّغ الإدارة</p>
+                  <p className="text-xs text-sandink mt-1">المندوب اتصل ومردش حد، اتبلّغ الإدارة</p>
                   <div className="flex gap-2 mt-2.5">
                     <a className="btn-ghost !py-1.5 text-xs flex-1 text-center" href={`tel:${o.customer_phone}`}>اتصل بالعميل</a>
                     <button className="btn-ghost !py-1.5 text-xs flex-1" onClick={() => resolveNoAnswer(a, 'wait')}>قول للمندوب يستنى 5 دقايق</button>
@@ -989,7 +993,7 @@ export default function Admin() {
                 </span>
               </div>
               {o.order_type === 'custom_request' && (
-                <p className="text-sand text-sm mt-1.5">🧾 طلب خاص{o.pricing_status === 'pending_quote' ? ' — لسه محتاج تسعير من تبويب الطلبات' : ''}</p>
+                <p className="text-sandink text-sm mt-1.5">🧾 طلب خاص{o.pricing_status === 'pending_quote' ? ' — لسه محتاج تسعير من تبويب الطلبات' : ''}</p>
               )}
               {o.order_type === 'pickup_request' && (
                 <p className="text-sm mt-1.5">🛵 طلب مندوب بس{o.payment_mode === 'driver_pays' ? ` — المندوب يدفع ${o.collect_amount} ج.م` : ''}</p>
@@ -1001,7 +1005,7 @@ export default function Admin() {
               {(() => {
                 const priorAttempts = assignments.filter(a => a.order_id === o.id && a.status !== 'Offered')
                 return priorAttempts.length > 0 ? (
-                  <p className="text-xs text-sand mt-1.5">
+                  <p className="text-xs text-sandink mt-1.5">
                     ⚠️ اتعرض قبل كده على {priorAttempts.length} مندوب ({priorAttempts.map(a => a.drivers?.name).filter(Boolean).join('، ')})
                   </p>
                 ) : null
@@ -1130,7 +1134,7 @@ export default function Admin() {
             )
             const groups: { label: string; items: typeof orders }[] = []
             for (const o of filteredOrders) {
-              const label = new Date(o.created_at).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' })
+              const label = new Date(o.created_at).toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long' })
               const last = groups[groups.length - 1]
               if (last && last.label === label) last.items.push(o)
               else groups.push({ label, items: [o] })
@@ -1193,7 +1197,7 @@ export default function Admin() {
                       {a.responded_at && <p>رد: {fmtTime(a.responded_at)}</p>}
                       {a.picked_up_at && <p>استلم من المطعم: {fmtTime(a.picked_up_at)}</p>}
                       {a.delivered_at && <p>سلّم: {fmtTime(a.delivered_at)}</p>}
-                      {a.rejection_reason && <p className="text-sand">سبب: {a.rejection_reason}</p>}
+                      {a.rejection_reason && <p className="text-sandink">سبب: {a.rejection_reason}</p>}
                     </div>
                   ))}
                   {assignments.filter(a => a.order_id === o.id).length === 0 && (
@@ -1216,13 +1220,13 @@ export default function Admin() {
           <div className="grid grid-cols-3 gap-3 mb-4">
             <div className="card p-4 text-center"><p className="text-sm text-mist">التوصيلات (آخر 300)</p><p className="text-2xl font-bold mt-1">{earnings.length}</p></div>
             <div className="card p-4 text-center"><p className="text-sm text-mist">أرباح المندوبين</p><p className="text-2xl font-bold mt-1 text-sea">{totalDriver} ج.م</p></div>
-            <div className="card p-4 text-center"><p className="text-sm text-mist">أرباح الإدارة</p><p className="text-2xl font-bold mt-1 text-sand">{totalAdmin} ج.م</p></div>
+            <div className="card p-4 text-center"><p className="text-sm text-mist">أرباح الإدارة</p><p className="text-2xl font-bold mt-1 text-sandink">{totalAdmin} ج.م</p></div>
           </div>
           <div className="space-y-2.5">
             {earnings.map(e => (
               <div key={e.id} className="card p-3.5 flex items-center justify-between text-sm">
                 <span className="font-semibold">{e.drivers?.name} — طلب #{e.order_id}</span>
-                <span className="text-mist">رسوم: {e.delivery_fee} · <span className="text-sea">مندوب: {e.driver_earning}</span> · <span className="text-sand">إدارة: {e.admin_amount}</span></span>
+                <span className="text-mist">رسوم: {e.delivery_fee} · <span className="text-sea">مندوب: {e.driver_earning}</span> · <span className="text-sandink">إدارة: {e.admin_amount}</span></span>
               </div>
             ))}
           </div>
@@ -1272,7 +1276,7 @@ export default function Admin() {
                     </div>
                   </div>
                 )}
-                {imageError && expanded && <p className="text-xs text-sand mt-1">{imageError}</p>}
+                {imageError && expanded && <p className="text-xs text-sandink mt-1">{imageError}</p>}
 
                 {reliability[r.id] && reliability[r.id].total_orders > 0 && (
                   <p className="text-xs text-mist mt-2">
@@ -1374,7 +1378,7 @@ export default function Admin() {
                           </div>
                         </div>
                         <div className="flex items-center gap-3 mt-2 flex-wrap">
-                          <button className={`text-sm ${it.available ? 'text-mist' : 'text-sand'}`}
+                          <button className={`text-sm ${it.available ? 'text-mist' : 'text-sandink'}`}
                             onClick={() => toggleItem(it)}>
                             {it.available ? '✓ متاح' : '✗ غير متاح'}
                           </button>
@@ -1384,7 +1388,7 @@ export default function Admin() {
                             </span>
                           )}
                           {r.vendor_type === 'pharmacy' && (
-                            <button className={`text-sm ${it.requires_prescription ? 'text-sand' : 'text-mist'}`}
+                            <button className={`text-sm ${it.requires_prescription ? 'text-sandink' : 'text-mist'}`}
                               onClick={() => toggleRx(it)}>
                               {it.requires_prescription ? '💊 يحتاج روشتة' : 'بدون روشتة'}
                             </button>
@@ -1447,7 +1451,7 @@ export default function Admin() {
                   <div key={e.id} className="card p-4 border-red-400/60">
                     <p className="font-semibold">{e.requester?.name}</p>
                     <p className="text-sm text-mist mt-0.5">
-                      {e.shifts && new Date(e.shifts.shift_date).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'numeric' })}
+                      {e.shifts && new Date(e.shifts.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'numeric' })}
                       {' '}· {e.shifts?.start_time?.slice(0,5)}–{e.shifts?.end_time?.slice(0,5)}
                     </p>
                     {e.reason && <p className="text-sm text-mist mt-1">"{e.reason}"</p>}
@@ -1500,7 +1504,7 @@ export default function Admin() {
                 <div key={sh.id} className="card p-3.5 flex items-center justify-between text-sm">
                   <div>
                     <span className="font-semibold">{d?.name}</span>
-                    <span className="text-mist"> — {new Date(sh.shift_date).toLocaleDateString('ar-EG')} · {sh.start_time.slice(0,5)}–{sh.end_time.slice(0,5)}</span>
+                    <span className="text-mist"> — {new Date(sh.shift_date).toLocaleDateString('ar-EG-u-nu-latn')} · {sh.start_time.slice(0,5)}–{sh.end_time.slice(0,5)}</span>
                   </div>
                   {sh.status === 'swapped' && <span className="badge-closed">اتبدلت</span>}
                 </div>
@@ -1514,7 +1518,7 @@ export default function Admin() {
         <div className="space-y-5">
           {settlementRequests.length > 0 && (
             <div>
-              <h2 className="font-bold text-sand mb-3">⏳ طلبات تسوية مبكرة</h2>
+              <h2 className="font-bold text-sandink mb-3">⏳ طلبات تسوية مبكرة</h2>
               <div className="space-y-2.5">
                 {settlementRequests.map(sr => (
                   <div key={sr.id} className="card p-3.5 flex items-center justify-between text-sm">
@@ -1543,7 +1547,7 @@ export default function Admin() {
                   <div className="grid grid-cols-2 gap-3 mt-3">
                     <div className="bg-night border border-line rounded-xl p-3">
                       <p className="text-xs text-mist">كاش معاه</p>
-                      <p className="font-bold text-sand mt-0.5">{d.cash_held ?? 0} ج.م</p>
+                      <p className="font-bold text-sandink mt-0.5">{d.cash_held ?? 0} ج.م</p>
                       {(d.cash_held ?? 0) >= 3000 && <p className="text-xs text-red-600 mt-1">⚠️ تجاوز حد الأمان</p>}
                     </div>
                     <div className="bg-night border border-line rounded-xl p-3">
@@ -1630,7 +1634,7 @@ export default function Admin() {
             <div key={c.id} className="card p-4">
               <div className="flex items-start justify-between gap-2">
                 <h2 className="font-bold">طلب #{c.order_id} — {c.orders?.restaurants?.name}</h2>
-                <span className={`text-xs font-semibold rounded-full px-2.5 py-1 shrink-0 ${c.status === 'open' ? 'bg-red-500/15 text-red-600' : c.status === 'reviewed' ? 'bg-sand/15 text-sand' : 'bg-emerald-500/15 text-emerald-700'}`}>
+                <span className={`text-xs font-semibold rounded-full px-2.5 py-1 shrink-0 ${c.status === 'open' ? 'bg-red-500/15 text-red-600' : c.status === 'reviewed' ? 'bg-sand/15 text-sandink' : 'bg-emerald-500/15 text-emerald-700'}`}>
                   {c.status === 'open' ? 'جديدة' : c.status === 'reviewed' ? 'قيد المراجعة' : 'اتحلت'}
                 </span>
               </div>
@@ -1829,7 +1833,7 @@ export default function Admin() {
                 {open && (
                   <div className="mt-3 pt-3 border-t border-line">
                     {explicit.length > 0 && (
-                      <p className="text-xs text-sand mb-2">⚠️ المطعم ده حاليًا مقتصر بس على الأماكن المعلّمة تحت — لو عايزه يرجع يوصل بالمسافة القصوى بس، شيل كل التعليمات.</p>
+                      <p className="text-xs text-sandink mb-2">⚠️ المطعم ده حاليًا مقتصر بس على الأماكن المعلّمة تحت — لو عايزه يرجع يوصل بالمسافة القصوى بس، شيل كل التعليمات.</p>
                     )}
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-64 overflow-y-auto">
                       {compounds.map(c => {
@@ -1851,25 +1855,25 @@ export default function Admin() {
       )}
 
       {newCreds && (
-        <div className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" onClick={() => setNewCreds(null)}>
+        <div ref={credsRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true" onClick={() => setNewCreds(null)}>
           <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold mb-3">بيانات الدخول</h3>
             <p className="text-sm text-mist mb-1">الإيميل</p>
             <p className="font-mono text-sm bg-night border border-line rounded-lg p-2.5 mb-3" dir="ltr">{newCreds.email}</p>
             <p className="text-sm text-mist mb-1">كلمة السر</p>
             <p className="font-mono text-sm bg-night border border-line rounded-lg p-2.5 mb-4" dir="ltr">{newCreds.password}</p>
-            <p className="text-xs text-sand mb-4">⚠️ ده ظاهر مرة واحدة بس — انسخه وابعته دلوقتي</p>
+            <p className="text-xs text-sandink mb-4">⚠️ ده ظاهر مرة واحدة بس — انسخه وابعته دلوقتي</p>
             <button className="btn-sea w-full" onClick={() => setNewCreds(null)}>تمام</button>
           </div>
         </div>
       )}
 
       {assigning && (
-        <div className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" onClick={() => setAssigning(null)}>
+        <div ref={assigningRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true" onClick={() => setAssigning(null)}>
           <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold mb-4">اختيار مندوب متاح — طلب #{assigning.id}</h3>
             {assigningNeedsVan && (
-              <p className="text-sand text-sm mb-3">🚐 الطلب محتاج فان — لسه السعر متأكدش أو الطلب كبير</p>
+              <p className="text-sandink text-sm mb-3">🚐 الطلب محتاج فان — لسه السعر متأكدش أو الطلب كبير</p>
             )}
             {assignableDrivers.length === 0 && (
               <p className="text-mist text-sm">
@@ -1884,7 +1888,7 @@ export default function Admin() {
                     <p className="font-semibold">{d.name}</p>
                     <p className="text-sm text-mist mt-0.5">★ {d.rating} · {d.total_deliveries} توصيلة · {vehicleLabel(d.vehicle_type)} · {d.vehicle_plate}</p>
                     {driverActiveCount > 0 && (
-                      <p className="text-xs text-sand mt-1">شغال دلوقتي على {driverActiveCount} طلب</p>
+                      <p className="text-xs text-sandink mt-1">شغال دلوقتي على {driverActiveCount} طلب</p>
                     )}
                   </button>
                 )
@@ -1896,7 +1900,7 @@ export default function Admin() {
       )}
 
       {reassigning && (
-        <div className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true"
+        <div ref={reassigningRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true"
           onClick={() => setReassigning(null)}>
           <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold mb-1">تغيير المندوب — طلب #{reassigning.order_id}</h3>
@@ -1904,7 +1908,7 @@ export default function Admin() {
               دلوقتي مع {reassigning.drivers?.name ?? 'مندوب'} · {assignmentStatusLabel(reassigning.status)}
             </p>
             {reassignNeedsVan && (
-              <p className="text-sand text-sm mb-3">🚐 الطلب محتاج فان — لسه السعر متأكدش أو الطلب كبير</p>
+              <p className="text-sandink text-sm mb-3">🚐 الطلب محتاج فان — لسه السعر متأكدش أو الطلب كبير</p>
             )}
             {modalError && (
               <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3">{modalError}</p>
@@ -1924,7 +1928,7 @@ export default function Admin() {
                     <p className="font-semibold">{d.name}</p>
                     <p className="text-sm text-mist mt-0.5">★ {d.rating} · {vehicleLabel(d.vehicle_type)} · {d.vehicle_plate}</p>
                     {driverActiveCount > 0 && (
-                      <p className="text-xs text-sand mt-1">شغال دلوقتي على {driverActiveCount} طلب</p>
+                      <p className="text-xs text-sandink mt-1">شغال دلوقتي على {driverActiveCount} طلب</p>
                     )}
                   </button>
                 )

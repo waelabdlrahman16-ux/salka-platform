@@ -84,7 +84,7 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
       <div className="flex items-center justify-between bg-sand/10 rounded-lg px-3 py-2 text-sm">
         <span>
           🏷️ خصم {existing.discount_type === 'percent' ? `${existing.value}%` : `${existing.value} ج.م`}
-          {existing.ends_at && ` — لحد ${new Date(existing.ends_at).toLocaleDateString('ar-EG')}`}
+          {existing.ends_at && ` — لحد ${new Date(existing.ends_at).toLocaleDateString('ar-EG-u-nu-latn')}`}
         </span>
         <div className="flex gap-2">
           <button className="text-sea text-xs font-semibold" onClick={() => setEditing(true)}>تعديل</button>

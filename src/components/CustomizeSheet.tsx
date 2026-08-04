@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useDismissable } from '../lib/useDismissable'
 import type { MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemSize } from '../lib/types'
 
 export default function CustomizeSheet({
@@ -11,6 +12,7 @@ export default function CustomizeSheet({
   onClose: () => void
   onConfirm: (sizeId: number | null, addonIds: number[], qty: number) => void
 }) {
+  const overlayRef = useDismissable(onClose)
   const defaultSize = sizes.find(s => s.is_default) ?? sizes[0] ?? null
   const [sizeId, setSizeId] = useState<number | null>(defaultSize?.id ?? null)
   const [addonIds, setAddonIds] = useState<number[]>([])
@@ -57,7 +59,7 @@ export default function CustomizeSheet({
   const valid = (sizes.length === 0 || sizeId != null) && groupsValid
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 grid place-items-end sm:place-items-center p-0 sm:p-4" onClick={onClose}>
+    <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 grid place-items-end sm:place-items-center p-0 sm:p-4" onClick={onClose}>
       <div className="card w-full sm:max-w-md p-5 rounded-b-none sm:rounded-2xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <h2 className="font-bold text-lg mb-1">{item.name}</h2>
         {item.description && <p className="text-sm text-mist mb-4">{item.description}</p>}
@@ -80,7 +82,7 @@ export default function CustomizeSheet({
         {addonGroups.map(g => (
           <div key={g.id} className="mb-4">
             <p className="font-semibold text-sm mb-2">
-              {g.name} {g.min_select > 0 && <span className="text-sand">*</span>}
+              {g.name} {g.min_select > 0 && <span className="text-sandink">*</span>}
               {g.max_select === 1
                 ? <span className="text-mist font-normal"> (اختار واحد)</span>
                 : g.max_select != null && <span className="text-mist font-normal"> (حد أقصى {g.max_select})</span>}

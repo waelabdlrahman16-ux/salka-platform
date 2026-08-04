@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { artFor } from '../lib/categoryArt'
+import { useDismissable } from '../lib/useDismissable'
 import { isItemAvailableNow } from '../lib/itemAvailability'
 import { applyDiscount, effectiveDiscount } from '../lib/discounts'
 import Icon from './Icon'
@@ -21,6 +22,7 @@ export default function ProductDetailSheet({
   onCustomize: (item: MenuItem) => void
   onClose: () => void
 }) {
+  const overlayRef = useDismissable(onClose)
   const [activeId, setActiveId] = useState(item.id)
   const active = items.find(i => i.id === activeId) ?? item
 
@@ -43,7 +45,7 @@ export default function ProductDetailSheet({
   const related = (sameCategory.length >= 3 ? sameCategory : available).slice(0, 8)
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 grid place-items-end sm:place-items-center p-0 sm:p-4" onClick={onClose}>
+    <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 grid place-items-end sm:place-items-center p-0 sm:p-4" onClick={onClose}>
       <div className="w-full sm:max-w-md max-h-[90vh] overflow-y-auto bg-shell rounded-t-2xl sm:rounded-2xl" onClick={e => e.stopPropagation()}>
         <div className="relative aspect-square grid place-items-center text-6xl" style={{ background: art.tint }}>
           {active.image_url
