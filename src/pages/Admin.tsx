@@ -1031,15 +1031,29 @@ export default function Admin() {
 
       {tab === 'settings' && (
         <div className="space-y-3">
-          {settings.map(st => (
-            <div key={st.key} className="card p-4 flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="font-semibold text-sm">{st.label || st.key}</p>
+          {settings.map(st => {
+            const isBool = st.value === 'true' || st.value === 'false'
+            const on = st.value === 'true'
+            return (
+              <div key={st.key} className="card p-4 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm">{st.label || st.key}</p>
+                </div>
+                {isBool ? (
+                  <button
+                    className={`shrink-0 rounded-full px-4 min-h-[44px] text-sm font-semibold transition-colors ${
+                      on ? 'bg-sea text-white' : 'bg-shellup text-mist'}`}
+                    aria-pressed={on}
+                    onClick={() => updateSetting(st, on ? 'false' : 'true')}>
+                    {on ? 'مفعّل' : 'مقفول'}
+                  </button>
+                ) : (
+                  <input defaultValue={st.value} className="field !w-24 !py-1.5 text-center"
+                    onBlur={e => updateSetting(st, e.target.value)} />
+                )}
               </div>
-              <input defaultValue={st.value} className="field !w-24 !py-1.5 text-center"
-                onBlur={e => updateSetting(st, e.target.value)} />
-            </div>
-          ))}
+            )
+          })}
           <p className="text-xs text-mist mt-4 leading-relaxed">
             وقت وصول المندوب بيتحسب قبل ما الأكل يجهز، عشان يوصل المطعم في الوقت المناسب
             من غير ما يستنى.

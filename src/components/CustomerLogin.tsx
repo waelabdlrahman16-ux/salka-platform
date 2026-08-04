@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { supabase } from '../lib/supabase'
 import { Link } from 'react-router-dom'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { useCustomerAuth } from '../lib/customerAuth'
@@ -15,6 +16,31 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
   const [resendIn, setResendIn] = useState(0)
   const [emailLinkSent, setEmailLinkSent] = useState(false)
   const resendTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // SMS OTP is built but cannot work until SMS Misr approves the sender ID and
+  // template, so the entry point is hidden behind a settings flag rather than
+  // removed -- flipping it in the admin panel is the whole rollout.
+  //
+  // Defaults to hidden and only opens on an explicit 'true'. A failed or slow
+  // settings read therefore hides the option, which is the safe direction: a
+  // missing login method is a smaller harm than one that always errors.
+  const [smsEnabled, setSmsEnabled] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    supabase.from('settings').select('value').eq('key', 'sms_login_enabled').maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled || error) return
+        setSmsEnabled(data?.value === 'true')
+      })
+    return () => { cancelled = true }
+  }, [])
+
+  // Guard the state as well as the button: if the flag is turned off while
+  // someone is mid-flow, drop them back rather than leaving them on a screen
+  // whose submit can only fail.
+  useEffect(() => {
+    if (!smsEnabled && (mode === 'phone' || mode === 'code')) setMode('main')
+  }, [smsEnabled, mode])
 
   // The resend countdown was started with a bare setInterval outside any effect
   // and never cleared. confirmCode() calls onDone(), which unmounts this
@@ -132,7 +158,9 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
               📧 المتابعة بالإيميل
             </button>
 
-            <button className="text-xs text-mist hover:text-foam mb-1" onClick={() => goTo('phone')}>الدخول برقم الموبايل</button>
+            {smsEnabled && (
+              <button className="text-xs text-mist hover:text-foam mb-1" onClick={() => goTo('phone')}>الدخول برقم الموبايل</button>
+            )}
 
             {onSkip && (
               <div className="mt-3">
