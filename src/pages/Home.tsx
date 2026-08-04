@@ -175,26 +175,6 @@ export default function Home() {
         </p>
       )}
 
-      {!picking && !loading && compoundId && (
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <a href="#restaurants" className="card p-4 flex items-center gap-3 hover:border-sea/50 transition-colors">
-            <span className="w-11 h-11 rounded-xl grid place-items-center text-2xl shrink-0" style={{ background: 'rgba(10,95,94,.1)' }}>🍔</span>
-            <span className="font-bold">مطاعم</span>
-          </a>
-          <Link to="/custom-order?type=supermarket" className="card p-4 flex items-center gap-3 hover:border-sea/50 transition-colors">
-            <span className="w-11 h-11 rounded-xl grid place-items-center text-2xl shrink-0" style={{ background: 'rgba(212,163,42,.12)' }}>🛒</span>
-            <span className="font-bold">سوبر ماركت</span>
-          </Link>
-          <Link to="/custom-order?type=pharmacy" className="card p-4 flex items-center gap-3 hover:border-sea/50 transition-colors">
-            <span className="w-11 h-11 rounded-xl grid place-items-center text-2xl shrink-0" style={{ background: 'rgba(200,60,60,.1)' }}>💊</span>
-            <span className="font-bold">صيدلية</span>
-          </Link>
-          <Link to="/custom-order" className="card p-4 flex items-center gap-3 hover:border-sea/50 transition-colors">
-            <span className="w-11 h-11 rounded-xl grid place-items-center text-2xl shrink-0" style={{ background: 'rgba(100,113,111,.12)' }}>📝</span>
-            <span className="font-bold">طلب خاص</span>
-          </Link>
-        </div>
-      )}
 
       {!picking && loading && <p className="text-mist">جاري التحميل…</p>}
 
@@ -261,6 +241,47 @@ export default function Home() {
             ))}
           </div>
         </div>
+      )}
+
+      {/* Three entry points, one flow -- and deliberately BELOW the restaurants.
+
+          This block used to sit above the restaurant list and hold four tiles.
+          Two things were wrong with it.
+
+          The first tile, "مطاعم", was a bare <a href="#restaurants"> rather than
+          a router Link, and it pointed at a list that was already on the screen
+          a few hundred pixels further down. It bought nothing and cost
+          something real: the anchor pushed a `/#restaurants` history entry, so
+          after visiting the pharmacy the Back button landed on Home-with-a-hash
+          instead of Home -- the same screen at a different URL, which reads as
+          having been dumped somewhere else.
+
+          And the restaurants -- the reason anyone opens this app -- were pushed
+          below a 2x2 grid of secondary entry points. They now come first.
+
+          The remaining three all lead to /custom-order. They are one flow with
+          three starting points, so they read as one group under a heading that
+          says what the group is for, rather than as three separate
+          destinations. */}
+      {!picking && !loading && compoundId && (
+        <>
+        <h2 className="text-lg font-bold mb-2">اطلب أي حاجة تانية</h2>
+        <p className="text-sm text-mist mb-3">مش لاقي اللي عايزه في المطاعم؟ اكتب طلبك وإحنا نجيبهولك.</p>
+        <div className="grid grid-cols-3 gap-3 mb-7">
+          <Link to="/custom-order?type=supermarket" className="card p-3 flex flex-col items-center text-center gap-2 hover:border-sea/50 transition-colors">
+            <span className="w-11 h-11 rounded-xl grid place-items-center text-2xl shrink-0" style={{ background: 'rgba(212,163,42,.12)' }}>🛒</span>
+            <span className="font-bold text-sm leading-tight">سوبر ماركت</span>
+          </Link>
+          <Link to="/custom-order?type=pharmacy" className="card p-3 flex flex-col items-center text-center gap-2 hover:border-sea/50 transition-colors">
+            <span className="w-11 h-11 rounded-xl grid place-items-center text-2xl shrink-0" style={{ background: 'rgba(200,60,60,.1)' }}>💊</span>
+            <span className="font-bold text-sm leading-tight">صيدلية</span>
+          </Link>
+          <Link to="/custom-order" className="card p-3 flex flex-col items-center text-center gap-2 hover:border-sea/50 transition-colors">
+            <span className="w-11 h-11 rounded-xl grid place-items-center text-2xl shrink-0" style={{ background: 'rgba(100,113,111,.12)' }}>📝</span>
+            <span className="font-bold text-sm leading-tight">طلب خاص</span>
+          </Link>
+        </div>
+        </>
       )}
 
       {picking && (
