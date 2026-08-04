@@ -80,23 +80,44 @@ function BottomNav() {
   const isStaff = isStaffRoute(pathname)
   if (isStaff) return null
 
+  // Pharmacy and supermarket live here rather than as cards on the home
+  // screen. As cards they sat below the restaurants competing with them, and
+  // they shared that block with a third card, "طلب خاص", whose entire function
+  // was to offer a choice between... the pharmacy and the supermarket. Three
+  // cards, two destinations, one of them reachable two ways.
+  //
+  // They are destinations, not content, which is what a nav bar is for. `emoji`
+  // rather than an Icon because there is no pill or trolley in the icon set and
+  // one recognisable glyph beats two vague ones.
   const items = [
     { to: '/', label: 'الرئيسية', icon: 'house' as const },
+    { to: '/custom-order?type=pharmacy', match: '/custom-order', label: 'صيدلية', emoji: '💊' },
+    { to: '/custom-order?type=supermarket', match: '/custom-order', label: 'ماركت', emoji: '🛒' },
     { to: '/offers', label: 'العروض', icon: 'moneyBill' as const },
     { to: '/cart', label: 'عربتي', icon: 'bagShopping' as const, badge: cart.count },
     { to: '/profile', label: 'حسابي', icon: 'rectangleList' as const },
   ]
 
+  const search = useLocation().search
+
   return (
     <nav className="fixed bottom-0 inset-x-0 z-40 bg-shell/95 backdrop-blur border-t border-line" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-      <div className="max-w-5xl mx-auto grid grid-cols-4">
+      <div className="max-w-5xl mx-auto grid grid-cols-6">
         {items.map(it => {
-          const active = it.to === '/' ? pathname === '/' : pathname.startsWith(it.to)
+          // Both pharmacy and supermarket render at /custom-order, so the path
+          // alone cannot say which one is open -- the query string decides.
+          const active = it.to === '/'
+            ? pathname === '/'
+            : it.match
+              ? pathname.startsWith(it.match) && search === it.to.slice(it.to.indexOf('?'))
+              : pathname.startsWith(it.to)
           return (
             <Link key={it.to} to={it.to}
-              className={`relative flex flex-col items-center gap-0.5 py-2.5 text-xs font-semibold ${active ? 'text-sea' : 'text-mist'}`}>
+              className={`relative flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-semibold ${active ? 'text-sea' : 'text-mist'}`}>
               <span className="relative leading-none">
-                <Icon name={it.icon} className="w-5 h-5" />
+                {it.icon
+                  ? <Icon name={it.icon} className="w-5 h-5" />
+                  : <span className="block text-[18px] leading-5" aria-hidden="true">{it.emoji}</span>}
                 {!!it.badge && (
                   <span className="absolute -top-1.5 -left-2.5 bg-sea text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 grid place-items-center px-1">
                     {it.badge}

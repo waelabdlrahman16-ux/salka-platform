@@ -69,17 +69,28 @@ export default function CustomOrder() {
 
   useEffect(() => {
     supabase.from('restaurants').select('*').eq('order_mode', 'custom_request').eq('is_open', true).eq('archived', false)
-      .then(({ data }) => {
-        const list = (data as Restaurant[]) ?? []
-        setVendors(list)
-        if (typeFilter) {
-          const matches = list.filter(v => v.vendor_type === typeFilter)
-          if (matches.length === 1) setVendor(matches[0])
-        }
-      })
+      .then(({ data }) => setVendors((data as Restaurant[]) ?? []))
     supabase.from('compounds').select('*').eq('active', true).order('direction').order('distance_km')
       .then(({ data }) => setCompounds(data ?? []))
   }, [])
+
+  // Re-resolve the vendor whenever the requested type changes -- not just once
+  // on mount. صيدلية and ماركت are now two tabs in the bottom nav that both
+  // render THIS component, so tapping from one to the other changes only the
+  // query string: React keeps the component mounted and no fetch re-fires.
+  // Resolved on mount alone, a customer who opened the pharmacy and then tapped
+  // ماركت would still be sitting in the pharmacy's order form, under a heading
+  // that said السوبر ماركت.
+  //
+  // Auto-select when the type has exactly one vendor, which today is both of
+  // them: a chooser containing a single card is a tap that asks a question with
+  // one answer.
+  useEffect(() => {
+    if (!vendors.length) return
+    if (!typeFilter) { setVendor(null); return }
+    const matches = vendors.filter(v => v.vendor_type === typeFilter)
+    setVendor(matches.length === 1 ? matches[0] : null)
+  }, [typeFilter, vendors])
 
   useEffect(() => {
     if (!vendor) return
@@ -174,8 +185,14 @@ export default function CustomOrder() {
     const shownVendors = typeFilter ? vendors.filter(v => v.vendor_type === typeFilter) : vendors
     return (
       <div>
+        {/* No "طلب خاص" any more. That name described the mechanism (a request
+            rather than a catalogue order) instead of the errand, and it had its
+            own home-screen card sitting beside the pharmacy and supermarket
+            cards -- whose only job was to offer a choice between those same two
+            places. The untyped screen is now reachable only by typing the URL,
+            so it names what it actually lists. */}
         <h1 className="text-2xl font-bold mb-1">
-          {typeFilter === 'pharmacy' ? 'الصيدلية' : typeFilter === 'supermarket' ? 'السوبر ماركت' : 'طلب خاص'}
+          {typeFilter === 'pharmacy' ? 'الصيدلية' : typeFilter === 'supermarket' ? 'السوبر ماركت' : 'صيدلية وماركت'}
         </h1>
         <p className="text-mist text-sm mb-4">قول لنا اللي محتاجه، وإحنا هنجهزه معاك — من غير ما تدور في قايمة طويلة</p>
         <div className="grid grid-cols-2 gap-4">
@@ -200,7 +217,15 @@ export default function CustomOrder() {
   // Step 2 — one simple list, no fake matching
   return (
     <div className="pb-6">
-      <button className="text-sm text-mist hover:text-foam mb-3" onClick={() => setVendor(null)}>← رجوع</button>
+      {/* Only offer "back to the vendor list" when there IS a list to go back
+          to. With one vendor of this type the customer was brought straight
+          here, so clearing the selection would strand them on a chooser holding
+          a single card -- a screen they never chose to leave. Then رجوع means
+          what it says everywhere else: back where you came from. */}
+      <button className="text-sm text-mist hover:text-foam mb-3" onClick={() => {
+        const siblings = typeFilter ? vendors.filter(v => v.vendor_type === typeFilter) : vendors
+        if (siblings.length > 1) setVendor(null); else nav(-1)
+      }}>← رجوع</button>
       <h1 className="text-2xl font-bold mb-1">{vendor.name}</h1>
       <p className="text-mist text-sm mb-4">اكتب اللي محتاجه، وهنقولك السعر النهائي بمكالمة قبل ما نجهز الطلب</p>
 

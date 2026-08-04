@@ -84,8 +84,15 @@ export default function RestaurantDetail() {
   // Pharmacy/supermarket go through the Custom Order flow. This used to call
   // nav() directly in the render body, which is a router state update during
   // render -- React warns, and the redirect can double-fire under StrictMode.
+  //
+  // The vendor's own type is carried across. Without it the customer tapped a
+  // named pharmacy and landed on an untyped chooser listing every pharmacy AND
+  // every supermarket -- one step further from the thing they had just picked.
   useEffect(() => {
-    if (restaurant?.order_mode === 'custom_request') nav('/custom-order', { replace: true })
+    if (restaurant?.order_mode === 'custom_request') {
+      const t = restaurant.vendor_type === 'supermarket' ? 'supermarket' : 'pharmacy'
+      nav(`/custom-order?type=${t}`, { replace: true })
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurant?.order_mode])
 
