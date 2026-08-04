@@ -8,11 +8,14 @@ import DangerZoneCard from './menuItemEditor/DangerZoneCard'
 import DiscountManager from './DiscountManager'
 import type { MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemSize } from '../lib/types'
 
-export default function MenuItemEditor({ item, onClose, onSaved, onDeleted }: {
+export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canManageDiscounts = true }: {
   item: MenuItem
   onClose: () => void
   onSaved: () => void
   onDeleted: () => void
+  /** Discounts move margin, so they stay admin-only -- a catalog user gets the
+   *  rest of the editor without a section whose writes RLS would reject. */
+  canManageDiscounts?: boolean
 }) {
   const [name, setName] = useState(item.name)
   const [description, setDescription] = useState(item.description ?? '')
@@ -160,10 +163,12 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted }: {
           availUntil={availUntil} setAvailUntil={setAvailUntil}
         />
 
-        <div className="card p-4 mb-3">
-          <p className="font-semibold text-sm mb-2">الخصم على الصنف ده</p>
-          <DiscountManager restaurantId={item.restaurant_id} scope="item" menuItemId={item.id} />
-        </div>
+        {canManageDiscounts && (
+          <div className="card p-4 mb-3">
+            <p className="font-semibold text-sm mb-2">الخصم على الصنف ده</p>
+            <DiscountManager restaurantId={item.restaurant_id} scope="item" menuItemId={item.id} />
+          </div>
+        )}
 
         <SizesCard sizes={sizes} newSize={newSize} setNewSize={setNewSize} onAdd={addSize} onRemove={removeSize} />
 

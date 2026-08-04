@@ -10,9 +10,18 @@ import { createClient } from "jsr:@supabase/supabase-js@2"
 // (guest/phone-only checkouts have nowhere to send a receipt).
 //
 // Requires RESEND_API_KEY (Supabase dashboard -> Edge Functions -> Secrets).
-// Best-effort by design: if the key isn't set yet, returns 200/not_configured
-// rather than an error, so it never blocks the delivery-status update that
-// triggered it.
+//
+// Best-effort, but not uniformly so -- the distinction matters operationally:
+//   200  nothing to do, and that is correct: no customer on the order, or no
+//        email on file. Never blocks the delivery-status update that fired it.
+//   503  misconfigured: RESEND_API_KEY is unset or was rotated away. This USED
+//        to return 200, and because the caller is a Postgres trigger via pg_net
+//        which only inspects status codes, every customer receipt could stop
+//        being sent with nothing anywhere surfacing it.
+//   502  Resend rejected the send. Logged server-side with the provider's
+//        response; the client only ever sees the code.
+// pg_net does not retry, so a non-2xx cannot cause a retry storm and the
+// trigger is fire-and-forget, so it cannot block the status update either.
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -87,7 +96,15 @@ Deno.serve(async (req) => {
 
   try {
     const resendKey = Deno.env.get("RESEND_API_KEY")
-    if (!resendKey) return json({ error: "not_configured" }, 200)
+    // Was HTTP 200. The caller is a Postgres trigger via pg_net, which only
+    // inspects status codes -- so if RESEND_API_KEY is unset or rotated, every
+    // customer receipt silently stops being sent and nothing anywhere surfaces
+    // it. "no customer" and "no email on file" below are genuinely fine and stay
+    // 200; a missing key is a misconfiguration and must be distinguishable.
+    if (!resendKey) {
+      console.error("[send-receipt-email] not_configured: RESEND_API_KEY is unset")
+      return json({ error: "not_configured" }, 503)
+    }
 
     let body: any
     try { body = await req.json() } catch { return json({ error: "invalid_json" }, 400) }
@@ -127,7 +144,11 @@ Deno.serve(async (req) => {
       })
     })
     const sendData = await sendRes.json().catch(() => null)
-    if (!sendRes.ok) return json({ error: "resend_failed", detail: sendData }, 502)
+    if (!sendRes.ok) {
+      // sendData was forwarded verbatim, exposing the provider's raw response.
+      console.error("[send-receipt-email] resend_failed:", sendData)
+      return json({ error: "resend_failed" }, 502)
+    }
 
     return json({ ok: true })
   } catch (e) {

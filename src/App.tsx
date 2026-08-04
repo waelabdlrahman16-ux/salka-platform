@@ -15,6 +15,7 @@ import MyOrders from './pages/MyOrders'
 import Profile from './pages/Profile'
 import Offers from './pages/Offers'
 import Terms from './pages/Terms'
+import Catalog from './pages/Catalog'
 import InstallPrompt from './components/InstallPrompt'
 import CustomerLogin from './components/CustomerLogin'
 import PhonePrompt from './components/PhonePrompt'
@@ -137,6 +138,7 @@ function AppShell() {
               <Route path="/admin" element={<Protected role="admin"><Admin /></Protected>} />
               <Route path="/driver" element={<Protected role="driver"><DriverPage /></Protected>} />
               <Route path="/vendor" element={<Protected role="vendor"><Vendor /></Protected>} />
+              <Route path="/catalog" element={<Protected role="catalog"><Catalog /></Protected>} />
             </Routes>
           </Suspense>
         </main>

@@ -2,7 +2,10 @@ import type { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth, homeFor } from '../lib/auth'
 
-export default function Protected({ role, children }: { role: 'admin' | 'driver' | 'vendor'; children: ReactNode }) {
+export default function Protected({ role, children }: {
+  role: 'admin' | 'driver' | 'vendor' | 'catalog'
+  children: ReactNode
+}) {
   const { session, profile, loading } = useAuth()
 
   if (loading) return <p className="text-mist text-center py-10">جاري التحقق…</p>
@@ -13,6 +16,8 @@ export default function Protected({ role, children }: { role: 'admin' | 'driver'
       <p className="text-sm text-mist mt-2">تواصل مع الإدارة لتفعيل صلاحياتك.</p>
     </div>
   )
-  if (profile.role !== role) return <Navigate to={homeFor(profile.role)} replace />
+  // Admin is a superset of catalog, so let them through rather than bouncing.
+  const allowed = profile.role === role || (role === 'catalog' && profile.role === 'admin')
+  if (!allowed) return <Navigate to={homeFor(profile.role)} replace />
   return <>{children}</>
 }

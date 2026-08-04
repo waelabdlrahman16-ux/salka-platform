@@ -127,6 +127,8 @@ export default function Admin() {
   const [openHistory, setOpenHistory] = useState<number | null>(null)
   const [vendorAccounts, setVendorAccounts] = useState<{ profile_id: string; restaurant_id: number; email: string }[]>([])
   const [driverAccounts, setDriverAccounts] = useState<{ profile_id: string; driver_id: number; email: string }[]>([])
+  const [catalogAccounts, setCatalogAccounts] = useState<{ profile_id: string; name: string; email: string }[]>([])
+  const [newCatalogName, setNewCatalogName] = useState('')
   const [accountBusy, setAccountBusy] = useState<string | null>(null)
   const [newCreds, setNewCreds] = useState<{ email: string; password: string } | null>(null)
   const [newRestaurant, setNewRestaurant] = useState({ name: '', description: '', category: '', vendor_type: 'restaurant', prep_minutes: '20' })
@@ -269,7 +271,11 @@ export default function Admin() {
       if (!rel.error) setReliability((rel.data as Record<number, Reliability>) ?? {})
 
       const { data: accounts, error: accErr } = await supabase.rpc('admin_list_accounts')
-      if (!accErr) { setVendorAccounts(accounts?.vendors ?? []); setDriverAccounts(accounts?.drivers ?? []) }
+      if (!accErr) {
+        setVendorAccounts(accounts?.vendors ?? [])
+        setDriverAccounts(accounts?.drivers ?? [])
+        setCatalogAccounts(accounts?.catalog ?? [])
+      }
 
       setSyncFailed(coreFailed)
       if (!coreFailed) setLastSyncAt(Date.now())
@@ -517,8 +523,24 @@ export default function Admin() {
       invalid_email: 'الإيميل ده مش شكله صح',
       email_update_failed: 'حصل خطأ في تغيير الإيميل، جرب تاني',
       unknown_action: 'حصل خطأ غير متوقع',
+      // new guards in the edge function
+      cannot_target_self: 'مينفعش تعمل كده على حسابك إنت',
+      target_not_staff: 'العملية دي للمطاعم والمندوبين بس',
+      profile_not_found: 'الحساب ده مش موجود',
+      password_too_short: 'كلمة السر لازم تكون 8 حروف أو أكتر',
+      rate_limited: 'حاولت كتير في وقت قصير، استنى شوية',
+      rate_limit_check_failed: 'حصل خطأ مؤقت، جرب تاني',
+      profile_id_required: 'محتاج تحدد الحساب',
+      restaurant_id_required: 'محتاج تحدد المطعم',
+      driver_id_required: 'محتاج تحدد المندوب',
+      invalid_json: 'حصل خطأ في إرسال البيانات',
+      method_not_allowed: 'حصل خطأ غير متوقع',
+      internal_error: 'حصل خطأ في السيرفر، جرب تاني',
     }
-    return labels[code] ?? code
+    // Anything still unmapped is an English snake_case code, which is worse than
+    // useless in an RTL Arabic dialog -- log it and show something readable.
+    if (!labels[code]) console.warn('[admin-accounts] unmapped error code:', code)
+    return labels[code] ?? 'حصل خطأ، جرب تاني'
   }
 
   async function createVendorLogin(restaurantId: number) {
@@ -536,6 +558,22 @@ export default function Admin() {
     setAccountBusy(null)
     if (result.error) { alert('حصل خطأ: ' + result.error); return }
     setNewCreds({ email: result.email, password: result.password })
+    load(true)
+  }
+
+  async function createCatalogLogin() {
+    const name = newCatalogName.trim()
+    if (!name) return
+    setAccountBusy('catalog-new')
+    const result = await callAccountsFn({ action: 'create_catalog_login', name })
+    setAccountBusy(null)
+    if (result.error) { alert('حصل خطأ: ' + result.error); return }
+    setNewCatalogName('')
+    setNewCreds({ email: result.email, password: result.password })
+    // force: this branch was written against the old load() that took no
+    // arguments. Merged onto the in-flight guard, a bare load() is a no-op
+    // whenever the poll is running, so the new account would not appear and
+    // the operator would create a second one.
     load(true)
   }
 
@@ -1369,15 +1407,29 @@ export default function Admin() {
 
       {tab === 'settings' && (
         <div className="space-y-3">
-          {settings.map(st => (
-            <div key={st.key} className="card p-4 flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="font-semibold text-sm">{st.label || st.key}</p>
+          {settings.map(st => {
+            const isBool = st.value === 'true' || st.value === 'false'
+            const on = st.value === 'true'
+            return (
+              <div key={st.key} className="card p-4 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm">{st.label || st.key}</p>
+                </div>
+                {isBool ? (
+                  <button
+                    className={`shrink-0 rounded-full px-4 min-h-[44px] text-sm font-semibold transition-colors ${
+                      on ? 'bg-sea text-white' : 'bg-shellup text-mist'}`}
+                    aria-pressed={on}
+                    onClick={() => updateSetting(st, on ? 'false' : 'true')}>
+                    {on ? 'مفعّل' : 'مقفول'}
+                  </button>
+                ) : (
+                  <input defaultValue={st.value} className="field !w-24 !py-1.5 text-center"
+                    onBlur={e => updateSetting(st, e.target.value)} />
+                )}
               </div>
-              <input defaultValue={st.value} className="field !w-24 !py-1.5 text-center"
-                onBlur={e => updateSetting(st, e.target.value)} />
-            </div>
-          ))}
+            )
+          })}
           <p className="text-xs text-mist mt-4 leading-relaxed">
             وقت وصول المندوب بيتحسب قبل ما الأكل يجهز، عشان يوصل المطعم في الوقت المناسب
             من غير ما يستنى.
@@ -1628,6 +1680,51 @@ export default function Admin() {
                 إضافة
               </button>
               <p className="text-xs text-mist">تقدر بعد كده تظبط وقت التحضير ونوع الطلب (طلب من القايمة / طلب خاص / طلب مندوب بس) من تبويب "المطاعم والمنيو"</p>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <p className="font-semibold mb-1">موظفي القوايم</p>
+            <p className="text-xs text-mist mb-3">
+              حساب بيقدر يضيف ويعدّل الأصناف والأسعار والأحجام والإضافات لكل المطاعم — ومش بيشوف الطلبات
+              ولا المندوبين ولا الأرباح ولا الإعدادات.
+            </p>
+
+            <div className="card p-3.5 mb-3">
+              <div className="flex gap-2">
+                <input className="field flex-1" value={newCatalogName}
+                  onChange={e => setNewCatalogName(e.target.value)}
+                  placeholder="اسم الموظف" />
+                <button className="btn-sea shrink-0 !px-4" disabled={!newCatalogName.trim() || accountBusy === 'catalog-new'}
+                  onClick={createCatalogLogin}>
+                  {accountBusy === 'catalog-new' ? '...' : 'إنشاء حساب'}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2.5">
+              {catalogAccounts.map(acc => (
+                <div key={acc.profile_id} className="card p-3.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-semibold truncate">{acc.name}</p>
+                      <p className="text-xs text-mist truncate" dir="ltr">{acc.email}</p>
+                    </div>
+                    <div className="flex gap-1.5 shrink-0">
+                      <AccountActionsMenu
+                        busy={accountBusy === acc.profile_id}
+                        onChangeEmail={() => changeEmail(acc.profile_id, acc.email)}
+                        onResetPassword={() => resetPassword(acc.profile_id)}
+                        onCustomPassword={() => setCustomPassword(acc.profile_id)}
+                        onRemove={() => removeLogin(acc.profile_id)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {catalogAccounts.length === 0 && (
+                <p className="text-xs text-mist">مفيش حسابات قوايم لسه</p>
+              )}
             </div>
           </div>
 
