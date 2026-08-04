@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useCart } from '../lib/cart'
-import { priceLine } from '../lib/linePricing'
+import { lineIsStale, priceLine } from '../lib/linePricing'
 import { artFor } from '../lib/categoryArt'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
@@ -17,6 +17,11 @@ export default function CartPage() {
   const [items, setItems] = useState<MenuItem[]>([])
   const [sizes, setSizes] = useState<MenuItemSize[]>([])
   const [combos, setCombos] = useState<MenuItemCombo[]>([])
+  // Sizes, combos and add-ons arrive several round trips after the items do.
+  // Until they land, every combo line prices at the item's base price -- which
+  // is the number on the checkout button. Nothing that depends on a total is
+  // trusted before this flips.
+  const [optionsLoaded, setOptionsLoaded] = useState(false)
   const [addons, setAddons] = useState<MenuItemAddon[]>([])
   const [discounts, setDiscounts] = useState<Discount[]>([])
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
@@ -31,7 +36,7 @@ export default function CartPage() {
       .then(({ data }) => setDiscounts(data ?? []))
     ;(async () => {
       const ids = (await supabase.from('menu_items').select('id').eq('restaurant_id', cart.restaurantId)).data?.map(x => x.id) ?? []
-      if (!ids.length) return
+      if (!ids.length) { setOptionsLoaded(true); return }
       const { data: sz } = await supabase.from('menu_item_sizes').select('*').in('menu_item_id', ids).eq('available', true)
       setSizes(sz ?? [])
       const { data: cb } = await supabase.from('menu_item_combos').select('*').in('menu_item_id', ids).eq('available', true)
@@ -42,6 +47,7 @@ export default function CartPage() {
         const { data: ad } = await supabase.from('menu_item_addons').select('*').in('group_id', groupIds).eq('available', true)
         setAddons(ad ?? [])
       }
+      setOptionsLoaded(true)
     })()
   }, [cart.restaurantId])
 
@@ -58,17 +64,16 @@ export default function CartPage() {
   // outside its time window (e.g. a breakfast item after 11am) -- with a
   // visible notice instead of silently shrinking the total
   useEffect(() => {
-    if (!items.length) return
-    const stale = cart.lines.filter(l => {
-      const item = items.find(i => i.id === l.menuItemId)
-      return !item || !item.available || !isItemAvailableNow(item.available_from, item.available_until)
-    })
+    if (!items.length || !optionsLoaded) return
+    // Also catches a line whose size or combo has since been deleted -- those
+    // used to survive the sweep and silently reprice to the item's base price.
+    const stale = cart.lines.filter(l => lineIsStale(l, { items, sizes, combos }))
     if (stale.length > 0) {
       setRemovedNotice(stale.length === 1 ? 'شلنا صنف من عربتك لأنه بقى مش متاح دلوقتي' : `شلنا ${stale.length} أصناف من عربتك لأنها بقت مش متاحة دلوقتي`)
       for (const l of stale) cart.removeLine(l.key)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items])
+  }, [items, optionsLoaded])
 
   const validLines = cart.lines.filter(l => items.some(i => i.id === l.menuItemId))
   const subtotal = validLines.reduce((s, l) => s + priceFor(l).unit * l.qty, 0)
@@ -164,9 +169,12 @@ export default function CartPage() {
       </div>
 
       <div className="fixed bottom-[calc(4.5rem_+_env(safe-area-inset-bottom)_+_0.75rem)] inset-x-4 z-40 max-w-5xl mx-auto">
+        {/* Held until sizes/combos/add-ons land. Before that the total on this
+            button is understated for any combo line, and it is the number the
+            customer taps. */}
         <button className="btn-sea w-full !rounded-xl !py-4 shadow-lg shadow-sea/20 flex items-center justify-between px-4"
-          onClick={() => nav('/checkout')}>
-          <span>روح للدفع</span>
+          disabled={!optionsLoaded} onClick={() => nav('/checkout')}>
+          <span>{optionsLoaded ? 'روح للدفع' : 'لحظة…'}</span>
           {grandTotal !== null && <span className="font-bold">{grandTotal} ج.م</span>}
         </button>
       </div>

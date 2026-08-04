@@ -183,6 +183,25 @@ export default function Home() {
 
       {!picking && loading && <p className="text-mist">جاري التحميل…</p>}
 
+      {/* Dismissing the picker after a failed compounds load used to leave a
+          page with a title, a button and nothing else: loading was already
+          false and the restaurants block is gated on compoundId, so neither
+          branch rendered and there was no error and no retry outside the modal
+          the customer had just closed. */}
+      {!picking && !loading && !compoundId && (
+        <div className="card p-6 text-center">
+          <p className="font-semibold">{compoundsFailed ? 'مش قادرين نحمّل الأماكن' : 'اختار مكانك الأول'}</p>
+          <p className="text-sm text-mist mt-1 mb-4">
+            {compoundsFailed
+              ? 'اتأكد إن النت شغال وجرب تاني.'
+              : 'محتاجين نعرف مكانك عشان نعرف المطاعم اللي بتوصله وسعر التوصيل.'}
+          </p>
+          <button className="btn-sea !py-2 !px-5 text-sm" onClick={() => setPicking(true)}>
+            {compoundsFailed ? 'جرب تاني' : 'اختار مكانك'}
+          </button>
+        </div>
+      )}
+
       {!picking && !loading && compoundId && (
         <div id="restaurants">
           <div className="flex items-baseline justify-between gap-3 mb-3">

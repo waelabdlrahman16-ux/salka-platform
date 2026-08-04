@@ -94,7 +94,10 @@ export default function RestaurantDetail() {
   useEffect(() => {
     if (restaurant?.order_mode === 'custom_request') {
       const t = restaurant.vendor_type === 'supermarket' ? 'supermarket' : 'pharmacy'
-      nav(`/custom-order?type=${t}`, { replace: true })
+      // Carry the id, not just the type. With the type alone, tapping a NAMED
+      // pharmacy landed on a chooser listing every pharmacy -- the choice the
+      // customer had just made was thrown away while its id was in hand.
+      nav(`/custom-order?type=${t}&vendor=${restaurant.id}`, { replace: true })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurant?.order_mode])
@@ -248,6 +251,7 @@ export default function RestaurantDetail() {
           item={customizing}
           sizes={sizes.filter(s => s.menu_item_id === customizing.id)}
           combos={combos.filter(c => c.menu_item_id === customizing.id)}
+          discounts={discounts}
           addonGroups={addonGroups.filter(g => g.menu_item_id === customizing.id)}
           addons={addons.filter(a => addonGroups.some(g => g.menu_item_id === customizing.id && g.id === a.group_id))}
           onClose={() => setCustomizing(null)}

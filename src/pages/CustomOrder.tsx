@@ -11,7 +11,11 @@ export default function CustomOrder() {
   const fid = useId()
   const nav = useNavigate()
   const [searchParams] = useSearchParams()
-  const typeFilter = searchParams.get('type') // 'pharmacy' | 'supermarket' | null -- deep-link from Home's category tiles
+  // ?type= narrows the chooser; ?vendor= names one outright. Both arrive only
+  // from a redirect off a custom_request vendor page -- the nav tab links here
+  // bare, which is why the chooser is the normal first screen.
+  const typeFilter = searchParams.get('type')
+  const vendorParam = Number(searchParams.get('vendor')) || null
   const [vendors, setVendors] = useState<Restaurant[]>([])
   const [vendor, setVendor] = useState<Restaurant | null>(null)
   const [categories, setCategories] = useState<string[]>([])
@@ -127,10 +131,15 @@ export default function CustomOrder() {
   // one answer.
   useEffect(() => {
     if (!vendors.length) return
+    // A named vendor wins over everything. If it is closed or archived it will
+    // not be in the list, and we fall through to the chooser rather than
+    // showing an order form for a shop that cannot take the order.
+    const named = vendorParam ? vendors.find(v => v.id === vendorParam) : null
+    if (named) { setVendor(named); return }
     if (!typeFilter) { setVendor(null); return }
     const matches = vendors.filter(v => v.vendor_type === typeFilter)
     setVendor(matches.length === 1 ? matches[0] : null)
-  }, [typeFilter, vendors])
+  }, [typeFilter, vendorParam, vendors])
 
   useEffect(() => {
     if (!vendor) return
@@ -189,7 +198,10 @@ export default function CustomOrder() {
   const { fee: deliveryFee, quote, loading: feeLoading, failed: feeFailed, retry: retryFee } =
     useDeliveryQuote(compoundId)
   const scheduled = vendor?.vendor_type === 'supermarket'
-  const addressComplete = !!(name.trim() && isValidEgyptPhone(phone) && compoundId && unit.trim())
+  // selectedCompound, not compoundId. CheckoutPage already learned this: a
+  // stored id whose compound has since been deactivated passes a truthiness
+  // check, renders a blank المكان select, and submits p_zone: ''.
+  const addressComplete = !!(name.trim() && isValidEgyptPhone(phone) && selectedCompound && unit.trim())
   const valid = vendor && addressComplete
     && lines.length > 0 && deliveryFee !== null && (!scheduled || !!slot)
 
@@ -254,7 +266,17 @@ export default function CustomOrder() {
               </button>
             )
           })}
-          {shownVendors.length === 0 && <p className="text-mist col-span-full">مفيش خدمة متاحة حالياً</p>}
+          {shownVendors.length === 0 && (
+            <div className="col-span-full card p-6 text-center">
+              <p className="font-semibold">مقفول دلوقتي</p>
+              <p className="text-sm text-mist mt-1 mb-4">
+                الصيدلية والماركت بيفتحوا في مواعيد محددة. جرب تاني بعد شوية.
+              </p>
+              {/* This tab is the only door to this errand, so an empty list
+                  used to be a screen with nothing on it and nowhere to go. */}
+              <button className="btn-sea !py-2 !px-5 text-sm" onClick={() => nav('/')}>شوف المطاعم</button>
+            </div>
+          )}
         </div>
       </div>
     )
@@ -268,9 +290,13 @@ export default function CustomOrder() {
           here, so clearing the selection would strand them on a chooser holding
           a single card -- a screen they never chose to leave. Then رجوع means
           what it says everywhere else: back where you came from. */}
+      {/* Back to the chooser when there is one, otherwise Home. This used to
+          call nav(-1), which on a cold start from a shared /restaurant/:id link
+          -- redirected here with replace:true, so that entry is gone -- either
+          did nothing or threw the customer out of the app entirely. */}
       <button className="text-sm text-mist hover:text-foam mb-3" onClick={() => {
         const siblings = typeFilter ? vendors.filter(v => v.vendor_type === typeFilter) : vendors
-        if (siblings.length > 1) setVendor(null); else nav(-1)
+        if (siblings.length > 1) setVendor(null); else nav('/')
       }}>← رجوع</button>
       <h1 className="text-2xl font-bold mb-1">{vendor.name}</h1>
       <p className="text-mist text-sm mb-4">اكتب اللي محتاجه، وهنقولك السعر النهائي بمكالمة قبل ما نجهز الطلب</p>
@@ -477,9 +503,23 @@ export default function CustomOrder() {
 
       {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">{error}</p>}
 
+      {/* The reason a disabled button is disabled belongs next to the button.
+          A supermarket order with no open slot used to sit behind a dead
+          'إرسال الطلب' whose only explanation was several sections further up
+          the page, unconnected to it. */}
+      {scheduled && slots.length === 0 && (
+        <p className="text-sm text-sandink bg-sandink/10 rounded-xl p-3 mb-3">
+          مفيش فترات توصيل متاحة دلوقتي، فمش هينفع نستقبل الطلب. جرب بكرة الصبح.
+        </p>
+      )}
+      {scheduled && slots.length > 0 && !slot && lines.length > 0 && (
+        <p className="text-sm text-mist bg-shellup/60 rounded-xl p-3 mb-3">اختار فترة التوصيل فوق عشان تكمل</p>
+      )}
+
       <button className="btn-sea w-full !py-3.5" disabled={!valid || saving} onClick={submit}>
         {saving ? 'جاري الإرسال…'
           : deliveryFee === null && compoundId ? 'بنحسب التوصيل…'
+          : scheduled && slots.length === 0 ? 'مفيش فترات متاحة'
           : 'إرسال الطلب'}
       </button>
     </div>

@@ -31,7 +31,10 @@ interface TrackData {
     cod_deposit_amount: number | null
     instapay_claimed: boolean
   } | null
-  items: { name: string; qty: number; total: number; image_url: string | null }[]
+  items: {
+    name: string; qty: number; total: number; image_url: string | null
+    size_name: string | null; combo_name: string | null; addon_names: string[] | null
+  }[]
   assignment: {
     status: string; driver_name: string | null; driver_phone: string | null
     driver_instapay: string | null
@@ -386,8 +389,18 @@ export default function Track() {
                 ) : (
                   <span className="w-6 h-6 rounded-full bg-shellup grid place-items-center text-xs font-bold shrink-0">{it.qty}</span>
                 )}
-                <span className="flex-1">{it.image_url ? `${it.name} × ${it.qty}` : it.name}</span>
-                <span className="text-mist">{it.total} ج.م</span>
+                {/* The vendor screen has always shown these; the person paying
+                    for them did not. Two برجر lines at 75 and 130 with nothing
+                    saying why is the receipt someone disputes. */}
+                <span className="flex-1 min-w-0">
+                  <span className="block">{it.image_url ? `${it.name} × ${it.qty}` : it.name}</span>
+                  {(it.combo_name || it.size_name || (it.addon_names && it.addon_names.length > 0)) && (
+                    <span className="block text-xs text-mist mt-0.5">
+                      {[it.combo_name && `🍟 كومبو ${it.combo_name}`, it.size_name, ...(it.addon_names ?? [])].filter(Boolean).join(' · ')}
+                    </span>
+                  )}
+                </span>
+                <span className="text-mist shrink-0">{it.total} ج.م</span>
               </div>
             ))}
           </div>
