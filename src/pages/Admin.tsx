@@ -9,6 +9,7 @@ import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel,
          ORDER_STATUSES, CLOSED_ORDER_STATUSES, UNPAID_ORDER_STATUSES, type OrderStatus } from '../lib/statusLabels'
 import { rpc } from '../lib/rpc'
 import Icon from '../components/Icon'
+import BannersAdmin from '../components/BannersAdmin'
 import MenuItemEditor from '../components/MenuItemEditor'
 import AddMenuItemModal from '../components/AddMenuItemModal'
 import DiscountManager from '../components/DiscountManager'
@@ -62,7 +63,7 @@ function AccountActionsMenu({ busy, onChangeEmail, onResetPassword, onCustomPass
   )
 }
 
-type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet'
+type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet' | 'banners'
 const TABS: { key: Tab; label: string }[] = [
   { key: 'unassigned', label: 'طلبات غير معيّنة' },
   { key: 'active', label: 'توصيلات جارية' },
@@ -77,6 +78,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'complaints', label: 'الشكاوى' },
   { key: 'coverage', label: 'تغطية المطاعم' },
   { key: 'accounts', label: 'حسابات الدخول' },
+  { key: 'banners', label: '📣 الإعلانات' },
 ]
 
 interface StalledOrder {
@@ -1408,6 +1410,8 @@ export default function Admin() {
           })}
         </div>
       )}
+
+      {tab === 'banners' && <BannersAdmin />}
 
       {tab === 'settings' && (
         <div className="space-y-3">

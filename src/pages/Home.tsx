@@ -6,6 +6,7 @@ import { haversineKm } from '../lib/geo'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { BROWSE_KINDS, vendorKind, type VendorKind } from '../lib/categoryArt'
 import Icon from '../components/Icon'
+import BannerRail from '../components/BannerRail'
 import type { Compound, Discount, Restaurant } from '../lib/types'
 
 const STORAGE_KEY = 'salka_compound_id'
@@ -157,6 +158,10 @@ export default function Home() {
           </span>
         </button>
       </div>
+
+      {/* Ads sit above the fee strip but below the place picker: the compound
+          decides everything else on this screen, so it stays first. */}
+      {!picking && <BannerRail />}
 
       {/* The delivery fee used to appear for the first time in the cart. It is
           distance-based and can be 350 ج.م, so someone adding a 90 ج.م burger
