@@ -1,14 +1,18 @@
 import { useState } from 'react'
 import { uploadVendorImage } from '../../lib/upload'
-import type { MenuItemAddon, MenuItemAddonGroup } from '../../lib/types'
+import type { MenuItemAddon, MenuItemAddonGroup, VendorAddonLibraryItem } from '../../lib/types'
 
 type NewAddonDraft = { name: string; price: string; imageUrl: string | null; uploading: boolean }
 
 export default function AddonsCard({
   groups, addons, newGroup, setNewGroup, newAddon, setNewAddon,
   onAddGroup, onRemoveGroup, onAddAddon, onRemoveAddon,
-  onApplyPreset, onRenameGroup, onAddonPriceChange
+  onApplyPreset, onRenameGroup, onAddonPriceChange,
+  library, onAddFromLibrary
 }: {
+  /** The vendor's saved add-ons, offered as one-tap chips. */
+  library: VendorAddonLibraryItem[]
+  onAddFromLibrary: (groupId: number, entry: VendorAddonLibraryItem) => void
   groups: MenuItemAddonGroup[]
   addons: MenuItemAddon[]
   onApplyPreset: (kind: 'required-one' | 'extras') => void
@@ -23,6 +27,11 @@ export default function AddonsCard({
   onAddAddon: (groupId: number) => void
   onRemoveAddon: (id: number) => void
 }) {
+  // The two preset buttons cover every group anyone has actually needed. The
+  // full form stays for the rare case, one tap away, instead of being the first
+  // thing on screen.
+  const [advanced, setAdvanced] = useState(false)
+
   function draftFor(groupId: number): NewAddonDraft {
     return newAddon[groupId] ?? { name: '', price: '', imageUrl: null, uploading: false }
   }
@@ -36,28 +45,23 @@ export default function AddonsCard({
 
   return (
     <div className="card p-4 mb-3">
-      <p className="font-semibold text-sm mb-1">الإضافات ومجموعات الاختيار (اختياري)</p>
-      <p className="text-xs text-mist mb-3">
-        فيه نوعين: <b>إضافات عادية</b> زي "جبنة إضافية" (العميل يختار كذا واحدة)، أو <b>اختيار مطلوب</b> زي كومبو فيه ٣ ساندوتشات والعميل لازم يختار واحد منهم.
-      </p>
+      <p className="font-semibold text-sm mb-3">الإضافات</p>
 
-      {/* The combo shape used to take three decisions to express one intent:
-          type a name, pick "تبديل", tick "مطلوب". Two buttons now. */}
+      {/* Two buttons instead of a paragraph. The old copy explained the two
+          kinds of group in prose, then asked for the same distinction again as
+          a dropdown -- the button labels carry it now. */}
       {groups.length === 0 && (
-        <div className="mb-3">
-          <p className="text-xs font-semibold mb-1.5">ابدأ بضغطة واحدة</p>
-          <div className="grid grid-cols-2 gap-2">
-            <button className="text-xs py-2.5 px-2 rounded-lg border-2 border-line hover:border-sea text-right"
-              onClick={() => onApplyPreset('required-one')}>
-              <span className="block font-bold">🔁 اختيار مطلوب</span>
-              <span className="block text-mist mt-0.5">كومبو — يختار واحد بس، ولازم يختار</span>
-            </button>
-            <button className="text-xs py-2.5 px-2 rounded-lg border-2 border-line hover:border-sea text-right"
-              onClick={() => onApplyPreset('extras')}>
-              <span className="block font-bold">➕ إضافات</span>
-              <span className="block text-mist mt-0.5">اختياري — يختار قد ما يحب</span>
-            </button>
-          </div>
+        <div className="grid grid-cols-2 gap-2 mb-3">
+          <button className="text-xs py-2.5 px-2 rounded-lg border-2 border-line hover:border-sea text-right"
+            onClick={() => onApplyPreset('extras')}>
+            <span className="block font-bold">➕ إضافات</span>
+            <span className="block text-mist mt-0.5">يختار قد ما يحب</span>
+          </button>
+          <button className="text-xs py-2.5 px-2 rounded-lg border-2 border-line hover:border-sea text-right"
+            onClick={() => onApplyPreset('required-one')}>
+            <span className="block font-bold">🔁 اختيار مطلوب</span>
+            <span className="block text-mist mt-0.5">واحد بس، ولازم يختار</span>
+          </button>
         </div>
       )}
 
@@ -103,8 +107,32 @@ export default function AddonsCard({
               )}
             </div>
 
+            {/* One tap instead of a name, a price and a photo upload. The
+                library already holds all three, and the vendor typing "طماطم"
+                by hand for the fortieth time is how a menu ends up with طماطم
+                and طماطة as two different options.
+
+                Chips already in this group are filtered out, so the row shows
+                only what tapping would actually do. */}
+            {library.filter(l => !addons.some(a => a.group_id === g.id && a.name === l.name)).length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {library
+                  .filter(l => !addons.some(a => a.group_id === g.id && a.name === l.name))
+                  .map(l => (
+                    <button key={l.id}
+                      className="flex items-center gap-1.5 text-xs py-1 pr-1 pl-2.5 rounded-full border-2 border-line hover:border-sea"
+                      onClick={() => onAddFromLibrary(g.id, l)}>
+                      {l.image_url
+                        ? <img src={l.image_url} alt="" className="w-5 h-5 rounded-full object-cover" />
+                        : <span className="w-5 h-5 rounded-full bg-shellup grid place-items-center text-[10px]">+</span>}
+                      <span>{l.name}</span>
+                      {Number(l.price) > 0 && <span className="text-mist">{l.price}</span>}
+                    </button>
+                  ))}
+              </div>
+            )}
+
             <div className="bg-shellup/60 rounded-lg p-2.5">
-              <p className="text-xs font-semibold mb-2">إضافة خيار للمجموعة دي</p>
               <div className="flex items-center gap-2 mb-2">
                 {draft.imageUrl
                   ? <img src={draft.imageUrl} alt="" className="w-9 h-9 rounded-lg object-cover shrink-0" />
@@ -116,7 +144,7 @@ export default function AddonsCard({
                 </label>
               </div>
               <div className="flex gap-2">
-                <input className="field !py-1.5 text-sm" placeholder="اسم الخيار" value={draft.name}
+                <input className="field !py-1.5 text-sm" placeholder="اسم الخيار الجديد" value={draft.name}
                   onChange={e => setNewAddon({ ...newAddon, [g.id]: { ...draft, name: e.target.value } })} />
                 <input className="field !py-1.5 !w-20 text-sm" type="number" placeholder="السعر" value={draft.price}
                   onChange={e => setNewAddon({ ...newAddon, [g.id]: { ...draft, price: e.target.value } })} />
@@ -127,6 +155,11 @@ export default function AddonsCard({
         )
       })}
 
+      {!advanced ? (
+        <button className="text-xs text-sea font-semibold" onClick={() => setAdvanced(true)}>
+          + مجموعة بإعدادات متقدمة
+        </button>
+      ) : (
       <div className="bg-shellup/60 rounded-xl p-3">
         <p className="text-xs font-semibold mb-2">مجموعة جديدة</p>
         <input className="field !py-1.5 text-sm mb-3" placeholder="اسم المجموعة (مثلاً: إضافات، اختار الساندوتش الأول)" value={newGroup.name}
@@ -160,6 +193,7 @@ export default function AddonsCard({
 
         <button className="btn-ghost w-full !py-1.5 text-sm" onClick={onAddGroup}>إضافة مجموعة</button>
       </div>
+      )}
     </div>
   )
 }
