@@ -15,7 +15,24 @@ export default function CustomOrder() {
   const [vendors, setVendors] = useState<Restaurant[]>([])
   const [vendor, setVendor] = useState<Restaurant | null>(null)
   const [categories, setCategories] = useState<string[]>([])
-  const [list, setList] = useState('')
+  // Structured lines, not a text blob.
+  //
+  // submit_custom_order has always ACCEPTED p_request_items, and the UI has
+  // always sent `[]`, putting the whole order into the notes field instead. So
+  // the pharmacist received one paragraph to read and interpret: no quantities
+  // they could rely on, no way to tick an item off, no way to price line by
+  // line. The server was ready; the screen never used it.
+  const [lines, setLines] = useState<{ name: string; qty: number }[]>([])
+  const [draft, setDraft] = useState('')
+  const [notes, setNotes] = useState('')
+  // Which sub-flow the customer picked. Tapping a category used to type the
+  // category's NAME into the order -- so someone following the app's own
+  // prompt asked the pharmacist for "أدوية بروشتة", which is a shelf label,
+  // not a medicine.
+  const [intent, setIntent] = useState<string | null>(null)
+  const [rxPath, setRxPath] = useState<string | null>(null)
+  const [rxPreview, setRxPreview] = useState<string | null>(null)
+  const [rxUploading, setRxUploading] = useState(false)
   const [slots, setSlots] = useState<Slot[]>([])
   const [slot, setSlot] = useState<Slot | null>(null)
 
@@ -82,8 +99,39 @@ export default function CustomOrder() {
     }
   }, [vendor])
 
-  function addLine(text: string) {
-    setList(l => l.trim() ? `${l.trim()}\n${text}` : text)
+  function addDraft() {
+    const t = draft.trim()
+    if (!t) return
+    // Same item typed twice bumps the quantity rather than making a second row
+    // the vendor has to notice and reconcile.
+    setLines(ls => {
+      const i = ls.findIndex(l => l.name.toLowerCase() === t.toLowerCase())
+      if (i === -1) return [...ls, { name: t, qty: 1 }]
+      const copy = [...ls]; copy[i] = { ...copy[i], qty: copy[i].qty + 1 }; return copy
+    })
+    setDraft('')
+  }
+  const setQty = (i: number, d: number) =>
+    setLines(ls => ls.flatMap((l, j) => j !== i ? [l] : (l.qty + d <= 0 ? [] : [{ ...l, qty: l.qty + d }])))
+
+  async function uploadRx(file: File) {
+    setError('')
+    if (!['image/jpeg','image/png','image/webp','image/avif'].includes(file.type)) {
+      setError('لازم تكون صورة'); return
+    }
+    if (file.size > 5 * 1024 * 1024) { setError('الصورة أكبر من ٥ ميجا'); return }
+    setRxUploading(true)
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
+    // Flat, unguessable, and matching the shape both the storage policy and
+    // submit_custom_order enforce. Nothing here is derived from the customer.
+    const path = `rx-${crypto.randomUUID().replace(/-/g, '').slice(0, 20)}.${ext === 'jpeg' ? 'jpg' : ext}`
+    const { error: upErr } = await supabase.storage.from('prescriptions').upload(path, file, { upsert: false })
+    setRxUploading(false)
+    if (upErr) { setError('مش قادرين نرفع الصورة، جرب تاني'); return }
+    setRxPath(path)
+    // Local preview only. The bucket is private and has no public URL -- this
+    // object URL never leaves the customer's own browser.
+    setRxPreview(URL.createObjectURL(file))
   }
 
   const selectedCompound = compounds.find(c => c.id === compoundId)
@@ -91,7 +139,7 @@ export default function CustomOrder() {
     useDeliveryQuote(compoundId)
   const scheduled = vendor?.vendor_type === 'supermarket'
   const valid = vendor && name.trim() && isValidEgyptPhone(phone) && compoundId && unit.trim()
-    && list.trim() && deliveryFee !== null && (!scheduled || !!slot)
+    && lines.length > 0 && deliveryFee !== null && (!scheduled || !!slot)
 
   async function submit() {
     if (!vendor || !valid) return
@@ -104,12 +152,13 @@ export default function CustomOrder() {
       p_unit_number: unit.trim(),
       p_address_notes: addrNotes.trim(),
       p_delivery_fee: deliveryFee ?? 0, // server recomputes and ignores this
-      p_request_items: [],
-      p_request_notes: list.trim(),
+      p_request_items: lines,
+      p_request_notes: notes.trim(),
       p_compound_id: compoundId,
       p_session_token: getSessionToken(),
       p_slot_id: slot?.id ?? null,
-      p_scheduled_date: slot?.scheduled_date ?? null
+      p_scheduled_date: slot?.scheduled_date ?? null,
+      p_prescription_path: rxPath
     })
     if (err || !data?.token) {
       setSaving(false)
@@ -155,21 +204,87 @@ export default function CustomOrder() {
       <h1 className="text-2xl font-bold mb-1">{vendor.name}</h1>
       <p className="text-mist text-sm mb-4">اكتب اللي محتاجه، وهنقولك السعر النهائي بمكالمة قبل ما نجهز الطلب</p>
 
+      {/* Categories now STEER the screen. They used to write their own name
+          into the customer's order, so tapping "أدوية بروشتة" put the words
+          "أدوية بروشتة" on the list -- a shelf label, not a medicine, and
+          nothing the pharmacist could actually fetch. */}
       {categories.length > 0 && (
-        <div className="mb-3">
-          <p className="text-sm text-mist mb-2">من عندنا (اضغط عشان تضيفها لقايمتك)</p>
+        <div className="mb-4">
+          <p className="text-sm text-mist mb-2">عايز إيه من {vendor.name}؟</p>
           <div className="flex flex-wrap gap-2">
             {categories.map(cat => (
-              <button key={cat} className="tab bg-shellup/60" onClick={() => addLine(cat)}>+ {cat}</button>
+              <button key={cat}
+                className={`tab ${intent === cat ? 'tab-active' : 'bg-shellup/60'}`}
+                onClick={() => setIntent(intent === cat ? null : cat)}>
+                {artFor(cat).emoji} {cat}
+              </button>
             ))}
           </div>
         </div>
       )}
 
+      {/* Prescription upload, only where it means something: any pharmacy
+          order, or a category that mentions a prescription. Optional -- plenty
+          of pharmacy orders are shampoo. */}
+      {(vendor.vendor_type === 'pharmacy' || (intent ?? '').includes('روشتة')) && (
+        <div className="card p-4 mb-4 border-sea/40">
+          <p className="font-bold text-sm">📷 عندك روشتة؟ صوّرها</p>
+          <p className="text-xs text-mist mt-1 mb-3">
+            هتوصل للصيدلي مع طلبك، فمش هيحتاج يتصل بيك عشان يشوفها. اختياري.
+          </p>
+          {rxPreview ? (
+            <div className="flex items-center gap-3">
+              <img src={rxPreview} alt="الروشتة" className="w-16 h-16 rounded-xl object-cover border border-line" />
+              <span className="text-sm font-semibold text-emerald-700 flex-1">اترفعت ✓</span>
+              <button className="btn-ghost !py-1.5 !px-3 text-xs"
+                onClick={() => { setRxPath(null); setRxPreview(null) }}>شيلها</button>
+            </div>
+          ) : (
+            <>
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/avif"
+                capture="environment" disabled={rxUploading}
+                onChange={e => { const f = e.target.files?.[0]; if (f) uploadRx(f) }}
+                className="text-sm" />
+              {rxUploading && <p className="text-xs text-mist mt-1">جاري الرفع…</p>}
+            </>
+          )}
+        </div>
+      )}
+
       <div className="mb-4">
         <label className="label" htmlFor={`${fid}-1`}>قايمة طلبك *</label>
-        <textarea id={`${fid}-1`} className="field min-h-[160px]" value={list} onChange={e => setList(e.target.value)}
-          placeholder={'اكتب كل حاجة عايزها، سطر لكل صنف\nمثال:\nبنادول اكسترا\nشامبو أطفال\nخبز توست'} />
+
+        {lines.map((l, i) => (
+          <div key={i} className="flex items-center gap-2 card p-2.5 mb-2">
+            <span className="flex-1 text-sm min-w-0 truncate">{l.name}</span>
+            <div className="flex items-center gap-1 bg-shellup rounded-lg p-1 shrink-0">
+              <button className="w-8 h-8 rounded-md grid place-items-center" aria-label="تقليل"
+                onClick={() => setQty(i, -1)}>−</button>
+              <span className="font-bold text-sm w-6 text-center">{l.qty}</span>
+              <button className="w-8 h-8 rounded-md grid place-items-center bg-sea text-white" aria-label="زيادة"
+                onClick={() => setQty(i, +1)}>+</button>
+            </div>
+            <button className="w-9 h-9 grid place-items-center text-mist shrink-0" aria-label="حذف"
+              onClick={() => setLines(ls => ls.filter((_, j) => j !== i))}>✕</button>
+          </div>
+        ))}
+
+        <div className="flex gap-2">
+          <input id={`${fid}-1`} className="field flex-1" value={draft}
+            onChange={e => setDraft(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addDraft() } }}
+            placeholder={vendor.vendor_type === 'pharmacy' ? 'مثال: بنادول اكسترا' : 'مثال: خبز توست'} />
+          <button className="btn-sea shrink-0 !px-5" onClick={addDraft} disabled={!draft.trim()}>إضافة</button>
+        </div>
+        {lines.length === 0 && (
+          <p className="text-xs text-mist mt-1.5">اكتب كل صنف لوحده واضغط إضافة — كده الصيدلي يقدر يشطب صنف صنف.</p>
+        )}
+      </div>
+
+      <div className="mb-4">
+        <label className="label" htmlFor={`${fid}-notes`}>ملاحظات (اختياري)</label>
+        <input id={`${fid}-notes`} className="field" value={notes} onChange={e => setNotes(e.target.value)}
+          placeholder="مثال: لو مش موجود، جيب أي بديل" />
       </div>
 
       {scheduled && (

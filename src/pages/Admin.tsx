@@ -10,6 +10,7 @@ import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel,
 import { rpc } from '../lib/rpc'
 import Icon from '../components/Icon'
 import BannersAdmin from '../components/BannersAdmin'
+import PrescriptionLink from '../components/PrescriptionLink'
 import MenuItemEditor from '../components/MenuItemEditor'
 import AddMenuItemModal from '../components/AddMenuItemModal'
 import DiscountManager from '../components/DiscountManager'
@@ -1162,6 +1163,7 @@ export default function Admin() {
                   <p className="font-semibold">🧾 طلب خاص</p>
                   {(o.request_items ?? []).map((it, i) => <p key={i}>• {it.name} × {it.qty}</p>)}
                   {o.request_notes && <p className="italic">"{o.request_notes}"</p>}
+                  {o.prescription_path && <div className="pt-1"><PrescriptionLink path={o.prescription_path} /></div>}
                 </div>
               )}
 

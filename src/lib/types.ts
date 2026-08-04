@@ -42,6 +42,7 @@ export interface Order {
   order_type: 'catalog' | 'custom_request' | 'pickup_request'
   request_items: RequestItem[] | null
   request_notes: string | null
+  prescription_path?: string | null
   pricing_status: 'n/a' | 'pending_quote' | 'confirmed'
   payment_mode: 'prepaid' | 'driver_pays' | null
   collect_amount: number | null
