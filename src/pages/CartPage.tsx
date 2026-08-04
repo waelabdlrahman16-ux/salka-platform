@@ -2,19 +2,21 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useCart } from '../lib/cart'
+import { priceLine } from '../lib/linePricing'
 import { artFor } from '../lib/categoryArt'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
 import { isItemAvailableNow } from '../lib/itemAvailability'
 import { applyDiscount, effectiveDiscount } from '../lib/discounts'
 import Icon from '../components/Icon'
-import type { Discount, MenuItem, MenuItemAddon, MenuItemSize, Restaurant } from '../lib/types'
+import type { Discount, MenuItem, MenuItemAddon, MenuItemCombo, MenuItemSize, Restaurant } from '../lib/types'
 
 export default function CartPage() {
   const nav = useNavigate()
   const cart = useCart()
   const [items, setItems] = useState<MenuItem[]>([])
   const [sizes, setSizes] = useState<MenuItemSize[]>([])
+  const [combos, setCombos] = useState<MenuItemCombo[]>([])
   const [addons, setAddons] = useState<MenuItemAddon[]>([])
   const [discounts, setDiscounts] = useState<Discount[]>([])
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
@@ -32,6 +34,8 @@ export default function CartPage() {
       if (!ids.length) return
       const { data: sz } = await supabase.from('menu_item_sizes').select('*').in('menu_item_id', ids).eq('available', true)
       setSizes(sz ?? [])
+      const { data: cb } = await supabase.from('menu_item_combos').select('*').in('menu_item_id', ids).eq('available', true)
+      setCombos((cb as MenuItemCombo[]) ?? [])
       const { data: gr } = await supabase.from('menu_item_addon_groups').select('id').in('menu_item_id', ids)
       const groupIds = (gr ?? []).map(g => g.id)
       if (groupIds.length) {
@@ -46,20 +50,9 @@ export default function CartPage() {
     setCompoundId(saved ? Number(saved) : null)
   }, [])
 
-  function priceFor(menuItemId: number, sizeId: number | null, addonIds: number[]): { unit: number; original: number | null; name: string; sizeName: string | null; addonNames: string[] } {
-    const item = items.find(i => i.id === menuItemId)
-    const size = sizeId ? sizes.find(s => s.id === sizeId) : null
-    const base = size ? size.price : (item?.price ?? 0)
-    const discount = item ? effectiveDiscount(item.id, item.category, discounts) : null
-    const discountedBase = applyDiscount(base, discount)
-    const selectedAddons = addonIds.map(id => addons.find(a => a.id === id)).filter((a): a is MenuItemAddon => !!a)
-    const addonsTotal = selectedAddons.reduce((s, a) => s + a.price, 0)
-    return {
-      unit: discountedBase + addonsTotal,
-      original: discount ? base + addonsTotal : null,
-      name: item?.name ?? '', sizeName: size?.name ?? null, addonNames: selectedAddons.map(a => a.name)
-    }
-  }
+  // One implementation, shared with the checkout. See lib/linePricing.
+  const priceFor = (l: { menuItemId: number; sizeId: number | null; comboId: number | null; addonIds: number[] }) =>
+    priceLine(l, { items, sizes, combos, addons, discounts })
 
   // remove lines whose item no longer exists, went out of stock, or fell
   // outside its time window (e.g. a breakfast item after 11am) -- with a
@@ -78,7 +71,7 @@ export default function CartPage() {
   }, [items])
 
   const validLines = cart.lines.filter(l => items.some(i => i.id === l.menuItemId))
-  const subtotal = validLines.reduce((s, l) => s + priceFor(l.menuItemId, l.sizeId, l.addonIds).unit * l.qty, 0)
+  const subtotal = validLines.reduce((s, l) => s + priceFor(l).unit * l.qty, 0)
   const { fee: deliveryFee, quote, loading: feeLoading } = useDeliveryQuote(compoundId)
   // The rate lives in settings.service_fee_percent and place_order applies it.
   // This used to be a hardcoded 0.02 that silently understated the total by
@@ -117,7 +110,7 @@ export default function CartPage() {
       <div className="space-y-3 mb-5">
         {validLines.map(l => {
           const item = items.find(i => i.id === l.menuItemId)!
-          const { unit, original, sizeName, addonNames } = priceFor(l.menuItemId, l.sizeId, l.addonIds)
+          const { unit, original, sizeName, comboName, addonNames } = priceFor(l)
           const art = artFor(item.category)
           return (
             <div key={l.key} className="card p-3.5 flex items-center gap-3">
@@ -126,9 +119,9 @@ export default function CartPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm truncate">{item.name}</h3>
-                {(sizeName || addonNames.length > 0) && (
+                {(sizeName || comboName || addonNames.length > 0) && (
                   <p className="text-xs text-mist mt-0.5 truncate">
-                    {[sizeName, ...addonNames].filter(Boolean).join(' · ')}
+                    {[comboName && `🍟 ${comboName}`, sizeName, ...addonNames].filter(Boolean).join(' · ')}
                   </p>
                 )}
                 <p className="text-sm mt-0.5">

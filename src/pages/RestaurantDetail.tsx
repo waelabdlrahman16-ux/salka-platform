@@ -9,7 +9,7 @@ import Icon from '../components/Icon'
 import { isItemAvailableNow } from '../lib/itemAvailability'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { applyDiscount, effectiveDiscount } from '../lib/discounts'
-import type { Compound, Discount, MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemSize, Restaurant } from '../lib/types'
+import type { Compound, Discount, MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemCombo, MenuItemSize, Restaurant } from '../lib/types'
 
 const ALL = '__all__'
 
@@ -20,6 +20,7 @@ export default function RestaurantDetail() {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
   const [items, setItems] = useState<MenuItem[]>([])
   const [sizes, setSizes] = useState<MenuItemSize[]>([])
+  const [combos, setCombos] = useState<MenuItemCombo[]>([])
   const [addonGroups, setAddonGroups] = useState<MenuItemAddonGroup[]>([])
   const [addons, setAddons] = useState<MenuItemAddon[]>([])
   const [discounts, setDiscounts] = useState<Discount[]>([])
@@ -57,11 +58,13 @@ export default function RestaurantDetail() {
       setItems(list)
       if (list.length) {
         const ids = list.map(it => it.id)
-        const [{ data: sz }, { data: gr }] = await Promise.all([
+        const [{ data: sz }, { data: gr }, { data: cb }] = await Promise.all([
           supabase.from('menu_item_sizes').select('*').in('menu_item_id', ids).eq('available', true).order('display_order').order('id'),
-          supabase.from('menu_item_addon_groups').select('*').in('menu_item_id', ids).order('display_order').order('id')
+          supabase.from('menu_item_addon_groups').select('*').in('menu_item_id', ids).order('display_order').order('id'),
+          supabase.from('menu_item_combos').select('*').in('menu_item_id', ids).eq('available', true).order('display_order').order('id')
         ])
         setSizes(sz ?? [])
+        setCombos((cb as MenuItemCombo[]) ?? [])
         setAddonGroups(gr ?? [])
         const groupIds = (gr ?? []).map(g => g.id)
         if (groupIds.length) {
@@ -192,7 +195,10 @@ export default function RestaurantDetail() {
                 {shown(cat).map(it => {
                   const itemSizes = sizes.filter(s => s.menu_item_id === it.id)
                   const itemGroups = addonGroups.filter(g => g.menu_item_id === it.id)
-                  const hasOptions = itemSizes.length > 0 || itemGroups.length > 0
+                  // A combo upgrade is an option like any other: the card has to
+                  // route to the sheet, or the customer never sees the offer.
+                  const itemCombos = combos.filter(c => c.menu_item_id === it.id)
+                  const hasOptions = itemSizes.length > 0 || itemGroups.length > 0 || itemCombos.length > 0
                   const basePrice = itemSizes.length > 0 ? Math.min(...itemSizes.map(s => s.price)) : it.price
                   const discount = effectiveDiscount(it.id, it.category, discounts)
                   const displayPrice = applyDiscount(basePrice, discount)
@@ -224,6 +230,7 @@ export default function RestaurantDetail() {
           item={detailItem}
           items={items.filter(it => isItemAvailableNow(it.available_from, it.available_until))}
           sizes={sizes}
+          combos={combos}
           addonGroups={addonGroups}
           addons={addons}
           discounts={discounts}
@@ -240,11 +247,12 @@ export default function RestaurantDetail() {
         <CustomizeSheet
           item={customizing}
           sizes={sizes.filter(s => s.menu_item_id === customizing.id)}
+          combos={combos.filter(c => c.menu_item_id === customizing.id)}
           addonGroups={addonGroups.filter(g => g.menu_item_id === customizing.id)}
           addons={addons.filter(a => addonGroups.some(g => g.menu_item_id === customizing.id && g.id === a.group_id))}
           onClose={() => setCustomizing(null)}
-          onConfirm={(sizeId, addonIds, qty) => {
-            cart.addCustomLine(customizing.id, sizeId, addonIds, qty)
+          onConfirm={(sizeId, comboId, addonIds, qty) => {
+            cart.addCustomLine(customizing.id, sizeId, comboId, addonIds, qty)
             setCustomizing(null)
           }}
         />

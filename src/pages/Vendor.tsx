@@ -475,9 +475,11 @@ function KitchenVendor({ rid }: { rid: number }) {
             <div key={it.id} className="flex justify-between">
               <span>
                 {it.name} × {it.qty}{it.requires_prescription ? ' 💊' : ''}
-                {(it.size_name || (it.addon_names && it.addon_names.length > 0)) && (
+                {(it.size_name || it.combo_name || (it.addon_names && it.addon_names.length > 0)) && (
                   <span className="block text-xs text-mist mt-0.5">
-                    {[it.size_name, ...(it.addon_names ?? [])].filter(Boolean).join(' · ')}
+                    {/* The combo goes first and is marked: it changes what the
+                        kitchen actually assembles, not just how much it costs. */}
+                    {[it.combo_name && `🍟 كومبو ${it.combo_name}`, it.size_name, ...(it.addon_names ?? [])].filter(Boolean).join(' · ')}
                   </span>
                 )}
               </span>

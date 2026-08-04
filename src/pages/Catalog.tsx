@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import MenuItemEditor from '../components/MenuItemEditor'
 import AddMenuItemModal from '../components/AddMenuItemModal'
+import AddonLibrary from '../components/AddonLibrary'
 import type { MenuItem, Restaurant } from '../lib/types'
 
 // Catalogue-only workspace for the `catalog` staff role.
@@ -114,6 +115,10 @@ export default function Catalog() {
             <h2 className="text-lg font-bold truncate">{selected.name}</h2>
             <button className="btn-sea !py-2 text-sm shrink-0" onClick={() => setAdding(selected)}>+ صنف جديد</button>
           </div>
+
+          {/* Vendor-wide, so it sits above the item list rather than inside any
+              one item's editor -- the whole point is that it is not per item. */}
+          <AddonLibrary restaurantId={selected.id} items={items} />
 
           <input className="field mb-4" value={search} onChange={e => setSearch(e.target.value)}
             placeholder="دوّر باسم الصنف أو القسم…" />

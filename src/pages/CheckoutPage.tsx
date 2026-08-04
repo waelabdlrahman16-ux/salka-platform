@@ -3,13 +3,14 @@ import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { useCart } from '../lib/cart'
+import { priceLine } from '../lib/linePricing'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
 import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
 import { isItemAvailableNow } from '../lib/itemAvailability'
 import { applyDiscount, effectiveDiscount } from '../lib/discounts'
 import LocationPreviewMap from '../components/LocationPreviewMap'
-import type { Compound, Discount, MenuItem, MenuItemAddon, MenuItemSize, Restaurant, Slot } from '../lib/types'
+import type { Compound, Discount, MenuItem, MenuItemAddon, MenuItemCombo, MenuItemSize, Restaurant, Slot } from '../lib/types'
 
 export default function CheckoutPage() {
   const fid = useId()
@@ -19,6 +20,7 @@ export default function CheckoutPage() {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
   const [items, setItems] = useState<MenuItem[]>([])
   const [sizes, setSizes] = useState<MenuItemSize[]>([])
+  const [combos, setCombos] = useState<MenuItemCombo[]>([])
   const [addons, setAddons] = useState<MenuItemAddon[]>([])
   const [discounts, setDiscounts] = useState<Discount[]>([])
   const [compounds, setCompounds] = useState<Compound[]>([])
@@ -141,6 +143,8 @@ export default function CheckoutPage() {
       if (!ids.length) return
       const { data: sz } = await supabase.from('menu_item_sizes').select('*').in('menu_item_id', ids).eq('available', true)
       setSizes(sz ?? [])
+      const { data: cb } = await supabase.from('menu_item_combos').select('*').in('menu_item_id', ids).eq('available', true)
+      setCombos((cb as MenuItemCombo[]) ?? [])
       const { data: gr } = await supabase.from('menu_item_addon_groups').select('id').in('menu_item_id', ids)
       const groupIds = (gr ?? []).map(g => g.id)
       if (groupIds.length) {
@@ -165,24 +169,14 @@ export default function CheckoutPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items])
 
-  function priceFor(menuItemId: number, sizeId: number | null, addonIds: number[]) {
-    const item = items.find(i => i.id === menuItemId)
-    const size = sizeId ? sizes.find(s => s.id === sizeId) : null
-    const base = size ? size.price : (item?.price ?? 0)
-    const discount = item ? effectiveDiscount(item.id, item.category, discounts) : null
-    const discountedBase = applyDiscount(base, discount)
-    const selectedAddons = addonIds.map(id => addons.find(a => a.id === id)).filter((a): a is MenuItemAddon => !!a)
-    const addonsTotal = selectedAddons.reduce((s, a) => s + a.price, 0)
-    return {
-      unit: discountedBase + addonsTotal, original: discount ? base + addonsTotal : null,
-      item, sizeName: size?.name ?? null, addonNames: selectedAddons.map(a => a.name)
-    }
-  }
+  // One implementation, shared with the cart. See lib/linePricing.
+  const priceFor = (l: { menuItemId: number; sizeId: number | null; comboId: number | null; addonIds: number[] }) =>
+    priceLine(l, { items, sizes, combos, addons, discounts })
 
   const lines = useMemo(() => cart.lines.filter(l => items.some(i => i.id === l.menuItemId)), [items, cart.lines])
-  const subtotal = lines.reduce((s, l) => s + priceFor(l.menuItemId, l.sizeId, l.addonIds).unit * l.qty, 0)
+  const subtotal = lines.reduce((s, l) => s + priceFor(l).unit * l.qty, 0)
   const scheduled = restaurant?.vendor_type === 'supermarket'
-  const hasRx = lines.some(l => priceFor(l.menuItemId, l.sizeId, l.addonIds).item?.requires_prescription)
+  const hasRx = lines.some(l => priceFor(l).item?.requires_prescription)
   const selectedCompound = compounds.find(c => c.id === compoundId)
   // Authoritative fee from the server. null while loading or on failure -- we
   // never substitute 0 or a local estimate, because every number below it
@@ -217,7 +211,7 @@ export default function CheckoutPage() {
     if (!restaurant || !valid) return
     setSaving(true)
     setError('')
-    const payload = lines.map(l => ({ menu_item_id: l.menuItemId, qty: l.qty, size_id: l.sizeId, addon_ids: l.addonIds }))
+    const payload = lines.map(l => ({ menu_item_id: l.menuItemId, qty: l.qty, size_id: l.sizeId, combo_id: l.comboId, addon_ids: l.addonIds }))
     const { data, error: err } = await supabase.rpc('place_order', {
       p_restaurant_id: restaurant.id,
       p_customer_name: name.trim(),
@@ -430,13 +424,13 @@ export default function CheckoutPage() {
       <div className="card p-4 mb-5 space-y-2">
         <h2 className="font-bold mb-1">ملخص الطلب</h2>
         {lines.map(l => {
-          const { unit, original, item, sizeName, addonNames } = priceFor(l.menuItemId, l.sizeId, l.addonIds)
+          const { unit, original, item, sizeName, comboName, addonNames } = priceFor(l)
           return (
             <div key={l.key} className="flex justify-between text-sm">
               <span>
                 {item?.name} × {l.qty}
-                {(sizeName || addonNames.length > 0) && (
-                  <span className="text-mist"> ({[sizeName, ...addonNames].filter(Boolean).join(' · ')})</span>
+                {(sizeName || comboName || addonNames.length > 0) && (
+                  <span className="text-mist"> ({[comboName && `🍟 ${comboName}`, sizeName, ...addonNames].filter(Boolean).join(' · ')})</span>
                 )}
               </span>
               <span>

@@ -1,12 +1,17 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { MenuItem, Restaurant } from './types'
 
-const KEY = 'salka_cart_v2'
+// v3: CartLine gained comboId, which changes the shape of every line key. A
+// cart persisted under v2 would carry keys that no longer match what lineKey
+// now produces, so the same product could sit in the basket twice.
+const KEY = 'salka_cart_v3'
 
 export interface CartLine {
   key: string
   menuItemId: number
   sizeId: number | null
+  /** Set when the customer upgraded to a combo. Replaces the base/size price. */
+  comboId: number | null
   addonIds: number[]
   qty: number
 }
@@ -24,15 +29,15 @@ interface CartCtx {
   add: (item: MenuItem, delta: number) => void
   qtyFor: (itemId: number) => number
   // customized path: items with sizes and/or add-ons go through a picker first
-  addCustomLine: (menuItemId: number, sizeId: number | null, addonIds: number[], qty: number) => void
+  addCustomLine: (menuItemId: number, sizeId: number | null, comboId: number | null, addonIds: number[], qty: number) => void
   updateLineQty: (key: string, delta: number) => void
   removeLine: (key: string) => void
   clear: () => void
   count: number
 }
 
-function lineKey(menuItemId: number, sizeId: number | null, addonIds: number[]): string {
-  return `${menuItemId}:${sizeId ?? 'x'}:${[...addonIds].sort((a, b) => a - b).join(',')}`
+function lineKey(menuItemId: number, sizeId: number | null, comboId: number | null, addonIds: number[]): string {
+  return `${menuItemId}:${sizeId ?? 'x'}:${comboId ?? 'x'}:${[...addonIds].sort((a, b) => a - b).join(',')}`
 }
 
 const Ctx = createContext<CartCtx>({
@@ -64,12 +69,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }
 
   function add(item: MenuItem, delta: number) {
-    const key = lineKey(item.id, null, [])
+    const key = lineKey(item.id, null, null, [])
     setState(s => {
       const existing = s.lines.find(l => l.key === key)
       const q = Math.max(0, (existing?.qty ?? 0) + delta)
       const rest = s.lines.filter(l => l.key !== key)
-      const next = q === 0 ? rest : [...rest, { key, menuItemId: item.id, sizeId: null, addonIds: [], qty: q }]
+      const next = q === 0 ? rest : [...rest, { key, menuItemId: item.id, sizeId: null, comboId: null, addonIds: [], qty: q }]
       return { restaurantId: item.restaurant_id, lines: next }
     })
   }
@@ -78,13 +83,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return state.lines.filter(l => l.menuItemId === itemId).reduce((s, l) => s + l.qty, 0)
   }
 
-  function addCustomLine(menuItemId: number, sizeId: number | null, addonIds: number[], qty: number) {
-    const key = lineKey(menuItemId, sizeId, addonIds)
+  function addCustomLine(menuItemId: number, sizeId: number | null, comboId: number | null, addonIds: number[], qty: number) {
+    const key = lineKey(menuItemId, sizeId, comboId, addonIds)
     setState(s => {
       const existing = s.lines.find(l => l.key === key)
       const rest = s.lines.filter(l => l.key !== key)
       const q = (existing?.qty ?? 0) + qty
-      return { ...s, lines: [...rest, { key, menuItemId, sizeId, addonIds, qty: q }] }
+      return { ...s, lines: [...rest, { key, menuItemId, sizeId, comboId, addonIds, qty: q }] }
     })
   }
 

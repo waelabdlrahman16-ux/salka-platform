@@ -10,10 +10,27 @@ export interface MenuItem {
   category: string; price: number; available: boolean; requires_prescription: boolean
   image_url: string | null
   available_from: string | null; available_until: string | null
+  /** Wording for the "make it a combo" toggle. Null falls back to a default. */
+  combo_label: string | null
 }
 export interface MenuItemSize {
   id: number; menu_item_id: number; name: string; price: number
   is_default: boolean; display_order: number; available: boolean
+}
+/**
+ * A combo upgrade: sandwich + fries + drink at ONE replacement price, not a
+ * surcharge on the sandwich. The rows are the sizes (عادي / وسط / كبير), which
+ * is why they carry a full price and why choosing one is required as soon as
+ * the customer turns the combo on.
+ */
+export interface MenuItemCombo {
+  id: number; menu_item_id: number; name: string; price: number
+  display_order: number; available: boolean
+}
+/** A reusable add-on definition, per vendor. Attaching it to an item copies it. */
+export interface VendorAddonLibraryItem {
+  id: number; restaurant_id: number; name: string; price: number
+  image_url: string | null; created_at: string
 }
 export interface MenuItemAddonGroup {
   id: number; menu_item_id: number; name: string
@@ -57,7 +74,7 @@ export interface OrderItem {
   id: number; order_id: number; menu_item_id: number
   name: string; qty: number; unit_price: number; total: number
   requires_prescription: boolean
-  size_name: string | null; addon_names: string[] | null
+  size_name: string | null; combo_name: string | null; addon_names: string[] | null
   original_unit_price: number | null
 }
 export interface Driver {

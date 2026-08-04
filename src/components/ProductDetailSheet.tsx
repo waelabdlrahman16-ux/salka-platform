@@ -4,14 +4,15 @@ import { useDismissable } from '../lib/useDismissable'
 import { isItemAvailableNow } from '../lib/itemAvailability'
 import { applyDiscount, effectiveDiscount } from '../lib/discounts'
 import Icon from './Icon'
-import type { Discount, MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemSize } from '../lib/types'
+import type { Discount, MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemCombo, MenuItemSize } from '../lib/types'
 
 export default function ProductDetailSheet({
-  item, items, sizes, addonGroups, addons, discounts, disabled, qtyFor, onAdd, onRemove, onCustomize, onClose
+  item, items, sizes, combos, addonGroups, addons, discounts, disabled, qtyFor, onAdd, onRemove, onCustomize, onClose
 }: {
   item: MenuItem
   items: MenuItem[]
   sizes: MenuItemSize[]
+  combos: MenuItemCombo[]
   addonGroups: MenuItemAddonGroup[]
   addons: MenuItemAddon[]
   discounts: Discount[]
@@ -34,7 +35,11 @@ export default function ProductDetailSheet({
   const art = artFor(active.category)
   const itemSizes = sizes.filter(s => s.menu_item_id === active.id)
   const itemGroups = addonGroups.filter(g => g.menu_item_id === active.id)
-  const hasOptions = itemSizes.length > 0 || itemGroups.length > 0
+  // Combos count as options. Without this an item whose ONLY option is the
+  // combo upgrade would render a plain +/- stepper here and the customer would
+  // never be shown the offer at all.
+  const itemCombos = combos.filter(c => c.menu_item_id === active.id)
+  const hasOptions = itemSizes.length > 0 || itemGroups.length > 0 || itemCombos.length > 0
   const qty = qtyFor(active.id)
   const baseActivePrice = itemSizes.length > 0 ? Math.min(...itemSizes.map(s => s.price)) : active.price
   const activeDiscount = effectiveDiscount(active.id, active.category, discounts)

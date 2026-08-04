@@ -4,10 +4,11 @@ import { uploadVendorImage } from '../lib/upload'
 import { useDismissable } from '../lib/useDismissable'
 import BasicInfoCard from './menuItemEditor/BasicInfoCard'
 import SizesCard from './menuItemEditor/SizesCard'
+import CombosCard from './menuItemEditor/CombosCard'
 import AddonsCard from './menuItemEditor/AddonsCard'
 import DangerZoneCard from './menuItemEditor/DangerZoneCard'
 import DiscountManager from './DiscountManager'
-import type { MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemSize } from '../lib/types'
+import type { MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemCombo, MenuItemSize } from '../lib/types'
 
 export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canManageDiscounts = true }: {
   item: MenuItem
@@ -35,6 +36,8 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
   const [deleteBlockedReason, setDeleteBlockedReason] = useState('')
 
   const [sizes, setSizes] = useState<MenuItemSize[]>([])
+  const [combos, setCombos] = useState<MenuItemCombo[]>([])
+  const [comboLabel, setComboLabel] = useState(item.combo_label ?? '')
   const [newSize, setNewSize] = useState({ name: '', price: '' })
   const [groups, setGroups] = useState<MenuItemAddonGroup[]>([])
   const [addons, setAddons] = useState<MenuItemAddon[]>([])
@@ -52,6 +55,8 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
   async function loadOptions() {
     const { data: sz } = await supabase.from('menu_item_sizes').select('*').eq('menu_item_id', item.id).order('display_order').order('id')
     setSizes(sz ?? [])
+    const { data: cb } = await supabase.from('menu_item_combos').select('*').eq('menu_item_id', item.id).order('display_order').order('id')
+    setCombos((cb as MenuItemCombo[]) ?? [])
     const { data: gr } = await supabase.from('menu_item_addon_groups').select('*').eq('menu_item_id', item.id).order('display_order').order('id')
     setGroups(gr ?? [])
     const groupIds = (gr ?? []).map(g => g.id)
@@ -77,6 +82,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
     await supabase.from('menu_items').update({
       name: name.trim(), description: description.trim(), category: category.trim(), price: Number(price), available,
       image_url: imageUrl,
+      combo_label: comboLabel.trim() || null,
       available_from: hasWindow ? availFrom : null,
       available_until: hasWindow ? availUntil : null
     }).eq('id', item.id)
@@ -140,6 +146,37 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
     const n = Number(value)
     if (!value.trim() || Number.isNaN(n) || n < 0) return
     await supabase.from('menu_item_sizes').update({ price: n }).eq('id', id)
+    loadOptions()
+  }
+
+  async function addCombo(name: string, priceValue: string) {
+    if (!name.trim() || !priceValue) return
+    await supabase.from('menu_item_combos').insert({
+      menu_item_id: item.id, name: name.trim(), price: Number(priceValue), display_order: combos.length
+    })
+    loadOptions()
+  }
+  async function removeCombo(id: number) {
+    if (!confirm('حذف الكومبو ده؟')) return
+    await supabase.from('menu_item_combos').delete().eq('id', id)
+    loadOptions()
+  }
+  async function updateComboPrice(id: number, value: string) {
+    const n = Number(value)
+    if (!value.trim() || Number.isNaN(n) || n < 0) return
+    await supabase.from('menu_item_combos').update({ price: n }).eq('id', id)
+    loadOptions()
+  }
+  // Seeded at the item's own price, same reasoning as the size preset: a
+  // guessed markup is silently wrong, an identical price is loudly wrong and
+  // CombosCard says so until it is fixed.
+  async function applyComboPreset(names: string[]) {
+    const existing = new Set(combos.map(c => c.name))
+    const rows = names.filter(n => !existing.has(n)).map((n, i) => ({
+      menu_item_id: item.id, name: n, price: Number(price) || 0, display_order: combos.length + i
+    }))
+    if (!rows.length) return
+    await supabase.from('menu_item_combos').insert(rows)
     loadOptions()
   }
 
@@ -238,6 +275,12 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
 
         <SizesCard sizes={sizes} newSize={newSize} setNewSize={setNewSize} onAdd={addSize} onRemove={removeSize}
           onApplyPreset={applySizePreset} onPriceChange={updateSizePrice} />
+
+        <CombosCard
+          combos={combos} comboLabel={comboLabel} setComboLabel={setComboLabel} basePrice={price}
+          onAdd={addCombo} onRemove={removeCombo} onPriceChange={updateComboPrice}
+          onApplyPreset={applyComboPreset}
+        />
 
         <AddonsCard
           groups={groups} addons={addons}
