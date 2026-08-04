@@ -19,7 +19,8 @@ interface OrderRow {
 export default function Profile() {
   const fid = useId()
   const nav = useNavigate()
-  const { customer, logout, updatePhone } = useCustomerAuth()
+  const { customer, logout, updatePhone, updateName } = useCustomerAuth()
+  const [editingIdentity, setEditingIdentity] = useState(false)
   const [addresses, setAddresses] = useState<Address[]>([])
   const [orders, setOrders] = useState<OrderRow[]>([])
   const [compounds, setCompounds] = useState<Compound[]>([])
@@ -109,17 +110,43 @@ export default function Profile() {
 
   return (
     <div className="max-w-sm mx-auto space-y-4 pb-6">
-      <div className="card p-4 flex items-center justify-between">
-        <div>
-          <p className="font-bold">{customer.name || 'حسابك'}</p>
-          {customer.email && <p className="text-xs text-mist mt-0.5" dir="ltr">{customer.email}</p>}
-          {customer.phone && <p className="text-xs text-mist mt-0.5" dir="ltr">{customer.phone}</p>}
+      {/* Name and phone were display-only once set. There was no function to
+          change a name at all, and the phone editor rendered only while the
+          phone was MISSING -- so a typo at signup, or whatever display name
+          Google supplied, was permanent. That name is what a driver reads at
+          the door. Both are editable now, and stay editable. */}
+      <div className="card p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            {editingIdentity ? (
+              <IdentityEditor
+                initialName={customer.name ?? ''}
+                initialPhone={customer.phone ?? ''}
+                onSaveName={updateName}
+                onSavePhone={updatePhone}
+                onClose={() => setEditingIdentity(false)}
+              />
+            ) : (
+              <>
+                <p className="font-bold">{customer.name || 'حسابك'}</p>
+                {customer.email && <p className="text-xs text-mist mt-0.5" dir="ltr">{customer.email}</p>}
+                {customer.phone
+                  ? <p className="text-xs text-mist mt-0.5" dir="ltr">{customer.phone}</p>
+                  : <p className="text-xs text-sandink mt-0.5">لسه ما ضفتش رقم موبايل</p>}
+              </>
+            )}
+          </div>
+          {!editingIdentity && (
+            <div className="flex flex-col gap-2 shrink-0">
+              <button className="btn-ghost !py-1.5 !px-3 text-sm" onClick={() => setEditingIdentity(true)}>تعديل</button>
+              <button className="btn-ghost !py-1.5 !px-3 text-sm" onClick={async () => { await logout(); nav('/') }}>خروج</button>
+            </div>
+          )}
         </div>
-        <button className="btn-ghost !py-1.5 !px-3 text-sm" onClick={async () => { await logout(); nav('/') }}>خروج</button>
       </div>
 
-      {!customer.phone && (
-        <div className="card p-4 bg-sand/10">
+      {!customer.phone && !editingIdentity && (
+        <div className="card p-4 bg-sand/10 mt-3">
           <p className="text-sm font-semibold mb-2">محتاجين رقم موبايلك عشان نقدر نوصلك</p>
           <PhoneInline onSave={updatePhone} />
         </div>
@@ -251,6 +278,74 @@ function PhoneInline({ onSave }: { onSave: (phone: string) => Promise<{ ok: bool
         </button>
       </div>
       {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+    </div>
+  )
+}
+
+/**
+ * Edit the name and phone together. Saved separately, because they are separate
+ * RPCs with separate failure modes -- a phone can be rejected for already
+ * belonging to another account, and that must not silently discard a perfectly
+ * good name typed at the same time.
+ */
+function IdentityEditor({
+  initialName, initialPhone, onSaveName, onSavePhone, onClose
+}: {
+  initialName: string
+  initialPhone: string
+  onSaveName: (name: string) => Promise<{ ok: boolean; error?: string }>
+  onSavePhone: (phone: string) => Promise<{ ok: boolean; error?: string }>
+  onClose: () => void
+}) {
+  const fid = useId()
+  const [name, setName] = useState(initialName)
+  const [phone, setPhone] = useState(initialPhone)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const nameChanged = name.trim() !== initialName.trim()
+  const phoneChanged = phone.trim() !== initialPhone.trim()
+  const nameValid = name.trim().length >= 2
+  const phoneValid = !phone.trim() || isValidEgyptPhone(phone)
+  const canSave = (nameChanged || phoneChanged) && nameValid && phoneValid && !saving
+
+  async function save() {
+    setSaving(true); setError('')
+    if (nameChanged) {
+      const res = await onSaveName(name.trim())
+      if (!res.ok) { setSaving(false); setError(describeError(res.error)); return }
+    }
+    if (phoneChanged && phone.trim()) {
+      const res = await onSavePhone(phone.trim())
+      // The name is already saved by now; say so, so nobody retypes it.
+      if (!res.ok) { setSaving(false); setError(describeError(res.error)); return }
+    }
+    setSaving(false)
+    onClose()
+  }
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="label" htmlFor={`${fid}-name`}>الاسم</label>
+        <input id={`${fid}-name`} className="field" value={name}
+          onChange={e => { setName(e.target.value); setError('') }} placeholder="الاسم بالكامل" />
+        {name.trim() && !nameValid && <p className="text-xs text-red-600 mt-1">الاسم قصير أوي</p>}
+      </div>
+      <div>
+        <label className="label" htmlFor={`${fid}-phone`}>رقم الموبايل</label>
+        <input id={`${fid}-phone`} className={`field ${phone.trim() && !phoneValid ? '!border-red-400' : ''}`}
+          dir="ltr" value={phone} maxLength={13}
+          onChange={e => { setPhone(e.target.value); setError('') }} placeholder="01xxxxxxxxx" />
+        {phone.trim() && !phoneValid && <p className="text-xs text-red-600 mt-1">{PHONE_HINT}</p>}
+      </div>
+      {error && <p className="text-xs text-red-600">{error}</p>}
+      <div className="flex gap-2">
+        <button className="btn-ghost flex-1 text-sm" onClick={onClose} disabled={saving}>إلغاء</button>
+        <button className="btn-sea flex-1 text-sm" disabled={!canSave} onClick={save}>
+          {saving ? 'جاري الحفظ…' : 'حفظ'}
+        </button>
+      </div>
     </div>
   )
 }

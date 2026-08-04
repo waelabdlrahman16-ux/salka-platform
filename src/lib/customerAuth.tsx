@@ -10,6 +10,7 @@ interface CustomerAuthState {
   signInWithGoogle: () => Promise<void>
   requestEmailLink: (email: string) => Promise<{ ok: boolean; error?: string }>
   updatePhone: (phone: string) => Promise<{ ok: boolean; error?: string }>
+  updateName: (name: string) => Promise<{ ok: boolean; error?: string }>
   logout: () => Promise<void>
 }
 
@@ -110,6 +111,13 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     return { ok: true }
   }
 
+  async function updateName(name: string) {
+    const { error } = await supabase.rpc('update_my_customer_name', { p_name: name })
+    if (error) return { ok: false, error: error.message }
+    setCustomer(c => c ? { ...c, name } : c)
+    return { ok: true }
+  }
+
   async function logout() {
     const { data: { session } } = await supabase.auth.getSession()
     if (session) await supabase.auth.signOut()
@@ -121,7 +129,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <CustomerAuthContext.Provider value={{
-      customer, loading, requestOtp, verifyOtp, signInWithGoogle, requestEmailLink, updatePhone, logout
+      customer, loading, requestOtp, verifyOtp, signInWithGoogle, requestEmailLink, updatePhone, updateName, logout
     }}>
       {children}
     </CustomerAuthContext.Provider>

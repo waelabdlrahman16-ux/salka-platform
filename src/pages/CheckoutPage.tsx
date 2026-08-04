@@ -25,8 +25,23 @@ export default function CheckoutPage() {
   const [slots, setSlots] = useState<Slot[]>([])
   const [slot, setSlot] = useState<Slot | null>(null)
 
+  // These are lazy initialisers, which run exactly once, on mount. The customer
+  // arrives asynchronously -- CustomerAuthProvider starts at
+  // { customer: null, loading: true } and resolves a round trip later -- so on
+  // first render there was nothing to read, both fields initialised to empty,
+  // and nothing ever filled them in afterwards. A signed-in customer retyped
+  // their name and phone on every single order while the app already knew both.
+  // The effect below is what actually delivers them.
   const [name, setName] = useState(() => customer?.name ?? '')
   const [phone, setPhone] = useState(() => customer?.phone ?? localStorage.getItem('salka_phone') ?? '')
+
+  // Fill from the account once it lands, but never overwrite something the
+  // customer has already typed -- they may be ordering for someone else.
+  useEffect(() => {
+    if (!customer) return
+    setName(prev => prev.trim() ? prev : (customer.name ?? ''))
+    setPhone(prev => prev.trim() ? prev : (customer.phone ?? prev))
+  }, [customer?.id, customer?.name, customer?.phone])
   const [unit, setUnit] = useState('')
   const [notes, setNotes] = useState('')
   const [customerNote, setCustomerNote] = useState('')
@@ -40,6 +55,9 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'instapay'>('cod')
   const [addressLoaded, setAddressLoaded] = useState(false)
   const [addressExpanded, setAddressExpanded] = useState(false)
+  const [savedAddresses, setSavedAddresses] = useState<
+    { id: number; label: string; compound_id: number; compound_name: string; unit_number: string; notes: string | null; is_default: boolean }[]
+  >([])
   const [walletBalance, setWalletBalance] = useState(0)
   const [walletFailed, setWalletFailed] = useState(false)
   const [compoundsFailed, setCompoundsFailed] = useState(false)
@@ -54,6 +72,24 @@ export default function CheckoutPage() {
   // server-owned number.
   const [codDepositThreshold, setCodDepositThreshold] = useState<number | null>(null)
   const [useWallet, setUseWallet] = useState(true)
+
+  // Saved addresses, and the default one preselected. Guarded on `customer`
+  // because the RPC is account-scoped -- a guest gets an empty list, not an error.
+  useEffect(() => {
+    if (!customer) { setSavedAddresses([]); return }
+    supabase.rpc('my_customer_addresses').then(({ data, error }) => {
+      if (error) return
+      const list = (data as typeof savedAddresses) ?? []
+      setSavedAddresses(list)
+      const preferred = list.find(a => a.is_default) ?? list[0]
+      if (!preferred) return
+      // Never overwrite something already chosen -- a compound restored from
+      // the previous screen, or a unit the customer has started typing.
+      setCompoundId(prev => prev ?? preferred.compound_id)
+      setUnit(prev => prev.trim() ? prev : preferred.unit_number)
+      setNotes(prev => prev.trim() ? prev : (preferred.notes ?? ''))
+    })
+  }, [customer?.id])
 
   useEffect(() => {
     if (!isValidEgyptPhone(phone)) { setWalletBalance(0); setWalletFailed(false); return }
@@ -266,6 +302,34 @@ export default function CheckoutPage() {
 
       <div className="card p-4 mb-4 space-y-3">
         <h2 className="font-bold">عنوان التوصيل</h2>
+
+        {/* Saved addresses were reachable from the profile screen and nowhere
+            else, so a signed-in customer with three saved addresses still
+            retyped a compound and a unit number at every checkout. */}
+        {savedAddresses.length > 0 && (
+          <div>
+            <p className="label">عناوينك المحفوظة</p>
+            <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
+              {savedAddresses.map(a => {
+                const on = a.compound_id === compoundId && a.unit_number === unit
+                return (
+                  <button key={a.id} type="button"
+                    className={`shrink-0 text-right rounded-xl border-2 px-3 py-2 min-h-[44px] ${on ? 'border-sea bg-sea/5' : 'border-line'}`}
+                    onClick={() => {
+                      setCompoundId(a.compound_id)
+                      setUnit(a.unit_number)
+                      setNotes(a.notes ?? '')
+                      setAddressExpanded(false)
+                    }}>
+                    <span className="block text-sm font-bold">{a.label || a.compound_name}</span>
+                    <span className="block text-xs text-mist">{a.compound_name} · {a.unit_number}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         <div><label className="label" htmlFor={`${fid}-1`}>الاسم *</label>
           <input id={`${fid}-1`} className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
         <div><label className="label" htmlFor={`${fid}-2`}>رقم الموبايل *</label>
