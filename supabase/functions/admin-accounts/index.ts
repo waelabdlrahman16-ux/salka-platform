@@ -29,7 +29,9 @@ async function assertTargetIsStaff(admin: any, profileId: string, callerId: stri
   if (profileId === callerId) return { error: "cannot_target_self", status: 400 }
   const { data: target } = await admin.from("profiles").select("role").eq("id", profileId).maybeSingle()
   if (!target) return { error: "profile_not_found", status: 404 }
-  if (target.role !== "vendor" && target.role !== "driver") return { error: "target_not_staff", status: 403 }
+  // catalog is staff too -- otherwise an admin could create one and then never
+  // reset its password or remove it.
+  if (!["vendor", "driver", "catalog"].includes(target.role)) return { error: "target_not_staff", status: 403 }
   return null
 }
 
@@ -120,6 +122,33 @@ Deno.serve(async (req) => {
 
       const { error: profErr } = await admin.from("profiles").insert({
         id: created.user.id, role: "driver", driver_id, name: driver.name
+      })
+      if (profErr) {
+        await admin.auth.admin.deleteUser(created.user.id)
+        return fail("admin-accounts", "profile_insert_failed", 500, profErr)
+      }
+
+      return json({ email, password })
+    }
+
+    // Catalogue staff have no restaurant_id and no driver_id -- they work across
+    // every vendor, and their scope comes from the role alone.
+    if (action === "create_catalog_login") {
+      const { name } = body
+      if (!name || typeof name !== "string" || !name.trim()) return json({ error: "name_required" }, 400)
+
+      // slugify() already falls back to random bytes for a fully non-ASCII name;
+      // the extra suffix stops two people with the same name from colliding.
+      const email = `catalog.${slugify(name)}.${secureSlugFallback()}@salka.app`
+      const password = genPassword()
+
+      const { data: created, error: createErr } = await admin.auth.admin.createUser({
+        email, password, email_confirm: true, user_metadata: { is_staff: true }
+      })
+      if (createErr || !created?.user) return fail("admin-accounts", "create_user_failed", 500, createErr)
+
+      const { error: profErr } = await admin.from("profiles").insert({
+        id: created.user.id, role: "catalog", name: name.trim()
       })
       if (profErr) {
         await admin.auth.admin.deleteUser(created.user.id)

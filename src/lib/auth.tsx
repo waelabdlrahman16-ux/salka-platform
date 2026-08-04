@@ -4,7 +4,7 @@ import type { Session } from '@supabase/supabase-js'
 
 export interface Profile {
   id: string
-  role: 'admin' | 'driver' | 'vendor'
+  role: 'admin' | 'driver' | 'vendor' | 'catalog'
   driver_id: number | null
   restaurant_id: number | null
   name: string
@@ -26,7 +26,10 @@ const Ctx = createContext<AuthCtx>({
 export const useAuth = () => useContext(Ctx)
 
 export const homeFor = (role: Profile['role']) =>
-  role === 'admin' ? '/admin' : role === 'vendor' ? '/vendor' : '/driver'
+  role === 'admin' ? '/admin'
+  : role === 'vendor' ? '/vendor'
+  : role === 'catalog' ? '/catalog'
+  : '/driver'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)

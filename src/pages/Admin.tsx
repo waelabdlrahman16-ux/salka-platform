@@ -114,6 +114,8 @@ export default function Admin() {
   const [openHistory, setOpenHistory] = useState<number | null>(null)
   const [vendorAccounts, setVendorAccounts] = useState<{ profile_id: string; restaurant_id: number; email: string }[]>([])
   const [driverAccounts, setDriverAccounts] = useState<{ profile_id: string; driver_id: number; email: string }[]>([])
+  const [catalogAccounts, setCatalogAccounts] = useState<{ profile_id: string; name: string; email: string }[]>([])
+  const [newCatalogName, setNewCatalogName] = useState('')
   const [accountBusy, setAccountBusy] = useState<string | null>(null)
   const [newCreds, setNewCreds] = useState<{ email: string; password: string } | null>(null)
   const [newRestaurant, setNewRestaurant] = useState({ name: '', description: '', category: '', vendor_type: 'restaurant', prep_minutes: '20' })
@@ -152,6 +154,7 @@ export default function Admin() {
     setCompensatedOrderIds(new Set((wt.data ?? []).map((t: any) => t.order_id)))
     const { data: accounts } = await supabase.rpc('admin_list_accounts')
     setVendorAccounts(accounts?.vendors ?? []); setDriverAccounts(accounts?.drivers ?? [])
+    setCatalogAccounts(accounts?.catalog ?? [])
     ping('escalated_shifts', (esc.data ?? []).length, 'مندوب محتاج بديل', 'في وردية اتصعّدت للإدارة')
     ping('complaints', (comp.data ?? []).filter((c: Complaint) => c.status === 'open').length, 'شكوى جديدة', 'في عميل بلّغ عن مشكلة')
     ping('settlement_requests', (sr.data ?? []).length, 'طلب تسوية مبكرة', 'مندوب طالب تسوية قبل ميعاده')
@@ -366,6 +369,18 @@ export default function Admin() {
     const result = await callAccountsFn({ action: 'create_driver_login', driver_id: driverId })
     setAccountBusy(null)
     if (result.error) { alert('حصل خطأ: ' + result.error); return }
+    setNewCreds({ email: result.email, password: result.password })
+    load()
+  }
+
+  async function createCatalogLogin() {
+    const name = newCatalogName.trim()
+    if (!name) return
+    setAccountBusy('catalog-new')
+    const result = await callAccountsFn({ action: 'create_catalog_login', name })
+    setAccountBusy(null)
+    if (result.error) { alert('حصل خطأ: ' + result.error); return }
+    setNewCatalogName('')
     setNewCreds({ email: result.email, password: result.password })
     load()
   }
@@ -1275,6 +1290,51 @@ export default function Admin() {
                 إضافة
               </button>
               <p className="text-xs text-mist">تقدر بعد كده تظبط وقت التحضير ونوع الطلب (طلب من القايمة / طلب خاص / طلب مندوب بس) من تبويب "المطاعم والمنيو"</p>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <p className="font-semibold mb-1">موظفي القوايم</p>
+            <p className="text-xs text-mist mb-3">
+              حساب بيقدر يضيف ويعدّل الأصناف والأسعار والأحجام والإضافات لكل المطاعم — ومش بيشوف الطلبات
+              ولا المندوبين ولا الأرباح ولا الإعدادات.
+            </p>
+
+            <div className="card p-3.5 mb-3">
+              <div className="flex gap-2">
+                <input className="field flex-1" value={newCatalogName}
+                  onChange={e => setNewCatalogName(e.target.value)}
+                  placeholder="اسم الموظف" />
+                <button className="btn-sea shrink-0 !px-4" disabled={!newCatalogName.trim() || accountBusy === 'catalog-new'}
+                  onClick={createCatalogLogin}>
+                  {accountBusy === 'catalog-new' ? '...' : 'إنشاء حساب'}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2.5">
+              {catalogAccounts.map(acc => (
+                <div key={acc.profile_id} className="card p-3.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-semibold truncate">{acc.name}</p>
+                      <p className="text-xs text-mist truncate" dir="ltr">{acc.email}</p>
+                    </div>
+                    <div className="flex gap-1.5 shrink-0">
+                      <AccountActionsMenu
+                        busy={accountBusy === acc.profile_id}
+                        onChangeEmail={() => changeEmail(acc.profile_id, acc.email)}
+                        onResetPassword={() => resetPassword(acc.profile_id)}
+                        onCustomPassword={() => setCustomPassword(acc.profile_id)}
+                        onRemove={() => removeLogin(acc.profile_id)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {catalogAccounts.length === 0 && (
+                <p className="text-xs text-mist">مفيش حسابات قوايم لسه</p>
+              )}
             </div>
           </div>
 
