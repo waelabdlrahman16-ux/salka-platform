@@ -1,4 +1,5 @@
 import { applyDiscount, effectiveDiscount } from './discounts'
+import { isItemAvailableNow } from './itemAvailability'
 import type { Discount, MenuItem, MenuItemAddon, MenuItemCombo, MenuItemSize } from './types'
 
 /**
@@ -55,4 +56,28 @@ export function priceLine(
     comboName: combo?.name ?? null,
     addonNames: selected.map(a => a.name),
   }
+}
+
+/**
+ * Whether a saved cart line can still be ordered as saved.
+ *
+ * The old sweep only asked whether the ITEM still exists and is available, so a
+ * line whose combo or size had since been deleted survived it -- and `priceLine`
+ * then fell all the way through to `menu_items.price`. A 130 ج.م combo silently
+ * became a 75 ج.م sandwich in the basket, the customer was shown 75, and
+ * `place_order` rejected the now-dangling combo_id with a generic error they
+ * could not act on. Either half of that is bad on its own.
+ *
+ * Only meaningful once the options have actually loaded -- call it with
+ * `optionsLoaded`, or every line looks stale for the first few round trips.
+ */
+export function lineIsStale(
+  line: { menuItemId: number; sizeId: number | null; comboId: number | null },
+  data: { items: MenuItem[]; sizes: MenuItemSize[]; combos: MenuItemCombo[] }
+): boolean {
+  const item = data.items.find(i => i.id === line.menuItemId)
+  if (!item || !item.available || !isItemAvailableNow(item.available_from, item.available_until)) return true
+  if (line.comboId != null && !data.combos.some(c => c.id === line.comboId)) return true
+  if (line.sizeId != null && !data.sizes.some(s => s.id === line.sizeId)) return true
+  return false
 }
