@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useId } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
@@ -8,6 +8,7 @@ import { getSessionToken } from '../lib/customerAuth'
 import type { Compound, MenuItem, Restaurant, Slot } from '../lib/types'
 
 export default function CustomOrder() {
+  const fid = useId()
   const nav = useNavigate()
   const [searchParams] = useSearchParams()
   const typeFilter = searchParams.get('type') // 'pharmacy' | 'supermarket' | null -- deep-link from Home's category tiles
@@ -166,15 +167,15 @@ export default function CustomOrder() {
       )}
 
       <div className="mb-4">
-        <label className="label">قايمة طلبك *</label>
-        <textarea className="field min-h-[160px]" value={list} onChange={e => setList(e.target.value)}
+        <label className="label" htmlFor={`${fid}-1`}>قايمة طلبك *</label>
+        <textarea id={`${fid}-1`} className="field min-h-[160px]" value={list} onChange={e => setList(e.target.value)}
           placeholder={'اكتب كل حاجة عايزها، سطر لكل صنف\nمثال:\nبنادول اكسترا\nشامبو أطفال\nخبز توست'} />
       </div>
 
       {scheduled && (
         <div className="mb-4">
           <h2 className="font-bold mb-2">فترة التوصيل</h2>
-          {slots.length === 0 && <p className="text-sm text-sand">لا توجد فترات متاحة حالياً</p>}
+          {slots.length === 0 && <p className="text-sm text-sandink">لا توجد فترات متاحة حالياً</p>}
           <div className="grid grid-cols-2 gap-2">
             {slots.map(sl => {
               const on = slot?.id === sl.id && slot?.scheduled_date === sl.scheduled_date
@@ -192,21 +193,21 @@ export default function CustomOrder() {
 
       <div className="card p-4 mb-4 space-y-3">
         <h2 className="font-bold">عنوان التوصيل</h2>
-        <div><label className="label">الاسم *</label>
-          <input className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
-        <div><label className="label">رقم الموبايل *</label>
-          <input className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-red-400' : ''}`}
+        <div><label className="label" htmlFor={`${fid}-2`}>الاسم *</label>
+          <input id={`${fid}-2`} className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
+        <div><label className="label" htmlFor={`${fid}-3`}>رقم الموبايل *</label>
+          <input id={`${fid}-3`} className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-red-400' : ''}`}
             dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} placeholder="01xxxxxxxxx" maxLength={13} />
           {phone.trim() && !isValidEgyptPhone(phone) && <p className="text-xs text-red-600 mt-1">{PHONE_HINT}</p>}</div>
-        <div><label className="label">المكان *</label>
-          <select className="field" value={compoundId ?? ''} onChange={e => setCompoundId(Number(e.target.value) || null)}>
+        <div><label className="label" htmlFor={`${fid}-4`}>المكان *</label>
+          <select id={`${fid}-4`} className="field" value={compoundId ?? ''} onChange={e => setCompoundId(Number(e.target.value) || null)}>
             <option value="">اختر مكانك…</option>
             {compounds.map(c => <option key={c.id} value={c.id}>{c.name} (~{c.est_travel_minutes} د)</option>)}
           </select></div>
-        <div><label className="label">رقم الشاليه / الفيلا *</label>
-          <input className="field" value={unit} onChange={e => setUnit(e.target.value)} placeholder="مثال: B4 - 204" /></div>
-        <div><label className="label">علامة مميزة (اختياري)</label>
-          <input className="field" value={addrNotes} onChange={e => setAddrNotes(e.target.value)} placeholder="مثال: بجوار حمام السباحة" /></div>
+        <div><label className="label" htmlFor={`${fid}-5`}>رقم الشاليه / الفيلا *</label>
+          <input id={`${fid}-5`} className="field" value={unit} onChange={e => setUnit(e.target.value)} placeholder="مثال: B4 - 204" /></div>
+        <div><label className="label" htmlFor={`${fid}-6`}>علامة مميزة (اختياري)</label>
+          <input id={`${fid}-6`} className="field" value={addrNotes} onChange={e => setAddrNotes(e.target.value)} placeholder="مثال: بجوار حمام السباحة" /></div>
       </div>
 
       {/* Delivery is known up front even though the items aren't priced yet --

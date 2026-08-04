@@ -138,7 +138,7 @@ export default function Catalog() {
                         : <div className="w-10 h-10 rounded-lg bg-shellup grid place-items-center shrink-0 text-mist text-xs">—</div>}
                       <div className="min-w-0">
                         <p className="text-sm font-semibold truncate">{i.name}</p>
-                        {!i.available && <p className="text-xs text-sand mt-0.5">مش متاح دلوقتي</p>}
+                        {!i.available && <p className="text-xs text-sandink mt-0.5">مش متاح دلوقتي</p>}
                       </div>
                     </div>
                     <span className="text-sm text-mist shrink-0">{i.price} ج.م</span>

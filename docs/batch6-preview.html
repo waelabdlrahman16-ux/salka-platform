@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>سالكة — Batch 6 preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --night:#FBF7F1; --shell:#FFFFFF; --shellup:#F4EEE3; --line:#E8E1D6;
+    --sea:#0A5F5E; --seadeep:#063A39; --sand:#B8934A; --foam:#231F1A; --mist:#6E655C;
+    /* proposed additions */
+    --sandink:#6E572B; --linestrong:#A3875C;
+    --bad:#B3261E; --good:#1B6B3A;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--night);color:var(--foam);
+       font-family:'IBM Plex Sans Arabic',system-ui,sans-serif;line-height:1.65;
+       padding:0 0 64px}
+  .wrap{max-width:960px;margin:0 auto;padding:0 16px}
+
+  header{background:var(--shell);border-bottom:1px solid var(--line);padding:28px 0 24px;margin-bottom:28px}
+  h1{margin:0 0 6px;font-size:26px;font-weight:700;letter-spacing:-.01em}
+  .sub{margin:0;color:var(--mist);font-size:14px}
+  .meta{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font-size:12px;font-weight:600;background:var(--shellup);border:1px solid var(--line);
+        border-radius:999px;padding:4px 11px;color:var(--mist)}
+
+  section{background:var(--shell);border:1px solid var(--line);border-radius:16px;
+          padding:20px;margin-bottom:20px}
+  h2{margin:0 0 4px;font-size:19px;font-weight:700;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+  .num{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:8px;
+       background:var(--sea);color:#fff;font-size:13px;font-weight:700;flex:none}
+  .lede{margin:0 0 4px;color:var(--mist);font-size:14.5px}
+  .found{margin:10px 0 18px;font-size:13px;color:var(--foam);background:var(--shellup);
+         border-radius:10px;padding:9px 12px;border:1px solid var(--line)}
+  .found b{font-variant-numeric:tabular-nums}
+
+  .panes{display:grid;grid-template-columns:1fr;gap:14px}
+  @media(min-width:720px){.panes{grid-template-columns:1fr 1fr}}
+  .pane{border:1px solid var(--line);border-radius:13px;overflow:hidden;background:var(--night)}
+  .pane>.hd{padding:8px 13px;font-size:12.5px;font-weight:700;letter-spacing:.02em;
+            display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .pane.before>.hd{background:#FBEAE8;color:var(--bad);border-bottom:1px solid #F2D4D1}
+  .pane.after >.hd{background:#E6F3EB;color:var(--good);border-bottom:1px solid #CFE7D9}
+  .pane .body{padding:15px 13px}
+  .verdict{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;
+           font-variant-numeric:tabular-nums}
+  .pane.before .verdict{background:var(--bad);color:#fff}
+  .pane.after  .verdict{background:var(--good);color:#fff}
+
+  /* ---- real Salka component styles, copied from src/index.css ---- */
+  .card{background:var(--shell);border:1px solid var(--line);border-radius:12px}
+  .btn{border-radius:12px;padding:10px 16px;font-weight:600;border:0;cursor:pointer;
+       font-family:inherit;font-size:15px;transition:background .15s}
+  .btn-sea{background:var(--sea);color:#fff}
+  .btn-sea:hover{background:var(--seadeep)}
+  .btn-ghost{background:var(--shellup);color:var(--foam)}
+  .field{width:100%;height:48px;border-radius:12px;background:var(--night);
+         border:1px solid var(--line);padding:0 14px;color:var(--foam);
+         font-family:inherit;font-size:15px;outline:none}
+  .field:focus{border-color:var(--sea)}
+  .field::placeholder{color:rgba(110,101,92,.6)}
+  .label{display:block;font-size:14px;color:var(--mist);margin-bottom:6px}
+  .tab{padding:8px 14px;border-radius:12px;font-size:14px;font-weight:600;color:var(--mist);
+       background:none;border:0;cursor:pointer;font-family:inherit;white-space:nowrap}
+  .tab-active{background:var(--shellup);color:var(--foam)}
+
+  /* ---- proposed variants ---- */
+  .field-fix{border-color:var(--linestrong)}
+  .field-fix::placeholder{color:var(--mist)}
+  .tab-fix{min-height:44px;padding:11px 16px}
+  .btn-sm{padding:6px 12px;font-size:13px}
+  .btn-sm-fix{min-height:44px;padding:11px 14px;font-size:13px}
+  .text-sand{color:var(--sand)}
+  .text-sandink{color:var(--sandink)}
+
+  .swatchrow{display:flex;align-items:center;gap:9px;margin-bottom:9px;font-size:13.5px}
+  .sw{width:26px;height:26px;border-radius:7px;border:1px solid rgba(0,0,0,.1);flex:none}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;
+       background:var(--shellup);padding:1px 5px;border-radius:5px;direction:ltr;display:inline-block}
+  .ratio{font-variant-numeric:tabular-nums;font-weight:700;font-size:12.5px}
+  .r-bad{color:var(--bad)} .r-good{color:var(--good)}
+  .note{font-size:13px;color:var(--mist);margin:14px 0 0;padding-top:13px;border-top:1px solid var(--line)}
+  .note b{color:var(--foam)}
+  ul.tight{margin:8px 0 0;padding-inline-start:20px;font-size:13.5px;color:var(--mist)}
+  ul.tight li{margin-bottom:5px}
+
+  .hitbox{position:relative;display:inline-block}
+  .hitbox::after{content:"";position:absolute;inset:0;outline:1.5px dashed rgba(179,38,30,.55);
+                 outline-offset:0;border-radius:12px;pointer-events:none}
+  .hitbox.ok::after{outline-color:rgba(27,107,58,.55)}
+  .px{font-size:11px;color:var(--mist);font-variant-numeric:tabular-nums;margin-top:6px;display:block}
+
+  dialog{border:0;border-radius:16px;padding:0;max-width:340px;width:calc(100% - 32px);
+         background:var(--shell);color:var(--foam);font-family:inherit;box-shadow:0 18px 50px rgba(0,0,0,.22)}
+  dialog::backdrop{background:rgba(0,0,0,.55)}
+  .dlg{padding:20px}
+  .dlg h3{margin:0 0 6px;font-size:17px}
+  .dlg p{margin:0 0 16px;color:var(--mist);font-size:14px}
+
+  .stack{display:flex;flex-direction:column;gap:11px}
+  .row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+  .sr{background:#111;color:#7CFFB2;border-radius:10px;padding:10px 12px;font-size:12.5px;
+      font-family:ui-monospace,Menlo,monospace;direction:ltr;text-align:left;line-height:1.55}
+  .sr .q{color:#FF8A80}
+  footer{color:var(--mist);font-size:13px;text-align:center;padding:8px 16px 0}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>Batch 6 — visual &amp; accessibility pass</h1>
+    <p class="sub">Proposed changes, measured against the live palette. Nothing here is in the code yet.</p>
+    <div class="meta">
+      <span class="chip">5 changes</span>
+      <span class="chip">~180 lines touched</span>
+      <span class="chip">no behaviour changes</span>
+      <span class="chip">no database changes</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- 1 ────────────────────────────────────────────── -->
+<section>
+  <h2><span class="num">1</span> Gold text is unreadable</h2>
+  <p class="lede">The brand gold <code>#B8934A</code> is used for warnings, errors and "unavailable" labels — the messages that matter most when something goes wrong.</p>
+  <div class="found">Found in <b>52</b> places across <code>src/</code>. Measured contrast on the page background: <span class="ratio r-bad">2.69:1</span>. WCAG AA requires <b>4.5:1</b>. In sunlight, on a phone, this is close to invisible.</div>
+
+  <div class="panes">
+    <div class="pane before">
+      <div class="hd"><span>قبل — current</span><span class="verdict">2.69:1 FAIL</span></div>
+      <div class="body">
+        <div class="card" style="padding:13px">
+          <p style="margin:0 0 8px;font-weight:600">برجر لحم</p>
+          <p class="text-sand" style="margin:0;font-size:13px">مش متاح دلوقتي</p>
+        </div>
+        <p class="text-sand" style="font-size:13.5px;margin:13px 0 0">الصنف ده اتطلب قبل كده فمينفعش يتمسح خالص</p>
+        <div class="swatchrow" style="margin-top:15px">
+          <span class="sw" style="background:var(--sand)"></span>
+          <code>text-sand</code> <span class="ratio r-bad">2.69:1</span>
+        </div>
+      </div>
+    </div>
+    <div class="pane after">
+      <div class="hd"><span>بعد — proposed</span><span class="verdict">6.43:1 PASS</span></div>
+      <div class="body">
+        <div class="card" style="padding:13px">
+          <p style="margin:0 0 8px;font-weight:600">برجر لحم</p>
+          <p class="text-sandink" style="margin:0;font-size:13px">مش متاح دلوقتي</p>
+        </div>
+        <p class="text-sandink" style="font-size:13.5px;margin:13px 0 0">الصنف ده اتطلب قبل كده فمينفعش يتمسح خالص</p>
+        <div class="swatchrow" style="margin-top:15px">
+          <span class="sw" style="background:var(--sandink)"></span>
+          <code>text-sandink</code> <span class="ratio r-good">6.43:1</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="note"><b>Same hue, same saturation, darker.</b> I kept <code>#B8934A</code> exactly as it is for everything non-text — star ratings, tinted backgrounds, highlight borders — because decorative fills are exempt and the brand look shouldn't shift. Only the 52 places where gold is <i>text</i> move to <code>sandink</code>.</p>
+</section>
+
+<!-- 2 ────────────────────────────────────────────── -->
+<section>
+  <h2><span class="num">2</span> Input fields are almost invisible</h2>
+  <p class="lede">A field's interior is <code>#FBF7F1</code> sitting on a white card, with a <code>#E8E1D6</code> border.</p>
+  <div class="found">Field interior vs card: <span class="ratio r-bad">1.07:1</span>. Border vs card: <span class="ratio r-bad">1.30:1</span>. WCAG 1.4.11 requires <b>3:1</b> for the boundary of a control. Placeholder text is <span class="ratio r-bad">2.45:1</span> — it's <code>mist</code> at 60% opacity.</div>
+
+  <div class="panes">
+    <div class="pane before">
+      <div class="hd"><span>قبل — current</span><span class="verdict">1.30:1 FAIL</span></div>
+      <div class="body">
+        <div class="card" style="padding:15px">
+          <label class="label">رقم الموبايل</label>
+          <input class="field" dir="ltr" placeholder="01xxxxxxxxx">
+          <div style="height:11px"></div>
+          <label class="label">اسم المستلم</label>
+          <input class="field" placeholder="اكتب اسمك">
+        </div>
+        <p style="font-size:12.5px;color:var(--mist);margin:12px 0 0">Tap-target is fine (48px) — the problem is you can barely see where the box is.</p>
+      </div>
+    </div>
+    <div class="pane after">
+      <div class="hd"><span>بعد — proposed</span><span class="verdict">3.40:1 PASS</span></div>
+      <div class="body">
+        <div class="card" style="padding:15px">
+          <label class="label">رقم الموبايل</label>
+          <input class="field field-fix" dir="ltr" placeholder="01xxxxxxxxx">
+          <div style="height:11px"></div>
+          <label class="label">اسم المستلم</label>
+          <input class="field field-fix" placeholder="اكتب اسمك">
+        </div>
+        <p style="font-size:12.5px;color:var(--mist);margin:12px 0 0">Border <code>#A3875C</code> on <code>.field</code> only. Placeholder goes to full-opacity <code>mist</code> (5.35:1).</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="note"><b>Card borders stay light.</b> Only form controls get the stronger edge — that's what the rule is actually about, and darkening every card border would make the whole app look boxed-in.</p>
+</section>
+
+<!-- 3 ────────────────────────────────────────────── -->
+<section>
+  <h2><span class="num">3</span> Tap targets are too small for a driver on a scooter</h2>
+  <p class="lede">Tabs and the compact action buttons sit at 32–36px tall. Apple asks for 44, Google for 48.</p>
+  <div class="found">Found <b>39</b> buttons using <code>py-1</code>/<code>py-1.5</code>, plus <b>9</b> tab bars. These pass the bare WCAG AA minimum (24px) but fail every platform guideline — and they're the controls drivers and vendors hit one-handed, outdoors, in a hurry.</div>
+
+  <div class="panes">
+    <div class="pane before">
+      <div class="hd"><span>قبل — current</span><span class="verdict">32–36px</span></div>
+      <div class="body">
+        <div class="row" style="margin-bottom:14px">
+          <span class="hitbox"><button class="tab tab-active">الطلبات</button></span>
+          <span class="hitbox"><button class="tab">المندوبين</button></span>
+          <span class="hitbox"><button class="tab">الأرباح</button></span>
+        </div>
+        <div class="row">
+          <span class="hitbox"><button class="btn btn-ghost btn-sm">تغيير المندوب</button></span>
+          <span class="hitbox"><button class="btn btn-ghost btn-sm">إلغاء</button></span>
+        </div>
+        <span class="px">dashed outline = the actual tappable area</span>
+      </div>
+    </div>
+    <div class="pane after">
+      <div class="hd"><span>بعد — proposed</span><span class="verdict">44px min</span></div>
+      <div class="body">
+        <div class="row" style="margin-bottom:14px">
+          <span class="hitbox ok"><button class="tab tab-active tab-fix">الطلبات</button></span>
+          <span class="hitbox ok"><button class="tab tab-fix">المندوبين</button></span>
+          <span class="hitbox ok"><button class="tab tab-fix">الأرباح</button></span>
+        </div>
+        <div class="row">
+          <span class="hitbox ok"><button class="btn btn-ghost btn-sm-fix">تغيير المندوب</button></span>
+          <span class="hitbox ok"><button class="btn btn-ghost btn-sm-fix">إلغاء</button></span>
+        </div>
+        <span class="px">same type size, same colours — only the padding grows</span>
+      </div>
+    </div>
+  </div>
+
+  <p class="note"><b>Font sizes don't change.</b> This is padding only, so nothing reflows sideways and no Arabic text re-wraps. Rows get a few pixels taller.</p>
+</section>
+
+<!-- 4 ────────────────────────────────────────────── -->
+<section>
+  <h2><span class="num">4</span> Modals can't be dismissed with Escape</h2>
+  <p class="lede">Try it in both panes below — open the dialog, then press Escape (or tap outside).</p>
+  <div class="found">Of the <b>10</b> files with a full-screen <code>fixed inset-0</code> overlay, <b>9</b> have no Escape handling at all. Only <code>CustomerLogin</code> has it. This is also how <code>PhonePrompt</code> became a trap earlier — no keyboard exit, and on desktop admin work it means reaching for the mouse every time.</div>
+
+  <div class="panes">
+    <div class="pane before">
+      <div class="hd"><span>قبل — current</span><span class="verdict">Escape does nothing</span></div>
+      <div class="body">
+        <button class="btn btn-sea" onclick="document.getElementById('d1').showModal()">تعديل الصنف</button>
+        <p style="font-size:12.5px;color:var(--mist);margin:12px 0 0">Also: focus isn't trapped, so Tab walks off into the page behind the overlay.</p>
+      </div>
+    </div>
+    <div class="pane after">
+      <div class="hd"><span>بعد — proposed</span><span class="verdict">Escape closes</span></div>
+      <div class="body">
+        <button class="btn btn-sea" onclick="document.getElementById('d2').showModal()">تعديل الصنف</button>
+        <p style="font-size:12.5px;color:var(--mist);margin:12px 0 0">Escape closes, focus is trapped inside while open, and returns to the button on close.</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="note"><b>One shared hook.</b> Rather than patch nine files by hand, I'd add a <code>useDismissable()</code> hook that wires Escape, focus trapping and focus restore, and call it from each overlay — so the tenth modal someone adds gets it for free.</p>
+</section>
+
+<!-- 5 ────────────────────────────────────────────── -->
+<section>
+  <h2><span class="num">5</span> Numbers switch alphabets mid-screen</h2>
+  <p class="lede">Dates and times render in Arabic-Indic digits; prices, order numbers and distances render in Latin.</p>
+  <div class="found">Every date goes through <code>toLocaleDateString('ar-EG')</code>, which produces <b>٤ أغسطس</b> and <b>٣:٣٠ م</b>. Every price is a raw JS number, producing <b>185 ج.م</b>. Both appear on the same order card.</div>
+
+  <div class="panes">
+    <div class="pane before">
+      <div class="hd"><span>قبل — current</span><span class="verdict">mixed</span></div>
+      <div class="body">
+        <div class="card" style="padding:14px">
+          <p style="margin:0 0 3px;font-weight:700">طلب #١٤ · مطعم البحر</p>
+          <p style="margin:0 0 10px;font-size:13px;color:var(--mist)">الثلاثاء، ٤ أغسطس · ٣:٣٠ م</p>
+          <p style="margin:0;font-size:14px">الإجمالي <b>185 ج.م</b> · المسافة 7.4 كم</p>
+        </div>
+      </div>
+    </div>
+    <div class="pane after">
+      <div class="hd"><span>بعد — proposed</span><span class="verdict">consistent</span></div>
+      <div class="body">
+        <div class="card" style="padding:14px">
+          <p style="margin:0 0 3px;font-weight:700">طلب #14 · مطعم البحر</p>
+          <p style="margin:0 0 10px;font-size:13px;color:var(--mist)">الثلاثاء، 4 أغسطس · 3:30 م</p>
+          <p style="margin:0;font-size:14px">الإجمالي <b>185 ج.م</b> · المسافة 7.4 كم</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p class="note"><b>Standardise on Latin, not Arabic-Indic.</b> Prices, phone numbers and order IDs are already Latin everywhere and would be much more disruptive to convert; the phone inputs are even <code>dir="ltr"</code>. The fix is one locale string — <code>'ar-EG'</code> becomes <code>'ar-EG-u-nu-latn'</code> in the 11 places that format a date or time. Arabic month and day names are unchanged. <b>Say the word if you'd rather go the other way</b> — all-Arabic-Indic is defensible, it's just a much larger change.</p>
+</section>
+
+<!-- 6 ────────────────────────────────────────────── -->
+<section>
+  <h2><span class="num">6</span> No field is connected to its label</h2>
+  <p class="lede">The labels look right, but nothing links them to the input underneath.</p>
+  <div class="found"><b>51</b> <code>&lt;label&gt;</code> elements, <b>0</b> with <code>htmlFor</code>. <b>107</b> inputs, <b>0</b> with <code>aria-label</code>. Two consequences: a screen reader announces the field with no name, and tapping the label text doesn't focus the field — which on a phone is a target you'd expect to work.</div>
+
+  <div class="panes">
+    <div class="pane before">
+      <div class="hd"><span>قبل — current</span><span class="verdict">unnamed</span></div>
+      <div class="body">
+        <div class="card" style="padding:15px">
+          <label class="label">رقم الموبايل</label>
+          <input class="field" dir="ltr" placeholder="01xxxxxxxxx">
+        </div>
+        <div class="sr" style="margin-top:12px">VoiceOver reads:<br><span class="q">"text field, empty"</span></div>
+        <p style="font-size:12.5px;color:var(--mist);margin:10px 0 0">Tap the words "رقم الموبايل" above — nothing happens.</p>
+      </div>
+    </div>
+    <div class="pane after">
+      <div class="hd"><span>بعد — proposed</span><span class="verdict">named</span></div>
+      <div class="body">
+        <div class="card" style="padding:15px">
+          <label class="label" for="ph-fix">رقم الموبايل</label>
+          <input class="field field-fix" id="ph-fix" dir="ltr" placeholder="01xxxxxxxxx">
+        </div>
+        <div class="sr" style="margin-top:12px">VoiceOver reads:<br><span style="color:#7CFFB2">"رقم الموبايل, text field, empty"</span></div>
+        <p style="font-size:12.5px;color:var(--mist);margin:10px 0 0">Tap the words "رقم الموبايل" above — the field focuses.</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="note"><b>This is the biggest change by line count</b> — 51 labels and 107 inputs need matching ids. It's mechanical and safe, but it's most of the diff. If you'd rather keep batch 6 small, this is the one to split into its own pass.</p>
+</section>
+
+<section style="background:var(--shellup)">
+  <h2 style="margin-bottom:10px">What I'd need from you</h2>
+  <p class="lede" style="margin-bottom:12px">Reply with any of these and I'll start:</p>
+  <ul class="tight" style="font-size:14px;color:var(--foam)">
+    <li><b>Approve all six</b> — one branch, one PR, deploys itself on merge.</li>
+    <li><b>Drop #6</b> (the label wiring) if you want a small, quick diff first.</li>
+    <li><b>Flip #5</b> to all-Arabic-Indic numerals instead of all-Latin.</li>
+    <li><b>Change the gold.</b> <code>#6E572B</code> is my pick, but <code>#7D6331</code> also passes at 5.32:1 and stays brighter if the darker one feels too brown.</li>
+  </ul>
+  <p class="note" style="border-color:rgba(0,0,0,.08)">None of this touches behaviour, data, or any query. The riskiest thing in here is a padding change reflowing a row, which I'll check on a real screenshot before opening the PR.</p>
+</section>
+
+<footer>Salka — سالكة · batch 6 preview · contrast ratios computed from the live <code>tailwind.config.js</code></footer>
+</div>
+
+<dialog id="d1">
+  <div class="dlg">
+    <h3>تعديل الصنف</h3>
+    <p>اضغط Escape… مفيش حاجة بتحصل. لازم تدوس على زرار الإغلاق.</p>
+    <button class="btn btn-ghost" onclick="document.getElementById('d1').close()">✗ إغلاق</button>
+  </div>
+</dialog>
+<dialog id="d2">
+  <div class="dlg">
+    <h3>تعديل الصنف</h3>
+    <p>اضغط Escape — القائمة بتتقفل، والتركيز بيرجع لمكانه.</p>
+    <button class="btn btn-ghost" onclick="document.getElementById('d2').close()">✗ إغلاق</button>
+  </div>
+</dialog>
+
+<script>
+  // Pane 1 of section 4 demonstrates the CURRENT behaviour, so Escape must not work there.
+  document.getElementById('d1').addEventListener('cancel', e => e.preventDefault())
+</script>
+</body>
+</html>

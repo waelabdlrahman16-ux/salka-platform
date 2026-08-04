@@ -40,7 +40,7 @@ interface TrackData {
 }
 
 function fmtTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('ar-EG', { hour: 'numeric', minute: '2-digit' })
+  return new Date(iso).toLocaleTimeString('ar-EG-u-nu-latn', { hour: 'numeric', minute: '2-digit' })
 }
 
 export default function Track() {
@@ -287,7 +287,7 @@ export default function Track() {
             const target = new Date(new Date(o.created_at).getTime() + o.sla_minutes * 60000)
             const isLate = Date.now() > target.getTime()
             return (
-              <p className={`text-sm mt-1 flex items-center gap-1 ${isLate ? 'text-sand' : 'text-mist'}`}>
+              <p className={`text-sm mt-1 flex items-center gap-1 ${isLate ? 'text-sandink' : 'text-mist'}`}>
                 <Icon name="clock" className="w-3.5 h-3.5" />
                 {isLate ? 'اتأخر شوية عن الوقت المستهدف' : `الهدف: يوصلك قبل ${fmtTime(target.toISOString())}`}
               </p>
@@ -303,7 +303,7 @@ export default function Track() {
       )}
 
       {o.order_type === 'custom_request' && o.pricing_status === 'pending_quote' && (
-        <p className="text-sm text-sand bg-sand/10 rounded-xl p-3 mb-4">
+        <p className="text-sm text-sandink bg-sand/10 rounded-xl p-3 mb-4">
           💬 هنتصل بيك قريب نأكد السعر النهائي قبل ما نجهز الطلب
         </p>
       )}
@@ -426,7 +426,8 @@ export default function Track() {
               <span className="text-sm text-mist">المندوب</span>
               <div className="flex gap-1">
                 {[1,2,3,4,5].map(n => (
-                  <button key={n} onClick={() => setDriverRating(n)} className={n <= driverRating ? 'text-sand' : 'text-line'}>
+                  <button key={n} onClick={() => setDriverRating(n)} aria-label={`${n} من 5`}
+                    className={`grid place-items-center min-w-[44px] min-h-[44px] ${n <= driverRating ? 'text-sand' : 'text-mist/40'}`}>
                     <Icon name="star" className="w-4.5 h-4.5" />
                   </button>
                 ))}
@@ -436,7 +437,8 @@ export default function Track() {
               <span className="text-sm text-mist">المطعم</span>
               <div className="flex gap-1">
                 {[1,2,3,4,5].map(n => (
-                  <button key={n} onClick={() => setRestaurantRating(n)} className={n <= restaurantRating ? 'text-sand' : 'text-line'}>
+                  <button key={n} onClick={() => setRestaurantRating(n)} aria-label={`${n} من 5`}
+                    className={`grid place-items-center min-w-[44px] min-h-[44px] ${n <= restaurantRating ? 'text-sand' : 'text-mist/40'}`}>
                     <Icon name="star" className="w-4.5 h-4.5" />
                   </button>
                 ))}
@@ -488,7 +490,7 @@ export default function Track() {
       {canCancel && <p className="text-center text-xs text-mist mb-4">تقدر تلغي الطلب طول ما لسه قيد الانتظار</p>}
 
       {complaintSent ? (
-        <p className="text-sand text-sm text-center mb-4">✅ تم إرسال الشكوى — هنراجعها قريب</p>
+        <p className="text-sandink text-sm text-center mb-4">✅ تم إرسال الشكوى — هنراجعها قريب</p>
       ) : complaining ? (
         <div className="card p-4 mb-4">
           <p className="text-sm font-semibold mb-2">إيه المشكلة؟</p>

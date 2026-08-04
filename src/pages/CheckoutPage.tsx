@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useId } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
@@ -12,6 +12,7 @@ import LocationPreviewMap from '../components/LocationPreviewMap'
 import type { Compound, Discount, MenuItem, MenuItemAddon, MenuItemSize, Restaurant, Slot } from '../lib/types'
 
 export default function CheckoutPage() {
+  const fid = useId()
   const nav = useNavigate()
   const cart = useCart()
   const { customer } = useCustomerAuth()
@@ -214,7 +215,7 @@ export default function CheckoutPage() {
   if (!cart.restaurantId || lines.length === 0) {
     return (
       <div className="text-center py-16">
-        {removedNotice && <p className="text-sand text-sm mb-4 bg-sand/10 rounded-xl p-3 mx-4">{removedNotice}</p>}
+        {removedNotice && <p className="text-sandink text-sm mb-4 bg-sand/10 rounded-xl p-3 mx-4">{removedNotice}</p>}
         <p className="font-bold text-lg mb-1">مفيش حاجة في العربة</p>
         <button className="btn-sea mt-4" onClick={() => nav('/')}>تصفح المطاعم</button>
       </div>
@@ -226,11 +227,11 @@ export default function CheckoutPage() {
       <h1 className="text-2xl font-bold mb-4">تأكيد الطلب</h1>
 
       {removedNotice && (
-        <p className="text-sand text-sm mb-4 bg-sand/10 rounded-xl p-3">{removedNotice}</p>
+        <p className="text-sandink text-sm mb-4 bg-sand/10 rounded-xl p-3">{removedNotice}</p>
       )}
 
       {hasRx && (
-        <p className="text-sand text-sm mb-4 bg-sand/10 rounded-xl p-3">
+        <p className="text-sandink text-sm mb-4 bg-sand/10 rounded-xl p-3">
           💊 في صنف محتاج روشتة طبية — الصيدلية هتتواصل معاك تليفونيًا للتأكيد قبل التجهيز
         </p>
       )}
@@ -238,7 +239,7 @@ export default function CheckoutPage() {
       {scheduled && (
         <div className="mb-4">
           <h2 className="font-bold mb-2">فترة التوصيل</h2>
-          {slots.length === 0 && <p className="text-sm text-sand">لا توجد فترات متاحة حالياً</p>}
+          {slots.length === 0 && <p className="text-sm text-sandink">لا توجد فترات متاحة حالياً</p>}
           <div className="grid grid-cols-2 gap-2">
             {slots.map(sl => {
               const on = slot?.id === sl.id && slot?.scheduled_date === sl.scheduled_date
@@ -256,10 +257,10 @@ export default function CheckoutPage() {
 
       <div className="card p-4 mb-4 space-y-3">
         <h2 className="font-bold">عنوان التوصيل</h2>
-        <div><label className="label">الاسم *</label>
-          <input className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
-        <div><label className="label">رقم الموبايل *</label>
-          <input className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-red-400' : ''}`}
+        <div><label className="label" htmlFor={`${fid}-1`}>الاسم *</label>
+          <input id={`${fid}-1`} className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
+        <div><label className="label" htmlFor={`${fid}-2`}>رقم الموبايل *</label>
+          <input id={`${fid}-2`} className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-red-400' : ''}`}
             dir="ltr" value={phone} onChange={e => setPhone(e.target.value)}
             placeholder="01xxxxxxxxx" maxLength={13} />
           {phone.trim() && !isValidEgyptPhone(phone) && (
@@ -283,16 +284,16 @@ export default function CheckoutPage() {
           </>
         ) : (
           <>
-            <div><label className="label">المكان *</label>
-              <select className="field" value={compoundId ?? ''} onChange={e => setCompoundId(Number(e.target.value) || null)}>
+            <div><label className="label" htmlFor={`${fid}-3`}>المكان *</label>
+              <select id={`${fid}-3`} className="field" value={compoundId ?? ''} onChange={e => setCompoundId(Number(e.target.value) || null)}>
                 <option value="">اختر مكانك…</option>
                 {compounds.map(c => <option key={c.id} value={c.id}>{c.name} (~{c.est_travel_minutes} د)</option>)}
               </select></div>
-            <div><label className="label">رقم الشاليه / الفيلا *</label>
-              <input className="field" value={unit} onChange={e => setUnit(e.target.value)} placeholder="مثال: B4 - 204" /></div>
+            <div><label className="label" htmlFor={`${fid}-4`}>رقم الشاليه / الفيلا *</label>
+              <input id={`${fid}-4`} className="field" value={unit} onChange={e => setUnit(e.target.value)} placeholder="مثال: B4 - 204" /></div>
             {showLandmark || notes.trim() ? (
-              <div><label className="label">علامة مميزة (اختياري)</label>
-                <input className="field" value={notes} onChange={e => setNotes(e.target.value)} placeholder="مثال: بجوار حمام السباحة" autoFocus /></div>
+              <div><label className="label" htmlFor={`${fid}-5`}>علامة مميزة (اختياري)</label>
+                <input id={`${fid}-5`} className="field" value={notes} onChange={e => setNotes(e.target.value)} placeholder="مثال: بجوار حمام السباحة" autoFocus /></div>
             ) : (
               <button type="button" className="text-sea text-sm font-semibold" onClick={() => setShowLandmark(true)}>
                 + إضافة علامة مميزة (اختياري)
@@ -301,7 +302,7 @@ export default function CheckoutPage() {
           </>
         )}
 
-        <div><label className="label">ملاحظات على الطلب (اختياري)</label>
+        <div><label className="label" htmlFor={`${fid}-notes`}>ملاحظات على الطلب (اختياري)</label>
           <div className="flex flex-wrap gap-2 mb-2">
             {['من غير بصل', 'حار زيادة', 'اتصل قبل الوصول', 'اترك عند الباب'].map(preset => {
               const included = customerNote.split('، ').includes(preset)
@@ -316,7 +317,7 @@ export default function CheckoutPage() {
               )
             })}
           </div>
-          <textarea className="field" rows={2} value={customerNote} onChange={e => setCustomerNote(e.target.value)}
+          <textarea id={`${fid}-notes`} className="field" rows={2} value={customerNote} onChange={e => setCustomerNote(e.target.value)}
             placeholder="اكتب أي حاجة تانية…" /></div>
       </div>
 
@@ -341,7 +342,7 @@ export default function CheckoutPage() {
             <input type="radio" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} className="accent-sea w-4 h-4" />
           </label>
           {paymentMethod === 'cod' && finalTotal > codDepositThreshold && (
-            <p className="text-xs text-sand -mt-1 px-1">
+            <p className="text-xs text-sandink -mt-1 px-1">
               الطلب ده أكبر من {codDepositThreshold} ج.م، فهيتطلب عربون 50% ({Math.round(finalTotal / 2)} ج.م) عن طريق InstaPay قبل التجهيز، والباقي كاش عند الاستلام
             </p>
           )}
@@ -405,7 +406,7 @@ export default function CheckoutPage() {
       )}
 
       {walletFailed && (
-        <p className="text-sm text-sand bg-sand/10 rounded-xl p-3 mb-4">
+        <p className="text-sm text-sandink bg-sand/10 rounded-xl p-3 mb-4">
           مش قادرين نشوف رصيد محفظتك دلوقتي — لو عندك رصيد مش هيتخصم من الطلب ده
         </p>
       )}

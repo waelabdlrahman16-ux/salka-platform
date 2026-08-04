@@ -1,3 +1,4 @@
+import { useId } from 'react'
 export default function BasicInfoCard({
   name, setName, description, setDescription, category, setCategory, price, setPrice,
   available, setAvailable, imageUrl, uploading, imageError, onUpload,
@@ -13,6 +14,7 @@ export default function BasicInfoCard({
   availFrom: string; setAvailFrom: (v: string) => void
   availUntil: string; setAvailUntil: (v: string) => void
 }) {
+  const fid = useId()
   return (
     <div className="card p-4 mb-3">
       <p className="font-semibold text-sm mb-3">البيانات الأساسية</p>
@@ -27,24 +29,24 @@ export default function BasicInfoCard({
           {uploading ? 'جاري الرفع…' : (imageUrl ? '🖼️ تغيير الصورة' : '🖼️ إضافة صورة')}
         </label>
       </div>
-      {imageError && <p className="text-xs text-sand mb-3">{imageError}</p>}
+      {imageError && <p className="text-xs text-sandink mb-3">{imageError}</p>}
 
       <div className="space-y-3">
         <div>
-          <label className="label">الاسم</label>
-          <input className="field !h-9 !py-1.5 text-sm" value={name} onChange={e => setName(e.target.value)} />
+          <label className="label" htmlFor={`${fid}-1`}>الاسم</label>
+          <input id={`${fid}-1`} className="field !h-9 !py-1.5 text-sm" value={name} onChange={e => setName(e.target.value)} />
         </div>
         <div>
-          <label className="label">الوصف</label>
-          <textarea className="field !py-1.5 text-sm" rows={2} value={description} onChange={e => setDescription(e.target.value)} />
+          <label className="label" htmlFor={`${fid}-2`}>الوصف</label>
+          <textarea id={`${fid}-2`} className="field !py-1.5 text-sm" rows={2} value={description} onChange={e => setDescription(e.target.value)} />
         </div>
         <div>
-          <label className="label">القسم</label>
-          <input className="field !h-9 !py-1.5 text-sm" value={category} onChange={e => setCategory(e.target.value)} placeholder="مشويات، مشروبات..." />
+          <label className="label" htmlFor={`${fid}-3`}>القسم</label>
+          <input id={`${fid}-3`} className="field !h-9 !py-1.5 text-sm" value={category} onChange={e => setCategory(e.target.value)} placeholder="مشويات، مشروبات..." />
         </div>
         <div>
-          <label className="label">السعر</label>
-          <input className="field !h-9 !py-1.5 text-sm" type="number" value={price} onChange={e => setPrice(e.target.value)} />
+          <label className="label" htmlFor={`${fid}-4`}>السعر</label>
+          <input id={`${fid}-4`} className="field !h-9 !py-1.5 text-sm" type="number" value={price} onChange={e => setPrice(e.target.value)} />
         </div>
         <button className={`w-full py-2.5 rounded-xl text-sm font-semibold border-2 ${available ? 'border-emerald-500/40 text-emerald-700 bg-emerald-500/5' : 'border-red-400/40 text-red-600 bg-red-500/5'}`}
           onClick={() => setAvailable(!available)}>

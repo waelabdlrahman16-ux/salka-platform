@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { useDismissable } from '../lib/useDismissable'
 import { useAuth } from '../lib/auth'
 import { pingIds, askNotificationPermission } from '../lib/notify'
 import { registerPush } from '../lib/push'
@@ -51,6 +52,7 @@ export default function DriverPage() {
   const [driver, setDriver] = useState<Driver | null>(null)
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [rejecting, setRejecting] = useState<Assignment | null>(null)
+  const rejectingRef = useDismissable(() => setRejecting(null), !!rejecting)
   const [reason, setReason] = useState('')
   const [cashConfirmed, setCashConfirmed] = useState<Set<number>>(new Set())
   const [pool, setPool] = useState<PoolOrder[]>([])
@@ -459,7 +461,7 @@ export default function DriverPage() {
   if (!id) return <p className="text-mist text-center py-10">حسابك غير مرتبط بمندوب. تواصل مع الإدارة.</p>
   if (!driver) return <p className="text-mist">جاري التحميل…</p>
 
-  const fmt = (t: string | null) => t ? new Date(t).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : ''
+  const fmt = (t: string | null) => t ? new Date(t).toLocaleTimeString('ar-EG-u-nu-latn', { hour: '2-digit', minute: '2-digit' }) : ''
 
   return (
     <div className="max-w-lg mx-auto">
@@ -595,7 +597,7 @@ export default function DriverPage() {
           </div>
           <div>
             <p className="text-xs text-mist">كاش معاك دلوقتي</p>
-            {/* text-sand is ~2.7:1 on white -- below WCAG AA, and this is read
+            {/* text-sandink is ~2.7:1 on white -- below WCAG AA, and this is read
                 in direct sunlight. seadeep carries the same "money you owe"
                 meaning at a legible contrast. */}
             <p className="text-lg font-bold text-seadeep mt-0.5">{driver.cash_held ?? 0} ج.م</p>
@@ -622,7 +624,7 @@ export default function DriverPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-semibold">
-                        {new Date(sh.shift_date).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'numeric' })}
+                        {new Date(sh.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'numeric' })}
                       </p>
                       <p className="text-sm text-mist mt-0.5">{sh.start_time.slice(0,5)} — {sh.end_time.slice(0,5)}</p>
                     </div>
@@ -641,7 +643,7 @@ export default function DriverPage() {
                   )}
                   {requested && myRequestId && (
                     <div className="mt-3">
-                      <p className="text-sand text-sm">⏳ طلب الاستبدال معروض على باقي المندوبين</p>
+                      <p className="text-sandink text-sm">⏳ طلب الاستبدال معروض على باقي المندوبين</p>
                       <button className="btn-danger w-full mt-2 text-sm"
                         onClick={() => escalate(myRequestId)}>
                         محدش وافق — بلّغ الإدارة
@@ -665,7 +667,7 @@ export default function DriverPage() {
             {swaps.filter(s => !myOpenRequests.has(s.shift_id)).map(sw => (
               <div key={sw.request_id} className="card p-4 border-sand/40">
                 <p className="font-semibold">
-                  {new Date(sw.shift_date).toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'numeric' })}
+                  {new Date(sw.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'numeric' })}
                   {' '}· {sw.start_time.slice(0,5)}–{sw.end_time.slice(0,5)}
                 </p>
                 <p className="text-sm text-mist mt-1">مطلوبة من {sw.requested_by_name}</p>
@@ -702,7 +704,7 @@ export default function DriverPage() {
             ? stages.findIndex(s => s.key === 'Cash_Confirmed')
             : stages.findIndex(s => s.key === a.status)
           const statusColor = a.status === 'Delivered' ? 'bg-emerald-100 text-emerald-700'
-            : a.status === 'Offered' ? 'bg-sand/15 text-sand'
+            : a.status === 'Offered' ? 'bg-sand/15 text-sandink'
             : 'bg-sea/10 text-sea'
           const destLat = o.compounds?.latitude ?? null
           const destLng = o.compounds?.longitude ?? null
@@ -744,7 +746,7 @@ export default function DriverPage() {
                       const dotColor = !done && !current ? 'bg-line'
                         : isCashStage && current ? 'bg-sand' : 'bg-sea'
                       const labelColor = !done && !current ? 'text-mist'
-                        : isCashStage && current ? 'text-sand' : 'text-sea'
+                        : isCashStage && current ? 'text-sandink' : 'text-sea'
                       return (
                         <div key={s.key} className="flex flex-col items-center gap-1" style={{ width: `${100 / stages.length}%` }}>
                           <div className={`w-2.5 h-2.5 rounded-full ${dotColor}`} />
@@ -844,7 +846,7 @@ export default function DriverPage() {
                         disabled={!confirmed || isBusy(`deliver:${a.id}`)}
                         onConfirm={() => setStatus(a, 'Delivered')} />
                       {a.no_answer_reported_at ? (
-                        <p className="text-sand text-sm text-center">⏳ اتبلّغت الإدارة، مستنيين قرارهم</p>
+                        <p className="text-sandink text-sm text-center">⏳ اتبلّغت الإدارة، مستنيين قرارهم</p>
                       ) : !a.called_customer_at ? (
                         <button className="btn-ghost w-full text-sm" disabled={isBusy(`called:${a.id}`)} onClick={() => markCalledCustomer(a)}>
                           {isBusy(`called:${a.id}`) ? 'لحظة…' : '📞 اتصلت بالعميل ومردش'}
@@ -939,7 +941,7 @@ export default function DriverPage() {
       )}
 
       {rejecting && (
-        <div className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" onClick={() => setRejecting(null)}>
+        <div ref={rejectingRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true" onClick={() => setRejecting(null)}>
           <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold mb-3">سبب الرفض</h3>
             <input className="field" value={reason} onChange={e => setReason(e.target.value)} placeholder="مثال: بعيد عن منطقتي" />

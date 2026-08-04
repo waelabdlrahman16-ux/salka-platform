@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useDismissable } from '../lib/useDismissable'
 import { haversineKm } from '../lib/geo'
 import Icon from '../components/Icon'
 import type { Compound, Discount, Restaurant } from '../lib/types'
@@ -14,6 +15,10 @@ export default function Home() {
   const [discountedRestaurantIds, setDiscountedRestaurantIds] = useState<Set<number>>(new Set())
   const [loading, setLoading] = useState(true)
   const [picking, setPicking] = useState(false)
+  // Escape only closes the picker when there is something to fall back to --
+  // the same guard the backdrop uses. With no compound chosen and the query
+  // working, closing it would leave the page with no address at all.
+  const pickerRef = useDismissable(() => { if (selected || compoundsFailed) setPicking(false) }, picking)
   const [search, setSearch] = useState('')
   const [nearby, setNearby] = useState<Compound[] | null>(null)
   const [myCoords, setMyCoords] = useState<{ lat: number; lng: number } | null>(null)
@@ -177,13 +182,13 @@ export default function Home() {
                   <span className={r.is_open ? 'badge-open' : 'badge-closed'}>{r.is_open ? 'مفتوح' : 'مغلق'}</span>
                 </div>
                 {discountedRestaurantIds.has(r.id) && (
-                  <span className="inline-flex items-center gap-1 bg-sand/15 text-sand text-xs font-bold rounded-full px-2 py-0.5 mt-2">
+                  <span className="inline-flex items-center gap-1 bg-sand/15 text-sandink text-xs font-bold rounded-full px-2 py-0.5 mt-2">
                     🏷️ عروض وخصومات
                   </span>
                 )}
                 <p className="text-sm text-mist mt-1.5 leading-relaxed">{r.description}</p>
                 <div className="flex items-center gap-3 mt-3 text-sm text-mist">
-                  <span className="text-sand flex items-center gap-1"><Icon name="star" className="w-3.5 h-3.5" /> {r.rating}</span>
+                  <span className="flex items-center gap-1"><Icon name="star" className="w-3.5 h-3.5 text-sand" /> {r.rating}</span>
                   <span className="flex items-center gap-1">
                     {r.order_mode === 'pickup_request' ? '🛵 اطلب مندوب توصيل' : <><Icon name="clock" className="w-3.5 h-3.5" /> {eta(r)} دقيقة</>}
                   </span>
@@ -195,7 +200,7 @@ export default function Home() {
       )}
 
       {picking && (
-        <div className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true"
+        <div ref={pickerRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true"
           onClick={() => (selected || compoundsFailed) && setPicking(false)}>
           <div className="card w-full max-w-md p-5 max-h-[85vh] overflow-y-auto relative" onClick={e => e.stopPropagation()}>
             {/* The only way to dismiss this was tapping the backdrop *while a
@@ -229,7 +234,7 @@ export default function Home() {
               </button>
             </div>
 
-            {locationError && <p className="text-xs text-sand mb-3 text-center">{locationError}</p>}
+            {locationError && <p className="text-xs text-sandink mb-3 text-center">{locationError}</p>}
 
             {nearby && (
               <div className="mb-4">

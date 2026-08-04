@@ -96,7 +96,7 @@ export default function CartPage() {
   if (!cart.restaurantId || validLines.length === 0) {
     return (
       <div className="text-center py-16">
-        {removedNotice && <p className="text-sand text-sm mb-4 bg-sand/10 rounded-xl p-3 mx-4">{removedNotice}</p>}
+        {removedNotice && <p className="text-sandink text-sm mb-4 bg-sand/10 rounded-xl p-3 mx-4">{removedNotice}</p>}
         <p className="text-4xl mb-3">🛒</p>
         <p className="font-bold text-lg mb-1">عربتك فاضية</p>
         <p className="text-mist text-sm mb-4">لسه ما ضفتش أي حاجة من المطاعم</p>
@@ -112,7 +112,7 @@ export default function CartPage() {
         <button className="text-sm text-seadeep font-semibold" onClick={() => cart.clear()}>مسح الكل</button>
       </div>
       {restaurant && <p className="text-mist text-sm mb-4">من {restaurant.name}</p>}
-      {removedNotice && <p className="text-sand text-sm mb-4 bg-sand/10 rounded-xl p-3">{removedNotice}</p>}
+      {removedNotice && <p className="text-sandink text-sm mb-4 bg-sand/10 rounded-xl p-3">{removedNotice}</p>}
 
       <div className="space-y-3 mb-5">
         {validLines.map(l => {

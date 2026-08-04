@@ -111,7 +111,7 @@ export default function RestaurantDetail() {
         </div>
         <p className="text-mist mt-1.5">{restaurant.description}</p>
         <div className="flex items-center gap-3 mt-2 text-sm text-mist">
-          <span className="text-sand flex items-center gap-1"><Icon name="star" className="w-3.5 h-3.5" /> {restaurant.rating}</span>
+          <span className="flex items-center gap-1"><Icon name="star" className="w-3.5 h-3.5 text-sand" /> {restaurant.rating}</span>
           <span className="flex items-center gap-1"><Icon name="clock" className="w-3.5 h-3.5" /> {totalEta ? `يوصلك خلال ${totalEta} دقيقة تقريبًا` : `التحضير حوالي ${restaurant.prep_minutes} دقيقة`}</span>
         </div>
         {restaurant.order_mode === 'pickup_request' && (

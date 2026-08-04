@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { uploadVendorImage } from '../lib/upload'
+import { useDismissable } from '../lib/useDismissable'
 import type { Restaurant } from '../lib/types'
 
 const EMPTY = {
@@ -14,6 +15,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
   onClose: () => void
   onSaved: () => void
 }) {
+  const overlayRef = useDismissable(onClose)
   const [form, setForm] = useState(EMPTY)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -52,7 +54,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
   const inputCls = 'field !h-9 !py-1.5 text-sm'
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 grid place-items-end sm:place-items-center p-0 sm:p-4" onClick={onClose}>
+    <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 grid place-items-end sm:place-items-center p-0 sm:p-4" onClick={onClose}>
       <div className="w-full sm:max-w-md max-h-[90vh] overflow-y-auto bg-shellup rounded-t-2xl sm:rounded-2xl p-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3 px-1">
           <h2 className="font-bold text-lg text-foam">إضافة صنف — {restaurant.name}</h2>
