@@ -129,8 +129,22 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
     setEmailLinkSent(true)
   }
 
+  // The backdrop used to be an opaque `bg-night`, and App.tsx did not render
+  // <main> at all until this was dismissed -- so a first-time visitor's entire
+  // first impression was a login card on an empty page, with no restaurants, no
+  // prices and no evidence the service works. Ordering never required an account
+  // (settings.require_customer_login = 'false'), so the wall bought nothing and
+  // cost every visitor who was not ready to sign in to a brand they had not
+  // heard of. It is now translucent over the live app.
+  //
+  // Backdrop click dismisses only from the top level, the same rule Escape uses
+  // above and for the same reason: a dismiss mid-OTP would burn the code the
+  // customer had just been texted.
   return (
-    <div className="fixed inset-0 z-50 bg-night grid place-items-center p-4" role="dialog" aria-modal="true">
+    <div
+      className="fixed inset-0 z-50 bg-night/80 backdrop-blur-sm grid place-items-center p-4"
+      role="dialog" aria-modal="true"
+      onClick={e => { if (e.target === e.currentTarget && onSkip && mode === 'main') onSkip() }}>
       <div className="card w-full max-w-sm p-6 text-center relative">
         {/* Only at the top level -- the sub-steps already have their own
             "رجوع", and a dismiss from mid-OTP would burn the code just sent. */}

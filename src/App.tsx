@@ -137,32 +137,42 @@ function AppShell() {
         />
       )}
       {!isStaff && !loading && customer && !customer.phone && <PhonePrompt />}
-      {(isStaff || loading || customer || skipped) && (
-        <main
-          className="max-w-5xl mx-auto px-4 pb-28"
-          style={{ paddingTop: isStaff ? '1.5rem' : 'max(1.5rem, calc(env(safe-area-inset-top) + 0.75rem))' }}
-        >
-          <Suspense fallback={<div className="text-center py-16 text-mist">جاري التحميل…</div>}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/restaurant/:id" element={<RestaurantDetail />} />
-              <Route path="/cart" element={<CartPage />} />
-              <Route path="/checkout" element={<CheckoutPage />} />
-              <Route path="/custom-order" element={<CustomOrder />} />
-              <Route path="/my-orders" element={<MyOrders />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/offers" element={<Offers />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/track/:token" element={<Track />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/admin" element={<Protected role="admin"><Admin /></Protected>} />
-              <Route path="/driver" element={<Protected role="driver"><DriverPage /></Protected>} />
-              <Route path="/vendor" element={<Protected role="vendor"><Vendor /></Protected>} />
-              <Route path="/catalog" element={<Protected role="catalog"><Catalog /></Protected>} />
-            </Routes>
-          </Suspense>
-        </main>
-      )}
+      {/* The app now always renders. This used to be gated on
+          (isStaff || loading || customer || skipped), and CustomerLogin's
+          backdrop was an opaque bg-night, so a first-time customer's entire
+          first impression was a login card on an empty page -- no restaurants,
+          no prices, no evidence the service works. Ordering has never required
+          an account (settings.require_customer_login = 'false'), so that gate
+          turned an optional prompt into a hard wall in front of a brand nobody
+          in Sokhna has heard of yet.
+
+          The prompt still appears over the top, but it is no longer
+          load-bearing: the backdrop is translucent over the live app and a tap
+          anywhere outside the card dismisses it. */}
+      <main
+        className="max-w-5xl mx-auto px-4 pb-28"
+        style={{ paddingTop: isStaff ? '1.5rem' : 'max(1.5rem, calc(env(safe-area-inset-top) + 0.75rem))' }}
+      >
+        <Suspense fallback={<div className="text-center py-16 text-mist">جاري التحميل…</div>}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/restaurant/:id" element={<RestaurantDetail />} />
+            <Route path="/cart" element={<CartPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/custom-order" element={<CustomOrder />} />
+            <Route path="/my-orders" element={<MyOrders />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/offers" element={<Offers />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/track/:token" element={<Track />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/admin" element={<Protected role="admin"><Admin /></Protected>} />
+            <Route path="/driver" element={<Protected role="driver"><DriverPage /></Protected>} />
+            <Route path="/vendor" element={<Protected role="vendor"><Vendor /></Protected>} />
+            <Route path="/catalog" element={<Protected role="catalog"><Catalog /></Protected>} />
+          </Routes>
+        </Suspense>
+      </main>
       {!isStaff && (
         <footer className="max-w-5xl mx-auto px-4 pb-8 text-center">
           <Link to="/terms" className="inline-flex items-center justify-center min-h-[44px] px-3 text-xs text-mist hover:text-foam">الشروط وسياسة الخصوصية</Link>
