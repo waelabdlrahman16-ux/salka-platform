@@ -1,0 +1,72 @@
+import { useEffect, useState } from 'react'
+import { enablePush, pushPermission, pushSupport } from '../lib/push'
+
+/**
+ * Explicit opt-in control for notifications.
+ *
+ * Deliberately a button rather than a prompt on mount. Browsers require a user
+ * gesture for a permission request to be trustworthy, Chrome downranks origins
+ * that ask on load, and -- most practically -- a driver who dismisses the
+ * dialog once can never be asked again by that origin. It is worth one tap to
+ * ask at a moment the person understands why.
+ *
+ * Renders nothing when there is nothing useful to offer: already granted, no
+ * VAPID key configured yet, or a browser without web push (iOS Safari in a tab
+ * rather than installed to the Home Screen).
+ */
+export default function EnablePushButton({
+  onToken,
+  label = 'فعّل تنبيهات الطلبات',
+}: {
+  onToken: (token: string) => void
+  label?: string
+}) {
+  const [support, setSupport] = useState(() => pushSupport())
+  const [permission, setPermission] = useState(() => pushPermission())
+  const [busy, setBusy] = useState(false)
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    setSupport(pushSupport())
+    setPermission(pushPermission())
+  }, [])
+
+  if (support === 'unsupported' || support === 'unconfigured') return null
+  if (permission === 'granted') return null
+
+  // Denied is a dead end until the person changes it in browser settings, so
+  // say that plainly instead of showing a button that can no longer do
+  // anything -- a second click would not even produce a dialog.
+  if (permission === 'denied') {
+    return (
+      <p className="text-xs text-sandink bg-sand/10 rounded-xl p-3 mb-3">
+        التنبيهات متمنوعة من إعدادات المتصفح. لازم تسمح بيها من إعدادات الموقع عشان توصلك الطلبات وانت مقفل الشاشة.
+      </p>
+    )
+  }
+
+  return (
+    <div className="mb-3">
+      <button
+        className="btn-sea w-full !py-3"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true); setFailed(false)
+          const ok = await enablePush(onToken)
+          setBusy(false)
+          setPermission(pushPermission())
+          if (!ok) setFailed(true)
+        }}>
+        {busy ? 'جاري التفعيل…' : `🔔 ${label}`}
+      </button>
+      <p className="text-xs text-mist mt-1.5 text-center">
+        من غير التنبيهات لازم تسيب الصفحة مفتوحة عشان تعرف إن في طلب جديد
+      </p>
+      {failed && (
+        <p className="text-xs text-red-600 bg-red-500/10 rounded-xl p-2.5 mt-2">
+          مش قادرين نفعّل التنبيهات دلوقتي — جرب تاني، ولو المشكلة اتكررت افتح الموقع من المتصفح مباشرة
+        </p>
+      )}
+    </div>
+  )
+}

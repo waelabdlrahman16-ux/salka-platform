@@ -4,6 +4,7 @@ import { useDismissable } from '../lib/useDismissable'
 import { useAuth } from '../lib/auth'
 import { pingIds, askNotificationPermission } from '../lib/notify'
 import { registerPush } from '../lib/push'
+import EnablePushButton from '../components/EnablePushButton'
 import { startLocationReporting, stopLocationReporting } from '../lib/geolocation'
 import type { Assignment, Driver, Shift, SwapRequest } from '../lib/types'
 import Icon from '../components/Icon'
@@ -472,8 +473,9 @@ export default function DriverPage() {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span className={driver.available ? 'badge-open' : 'badge-closed'}>{driverStatusLabel(driver.status)}</span>
-          {/* Push does not work yet and backgrounded tabs get their timers
-              throttled, so the driver needs a way to force a check. */}
+          {/* Kept even now that push works: a backgrounded tab still gets its
+              timers throttled, and a driver who declined notifications has no
+              other way to force a check. */}
           <button
             className="w-11 h-11 rounded-full bg-shellup grid place-items-center text-lg disabled:opacity-50"
             aria-label="تحديث"
@@ -483,6 +485,12 @@ export default function DriverPage() {
           </button>
         </div>
       </div>
+
+      {/* The single most useful control on this page. Without it a driver has
+          to keep the tab open and foregrounded to learn an order exists. */}
+      <EnablePushButton
+        onToken={pushToken => { supabase.rpc('save_my_push_token', { p_push_token: pushToken }) }}
+      />
 
       {(syncFailed || (lastSyncAt !== null && Date.now() - lastSyncAt > STALE_AFTER_MS)) && (
         <div className="bg-sand/15 border border-sand/40 rounded-xl p-3 mb-4 flex items-center justify-between gap-3">

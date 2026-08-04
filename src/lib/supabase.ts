@@ -8,6 +8,3 @@ const key = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_rI0HsZAc1W
 
 export const supabase = createClient(url, key)
 
-export const DELIVERY_FEE = 50
-export const DRIVER_EARNING = 40
-export const ADMIN_AMOUNT = 10
