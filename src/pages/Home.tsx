@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useDismissable } from '../lib/useDismissable'
 import { haversineKm } from '../lib/geo'
+import { useDeliveryQuote } from '../lib/deliveryQuote'
 import Icon from '../components/Icon'
 import type { Compound, Discount, Restaurant } from '../lib/types'
 
@@ -120,6 +121,8 @@ export default function Home() {
   }
 
   const selected = compounds.find(c => c.id === compoundId)
+  // Authoritative, same source as the cart and checkout -- never a local guess.
+  const { fee: deliveryFee, quote: deliveryQuote } = useDeliveryQuote(compoundId)
   const eta = (r: Restaurant) => selected ? r.prep_minutes + selected.est_travel_minutes : r.prep_minutes
   const catalogRestaurants = restaurants.filter(r =>
     r.order_mode !== 'custom_request' && r.vendor_type !== 'pharmacy' && r.vendor_type !== 'supermarket')
@@ -136,6 +139,23 @@ export default function Home() {
           </span>
         </button>
       </div>
+
+      {/* The delivery fee used to appear for the first time in the cart. It is
+          distance-based and can be 350 ج.م, so someone adding a 90 ج.م burger
+          from a far compound met a total three times what they expected, at the
+          last step. The compound is chosen before anything else is visible, so
+          the fee is knowable this whole time -- state it up front and let people
+          decide before they build a basket. Same server quote the cart uses. */}
+      {!picking && !loading && compoundId && deliveryFee !== null && (
+        <p className="text-sm text-mist bg-shellup rounded-xl px-3.5 py-2.5 mb-4 flex items-center gap-2">
+          <Icon name="locationDot" className="w-3.5 h-3.5 shrink-0" />
+          <span>
+            التوصيل لـ{selected ? ` ${selected.name}` : ''}
+            <span className="text-foam font-semibold"> {deliveryFee} ج.م</span>
+            {deliveryQuote ? ` · ${deliveryQuote.distance_km} كم` : ''}
+          </span>
+        </p>
+      )}
 
       {!picking && !loading && compoundId && (
         <div className="grid grid-cols-2 gap-3 mb-6">

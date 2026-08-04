@@ -7,6 +7,7 @@ import ProductDetailSheet from '../components/ProductDetailSheet'
 import CustomizeSheet from '../components/CustomizeSheet'
 import Icon from '../components/Icon'
 import { isItemAvailableNow } from '../lib/itemAvailability'
+import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { applyDiscount, effectiveDiscount } from '../lib/discounts'
 import type { Compound, Discount, MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemSize, Restaurant } from '../lib/types'
 
@@ -85,6 +86,7 @@ export default function RestaurantDetail() {
   const compoundId = sessionStorage.getItem('salka_compound_id')
   const selectedCompound = compounds.find(c => String(c.id) === compoundId)
   const totalEta = restaurant && selectedCompound ? restaurant.prep_minutes + selectedCompound.est_travel_minutes : null
+  const { fee: deliveryFee } = useDeliveryQuote(compoundId ? Number(compoundId) : null)
 
   if (loadFailed) return (
     <div className="card p-6 text-center max-w-sm mx-auto mt-6">
@@ -110,9 +112,17 @@ export default function RestaurantDetail() {
           <span className={restaurant.is_open ? 'badge-open' : 'badge-closed'}>{restaurant.is_open ? 'مفتوح' : 'مغلق'}</span>
         </div>
         <p className="text-mist mt-1.5">{restaurant.description}</p>
-        <div className="flex items-center gap-3 mt-2 text-sm text-mist">
+        <div className="flex items-center gap-3 mt-2 text-sm text-mist flex-wrap">
           <span className="flex items-center gap-1"><Icon name="star" className="w-3.5 h-3.5 text-sand" /> {restaurant.rating}</span>
           <span className="flex items-center gap-1"><Icon name="clock" className="w-3.5 h-3.5" /> {totalEta ? `يوصلك خلال ${totalEta} دقيقة تقريبًا` : `التحضير حوالي ${restaurant.prep_minutes} دقيقة`}</span>
+          {/* Stated here as well as on Home: this is the screen where a basket
+              actually gets built, and the fee is the number most likely to
+              change someone's mind. Server quote, never a local estimate. */}
+          {deliveryFee !== null && (
+            <span className="flex items-center gap-1">
+              <Icon name="locationDot" className="w-3.5 h-3.5" /> التوصيل <span className="text-foam font-semibold">{deliveryFee} ج.م</span>
+            </span>
+          )}
         </div>
         {restaurant.order_mode === 'pickup_request' && (
           <p className="text-sm bg-shellup/60 rounded-xl p-3 mt-3">
