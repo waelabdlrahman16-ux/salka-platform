@@ -43,7 +43,16 @@ export default function CheckoutPage() {
   const [walletBalance, setWalletBalance] = useState(0)
   const [walletFailed, setWalletFailed] = useState(false)
   const [compoundsFailed, setCompoundsFailed] = useState(false)
-  const [codDepositThreshold, setCodDepositThreshold] = useState(300)
+  // null until the server answers. This used to default to 300 while
+  // settings.cod_deposit_threshold_egp says 1000, so for the moment between
+  // first paint and the settings fetch landing, a 451 ج.م order was told it
+  // needed a 208 ج.م InstaPay deposit that it does not need -- a false
+  // statement about payment terms, on the checkout screen, in the second
+  // someone is deciding whether to go through with it. On a *failed* fetch it
+  // was not a flash at all: every order between 300 and 1000 kept the warning.
+  // Same rule as the delivery fee and the service fee: never guess a
+  // server-owned number.
+  const [codDepositThreshold, setCodDepositThreshold] = useState<number | null>(null)
   const [useWallet, setUseWallet] = useState(true)
 
   useEffect(() => {
@@ -341,7 +350,8 @@ export default function CheckoutPage() {
             <span className="font-semibold flex-1">كاش عند الاستلام</span>
             <input type="radio" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} className="accent-sea w-4 h-4" />
           </label>
-          {paymentMethod === 'cod' && finalTotal > codDepositThreshold && (
+          {paymentMethod === 'cod' && serviceFee !== null && deliveryFee !== null
+            && codDepositThreshold !== null && finalTotal > codDepositThreshold && (
             <p className="text-xs text-sandink -mt-1 px-1">
               الطلب ده أكبر من {codDepositThreshold} ج.م، فهيتطلب عربون 50% ({Math.round(finalTotal / 2)} ج.م) عن طريق InstaPay قبل التجهيز، والباقي كاش عند الاستلام
             </p>
