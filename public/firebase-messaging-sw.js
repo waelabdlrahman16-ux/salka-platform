@@ -27,24 +27,21 @@ firebase.initializeApp({
   appId: '1:298864964514:web:ffa48ef7432992fdc538fb',
 })
 
-const messaging = firebase.messaging()
-
-messaging.onBackgroundMessage(payload => {
-  const title = payload?.notification?.title || 'سالكة'
-  self.registration.showNotification(title, {
-    body: payload?.notification?.body || '',
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
-    dir: 'rtl',
-    lang: 'ar',
-    // Orders are the only thing that pushes. Tagging by order id means a
-    // status change replaces the previous banner for that order instead of
-    // stacking five of them on a driver's lock screen.
-    tag: payload?.data?.order_id ? `order-${payload.data.order_id}` : 'salka',
-    renotify: true,
-    data: payload?.data || {},
-  })
-})
+// Deliberately NOT calling showNotification here.
+//
+// A message carrying a `notification` block is auto-displayed by the browser,
+// and onBackgroundMessage fires for that same message. Displaying it here as
+// well produced TWO banners per order -- confirmed by sending one message and
+// reading back two entries from registration.getNotifications(): one bare
+// (tag "", dir "auto", no icon) from the SDK, one styled from this handler.
+//
+// The styling now travels with the message instead, in send-push's `webpush`
+// block (icon, badge, dir rtl, lang ar, tag order-<id>, renotify), so the
+// single auto-displayed banner is the correct-looking one. See send-push v10.
+//
+// Registering firebase.messaging() at all is still required: without it the
+// SDK does not install its push listener and background messages are dropped.
+firebase.messaging()
 
 // Tapping the banner should land on the relevant screen, and should focus an
 // already-open tab rather than opening a second copy of the app.
