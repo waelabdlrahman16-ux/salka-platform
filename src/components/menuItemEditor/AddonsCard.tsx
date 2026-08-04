@@ -6,10 +6,14 @@ type NewAddonDraft = { name: string; price: string; imageUrl: string | null; upl
 
 export default function AddonsCard({
   groups, addons, newGroup, setNewGroup, newAddon, setNewAddon,
-  onAddGroup, onRemoveGroup, onAddAddon, onRemoveAddon
+  onAddGroup, onRemoveGroup, onAddAddon, onRemoveAddon,
+  onApplyPreset, onRenameGroup, onAddonPriceChange
 }: {
   groups: MenuItemAddonGroup[]
   addons: MenuItemAddon[]
+  onApplyPreset: (kind: 'required-one' | 'extras') => void
+  onRenameGroup: (id: number, name: string) => void
+  onAddonPriceChange: (id: number, price: string) => void
   newGroup: { name: string; kind: 'multi' | 'swap'; required: boolean; maxSelect: string }
   setNewGroup: (v: { name: string; kind: 'multi' | 'swap'; required: boolean; maxSelect: string }) => void
   newAddon: Record<number, NewAddonDraft>
@@ -34,19 +38,44 @@ export default function AddonsCard({
     <div className="card p-4 mb-3">
       <p className="font-semibold text-sm mb-1">الإضافات ومجموعات الاختيار (اختياري)</p>
       <p className="text-xs text-mist mb-3">
-        فيه نوعين: <b>إضافات عادية</b> زي "جبنة إضافية" (العميل يختار كذا واحدة)، أو <b>تبديل</b> زي بوكس فيه أكتر من ساندوتش وعايز العميل يختار نوع كل واحد (اختيار واحد بس من كل مجموعة).
+        فيه نوعين: <b>إضافات عادية</b> زي "جبنة إضافية" (العميل يختار كذا واحدة)، أو <b>اختيار مطلوب</b> زي كومبو فيه ٣ ساندوتشات والعميل لازم يختار واحد منهم.
       </p>
+
+      {/* The combo shape used to take three decisions to express one intent:
+          type a name, pick "تبديل", tick "مطلوب". Two buttons now. */}
+      {groups.length === 0 && (
+        <div className="mb-3">
+          <p className="text-xs font-semibold mb-1.5">ابدأ بضغطة واحدة</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button className="text-xs py-2.5 px-2 rounded-lg border-2 border-line hover:border-sea text-right"
+              onClick={() => onApplyPreset('required-one')}>
+              <span className="block font-bold">🔁 اختيار مطلوب</span>
+              <span className="block text-mist mt-0.5">كومبو — يختار واحد بس، ولازم يختار</span>
+            </button>
+            <button className="text-xs py-2.5 px-2 rounded-lg border-2 border-line hover:border-sea text-right"
+              onClick={() => onApplyPreset('extras')}>
+              <span className="block font-bold">➕ إضافات</span>
+              <span className="block text-mist mt-0.5">اختياري — يختار قد ما يحب</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {groups.map(g => {
         const draft = draftFor(g.id)
         const isSwap = g.max_select === 1
         return (
           <div key={g.id} className="bg-night border border-line rounded-xl p-3 mb-3">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="font-semibold text-sm">{g.name}</p>
+            <div className="flex items-center justify-between mb-3 gap-2">
+              <div className="flex-1 min-w-0">
+                {/* A preset names the group for you; renaming it should not mean
+                    deleting it and losing every option inside. */}
+                <input className="field !py-1 !text-sm font-semibold w-full"
+                  defaultValue={g.name} aria-label="اسم المجموعة"
+                  onBlur={e => { if (e.target.value.trim() !== g.name) onRenameGroup(g.id, e.target.value) }}
+                  onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }} />
                 <p className="text-xs text-mist mt-0.5">
-                  {isSwap ? '🔁 تبديل — اختيار واحد بس' : '➕ إضافات — أكتر من واحدة'}
+                  {isSwap ? '🔁 اختيار واحد بس' : '➕ إضافات — أكتر من واحدة'}
                   {g.min_select > 0 && <span className="text-sandink"> · مطلوب</span>}
                   {!isSwap && g.max_select != null && <span> · حد أقصى {g.max_select}</span>}
                 </p>
@@ -60,9 +89,13 @@ export default function AddonsCard({
                   {a.image_url
                     ? <img src={a.image_url} alt="" className="w-9 h-9 rounded-lg object-cover shrink-0" />
                     : <div className="w-9 h-9 rounded-lg bg-shellup shrink-0" />}
-                  <span className="flex-1">{a.name}</span>
-                  <span className="text-mist">{a.price > 0 ? `+${a.price} ج.م` : 'مجانًا'}</span>
-                  <button className="text-red-500 text-xs" onClick={() => onRemoveAddon(a.id)}>حذف</button>
+                  <span className="flex-1 min-w-0 truncate">{a.name}</span>
+                  <input className="field !py-1 !w-16 !text-sm text-center" type="number" inputMode="numeric"
+                    defaultValue={String(a.price)} aria-label={`سعر ${a.name}`}
+                    onBlur={e => { if (Number(e.target.value) !== Number(a.price)) onAddonPriceChange(a.id, e.target.value) }}
+                    onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }} />
+                  <span className="text-xs text-mist shrink-0">{Number(a.price) > 0 ? 'ج.م' : 'مجانًا'}</span>
+                  <button className="text-red-500 text-xs shrink-0" onClick={() => onRemoveAddon(a.id)}>حذف</button>
                 </div>
               ))}
               {addons.filter(a => a.group_id === g.id).length === 0 && (

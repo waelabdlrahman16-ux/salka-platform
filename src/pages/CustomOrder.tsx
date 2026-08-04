@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { artFor } from '../lib/categoryArt'
-import { getSessionToken } from '../lib/customerAuth'
+import { getSessionToken, useCustomerAuth } from '../lib/customerAuth'
 import type { Compound, MenuItem, Restaurant, Slot } from '../lib/types'
 
 export default function CustomOrder() {
@@ -47,6 +47,46 @@ export default function CustomOrder() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [addressLoaded, setAddressLoaded] = useState(false)
+
+  const { customer } = useCustomerAuth()
+  const [savedAddresses, setSavedAddresses] = useState<
+    { id: number; label: string; compound_id: number; compound_name: string; unit_number: string; notes: string | null; is_default: boolean }[]
+  >([])
+  const [addressExpanded, setAddressExpanded] = useState(false)
+  const [showLandmark, setShowLandmark] = useState(false)
+
+  // A signed-in customer already told us their name and number when they made
+  // the account, and their address the last time they ordered. Asking again is
+  // not a safety check -- it is five fields between someone with a headache and
+  // a box of paracetamol.
+  //
+  // Only fills blanks, never overwrites: `customer` resolves asynchronously, so
+  // a plain assignment would wipe whatever had been typed while auth was still
+  // loading.
+  useEffect(() => {
+    if (!customer) return
+    setName(prev => prev.trim() ? prev : (customer.name ?? ''))
+    setPhone(prev => prev.trim() ? prev : (customer.phone ?? prev))
+  }, [customer?.id, customer?.name, customer?.phone])
+
+  useEffect(() => {
+    if (!customer) { setSavedAddresses([]); return }
+    supabase.rpc('my_customer_addresses').then(({ data, error: err }) => {
+      if (err) return
+      const list = (data as typeof savedAddresses) ?? []
+      setSavedAddresses(list)
+      const preferred = list.find(a => a.is_default) ?? list[0]
+      if (!preferred) return
+      setCompoundId(prev => prev ?? preferred.compound_id)
+      setUnit(prev => prev.trim() ? prev : preferred.unit_number)
+      setAddrNotes(prev => prev.trim() ? prev : (preferred.notes ?? ''))
+      // The debounced last_address_for_phone lookup below exists for guests.
+      // An account address is better than a phone-number guess, so latch the
+      // flag and stop that fetch from firing and overwriting nothing usefully.
+      setAddressLoaded(true)
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customer?.id])
 
   useEffect(() => {
     if (!isValidEgyptPhone(phone) || addressLoaded) return
@@ -149,8 +189,14 @@ export default function CustomOrder() {
   const { fee: deliveryFee, quote, loading: feeLoading, failed: feeFailed, retry: retryFee } =
     useDeliveryQuote(compoundId)
   const scheduled = vendor?.vendor_type === 'supermarket'
-  const valid = vendor && name.trim() && isValidEgyptPhone(phone) && compoundId && unit.trim()
+  const addressComplete = !!(name.trim() && isValidEgyptPhone(phone) && compoundId && unit.trim())
+  const valid = vendor && addressComplete
     && lines.length > 0 && deliveryFee !== null && (!scheduled || !!slot)
+
+  // Collapse only for someone whose details we actually have. A guest, or a
+  // signed-in customer with a gap (no saved unit number yet), still gets the
+  // form -- a summary card with a blank in it is worse than the form.
+  const collapsedAddress = !addressExpanded && !!customer && addressComplete && !!selectedCompound
 
   async function submit() {
     if (!vendor || !valid) return
@@ -331,24 +377,77 @@ export default function CustomOrder() {
         </div>
       )}
 
-      <div className="card p-4 mb-4 space-y-3">
-        <h2 className="font-bold">عنوان التوصيل</h2>
-        <div><label className="label" htmlFor={`${fid}-2`}>الاسم *</label>
-          <input id={`${fid}-2`} className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
-        <div><label className="label" htmlFor={`${fid}-3`}>رقم الموبايل *</label>
-          <input id={`${fid}-3`} className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-red-400' : ''}`}
-            dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} placeholder="01xxxxxxxxx" maxLength={13} />
-          {phone.trim() && !isValidEgyptPhone(phone) && <p className="text-xs text-red-600 mt-1">{PHONE_HINT}</p>}</div>
-        <div><label className="label" htmlFor={`${fid}-4`}>المكان *</label>
-          <select id={`${fid}-4`} className="field" value={compoundId ?? ''} onChange={e => setCompoundId(Number(e.target.value) || null)}>
-            <option value="">اختر مكانك…</option>
-            {compounds.map(c => <option key={c.id} value={c.id}>{c.name} (~{c.est_travel_minutes} د)</option>)}
-          </select></div>
-        <div><label className="label" htmlFor={`${fid}-5`}>رقم الشاليه / الفيلا *</label>
-          <input id={`${fid}-5`} className="field" value={unit} onChange={e => setUnit(e.target.value)} placeholder="مثال: B4 - 204" /></div>
-        <div><label className="label" htmlFor={`${fid}-6`}>علامة مميزة (اختياري)</label>
-          <input id={`${fid}-6`} className="field" value={addrNotes} onChange={e => setAddrNotes(e.target.value)} placeholder="مثال: بجوار حمام السباحة" /></div>
-      </div>
+      {/* Six fields collapse to one line as soon as we already know the answers.
+          A signed-in customer with a saved address sees a summary and a تغيير
+          button; the inputs only exist for someone we have never met, or for
+          someone changing something. */}
+      {collapsedAddress ? (
+        <button type="button" className="w-full card p-4 mb-4 text-right flex items-start gap-3 border-sea/40"
+          onClick={() => setAddressExpanded(true)}>
+          <span className="text-xl leading-none mt-0.5">📍</span>
+          <span className="flex-1 min-w-0">
+            <span className="block font-bold text-sm">{selectedCompound?.name} · {unit}</span>
+            <span className="block text-xs text-mist mt-0.5 truncate">{name} · <span dir="ltr">{phone}</span></span>
+          </span>
+          <span className="text-sea text-xs font-semibold shrink-0 mt-1">✎ تغيير</span>
+        </button>
+      ) : (
+        <div className="card p-4 mb-4 space-y-3">
+          <h2 className="font-bold">عنوان التوصيل</h2>
+
+          {savedAddresses.length > 0 && (
+            <div>
+              <p className="label">عناوينك المحفوظة</p>
+              <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
+                {savedAddresses.map(a => {
+                  const on = a.compound_id === compoundId && a.unit_number === unit
+                  return (
+                    <button key={a.id} type="button"
+                      className={`shrink-0 text-right rounded-xl border-2 px-3 py-2 min-h-[44px] ${on ? 'border-sea bg-sea/5' : 'border-line'}`}
+                      onClick={() => {
+                        setCompoundId(a.compound_id)
+                        setUnit(a.unit_number)
+                        setAddrNotes(a.notes ?? '')
+                        setAddressExpanded(false)
+                      }}>
+                      <span className="block text-sm font-bold">{a.label || a.compound_name}</span>
+                      <span className="block text-xs text-mist">{a.compound_name} · {a.unit_number}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          <div><label className="label" htmlFor={`${fid}-2`}>الاسم *</label>
+            <input id={`${fid}-2`} className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
+          <div><label className="label" htmlFor={`${fid}-3`}>رقم الموبايل *</label>
+            <input id={`${fid}-3`} className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-red-400' : ''}`}
+              dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} placeholder="01xxxxxxxxx" maxLength={13} />
+            {phone.trim() && !isValidEgyptPhone(phone) && <p className="text-xs text-red-600 mt-1">{PHONE_HINT}</p>}</div>
+          <div><label className="label" htmlFor={`${fid}-4`}>المكان *</label>
+            <select id={`${fid}-4`} className="field" value={compoundId ?? ''} onChange={e => setCompoundId(Number(e.target.value) || null)}>
+              <option value="">اختر مكانك…</option>
+              {compounds.map(c => <option key={c.id} value={c.id}>{c.name} (~{c.est_travel_minutes} د)</option>)}
+            </select></div>
+          <div><label className="label" htmlFor={`${fid}-5`}>رقم الشاليه / الفيلا *</label>
+            <input id={`${fid}-5`} className="field" value={unit} onChange={e => setUnit(e.target.value)} placeholder="مثال: B4 - 204" /></div>
+
+          {/* Optional, and behind a disclosure. It was a permanent sixth field
+              that almost everyone left blank and everyone had to scroll past. */}
+          {/* Also open whenever there is already a landmark to show -- a saved
+              address can carry one, and a value that is submitted but invisible
+              is worse than no disclosure at all. */}
+          {showLandmark || addrNotes.trim() ? (
+            <div><label className="label" htmlFor={`${fid}-6`}>علامة مميزة</label>
+              <input id={`${fid}-6`} className="field" value={addrNotes} onChange={e => setAddrNotes(e.target.value)} placeholder="مثال: بجوار حمام السباحة" /></div>
+          ) : (
+            <button type="button" className="text-xs text-sea font-semibold" onClick={() => setShowLandmark(true)}>
+              + ضيف علامة مميزة (اختياري)
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Delivery is known up front even though the items aren't priced yet --
           the customer used to first see this charge on the tracking page. */}

@@ -86,31 +86,27 @@ function BottomNav() {
   // was to offer a choice between... the pharmacy and the supermarket. Three
   // cards, two destinations, one of them reachable two ways.
   //
-  // They are destinations, not content, which is what a nav bar is for. `emoji`
-  // rather than an Icon because there is no pill or trolley in the icon set and
-  // one recognisable glyph beats two vague ones.
+  // ONE tab, not two. They were briefly split into صيدلية and ماركت, which put
+  // six items in a bar that is about 60px per slot on a phone -- and two of
+  // those items led to the same route, differing only by a query string, so the
+  // highlight had to parse the URL to tell them apart. They are one errand
+  // ("something that isn't a restaurant"), so they are one destination, and the
+  // choice between them happens on the screen where there is room to label it.
+  //
+  // `emoji` rather than an Icon because there is no trolley in the icon set.
   const items = [
     { to: '/', label: 'الرئيسية', icon: 'house' as const },
-    { to: '/custom-order?type=pharmacy', match: '/custom-order', label: 'صيدلية', emoji: '💊' },
-    { to: '/custom-order?type=supermarket', match: '/custom-order', label: 'ماركت', emoji: '🛒' },
+    { to: '/custom-order', label: 'صيدلية وماركت', emoji: '🛒' },
     { to: '/offers', label: 'العروض', icon: 'moneyBill' as const },
     { to: '/cart', label: 'عربتي', icon: 'bagShopping' as const, badge: cart.count },
     { to: '/profile', label: 'حسابي', icon: 'rectangleList' as const },
   ]
 
-  const search = useLocation().search
-
   return (
     <nav className="fixed bottom-0 inset-x-0 z-40 bg-shell/95 backdrop-blur border-t border-line" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-      <div className="max-w-5xl mx-auto grid grid-cols-6">
+      <div className="max-w-5xl mx-auto grid grid-cols-5">
         {items.map(it => {
-          // Both pharmacy and supermarket render at /custom-order, so the path
-          // alone cannot say which one is open -- the query string decides.
-          const active = it.to === '/'
-            ? pathname === '/'
-            : it.match
-              ? pathname.startsWith(it.match) && search === it.to.slice(it.to.indexOf('?'))
-              : pathname.startsWith(it.to)
+          const active = it.to === '/' ? pathname === '/' : pathname.startsWith(it.to)
           return (
             <Link key={it.to} to={it.to}
               className={`relative flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-semibold ${active ? 'text-sea' : 'text-mist'}`}>
@@ -124,7 +120,10 @@ function BottomNav() {
                   </span>
                 )}
               </span>
-              {it.label}
+              {/* Wraps rather than overflows: "صيدلية وماركت" is twice the
+                  length of the other four labels and a 5-column bar on a 360px
+                  phone gives each slot about 70px. */}
+              <span className="block text-center leading-tight px-0.5">{it.label}</span>
             </Link>
           )
         })}

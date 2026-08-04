@@ -115,6 +115,34 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
     loadOptions()
   }
 
+  /**
+   * One tap for the shapes that come up constantly -- "عادي / دوبل" on a
+   * sandwich, "وسط / كبير" on a pizza.
+   *
+   * Every row is seeded at the item's own base price rather than at a guessed
+   * multiple. A guessed price would be wrong silently; an identical price is
+   * wrong loudly, and SizesCard says so until it is edited. Editing is now
+   * inline, so fixing it is one tap and a number, not delete-and-re-add.
+   */
+  async function applySizePreset(names: string[]) {
+    const base = Number(price) || 0
+    const existing = new Set(sizes.map(s => s.name))
+    const rows = names.filter(n => !existing.has(n)).map((n, i) => ({
+      menu_item_id: item.id, name: n, price: base,
+      is_default: sizes.length === 0 && i === 0, display_order: sizes.length + i
+    }))
+    if (!rows.length) return
+    await supabase.from('menu_item_sizes').insert(rows)
+    loadOptions()
+  }
+
+  async function updateSizePrice(id: number, value: string) {
+    const n = Number(value)
+    if (!value.trim() || Number.isNaN(n) || n < 0) return
+    await supabase.from('menu_item_sizes').update({ price: n }).eq('id', id)
+    loadOptions()
+  }
+
   async function addGroup() {
     if (!newGroup.name.trim()) return
     await supabase.from('menu_item_addon_groups').insert({
@@ -125,6 +153,42 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
     setNewGroup({ name: '', kind: 'multi', required: false, maxSelect: '' })
     loadOptions()
   }
+  /**
+   * The combo case, in one tap: a group the customer MUST answer and can only
+   * answer once ("اختار الساندوتش", three options, pick one).
+   *
+   * This was always possible -- type a name, pick "تبديل", tick "مطلوب" -- but
+   * it took three decisions to express one intent, and the two kinds were
+   * distinguished by a max_select of 1 that is never shown as a number
+   * anywhere. Now the intent is the button.
+   */
+  async function applyGroupPreset(kind: 'required-one' | 'extras') {
+    const { data } = await supabase.from('menu_item_addon_groups').insert({
+      menu_item_id: item.id,
+      name: kind === 'required-one' ? 'اختار نوع الساندوتش' : 'إضافات',
+      min_select: kind === 'required-one' ? 1 : 0,
+      max_select: kind === 'required-one' ? 1 : null,
+      display_order: groups.length
+    }).select('id').single()
+    await loadOptions()
+    // Drop the cursor straight into the group that was just made, so the next
+    // action is typing an option name rather than hunting for where it went.
+    if (data?.id) setNewAddon(prev => ({ ...prev, [data.id]: { name: '', price: '', imageUrl: null, uploading: false } }))
+  }
+
+  async function renameGroup(id: number, name: string) {
+    if (!name.trim()) return
+    await supabase.from('menu_item_addon_groups').update({ name: name.trim() }).eq('id', id)
+    loadOptions()
+  }
+
+  async function updateAddonPrice(id: number, value: string) {
+    const n = Number(value)
+    if (!value.trim() || Number.isNaN(n) || n < 0) return
+    await supabase.from('menu_item_addons').update({ price: n }).eq('id', id)
+    loadOptions()
+  }
+
   async function removeGroup(id: number) {
     if (!confirm('حذف المجموعة دي هيحذف كل الخيارات اللي جواها. متأكد؟')) return
     await supabase.from('menu_item_addon_groups').delete().eq('id', id)
@@ -172,7 +236,8 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
           </div>
         )}
 
-        <SizesCard sizes={sizes} newSize={newSize} setNewSize={setNewSize} onAdd={addSize} onRemove={removeSize} />
+        <SizesCard sizes={sizes} newSize={newSize} setNewSize={setNewSize} onAdd={addSize} onRemove={removeSize}
+          onApplyPreset={applySizePreset} onPriceChange={updateSizePrice} />
 
         <AddonsCard
           groups={groups} addons={addons}
@@ -180,6 +245,8 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
           newAddon={newAddon} setNewAddon={setNewAddon}
           onAddGroup={addGroup} onRemoveGroup={removeGroup}
           onAddAddon={addAddonTo} onRemoveAddon={removeAddon}
+          onApplyPreset={applyGroupPreset} onRenameGroup={renameGroup}
+          onAddonPriceChange={updateAddonPrice}
         />
 
         <button className="btn-sea w-full !py-3 mb-3" disabled={saving || !name.trim() || !category.trim() || !price} onClick={save}>
