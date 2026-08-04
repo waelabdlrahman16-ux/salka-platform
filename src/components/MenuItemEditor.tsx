@@ -37,7 +37,6 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
   const [sizes, setSizes] = useState<MenuItemSize[]>([])
   const [combos, setCombos] = useState<MenuItemCombo[]>([])
   const [library, setLibrary] = useState<VendorAddonLibraryItem[]>([])
-  const [comboLabel, setComboLabel] = useState(item.combo_label ?? '')
   const [groups, setGroups] = useState<MenuItemAddonGroup[]>([])
   const [addons, setAddons] = useState<MenuItemAddon[]>([])
   const [newGroup, setNewGroup] = useState<{ name: string; kind: 'multi' | 'swap'; required: boolean; maxSelect: string }>(
@@ -83,7 +82,6 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
     await supabase.from('menu_items').update({
       name: name.trim(), description: description.trim(), category: category.trim(), price: Number(price), available,
       image_url: imageUrl,
-      combo_label: comboLabel.trim() || null,
       available_from: hasWindow ? availFrom : null,
       available_until: hasWindow ? availUntil : null
     }).eq('id', item.id)
@@ -309,10 +307,11 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
         />
 
         <OptionRowsCard
-          title="اعمله كومبو"
-          hint="اكتب سعر الكومبو كامل — بدل سعر الصنف، مش زيادة عليه."
+          title="الكومبو"
+          hint="سعر الكومبو كامل (شامل البطاطس والمشروب). العميل يختار ساندوتش لوحده أو كومبو — مش الاتنين."
           rows={combos.map(c => ({ id: c.id, name: c.name, price: Number(c.price) }))}
-          presets={[{ label: 'ابدأ بـ عادي / وسط / كبير', names: ['عادي', 'وسط', 'كبير'] }]}
+          // The name is the fries-and-cola size, not the sandwich's.
+          presets={[{ label: 'ابدأ بـ وسط / كبير', names: ['وسط', 'كبير'] }]}
           // A combo at or below the item's own price hands over fries and a
           // drink for free, on every order, and nothing else would notice:
           // place_order charges exactly what this table says.
@@ -324,13 +323,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
           addPlaceholder="حجم تاني"
           onApplyPreset={applyComboPreset} onAdd={addCombo}
           onRemove={removeCombo} onPriceChange={updateComboPrice}
-        >
-          <div className="mb-3">
-            <label className="label !text-xs">الزرار عند العميل</label>
-            <input className="field !py-1.5 text-sm" value={comboLabel} placeholder="اعمله كومبو"
-              onChange={e => setComboLabel(e.target.value)} />
-          </div>
-        </OptionRowsCard>
+        />
 
         <AddonsCard
           groups={groups} addons={addons}

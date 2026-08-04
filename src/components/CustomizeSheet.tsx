@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useDismissable } from '../lib/useDismissable'
-import type { MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemCombo, MenuItemSize } from '../lib/types'
+import { applyDiscount, effectiveDiscount } from '../lib/discounts'
+import type { Discount, MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemCombo, MenuItemSize } from '../lib/types'
 
 export default function CustomizeSheet({
-  item, sizes, combos, addonGroups, addons, onClose, onConfirm
+  item, sizes, combos, addonGroups, addons, discounts, onClose, onConfirm
 }: {
   item: MenuItem
+  discounts: Discount[]
   sizes: MenuItemSize[]
   combos: MenuItemCombo[]
   addonGroups: MenuItemAddonGroup[]
@@ -19,12 +21,19 @@ export default function CustomizeSheet({
   const [addonIds, setAddonIds] = useState<number[]>([])
   const [qty, setQty] = useState(1)
 
-  // Two steps, deliberately. Turning the combo on is a decision about WHAT you
-  // are buying; the size is a decision about how much of it. Collapsing them
-  // into one list of four radios reads as four unrelated products.
+  // ONE decision: sandwich or combo, never both.
+  //
+  // This was briefly a توجل toggle plus a second size list, on the theory that
+  // "make it a combo" and "which size" are two questions. They are not, for this
+  // menu: the combo's size IS the fries-and-cola size, so a combo row is simply
+  // another thing the customer can buy instead of the sandwich. Two controls
+  // made it look like they stacked -- pay for the sandwich AND the combo.
+  //
+  // So: one required radio list. The plain rows first (the item's own sizes, or
+  // the sandwich by itself if it has none), then the combos.
   const availableCombos = combos.filter(c => c.available)
-  const [comboOn, setComboOn] = useState(false)
   const [comboId, setComboId] = useState<number | null>(null)
+  const comboOn = comboId != null
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -36,14 +45,15 @@ export default function CustomizeSheet({
   // sizes. place_order applies exactly this rule server-side; this is the
   // display of it, not the authority for it.
   const chosenCombo = comboOn ? availableCombos.find(c => c.id === comboId) ?? null : null
-  // What the customer pays WITHOUT the combo -- the chosen size if there is
-  // one, otherwise the item's price. The upgrade line used to compare against
-  // item.price unconditionally, so on a sandwich with sizes it advertised
-  // "بدل 100" while the customer was actually looking at a 130 دوبل.
-  const plainPrice = sizes.length > 0 ? (sizes.find(s => s.id === sizeId)?.price ?? item.price) : item.price
-  const basePrice = chosenCombo ? chosenCombo.price
+  const rawBase = chosenCombo ? chosenCombo.price
     : sizes.length > 0 ? (sizes.find(s => s.id === sizeId)?.price ?? 0)
     : item.price
+  // The sheet used to price without discounts while the product card and the
+  // cart both applied them, so one tap produced three different numbers: 80 on
+  // the card, 130 on this button, 104 in the basket. Same discount rule as
+  // lib/linePricing and place_order.
+  const discount = effectiveDiscount(item.id, item.category, discounts)
+  const basePrice = applyDiscount(rawBase, discount)
   const addonsTotal = addonIds.reduce((s, id) => s + (addons.find(a => a.id === id)?.price ?? 0), 0)
   const unitPrice = basePrice + addonsTotal
   const total = unitPrice * qty
@@ -76,10 +86,7 @@ export default function CustomizeSheet({
     const c = groupCounts[g.id] ?? 0
     return c >= g.min_select && (g.max_select == null || c <= g.max_select)
   })
-  // Turning the combo on without picking a size is an unfinished decision, so
-  // the button stays disabled rather than quietly charging the plain price.
-  const comboValid = !comboOn || chosenCombo != null
-  const valid = (chosenCombo != null || sizes.length === 0 || sizeId != null) && groupsValid && comboValid
+  const valid = (chosenCombo != null || sizes.length === 0 || sizeId != null) && groupsValid
 
   return (
     <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 grid place-items-end sm:place-items-center p-0 sm:p-4" onClick={onClose}>
@@ -87,66 +94,44 @@ export default function CustomizeSheet({
         <h2 className="font-bold text-lg mb-1">{item.name}</h2>
         {item.description && <p className="text-sm text-mist mb-4">{item.description}</p>}
 
-        {/* Sizes first: which sandwich, then whether to make it a combo. The
-            combo is an upgrade ON something, so it cannot be the first question.
-            Once one is chosen the size list is replaced -- not silently hidden,
-            which would look like the app lost the choice -- because the combo
-            row already carries a full price for a specific size. */}
-        {sizes.length > 0 && !chosenCombo && (
+        {(sizes.length > 0 || availableCombos.length > 0) && (
           <div className="mb-4">
-            <p className="font-semibold text-sm mb-2">الحجم *</p>
+            <p className="font-semibold text-sm mb-2">
+              {availableCombos.length > 0 ? 'ساندوتش لوحده ولا كومبو؟' : 'الحجم'} <span className="text-sandink">*</span>
+            </p>
             <div className="space-y-2">
-              {sizes.map(s => (
-                <label key={s.id} className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-2.5 cursor-pointer ${sizeId === s.id ? 'border-sea bg-sea/5' : 'border-line'}`}>
+              {/* Plain rows. With sizes, each size is its own row; without, one
+                  row for the item by itself -- which still has to be visible and
+                  selectable, or "sandwich alone" is not an option the customer
+                  can actually pick. */}
+              {sizes.length > 0 ? sizes.map(s => (
+                <label key={`s${s.id}`} className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-2.5 cursor-pointer ${!comboOn && sizeId === s.id ? 'border-sea bg-sea/5' : 'border-line'}`}>
                   <span className="flex-1 text-sm font-medium">{s.name}</span>
-                  <span className="text-sm text-mist">{s.price} ج.م</span>
-                  <input type="radio" checked={sizeId === s.id} onChange={() => setSizeId(s.id)} className="accent-sea w-4 h-4" />
+                  <span className="text-sm text-mist">{applyDiscount(s.price, discount)} ج.م</span>
+                  <input type="radio" name="what" checked={!comboOn && sizeId === s.id}
+                    onChange={() => { setComboId(null); setSizeId(s.id) }} className="accent-sea w-4 h-4" />
+                </label>
+              )) : availableCombos.length > 0 && (
+                <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-2.5 cursor-pointer ${!comboOn ? 'border-sea bg-sea/5' : 'border-line'}`}>
+                  <span className="flex-1 text-sm font-medium">ساندوتش لوحده</span>
+                  <span className="text-sm text-mist">{applyDiscount(item.price, discount)} ج.م</span>
+                  <input type="radio" name="what" checked={!comboOn}
+                    onChange={() => setComboId(null)} className="accent-sea w-4 h-4" />
+                </label>
+              )}
+
+              {availableCombos.map(c => (
+                <label key={`c${c.id}`} className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-2.5 cursor-pointer ${comboId === c.id ? 'border-sea bg-sea/5' : 'border-line'}`}>
+                  <span className="text-lg leading-none">🍟</span>
+                  <span className="flex-1 text-sm font-medium">كومبو {c.name}</span>
+                  <span className="text-sm text-mist">{applyDiscount(c.price, discount)} ج.م</span>
+                  <input type="radio" name="what" checked={comboId === c.id}
+                    onChange={() => setComboId(c.id)} className="accent-sea w-4 h-4" />
                 </label>
               ))}
             </div>
-          </div>
-        )}
-
-        {chosenCombo && sizes.length > 0 && (
-          <p className="text-xs text-mist bg-shellup/60 rounded-xl p-3 mb-4">
-            الحجم اتحدد مع الكومبو ({chosenCombo.name})
-          </p>
-        )}
-
-        {availableCombos.length > 0 && (
-          <div className="mb-4">
-            <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${comboOn ? 'border-sea bg-sea/5' : 'border-line'}`}>
-              <span className="text-xl leading-none">🍟</span>
-              <span className="flex-1">
-                <span className="block text-sm font-bold">{item.combo_label || 'اعمله كومبو'}</span>
-                <span className="block text-xs text-mist mt-0.5">
-                  يبقى من {Math.min(...availableCombos.map(c => c.price))} ج.م بدل {plainPrice} ج.م
-                </span>
-              </span>
-              <input type="checkbox" checked={comboOn} className="accent-sea w-5 h-5"
-                onChange={e => {
-                  const on = e.target.checked
-                  setComboOn(on)
-                  // Preselect nothing on the way in -- the customer has to say
-                  // which size, that is the whole point of the second step. But
-                  // clear it on the way out, so a combo size cannot linger on a
-                  // line that is no longer a combo.
-                  if (!on) setComboId(null)
-                }} />
-            </label>
-
-            {comboOn && (
-              <div className="mt-2 space-y-2 pr-2 border-r-2 border-sea/30">
-                <p className="font-semibold text-sm">اختار حجم الكومبو <span className="text-sandink">*</span></p>
-                {availableCombos.map(c => (
-                  <label key={c.id} className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-2.5 cursor-pointer ${comboId === c.id ? 'border-sea bg-sea/5' : 'border-line'}`}>
-                    <span className="flex-1 text-sm font-medium">{c.name}</span>
-                    <span className="text-sm text-mist">{c.price} ج.م</span>
-                    <input type="radio" name="combo-size" checked={comboId === c.id}
-                      onChange={() => setComboId(c.id)} className="accent-sea w-4 h-4" />
-                  </label>
-                ))}
-              </div>
+            {availableCombos.length > 0 && (
+              <p className="text-xs text-mist mt-2">الكومبو شامل البطاطس والمشروب</p>
             )}
           </div>
         )}
@@ -187,7 +172,7 @@ export default function CustomizeSheet({
           <button className="btn-ghost flex-1" onClick={onClose}>إلغاء</button>
           <button className="btn-sea flex-1" disabled={!valid}
             onClick={() => onConfirm(chosenCombo ? null : sizeId, chosenCombo?.id ?? null, addonIds, qty)}>
-            {comboOn && !chosenCombo ? 'اختار حجم الكومبو' : `إضافة · ${total} ج.م`}
+            إضافة · {total} ج.م
           </button>
         </div>
       </div>
