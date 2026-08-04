@@ -1,0 +1,63 @@
+name: Deploy
+
+# Every push to main builds and ships to Cloudflare. Before this, deploying
+# meant `npm run build && npx wrangler deploy` on a machine with Node, git and
+# a Cloudflare login -- which meant deploys could only happen from one laptop,
+# and any drift between that laptop's node_modules and the lockfile shipped
+# silently. Building in a clean runner from `npm ci` removes both problems.
+#
+# Nothing here needs a .env file: src/lib/supabase.ts falls back to the project
+# URL and the publishable anon key, and VITE_SENTRY_DSN is optional (Sentry
+# stays inert without it). Add repo secrets only if that ever changes.
+#
+# Required repo secret (Settings -> Secrets and variables -> Actions):
+#   CLOUDFLARE_API_TOKEN -- dash.cloudflare.com/profile/api-tokens,
+#                           "Edit Cloudflare Workers" template
+#
+# The account ID is not a secret and lives in wrangler.jsonc.
+
+on:
+  push:
+    branches: [main]
+  # Lets you re-run a deploy from the Actions tab without an empty commit --
+  # useful when a deploy failed for a reason outside the code, like an expired
+  # token.
+  workflow_dispatch:
+
+# Two pushes in quick succession would otherwise race, and whichever deploy
+# finished last would win regardless of which commit it carried. Queue instead,
+# and do not cancel a deploy already in progress -- a half-uploaded asset set is
+# worse than a slightly stale one.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # `npm run build` is `tsc -b && vite build`, so a type error fails the
+      # deploy here rather than shipping. This duplicates the CI workflow's
+      # check on purpose: CI gates the PR, this gates the artifact that is
+      # actually uploaded.
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # No accountId here: wrangler reads wrangler.jsonc, which also names
+          # the worker (appgosalka-platform) and points assets at ./dist with
+          # single-page-application not-found handling.
+          command: deploy
