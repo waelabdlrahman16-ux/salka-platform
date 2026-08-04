@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useCart } from '../lib/cart'
 import { artFor } from '../lib/categoryArt'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
+import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
 import { isItemAvailableNow } from '../lib/itemAvailability'
 import { applyDiscount, effectiveDiscount } from '../lib/discounts'
 import Icon from '../components/Icon'
@@ -79,12 +80,18 @@ export default function CartPage() {
   const validLines = cart.lines.filter(l => items.some(i => i.id === l.menuItemId))
   const subtotal = validLines.reduce((s, l) => s + priceFor(l.menuItemId, l.sizeId, l.addonIds).unit * l.qty, 0)
   const { fee: deliveryFee, quote, loading: feeLoading } = useDeliveryQuote(compoundId)
-  const serviceFee = Math.round(subtotal * 0.02)
-  // Only a complete total when delivery is actually known. Previously the fee
-  // was silently omitted from grandTotal whenever no compound was stored, so the
-  // sticky CTA understated the price by the entire delivery charge.
-  const grandTotal = deliveryFee !== null ? subtotal + deliveryFee + serviceFee : null
-  const partialTotal = subtotal + serviceFee
+  // The rate lives in settings.service_fee_percent and place_order applies it.
+  // This used to be a hardcoded 0.02 that silently understated the total by
+  // whatever the admin had since changed the setting to.
+  const { pct: serviceFeePct, loading: serviceFeeLoading } = useServiceFeePct()
+  const serviceFee = serviceFeeFor(subtotal, serviceFeePct)
+  // Only a complete total when delivery AND the service fee are actually known.
+  // Previously the delivery fee was silently omitted from grandTotal whenever no
+  // compound was stored, so the sticky CTA understated the price by the entire
+  // delivery charge; substituting 0 for an unknown service fee would repeat it.
+  const grandTotal = deliveryFee !== null && serviceFee !== null
+    ? subtotal + deliveryFee + serviceFee : null
+  const partialTotal = serviceFee !== null ? subtotal + serviceFee : null
 
   if (!cart.restaurantId || validLines.length === 0) {
     return (
@@ -149,10 +156,17 @@ export default function CartPage() {
               : 'يتحدد بعد اختيار مكانك'}
           </span>
         </div>
-        <div className="flex justify-between text-sm text-mist"><span>رسوم الخدمة</span><span>{serviceFee} ج.م</span></div>
+        <div className="flex justify-between text-sm text-mist">
+          <span>رسوم الخدمة</span>
+          <span>{serviceFee !== null ? `${serviceFee} ج.م` : serviceFeeLoading ? '…' : '—'}</span>
+        </div>
         <div className="flex justify-between font-bold border-t border-line pt-2">
           <span>{grandTotal !== null ? 'الإجمالي' : 'الإجمالي قبل التوصيل'}</span>
-          <span className="text-sea">{grandTotal ?? partialTotal} ج.م</span>
+          <span className="text-sea">
+            {grandTotal !== null ? `${grandTotal} ج.م`
+              : partialTotal !== null ? `${partialTotal} ج.م`
+              : '…'}
+          </span>
         </div>
       </div>
 

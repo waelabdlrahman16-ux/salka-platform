@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { useCart } from '../lib/cart'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
+import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
 import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
 import { isItemAvailableNow } from '../lib/itemAvailability'
 import { applyDiscount, effectiveDiscount } from '../lib/discounts'
@@ -142,15 +143,21 @@ export default function CheckoutPage() {
   // (wallet applied, COD deposit threshold, the confirm button) would be wrong.
   const { fee: deliveryFee, quote, loading: feeLoading, failed: feeFailed, retry: retryFee } =
     useDeliveryQuote(compoundId)
-  const serviceFee = Math.round(subtotal * 0.02)
-  const preWalletTotal = subtotal + (deliveryFee ?? 0) + serviceFee
+  // Same rule as the delivery fee: settings.service_fee_percent is what
+  // place_order actually charges, so it is fetched, not assumed. The old
+  // hardcoded 0.02 quoted the customer one number and billed them another for
+  // any setting other than 2.
+  const { pct: serviceFeePct, loading: serviceFeeLoading, failed: serviceFeeFailed, retry: retryServiceFee } =
+    useServiceFeePct()
+  const serviceFee = serviceFeeFor(subtotal, serviceFeePct)
+  const preWalletTotal = subtotal + (deliveryFee ?? 0) + (serviceFee ?? 0)
   const walletApplied = useWallet ? Math.min(walletBalance, preWalletTotal) : 0
   const finalTotal = preWalletTotal - walletApplied
   // selectedCompound, not just compoundId: a saved id that no longer matches an
   // active compound used to pass validation, submit with an empty p_zone, and
   // fail into the catch-all error.
   const valid = name.trim() && isValidEgyptPhone(phone) && !!selectedCompound && unit.trim()
-    && deliveryFee !== null && (!scheduled || !!slot)
+    && deliveryFee !== null && serviceFee !== null && (!scheduled || !!slot)
 
   // Changing the place here never wrote back, so the cart and home stayed priced
   // for the previous compound.
@@ -373,11 +380,21 @@ export default function CheckoutPage() {
               : '—'}
           </span>
         </div>
-        <div className="flex justify-between text-sm text-mist"><span>رسوم الخدمة</span><span>{serviceFee} ج.م</span></div>
+        <div className="flex justify-between text-sm text-mist">
+          <span>رسوم الخدمة</span>
+          <span>
+            {serviceFee !== null ? `${serviceFee} ج.م`
+              : serviceFeeLoading ? '…'
+              : <button className="text-sea underline" onClick={retryServiceFee}>إعادة المحاولة</button>}
+          </span>
+        </div>
         {walletApplied > 0 && (
           <div className="flex justify-between text-sm text-emerald-700"><span>من رصيدك</span><span>-{walletApplied} ج.م</span></div>
         )}
-        <div className="flex justify-between font-bold border-t border-line pt-2"><span>الإجمالي</span><span className="text-sea">{finalTotal} ج.م</span></div>
+        <div className="flex justify-between font-bold border-t border-line pt-2">
+          <span>الإجمالي</span>
+          <span className="text-sea">{valid || (deliveryFee !== null && serviceFee !== null) ? `${finalTotal} ج.م` : '…'}</span>
+        </div>
       </div>
 
       {compoundsFailed && compounds.length === 0 && (
@@ -400,11 +417,19 @@ export default function CheckoutPage() {
         </p>
       )}
 
+      {serviceFeeFailed && (
+        <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">
+          مش قادرين نحسب رسوم الخدمة دلوقتي.{' '}
+          <button className="underline font-semibold" onClick={retryServiceFee}>جرب تاني</button>
+        </p>
+      )}
+
       {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">{error}</p>}
 
       <button className="btn-sea w-full !py-3.5" disabled={!valid || saving} onClick={placeOrder}>
         {saving ? 'جاري التجهيز…'
           : deliveryFee === null ? (feeLoading ? 'بنحسب التوصيل…' : 'تأكيد الطلب')
+          : serviceFee === null ? (serviceFeeLoading ? 'بنحسب رسوم الخدمة…' : 'تأكيد الطلب')
           : `تأكيد الطلب · ${finalTotal} ج.م`}
       </button>
 
