@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useCart } from '../lib/cart'
@@ -39,6 +39,12 @@ export default function RestaurantDetail() {
   // أرابياتا has 85 items across 8 categories. Categories are a filing system,
   // not a way to find one specific dish, and there was nothing else.
   const [menuQ, setMenuQ] = useState('')
+  // Which section the customer is currently looking at, tracked so the sticky
+  // bar can say where they are. Every section is rendered at once now -- the
+  // chips scroll to a heading rather than filtering the page down to one.
+  const [visibleCat, setVisibleCat] = useState<string | null>(null)
+  const [headerGone, setHeaderGone] = useState(false)
+  const headerSentinel = useRef<HTMLDivElement | null>(null)
   const [compounds, setCompounds] = useState<Compound[]>([])
   // The chosen category lives in the URL, not in component state.
   //
@@ -62,9 +68,15 @@ export default function RestaurantDetail() {
     // produced restaurant === null and an eternal "جاري التحميل…" with no
     // message and no way back (the back link sits below the early return).
     setLoadFailed(false)
-    supabase.from('restaurants').select('*').eq('id', id).single().then(({ data, error }) => {
+    // restaurant_public() rather than the table, because the table has no
+    // review_count -- and without it this page displayed restaurants.rating
+    // unconditionally. That column is hand-typed and unconnected to
+    // order_ratings: 8 of the 9 catalogue vendors have never been rated and all
+    // of them showed a score, including "★ 3.0" on كنتاكي. The home card had
+    // the count and suppressed it correctly; this page did not and could not.
+    supabase.rpc('restaurant_public', { p_id: Number(id) }).then(({ data, error }) => {
       if (error || !data) { setLoadFailed(true); return }
-      setRestaurant(data)
+      setRestaurant(data as Restaurant)
     })
     supabase.from('menu_items').select('*').eq('restaurant_id', id).eq('available', true).then(async ({ data }) => {
       const list = data ?? []
@@ -82,7 +94,7 @@ export default function RestaurantDetail() {
         setAddonGroups(gr ?? [])
         const groupIds = (gr ?? []).map(g => g.id)
         if (groupIds.length) {
-          const { data: ad } = await supabase.from('menu_item_addons').select('*').in('group_id', groupIds).order('display_order').order('id')
+          const { data: ad } = await supabase.from('menu_item_addons').select('*').eq('available', true).in('group_id', groupIds).order('display_order').order('id')
           setAddons(ad ?? [])
         }
         setOptionsLoaded(true)
@@ -141,6 +153,51 @@ export default function RestaurantDetail() {
     const p = priceLine(l, { items, sizes, combos, addons, discounts })
     return sum + p.unit * l.qty
   }, 0)
+  // Scroll-spy. IntersectionObserver rather than a scroll listener: the browser
+  // does the work off the main thread, and a 76-item grid of images is exactly
+  // where a scroll handler starts costing frames.
+  //
+  // rootMargin pulls the detection line down to just under the sticky bar, so a
+  // section counts as "current" when its heading reaches the bar rather than
+  // when it enters the viewport at the bottom.
+  useEffect(() => {
+    if (menuQuery) return
+    const sections = Array.from(document.querySelectorAll<HTMLElement>('section[data-cat]'))
+    if (!sections.length) return
+    const io = new IntersectionObserver(entries => {
+      const hit = entries
+        .filter(e => e.isIntersecting)
+        .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0]
+      if (hit) setVisibleCat((hit.target as HTMLElement).dataset.cat ?? null)
+    }, { rootMargin: '-64px 0px -70% 0px', threshold: 0 })
+    sections.forEach(el => io.observe(el))
+    return () => io.disconnect()
+  }, [categories.join('|'), menuQuery])
+
+  // Show the compact bar only once the real header has scrolled away, so the
+  // two are never on screen saying the same thing.
+  useEffect(() => {
+    const el = headerSentinel.current
+    if (!el) return
+    const io = new IntersectionObserver(([e]) => setHeaderGone(!e.isIntersecting), { threshold: 0 })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [restaurant?.id])
+
+  // ?cat= still means something now that the chips scroll instead of filter:
+  // arriving with one jumps to that section. Without this the param would write
+  // itself into the URL on every chip tap and do nothing on the way back --
+  // and the Back-button behaviour the comment above describes would be a lie.
+  const jumpedRef = useRef(false)
+  useEffect(() => {
+    if (jumpedRef.current || activeCat === ALL || !categories.length || menuQuery) return
+    jumpedRef.current = true
+    // One frame, so the sections exist in the DOM before we look for one.
+    requestAnimationFrame(() => {
+      document.getElementById(`cat-${activeCat}`)?.scrollIntoView({ behavior: 'auto', block: 'start' })
+    })
+  }, [activeCat, categories.length, menuQuery])
+
   const compoundId = getCompoundId()
   const selectedCompound = compounds.find(c => c.id === compoundId)
   const totalEta = restaurant && selectedCompound ? restaurant.prep_minutes + selectedCompound.est_travel_minutes : null
@@ -159,35 +216,105 @@ export default function RestaurantDetail() {
 
   return (
     <div>
-      <Link to="/" className="text-sm text-mist hover:text-foam"><Icon name="chevronLeft" className="w-3 h-3 inline-block align-middle ml-1" />العودة للمطاعم</Link>
+      {/* WHERE AM I, and how do I search, after 76 items have scrolled past.
+          Deliberately NOT the whole header stuck to the top -- just the name,
+          the section currently on screen, and a way back to the search box.
+          The section label updates itself as you scroll, so the bar answers
+          "where am I" and not merely "which restaurant is this". */}
+      {headerGone && (
+        <div className="fixed top-0 inset-x-0 z-30 bg-shell/95 backdrop-blur border-b border-line"
+          style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+          <div className="max-w-5xl mx-auto px-4 h-12 flex items-center gap-2">
+            <button className="text-mist shrink-0" aria-label="لفوق"
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+              <Icon name="chevronLeft" className="w-3 h-3 rotate-90" />
+            </button>
+            <span className="font-bold text-sm truncate">{restaurant.name}</span>
+            {visibleCat && !menuQuery && (
+              <>
+                <span className="text-mist text-xs shrink-0">·</span>
+                <span className="text-xs text-mist truncate">{visibleCat}</span>
+              </>
+            )}
+            <span className="flex-1" />
+            {items.length > 8 && (
+              <button className="text-mist shrink-0 w-9 h-9 grid place-items-center" aria-label="بحث"
+                onClick={() => {
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                  setTimeout(() => document.getElementById('menu-search')?.focus(), 350)
+                }}>
+                <Icon name="magnifyingGlass" className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
-      <div className="mt-3 mb-4">
-        <div className="flex items-center gap-3">
-          {restaurant.logo_url
-            ? <img src={restaurant.logo_url} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0 border border-line" />
-            : <div className="w-12 h-12 rounded-xl bg-shellup grid place-items-center shrink-0 text-xl font-bold text-mist">{restaurant.name.charAt(0)}</div>}
-          <h1 className="text-2xl font-bold">{restaurant.name}</h1>
-          <span className={restaurant.is_open ? 'badge-open' : 'badge-closed'}>{restaurant.is_open ? 'مفتوح' : 'مغلق'}</span>
-        </div>
-        <p className="text-mist mt-1.5">{restaurant.description}</p>
-        <div className="flex items-center gap-3 mt-2 text-sm text-mist flex-wrap">
-          <span className="flex items-center gap-1"><Icon name="star" className="w-3.5 h-3.5 text-sand" /> {restaurant.rating}</span>
-          <span className="flex items-center gap-1"><Icon name="clock" className="w-3.5 h-3.5" /> {totalEta ? `يوصلك خلال ${totalEta} دقيقة تقريبًا` : `التحضير حوالي ${restaurant.prep_minutes} دقيقة`}</span>
-          {/* Stated here as well as on Home: this is the screen where a basket
-              actually gets built, and the fee is the number most likely to
-              change someone's mind. Server quote, never a local estimate. */}
-          {deliveryFee !== null && (
-            <span className="flex items-center gap-1">
-              <Icon name="locationDot" className="w-3.5 h-3.5" /> التوصيل <span className="text-foam font-semibold">{deliveryFee} ج.م</span>
-            </span>
-          )}
-        </div>
-        {restaurant.order_mode === 'pickup_request' && (
-          <p className="text-sm bg-shellup/60 rounded-xl p-3 mt-3">
-            📋 القايمة دي للعرض بس — اطلب من {restaurant.name} على طول (تطبيقهم أو التليفون)، وهما هيتصرفوا في التوصيل
-          </p>
+      {/* THREE ROWS, not six.
+          Before: back link / logo+name+badge / category / meta / search /
+          chips -- every one a full row, so the first photograph of food began
+          below the fold on a 76-item menu. Status and delivery are short facts
+          and now share the back row; the category folded into the meta line
+          under the name. */}
+      <div className="flex items-center gap-2 mb-2.5">
+        <Link to="/" className="text-sm text-mist hover:text-foam flex items-center">
+          <Icon name="chevronLeft" className="w-3 h-3 ml-1" />رجوع
+        </Link>
+        <span className="flex-1" />
+        <span className={restaurant.is_open ? 'badge-open' : 'badge-closed'}>
+          {restaurant.is_open ? 'مفتوح' : 'مغلق'}
+        </span>
+        {deliveryFee !== null && (
+          <span className="text-[11px] font-bold text-sandink bg-sand/20 rounded-lg px-2 py-1 shrink-0">
+            {deliveryFee} ج.م توصيل
+          </span>
         )}
       </div>
+
+      <div className="flex items-center gap-3 mb-3">
+        {restaurant.logo_url
+          ? <img src={restaurant.logo_url} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0 border border-line" />
+          : <div className="w-12 h-12 rounded-xl bg-shellup grid place-items-center shrink-0 text-xl font-bold text-mist">{restaurant.name.charAt(0)}</div>}
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl font-bold truncate">{restaurant.name}</h1>
+          <div className="flex items-center gap-1.5 text-[13px] text-mist flex-wrap mt-0.5">
+            {/* ONLY when somebody has actually rated them.
+                restaurants.rating is hand-typed and unconnected to
+                order_ratings -- 8 of 9 vendors have zero reviews and every one
+                displayed a score. A number with no count behind it is not a
+                weak signal, it is a false one, and "★ 3.0" on an unrated
+                restaurant actively damages that vendor. */}
+            {(restaurant.review_count ?? 0) > 0 && (
+              <>
+                <span className="flex items-center gap-1">
+                  <Icon name="star" className="w-3.5 h-3.5 text-sand" />
+                  <span className="font-bold text-foam">{restaurant.rating_real ?? restaurant.rating}</span>
+                  <span>({restaurant.review_count})</span>
+                </span>
+                <span aria-hidden="true">·</span>
+              </>
+            )}
+            {/* A range, not a single number. "16 دقيقة تقريبًا" reads as a
+                promise; the home card already says 20–30 for the same vendor,
+                so the two screens disagreed about the same restaurant. */}
+            {totalEta && <span>يوصلك {totalEta}–{totalEta + 10} دقيقة</span>}
+            {restaurant.category && (
+              <>
+                {totalEta && <span aria-hidden="true">·</span>}
+                <span className="truncate">{restaurant.category}</span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div ref={headerSentinel} aria-hidden="true" />
+
+      {restaurant.order_mode === 'pickup_request' && (
+        <p className="text-sm bg-shellup/60 rounded-xl p-3 mb-4">
+          📋 القايمة دي للعرض بس — اطلب من {restaurant.name} على طول (تطبيقهم أو التليفون)، وهما هيتصرفوا في التوصيل
+        </p>
+      )}
 
       {restaurant.order_mode === 'pickup_request' ? (
         <div className="space-y-5">
@@ -234,7 +361,7 @@ export default function RestaurantDetail() {
               everything under Y". */}
           {items.length > 8 && (
             <div className="relative mb-3">
-              <input className="field !pr-10" value={menuQ} onChange={e => setMenuQ(e.target.value)}
+              <input id="menu-search" className="field !pr-10" value={menuQ} onChange={e => setMenuQ(e.target.value)}
                 placeholder={`دوّر في قايمة ${restaurant.name}…`} />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mist pointer-events-none">
                 <Icon name="magnifyingGlass" className="w-4 h-4" />
@@ -254,19 +381,27 @@ export default function RestaurantDetail() {
             </p>
           )}
 
+          {/* The chips SCROLL to a section, they no longer filter to one.
+              "الكل" is gone with them: it was never a category, and its presence
+              meant the first real section was hidden behind a choice. Now the
+              whole menu is on the page and the chips are a way to jump, which
+              is also what makes the sticky bar able to say which section you
+              are in. */}
           {categories.length > 1 && !menuQuery && (
           <div className="flex gap-2 overflow-x-auto pb-1 mb-4 -mx-4 px-4 scrollbar-none">
-            <button className={`tab shrink-0 ${activeCat === ALL ? 'tab-active' : 'bg-shellup/60'}`} onClick={() => setActiveCat(ALL)}>الكل</button>
             {categories.map(cat => (
               <button key={cat}
-                className={`tab shrink-0 ${activeCat === cat ? 'tab-active' : 'bg-shellup/60'}`}
-                onClick={() => setActiveCat(cat)}>{cat}</button>
+                className={`tab shrink-0 ${visibleCat === cat ? 'tab-active' : 'bg-shellup/60'}`}
+                onClick={() => {
+                  setActiveCat(cat)
+                  document.getElementById(`cat-${cat}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }}>{cat}</button>
             ))}
           </div>
           )}
 
-          {(activeCat === ALL || menuQuery ? categories : [activeCat]).map(cat => shown(cat).length === 0 ? null : (
-            <section key={cat} className="mb-6">
+          {categories.map(cat => shown(cat).length === 0 ? null : (
+            <section key={cat} id={`cat-${cat}`} data-cat={cat} className="mb-6 scroll-mt-16">
               <h2 className="font-bold text-lg mb-3">{cat}</h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {shown(cat).map(it => {
@@ -291,7 +426,18 @@ export default function RestaurantDetail() {
                       hasOptions={hasOptions}
                       displayPrice={displayPrice}
                       originalPrice={discount ? basePrice : undefined}
-                      isFromPrice={itemSizes.length > 0}
+                      // A combo REPLACES the price and is dearer than the base,
+                      // so the plain price is a starting point there too -- not
+                      // only when there are sizes.
+                      isFromPrice={itemSizes.length > 0 || itemCombos.length > 0}
+                      // Say what the sheet will actually ask. Taken from the
+                      // item's own option group, so "اتاك كومبو" reads
+                      // "اختار: بيف أو تشيكن" rather than a bare "اختيار".
+                      optionLabel={
+                        itemSizes.length > 0 || itemCombos.length > 0
+                          ? 'الحجم'
+                          : itemGroups[0]?.name ?? null
+                      }
                       onAdd={() => cart.add(it, 1)}
                       onRemove={() => cart.add(it, -1)}
                       onCustomize={() => setCustomizing(it)}
@@ -347,6 +493,13 @@ export default function RestaurantDetail() {
           The figure comes from priceLine() -- the same function the cart and
           the checkout use -- because this screen quoting its own total is
           precisely how two screens end up disagreeing about what is owed. */}
+      {/* optionsLoaded, for the same reason CartPage and CheckoutPage gate on it.
+          The fetch sets items first and only then awaits sizes/combos/add-ons,
+          and the basket survives in sessionStorage -- so a reload onto this
+          page with a combo in the cart priced it from menu_items.price
+          (دوبل بيج تايستي: 433 instead of the 575 combo) and, in the tick
+          before items land at all, showed "0 ج.م · شوف العربة" over a badge of
+          1. The count is always true, so it stays; only the money waits. */}
       {cart.count > 0 && restaurant.is_open && (
         <div className="fixed inset-x-0 z-30 px-4"
           style={{ bottom: 'calc(env(safe-area-inset-bottom) + 68px)' }}>
@@ -361,7 +514,7 @@ export default function RestaurantDetail() {
               </span>
             </span>
             <span className="font-bold text-sm shrink-0">
-              {Math.round(cartSubtotal * 100) / 100} ج.م · شوف العربة
+              {optionsLoaded ? `${Math.round(cartSubtotal * 100) / 100} ج.م · ` : ''}شوف العربة
             </span>
           </button>
         </div>

@@ -343,17 +343,28 @@ export default function DriverPage() {
 
   useEffect(() => {
     if (!id) return
-    registerPush(pushToken => { supabase.rpc('save_my_push_token', { p_push_token: pushToken }) })
-
-    // Bind this account to this phone. Runs once on mount, not on the 10s poll:
-    // the answer cannot change while the app is open except by an admin reset,
-    // and a driver mid-shift must never be interrupted by a device check.
+    // ORDER MATTERS between these two, and it did not used to.
     //
-    // Failure that is NOT device_locked (offline, timeout) deliberately does
-    // NOT lock the screen. An account-sharing control is not worth stranding a
-    // driver in a basement with food in their bag.
+    // push_tokens has UNIQUE(profile_id) and save_my_push_token upserts on it,
+    // so a driver profile holds exactly ONE token -- the most recent device
+    // wins. These two calls used to fire together with no ordering, so opening
+    // the app on a second phone overwrote the token with phone B's, and THEN
+    // driver_claim_device refused phone B and locked its screen. Net result:
+    // the device the driver is forbidden to use owned the only push token, the
+    // bound phone went silent, and the driver simply stopped receiving offers.
+    // admin_reset_driver_device does not clear push_tokens, so it survived a
+    // reset too.
+    //
+    // Claim first; only register for push once this phone is the one allowed
+    // to work.
     rpc('driver_claim_device', { p_device_id: getDeviceId(), p_label: getDeviceLabel() })
-      .then(res => setDeviceLocked(!res.ok && res.code === 'device_locked'))
+      .then(res => {
+        const locked = !res.ok && res.code === 'device_locked'
+        setDeviceLocked(locked)
+        if (res.ok) {
+          registerPush(pushToken => { supabase.rpc('save_my_push_token', { p_push_token: pushToken }) })
+        }
+      })
   }, [id])
 
   // Only run the map/ETA watcher while there is something to navigate to.

@@ -44,7 +44,8 @@ export default function Home() {
   // dish was to already know which restaurant sold it.
   const [foodQ, setFoodQ] = useState('')
   const [foodHits, setFoodHits] = useState<
-    { id: number; name: string; price: number; image_url: string | null; category: string
+    { id: number; name: string; price: number; is_from_price: boolean
+      image_url: string | null; category: string
       restaurant_id: number; restaurant_name: string; is_open: boolean }[]
   >([])
   const [foodSearching, setFoodSearching] = useState(false)
@@ -403,7 +404,14 @@ export default function Home() {
                             {h.restaurant_name}{h.is_open ? '' : ' · مقفول'}
                           </span>
                         </span>
-                        <span className="text-sm font-bold text-sea shrink-0">{h.price} ج.م</span>
+                        {/* "من" when the number is a starting point, exactly as
+                            the menu card renders it. Without this the search
+                            quoted menu_items.price for size-only items -- 6
+                            وينجز reads 190 in that column and cannot be bought
+                            for less than 300. */}
+                        <span className="text-sm font-bold text-sea shrink-0">
+                          {h.is_from_price ? 'من ' : ''}{h.price} ج.م
+                        </span>
                       </Link>
                     ))}
                   </div>

@@ -20,7 +20,7 @@ type IconName =
   | 'forkKnife' | 'boxOpen' | 'bagShopping' | 'receipt' | 'magnifyingGlass'
   | 'locationDot' | 'star' | 'clock' | 'minus' | 'plus' | 'clone'
   | 'moneyBill' | 'mobileScreen' | 'house' | 'rectangleList' | 'penToSquare' | 'creditCard'
-  | 'cartShopping' | 'chevronLeft'
+  | 'cartShopping' | 'chevronLeft' | 'truck' | 'tag' | 'circleUser'
 
 type Variant = 'solid' | 'regular'
 
@@ -30,6 +30,21 @@ const SOLID: Record<IconName, { viewBox: string; d: string }> = {
   // different baseline, and on Android it rendered in the system emoji font,
   // so one tab was full-colour among four monochrome ones and sat a couple of
   // pixels low. Solid-only in the free tier, like most of this file.
+  // Bottom-nav set, chosen by Wael. Path data extracted from
+  // @fortawesome/free-solid-svg-icons 6.7.2 -- not retyped from memory, which
+  // is how you end up with a glyph that is almost a truck.
+  truck: {
+    viewBox: '0 0 640 512',
+    d: 'M48 0C21.5 0 0 21.5 0 48L0 368c0 26.5 21.5 48 48 48l16 0c0 53 43 96 96 96s96-43 96-96l128 0c0 53 43 96 96 96s96-43 96-96l32 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l0-64 0-32 0-18.7c0-17-6.7-33.3-18.7-45.3L512 114.7c-12-12-28.3-18.7-45.3-18.7L416 96l0-48c0-26.5-21.5-48-48-48L48 0zM416 160l50.7 0L544 237.3l0 18.7-128 0 0-96zM112 416a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zm368-48a48 48 0 1 1 0 96 48 48 0 1 1 0-96z'
+  },
+  tag: {
+    viewBox: '0 0 448 512',
+    d: 'M0 80L0 229.5c0 17 6.7 33.3 18.7 45.3l176 176c25 25 65.5 25 90.5 0L418.7 317.3c25-25 25-65.5 0-90.5l-176-176c-12-12-28.3-18.7-45.3-18.7L48 32C21.5 32 0 53.5 0 80zm112 32a32 32 0 1 1 0 64 32 32 0 1 1 0-64z'
+  },
+  circleUser: {
+    viewBox: '0 0 512 512',
+    d: 'M399 384.2C376.9 345.8 335.4 320 288 320l-64 0c-47.4 0-88.9 25.8-111 64.2c35.2 39.2 86.2 63.8 143 63.8s107.8-24.7 143-63.8zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256zm256 16a72 72 0 1 0 0-144 72 72 0 1 0 0 144z'
+  },
   // A real glyph, because the text characters are not safe here.
   // The chooser rows used '‹' (U+2039). That character has the Unicode
   // Bidi_Mirrored property, so inside an RTL paragraph the bidi algorithm

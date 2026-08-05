@@ -132,12 +132,23 @@ function BottomNav() {
   // wrap onto two lines in a ~70px slot. One word instead: الضروريات covers
   // both a pharmacy and a supermarket without naming either, and the screen
   // behind it has room to say which is which.
+  //
+  // Icon set chosen by Wael, path data taken from
+  // @fortawesome/free-solid-svg-icons rather than redrawn. The two that changed
+  // meaning are worth noting: the trolley now belongs to عربتي, where a trolley
+  // actually means a basket, and الضروريات took the truck -- a pharmacy and a
+  // supermarket run is an errand being delivered, not a shop you browse.
   const items = [
     { to: '/', label: 'الرئيسية', icon: 'house' as const },
-    { to: '/custom-order', label: 'الضروريات', icon: 'cartShopping' as const },
-    { to: '/offers', label: 'العروض', icon: 'moneyBill' as const },
-    { to: '/cart', label: 'عربتي', icon: 'bagShopping' as const, badge: cart.count },
-    { to: '/profile', label: 'حسابي', icon: 'rectangleList' as const },
+    { to: '/custom-order', label: 'الضروريات', icon: 'truck' as const },
+    // Gold in both states, not just when selected: this is the one tab worth
+    // pulling an eye towards, which is what Wael asked for. `sandink` and not
+    // `sand` -- sand is 2.69:1 on this background and fails the 3:1 that a
+    // meaningful graphic needs, so it is a tint colour only. See the palette
+    // notes in tailwind.config.js.
+    { to: '/offers', label: 'العروض', icon: 'tag' as const, accent: true },
+    { to: '/cart', label: 'عربتي', icon: 'cartShopping' as const, badge: cart.count },
+    { to: '/profile', label: 'حسابي', icon: 'circleUser' as const },
   ]
 
   return (
@@ -147,7 +158,11 @@ function BottomNav() {
           const active = it.to === '/' ? pathname === '/' : pathname.startsWith(it.to)
           return (
             <Link key={it.to} to={it.to}
-              className={`relative flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-semibold ${active ? 'text-sea' : 'text-mist'}`}>
+              className={`relative flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-semibold ${
+                it.accent
+                  ? (active ? 'text-sandink' : 'text-sandink/70')
+                  : (active ? 'text-sea' : 'text-mist')
+              }`}>
               <span className="relative leading-none">
                 <Icon name={it.icon} className="w-5 h-5" />
                 {!!it.badge && (

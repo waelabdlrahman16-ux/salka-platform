@@ -4,9 +4,13 @@ export interface Restaurant {
   vendor_type: string; prep_minutes: number
   order_mode: 'catalog' | 'custom_request' | 'pickup_request'
   archived: boolean; logo_url: string | null; max_delivery_km: number | null
-  // Only restaurants_for_compound() supplies this. `rating` defaults to 5.0 on
-  // an unrated vendor, so nothing may render a score without checking it first.
+  // Supplied by restaurants_for_compound() and restaurant_public(). `rating` is
+  // a HAND-TYPED column with no link to order_ratings -- 8 of 9 vendors have
+  // never been rated and every one of them carries a number -- so nothing may
+  // render a score without checking this count first.
   review_count?: number
+  /** The real average of submitted ratings. Null when nobody has rated. */
+  rating_real?: number | null
   /** Cover photo chosen in the admin. Overrides hero_image_url. */
   cover_image_url?: string | null
   /** What the home card actually renders: cover_image_url, else the
