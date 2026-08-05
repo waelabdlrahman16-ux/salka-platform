@@ -70,6 +70,8 @@ export const ERROR_AR: Record<string, string> = {
   not_your_order: 'الطلب ده مش بتاع مطعمك',
   wrong_stage: 'الخطوة دي مش دورها دلوقتي',
   not_a_driver: 'حسابك مش مربوط بمندوب',
+  device_locked: 'الحساب ده مربوط بموبايل تاني — كلّم الإدارة عشان يفكّوا الربط',
+  invalid_device: 'مش قادرين نتعرف على الجهاز ده',
   unavailable: 'حد تاني سبقك',
 
   // tips / feedback

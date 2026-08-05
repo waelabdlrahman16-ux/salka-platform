@@ -14,6 +14,7 @@ import SwipeToConfirm from '../components/SwipeToConfirm'
 import { rpc, describeError } from '../lib/rpc'
 import { haversineKm } from '../lib/geo'
 import { vendorNoun } from '../lib/vendorWords'
+import { getDeviceId, getDeviceLabel } from '../lib/deviceId'
 import { assignmentStatusLabel, driverStatusLabel } from '../lib/statusLabels'
 
 interface PoolOrder {
@@ -126,6 +127,8 @@ export default function DriverPage() {
   const [myPos, setMyPos] = useState<{ lat: number; lng: number } | null>(null)
   const [gpsDenied, setGpsDenied] = useState(false)
   const [syncFailed, setSyncFailed] = useState(false)
+  /** null = not checked yet, true = another phone owns this account. */
+  const [deviceLocked, setDeviceLocked] = useState<boolean | null>(null)
   const [lastSyncAt, setLastSyncAt] = useState<number | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   // A single global slot meant that acting on order A silently swallowed every
@@ -341,6 +344,16 @@ export default function DriverPage() {
   useEffect(() => {
     if (!id) return
     registerPush(pushToken => { supabase.rpc('save_my_push_token', { p_push_token: pushToken }) })
+
+    // Bind this account to this phone. Runs once on mount, not on the 10s poll:
+    // the answer cannot change while the app is open except by an admin reset,
+    // and a driver mid-shift must never be interrupted by a device check.
+    //
+    // Failure that is NOT device_locked (offline, timeout) deliberately does
+    // NOT lock the screen. An account-sharing control is not worth stranding a
+    // driver in a basement with food in their bag.
+    rpc('driver_claim_device', { p_device_id: getDeviceId(), p_label: getDeviceLabel() })
+      .then(res => setDeviceLocked(!res.ok && res.code === 'device_locked'))
   }, [id])
 
   // Only run the map/ETA watcher while there is something to navigate to.
@@ -627,6 +640,27 @@ export default function DriverPage() {
     const { error } = await supabase.rpc('driver_reject_assignment', { p_assignment_id: rejecting.id, p_reason: reason.trim() })
     if (error) { alert(describeError(error?.message)); return }
     setRejecting(null); setReason(''); load(true)
+  }
+
+  // Shown INSTEAD of the board, not over it: the point is that this phone must
+  // not see live orders, customer phone numbers or addresses at all.
+  if (deviceLocked) {
+    return (
+      <div className="max-w-sm mx-auto text-center pt-16">
+        <p className="text-5xl mb-4">📵</p>
+        <h1 className="text-xl font-bold mb-2">حسابك مربوط بموبايل تاني</h1>
+        <p className="text-sm text-mist leading-relaxed">
+          كل حساب مندوب بيشتغل من موبايل واحد بس. لو ده موبايلك الجديد أو غيّرت
+          التليفون، كلّم الإدارة عشان يفكّوا الربط ويشتغل من هنا.
+        </p>
+        <a href="tel:+201150068077" className="btn-sea w-full !flex items-center justify-center mt-6">
+          📞 كلّم الإدارة
+        </a>
+        <button className="btn-ghost w-full mt-2.5" onClick={() => supabase.auth.signOut()}>
+          تسجيل خروج
+        </button>
+      </div>
+    )
   }
 
   if (!id) return <p className="text-mist text-center py-10">حسابك غير مرتبط بمندوب. تواصل مع الإدارة.</p>

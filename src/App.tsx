@@ -95,10 +95,18 @@ function BottomNav() {
   // ("something that isn't a restaurant"), so they are one destination, and the
   // choice between them happens on the screen where there is room to label it.
   //
-  // `emoji` rather than an Icon because there is no trolley in the icon set.
+  // All five draw from the same Font Awesome set now. This tab used to be an
+  // emoji because the icon set had no trolley -- so on a five-tab bar, four
+  // icons were monochrome vector and one was a full-colour glyph rendered in
+  // the system emoji font, a different weight and a couple of pixels low.
+  //
+  // "صيدلية وماركت" was also twice the length of every other label and had to
+  // wrap onto two lines in a ~70px slot. One word instead: الضروريات covers
+  // both a pharmacy and a supermarket without naming either, and the screen
+  // behind it has room to say which is which.
   const items = [
     { to: '/', label: 'الرئيسية', icon: 'house' as const },
-    { to: '/custom-order', label: 'صيدلية وماركت', emoji: '🛒' },
+    { to: '/custom-order', label: 'الضروريات', icon: 'cartShopping' as const },
     { to: '/offers', label: 'العروض', icon: 'moneyBill' as const },
     { to: '/cart', label: 'عربتي', icon: 'bagShopping' as const, badge: cart.count },
     { to: '/profile', label: 'حسابي', icon: 'rectangleList' as const },
@@ -113,19 +121,16 @@ function BottomNav() {
             <Link key={it.to} to={it.to}
               className={`relative flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-semibold ${active ? 'text-sea' : 'text-mist'}`}>
               <span className="relative leading-none">
-                {it.icon
-                  ? <Icon name={it.icon} className="w-5 h-5" />
-                  : <span className="block text-[18px] leading-5" aria-hidden="true">{it.emoji}</span>}
+                <Icon name={it.icon} className="w-5 h-5" />
                 {!!it.badge && (
                   <span className="absolute -top-1.5 -left-2.5 bg-sea text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 grid place-items-center px-1">
                     {it.badge}
                   </span>
                 )}
               </span>
-              {/* Wraps rather than overflows: "صيدلية وماركت" is twice the
-                  length of the other four labels and a 5-column bar on a 360px
-                  phone gives each slot about 70px. */}
-              <span className="block text-center leading-tight px-0.5">{it.label}</span>
+              {/* Every label is now one word, so nothing wraps in the ~70px a
+                  five-column bar leaves on a 360px phone. */}
+              <span className="block text-center leading-tight px-0.5 whitespace-nowrap">{it.label}</span>
             </Link>
           )
         })}

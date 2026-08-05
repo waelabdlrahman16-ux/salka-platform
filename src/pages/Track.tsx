@@ -85,6 +85,9 @@ export default function Track() {
   const [staleSince, setStaleSince] = useState<number | null>(null)
   const [switchingToCash, setSwitchingToCash] = useState(false)
   const [switchedNote, setSwitchedNote] = useState('')
+  const [addingItem, setAddingItem] = useState(false)
+  const [extraItem, setExtraItem] = useState('')
+  const [extraSaving, setExtraSaving] = useState(false)
 
   // Changing your mind about HOW you pay should not mean cancelling WHAT you
   // ordered. An InstaPay order is created at awaiting_payment, so by the time
@@ -115,6 +118,26 @@ export default function Track() {
     } else {
       setSwitchedNote('تمام — الطلب بقى كاش عند الاستلام.')
     }
+    load()
+  }
+
+  // "نسيت صنف". Without it, remembering the milk means placing a SECOND order
+  // to the same house -- two deliveries, two drivers, two delivery fees for one
+  // shopping trip, and two things for the vendor to reconcile. The server only
+  // allows it while nobody has started work.
+  async function addForgottenItem() {
+    if (!token || !extraItem.trim()) return
+    setExtraSaving(true); setActionError(null)
+    const res = await rpc('append_request_items', {
+      p_token: token, p_items: [{ name: extraItem.trim(), qty: 1 }],
+    }, {
+      order_not_priced: 'الطلب اتسعّر خلاص — كلّمنا عشان نضيفه',
+      wrong_stage: 'بدأنا نجهّز الطلب — كلّمنا عشان نضيفه',
+      already_assigned: 'المندوب في الطريق — كلّمنا عشان نضيفه',
+    })
+    setExtraSaving(false)
+    if (!res.ok) { setActionError({ scope: 'extra', message: res.error }); return }
+    setExtraItem(''); setAddingItem(false)
     load()
   }
 
@@ -262,9 +285,6 @@ export default function Track() {
         {errFor('instapay') && (
           <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mt-3">{errFor('instapay')}</p>
         )}
-        {switchedNote && (
-          <p className="text-sm bg-sea/10 text-seadeep rounded-xl p-3 mt-3">{switchedNote}</p>
-        )}
         <div className="card p-4 mt-3 text-center">
           <h1 className="font-bold text-lg mb-1">{isDeposit ? 'ادفع عربون 50% على InstaPay' : 'حوّل المبلغ على InstaPay'}</h1>
           <p className="text-mist text-sm mb-3">طلب #{o.id} من {o.restaurant_name}</p>
@@ -366,6 +386,15 @@ export default function Track() {
           <p className="text-sm font-semibold text-foam">📡 مش قادرين نحدّث الحالة — ممكن تكون قديمة</p>
           <button className="btn-ghost !py-2 text-sm shrink-0" onClick={load}>حدّث</button>
         </div>
+      )}
+
+      {/* Rendered HERE, not inside the InstaPay wall, because the successful
+          non-deposit path moves the order to pending and drops straight out of
+          that branch -- so the confirmation the customer just earned flashed
+          for about 200ms and vanished. The deposit path keeps them on the wall
+          and would have been fine; the common path was not. */}
+      {switchedNote && (
+        <p className="text-sm bg-sea/10 text-seadeep rounded-xl p-3 mb-4">{switchedNote}</p>
       )}
 
       {errFor('instapay') && (
@@ -523,10 +552,42 @@ export default function Track() {
              a 400 ج.م order announced "65 ج.م — كاش عند الاستلام", directly
              contradicting the قيد التسعير line further down the same page. */}
       <div className="card p-4 mb-4">
-        {o.pricing_status === 'pending_quote' ? (
+        {o.pricing_status === 'pending_quote' && !isCancelled(o.status) && !cancelled ? (
           <div>
-            <p className="font-semibold text-sm">لسه بنسعّر الطلب</p>
-            <p className="text-sm text-mist">هنتصل بيك نأكد السعر قبل ما نجهّزه. التوصيل {o.delivery_fee} ج.م.</p>
+            {/* An open-ended wait with no number attached is the worst kind.
+                "خلال ١٠ دقايق" gives it an end, and gives you something to
+                measure the vendor against. */}
+            <p className="font-semibold text-sm">📞 هنتصل بيك خلال ١٠ دقايق</p>
+            <p className="text-sm text-mist mt-0.5">
+              بنراجع طلبك دلوقتي ونحسب السعر. مفيش دفع لحد ما توافق.
+            </p>
+            <div className="flex justify-between text-xs text-mist mt-2.5 pt-2.5 border-t border-line">
+              <span>التوصيل (مؤكد)</span><span>{o.delivery_fee} ج.م</span>
+            </div>
+            <div className="flex justify-between text-xs text-mist mt-1">
+              <span>الأصناف</span><span>بالمكالمة</span>
+            </div>
+
+            {errFor('extra') && (
+              <p className="text-xs text-red-600 bg-red-500/10 rounded-xl p-2.5 mt-3">{errFor('extra')}</p>
+            )}
+
+            {addingItem ? (
+              <div className="flex gap-2 mt-3">
+                <input className="field flex-1 !h-10 text-sm" value={extraItem} autoFocus
+                  onChange={e => setExtraItem(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addForgottenItem() } }}
+                  placeholder="مثال: لبن" />
+                <button className="btn-sea !py-2 !px-4 text-sm shrink-0"
+                  disabled={!extraItem.trim() || extraSaving} onClick={addForgottenItem}>
+                  {extraSaving ? '…' : 'ضيف'}
+                </button>
+              </div>
+            ) : (
+              <button className="btn-ghost w-full !py-2.5 text-sm mt-3" onClick={() => setAddingItem(true)}>
+                + نسيت صنف
+              </button>
+            )}
           </div>
         ) : (
           <div>

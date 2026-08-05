@@ -441,6 +441,20 @@ export default function Admin() {
     load(true)
   }
 
+
+  // Driver accounts are bound to one phone (first phone wins). This is the ONLY
+  // way out of that binding, so it has to be here, obvious, and one tap -- a
+  // driver who buys a new phone or clears their browser cannot work until it
+  // is pressed. Confirmed rather than instant, because pressing it on the wrong
+  // row frees the account to be claimed by whichever phone opens it next.
+  async function resetDriverDevice(d: Driver) {
+    const bound = d.device_label
+    if (!confirm(`فك ربط الجهاز عن ${d.name}؟\n\n${bound ? `الجهاز الحالي: ${bound}` : 'مفيش جهاز مربوط دلوقتي'}\n\nأول موبايل يفتح حسابه بعد كده هيتربط بيه.`)) return
+    const res = await rpc('admin_reset_driver_device', { p_driver_id: d.id })
+    if (!res.ok) { alert(res.error); return }
+    load()
+  }
+
   async function editInstapay(d: Driver) {
     const value = prompt('رقم إنستاباي بتاع المندوب (اسيبه فاضي لو زي رقم الموبايل):', d.instapay_number ?? '')
     if (value === null) return
@@ -1287,6 +1301,11 @@ export default function Admin() {
                   <p className="text-sm text-mist mt-0.5">★ {d.rating} · {d.total_deliveries} توصيلة · {vehicleLabel(d.vehicle_type)} · {d.vehicle_plate}</p>
                   <p className="text-sm text-mist mt-0.5" dir="ltr">{d.phone}</p>
                   <p className="text-xs text-mist mt-1">إنستاباي: {d.instapay_number || d.phone}</p>
+                  {/* So you can match the binding against the phone in the
+                      driver's hand before deciding whether to reset it. */}
+                  <p className="text-xs text-mist mt-1">
+                    📱 {d.device_id ? `مربوط بـ ${d.device_label || 'جهاز'}` : 'مش مربوط بجهاز لسه'}
+                  </p>
                   {disputeCount > 0 && (
                     <p className="text-sm text-red-600 font-semibold mt-1">⚠️ {disputeCount} مشكلة مؤكدة في السجل</p>
                   )}
@@ -1298,6 +1317,7 @@ export default function Admin() {
                 <button className={`text-sm flex-1 ${d.active ? 'btn-danger' : 'btn-sea'}`} onClick={() => toggleDriver(d, 'active')}>{d.active ? 'إيقاف الحساب' : 'تفعيل الحساب'}</button>
                 <button className="btn-ghost text-sm flex-1" onClick={() => editDriverDetails(d)}>تعديل الاسم والرقم</button>
                 <button className="btn-ghost text-sm flex-1" onClick={() => editInstapay(d)}>تعديل إنستاباي</button>
+                <button className="btn-ghost text-sm flex-1" onClick={() => resetDriverDevice(d)}>فك ربط الجهاز</button>
               </div>
             </div>
             )

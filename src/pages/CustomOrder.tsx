@@ -41,6 +41,17 @@ export default function CustomOrder() {
   // prompt asked the pharmacist for "أدوية بروشتة", which is a shelf label,
   // not a medicine.
   const [intent, setIntent] = useState<string | null>(null)
+  // Search replaced the category chips as the PRIMARY way in. Categories made
+  // the customer guess which shelf their thing lives on before they could see
+  // it; search works from the first letter, and when nothing matches it offers
+  // to add exactly what was typed -- so free text still works, it is just the
+  // fallback now rather than the only road.
+  const [search, setSearch] = useState('')
+  const [popular, setPopular] = useState<string[]>([])
+  const [lastRequest, setLastRequest] = useState<{ id: number; created_at: string; request_items: { name: string; qty: number }[] } | null>(null)
+  const [howOpen, setHowOpen] = useState(false)
+  /** Open slots per vendor, for the chooser cards. Keyed by restaurant id. */
+  const [vendorSlots, setVendorSlots] = useState<Record<number, Slot[]>>({})
   const [rxPath, setRxPath] = useState<string | null>(null)
   const [rxPreview, setRxPreview] = useState<string | null>(null)
   const [rxUploading, setRxUploading] = useState(false)
@@ -148,6 +159,45 @@ export default function CustomOrder() {
     setVendor(matches.length === 1 ? matches[0] : null)
   }, [typeFilter, vendorParam, vendors])
 
+  // Slots for EVERY custom-request vendor, so the chooser can say "أقرب فترة
+  // ٢:٠٠ م" or "فترات محددة" before the customer commits to a tap. Finding out
+  // a mandatory slot step exists only after writing half a shopping list is
+  // the single most annoying thing about the old flow.
+  useEffect(() => {
+    const markets = vendors.filter(v => v.vendor_type === 'supermarket')
+    if (!markets.length) return
+    Promise.all(markets.map(v =>
+      supabase.rpc('open_slots', { p_restaurant_id: v.id })
+        .then(({ data }) => [v.id, (data as Slot[]) ?? []] as const)
+    )).then(pairs => setVendorSlots(Object.fromEntries(pairs)))
+  }, [vendors])
+
+  useEffect(() => {
+    if (!vendor) { setPopular([]); setLastRequest(null); return }
+    supabase.rpc('popular_request_items', { p_restaurant_id: vendor.id })
+      .then(({ data }) => setPopular((data as string[]) ?? []))
+    // Returns null for anyone we cannot identify -- it refuses to answer to a
+    // typed phone number, unlike every other lookup here.
+    supabase.rpc('my_last_request', { p_restaurant_id: vendor.id, p_session_token: getSessionToken() })
+      .then(({ data }) => setLastRequest((data as typeof lastRequest) ?? null))
+  }, [vendor, customer?.id])
+
+  // Everything the customer has built belongs to ONE vendor. Switching vendors
+  // used to keep it all: open the pharmacy, photograph a prescription, go back
+  // and tap الماركت, and the prescription was still attached -- invisibly,
+  // because the upload card only renders for a pharmacy, so there was no sign
+  // it was there and no way to remove it. The submit button read "ابعت
+  // الروشتة" on a supermarket screen and the server accepted it, because it
+  // checks "items OR prescription" and cannot know which shop it is for. Same
+  // path sends a grocery list to the pharmacist via the new "الماركت مقفول →
+  // روح للصيدلية" button, which only changes the query string.
+  const vendorId = vendor?.id ?? null
+  useEffect(() => {
+    setLines([]); setNotes(''); setSearch(''); setDraft('')
+    setRxPath(null)
+    setRxPreview(prev => { if (prev) URL.revokeObjectURL(prev); return null })
+  }, [vendorId])
+
   useEffect(() => {
     if (!vendor) return
     supabase.from('menu_items').select('*').eq('restaurant_id', vendor.id).eq('available', true)
@@ -227,12 +277,50 @@ export default function CustomOrder() {
   const { fee: deliveryFee, quote, loading: feeLoading, failed: feeFailed, retry: retryFee } =
     useDeliveryQuote(compoundId)
   const scheduled = vendor?.vendor_type === 'supermarket'
+
+  // Only real products are searchable or addable. is_shelf_label is now a real
+  // column, so this is no longer the `name !== category` guess -- which still
+  // let "أدوية بروشتة" through, because its category is "أدوية".
+  const products = knownItems.filter(it => !it.is_shelf_label)
+
+  const searchQ = search.trim().toLowerCase()
+  const matches = searchQ
+    ? products.filter(it => it.name.toLowerCase().includes(searchQ)).slice(0, 6)
+    : []
+  const exactMatch = matches.some(it => it.name.trim().toLowerCase() === searchQ)
+
+  /** Catalogue price for a line, or null when we genuinely do not know it. */
+  const priceOf = (lineName: string) => {
+    const hit = products.find(it => it.name.trim().toLowerCase() === lineName.trim().toLowerCase())
+    // `?? null` would let a price of 0 through as a known price: the line would
+    // render a confident "0 ج.م", drop out of the unpriced count, and the card
+    // would claim the whole basket was priced. No such row exists today, but
+    // the pharmacy has no orderable products at all yet and the add-item form
+    // accepts "0" -- so the first products added there are exactly where this
+    // would land. A zero price means nobody has priced it.
+    return hit && hit.price > 0 ? hit.price : null
+  }
+
+  // An estimate, and labelled as one everywhere it appears. Four of the eight
+  // supermarket rows carry a real price; hiding them made every order
+  // unknowable for no reason. The unpriced lines say so on their own row, so
+  // the "we call you with the price" promise is not quietly broken.
+  const knownSubtotal = lines.reduce((sum, l) => {
+    const p = priceOf(l.name)
+    return p === null ? sum : sum + p * l.qty
+  }, 0)
+  const unpricedCount = lines.filter(l => priceOf(l.name) === null).length
   // selectedCompound, not compoundId. CheckoutPage already learned this: a
   // stored id whose compound has since been deactivated passes a truthiness
   // check, renders a blank المكان select, and submits p_zone: ''.
   const addressComplete = !!(name.trim() && isValidEgyptPhone(phone) && selectedCompound && unit.trim())
+  // A prescription IS an order. It already contains everything the pharmacist
+  // needs, so making someone also transcribe the medicine names -- probably
+  // misspelt -- was asking for the same information twice. The server enforces
+  // the same rule (items OR prescription), so this cannot drift.
+  const hasSomethingToOrder = lines.length > 0 || !!rxPath
   const valid = vendor && addressComplete
-    && lines.length > 0 && deliveryFee !== null && (!scheduled || !!slot)
+    && hasSomethingToOrder && deliveryFee !== null && (!scheduled || !!slot)
 
   // Collapse only for someone whose details we actually have. A guest, or a
   // signed-in customer with a gap (no saved unit number yet), still gets the
@@ -270,51 +358,81 @@ export default function CustomOrder() {
   // Step 1 — pick the vendor
   if (!vendor) {
     const shownVendors = typeFilter ? vendors.filter(v => v.vendor_type === typeFilter) : vendors
+    const pharmacyOpen = vendors.some(v => v.vendor_type === 'pharmacy')
+
     return (
       <div>
-        {/* No "طلب خاص" any more. That name described the mechanism (a request
-            rather than a catalogue order) instead of the errand, and it had its
-            own home-screen card sitting beside the pharmacy and supermarket
-            cards -- whose only job was to offer a choice between those same two
-            places. The untyped screen is now reachable only by typing the URL,
-            so it names what it actually lists. */}
         <h1 className="text-2xl font-bold mb-1">
-          {typeFilter === 'pharmacy' ? 'الصيدلية' : typeFilter === 'supermarket' ? 'السوبر ماركت' : 'صيدلية وماركت'}
+          {typeFilter === 'pharmacy' ? 'الصيدلية' : typeFilter === 'supermarket' ? 'السوبر ماركت' : 'محتاج إيه دلوقتي؟'}
         </h1>
-        <p className="text-mist text-sm mb-4">قول لنا اللي محتاجه، وإحنا هنجهزه معاك — من غير ما تدور في قايمة طويلة</p>
-        <div className="grid grid-cols-2 gap-4">
+        <p className="text-mist text-sm mb-4">قول لنا اللي محتاجه، وإحنا هنجهزه معاك</p>
+
+        {/* Rebuilt as answer-shaped cards rather than two emoji tiles.
+            The old chooser was a screen that ASKED a question ("pharmacy or
+            market?") while withholding every fact needed to answer it: whether
+            the shop is open, what delivery costs, how long it takes, what it
+            even sells. Worse, the supermarket's mandatory delivery slot was
+            invisible until the customer was inside with half a list written.
+            Each card now carries its own status, fee, timing and range. */}
+        <div className="space-y-3">
           {shownVendors.map(v => {
             const art = artFor(v.vendor_type === 'pharmacy' ? 'أدوية' : 'خضار وفاكهة')
+            const isMarket = v.vendor_type === 'supermarket'
+            const vSlots = vendorSlots[v.id] ?? []
+            const next = vSlots[0]
+            const today = next?.scheduled_date === new Date().toISOString().slice(0, 10)
             return (
-              <button key={v.id} className="card p-4 text-right" onClick={() => setVendor(v)}>
-                {/* Show the uploaded logo. This tile hardcoded 💊 / 🛒 and
-                    never looked at logo_url at all, so the logos Wael set for
-                    the pharmacy and the supermarket in the dashboard changed
-                    nothing anywhere a customer could see -- and these are the
-                    two vendors with no restaurant card to appear on either.
-                    The emoji stays as the fallback for a vendor with no logo. */}
-                <div className="w-full aspect-square rounded-xl overflow-hidden grid place-items-center text-4xl mb-3"
+              <button key={v.id}
+                className="card p-3.5 w-full text-right flex items-center gap-3 hover:border-sea/40 transition-colors"
+                onClick={() => setVendor(v)}>
+                <span className="w-14 h-14 rounded-xl overflow-hidden grid place-items-center text-2xl shrink-0"
                   style={{ background: art.tint }}>
                   {v.logo_url
-                    ? <img src={v.logo_url} alt="" loading="eager"
-                        className="w-full h-full object-cover"
+                    ? <img src={v.logo_url} alt="" loading="eager" className="w-full h-full object-cover"
                         onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
                     : (v.vendor_type === 'pharmacy' ? '💊' : '🛒')}
-                </div>
-                <h3 className="font-bold">{v.name}</h3>
-                <p className="text-xs text-mist mt-0.5">{v.vendor_type === 'pharmacy' ? 'صيدلية' : 'سوبر ماركت'}</p>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center gap-2">
+                    <span className="font-bold text-[15px] truncate">{v.name}</span>
+                    {isMarket
+                      ? <span className="shrink-0 text-[10px] font-bold text-sandink bg-sand/20 rounded px-1.5 py-0.5">فترات محددة</span>
+                      : <span className="shrink-0 text-[10px] font-bold text-sea bg-sea/10 rounded px-1.5 py-0.5">مفتوحة</span>}
+                  </span>
+                  {v.description && (
+                    <span className="block text-xs text-mist mt-0.5 truncate">{v.description}</span>
+                  )}
+                  <span className="block text-xs text-mist mt-1">
+                    {deliveryFee !== null ? `التوصيل ${deliveryFee} ج.م` : 'التوصيل حسب مكانك'}
+                    {isMarket
+                      ? next ? ` · أقرب فترة ${today ? '' : 'بكرة '}${next.start_time.slice(0, 5)}` : ' · مفيش فترات دلوقتي'
+                      : ` · خلال ${v.prep_minutes + 20} دقيقة تقريبًا`}
+                  </span>
+                </span>
+                <span className="text-mist shrink-0" aria-hidden="true">‹</span>
               </button>
             )
           })}
+
           {shownVendors.length === 0 && (
-            <div className="col-span-full card p-6 text-center">
+            <div className="card p-6 text-center">
               <p className="font-semibold">مقفول دلوقتي</p>
               <p className="text-sm text-mist mt-1 mb-4">
-                الصيدلية والماركت بيفتحوا في مواعيد محددة. جرب تاني بعد شوية.
+                {typeFilter === 'supermarket' && pharmacyOpen
+                  ? 'الماركت بيفتح في مواعيد محددة — بس الصيدلية شغالة دلوقتي.'
+                  : 'الصيدلية والماركت بيفتحوا في مواعيد محددة. جرب تاني بعد شوية.'}
               </p>
-              {/* This tab is the only door to this errand, so an empty list
-                  used to be a screen with nothing on it and nowhere to go. */}
-              <button className="btn-sea !py-2 !px-5 text-sm" onClick={() => nav('/')}>شوف المطاعم</button>
+              {/* An empty list used to be a screen with nothing on it and
+                  nowhere to go. When one of the two is closed the other is
+                  usually the nearest thing to what they came for, so say so
+                  instead of leaving them to work it out. */}
+              {typeFilter === 'supermarket' && pharmacyOpen ? (
+                <button className="btn-sea !py-2 !px-5 text-sm" onClick={() => nav('/custom-order?type=pharmacy')}>
+                  روح للصيدلية
+                </button>
+              ) : (
+                <button className="btn-sea !py-2 !px-5 text-sm" onClick={() => nav('/')}>شوف المطاعم</button>
+              )}
             </div>
           )}
         </div>
@@ -338,49 +456,84 @@ export default function CustomOrder() {
         const siblings = typeFilter ? vendors.filter(v => v.vendor_type === typeFilter) : vendors
         if (siblings.length > 1) setVendor(null); else nav('/')
       }}>← رجوع</button>
-      <h1 className="text-2xl font-bold mb-1">{vendor.name}</h1>
+      <div className="flex items-center gap-2 mb-1 flex-wrap">
+        <h1 className="text-2xl font-bold">{vendor.name}</h1>
+        <span className="text-[11px] font-bold text-sea bg-sea/10 rounded px-2 py-0.5">
+          {deliveryFee !== null ? `${deliveryFee} ج.م توصيل` : 'التوصيل حسب مكانك'}
+        </span>
+      </div>
+
+      {/* The four-step numbered card that used to open this screen is now one
+          line plus a disclosure. The promise that matters -- we call you with
+          the price, you can say no, nothing is paid now -- stays visible,
+          because that is the deal being struck. The mechanics moved behind
+          "إزاي بيشتغل؟". Someone who wants paracetamol should not have to read
+          an explainer to get to a text box. */}
       <p className="text-mist text-sm mb-3">
-        {scheduled
-          ? 'اكتب اللي محتاجه، اختار فترة التوصيل، وإحنا نتصل بيك نأكد السعر'
-          : 'اكتب اللي محتاجه، وهنقولك السعر النهائي بمكالمة قبل ما نجهز الطلب'}
+        هنتصل بيك بسعر الأصناف قبل ما نجهّز حاجة · مفيش دفع دلوقتي ·{' '}
+        <button className="text-sea font-semibold underline" onClick={() => setHowOpen(o => !o)}>
+          {howOpen ? 'إخفاء' : 'إزاي بيشتغل؟'}
+        </button>
       </p>
 
-      {/* The single biggest complaint about this screen was that the customer
-          reached the end of a form and still had no total. That is inherent --
-          a supermarket basket cannot be priced before someone walks the aisle --
-          but it was only admitted in one grey line just above the submit button,
-          after all the work. Saying it first turns a nasty surprise into the
-          deal the customer agreed to. The delivery fee IS known now, so it is
-          stated here rather than held back with the rest. */}
-      <ol className="card p-4 mb-4 text-sm space-y-2 bg-shellup/50">
-        <li className="flex gap-2.5">
-          <span className="shrink-0 w-5 h-5 rounded-full bg-sea text-white grid place-items-center text-[11px] font-bold">1</span>
-          <span>اكتب قايمة اللي محتاجه — مش لازم تكون دقيقة.</span>
-        </li>
-        {scheduled && (
+      {howOpen && (
+        <ol className="card p-4 mb-4 text-sm space-y-2 bg-shellup/50">
           <li className="flex gap-2.5">
-            <span className="shrink-0 w-5 h-5 rounded-full bg-sea text-white grid place-items-center text-[11px] font-bold">2</span>
-            <span>اختار فترة التوصيل اللي تناسبك.</span>
+            <span className="shrink-0 w-5 h-5 rounded-full bg-sea text-white grid place-items-center text-[11px] font-bold">1</span>
+            <span>اكتب قايمة اللي محتاجه — مش لازم تكون دقيقة.</span>
           </li>
-        )}
-        <li className="flex gap-2.5">
-          <span className="shrink-0 w-5 h-5 rounded-full bg-sea text-white grid place-items-center text-[11px] font-bold">{scheduled ? '3' : '2'}</span>
-          <span>
-            <b>نتصل بيك بسعر الأصناف قبل ما نجهّز حاجة</b> — تقدر توافق أو تلغي،
-            ومفيش دفع دلوقتي.
-          </span>
-        </li>
-        <li className="flex gap-2.5">
-          <span className="shrink-0 w-5 h-5 rounded-full bg-sea text-white grid place-items-center text-[11px] font-bold">{scheduled ? '4' : '3'}</span>
-          <span>
-            التوصيل{' '}
-            {deliveryFee !== null
-              ? <b className="text-foam">{deliveryFee} ج.م</b>
-              : <span className="text-mist">…</span>}{' '}
-            — ده الرقم الوحيد المعروف من دلوقتي.
-          </span>
-        </li>
-      </ol>
+          {scheduled && (
+            <li className="flex gap-2.5">
+              <span className="shrink-0 w-5 h-5 rounded-full bg-sea text-white grid place-items-center text-[11px] font-bold">2</span>
+              <span>اختار فترة التوصيل اللي تناسبك.</span>
+            </li>
+          )}
+          <li className="flex gap-2.5">
+            <span className="shrink-0 w-5 h-5 rounded-full bg-sea text-white grid place-items-center text-[11px] font-bold">{scheduled ? '3' : '2'}</span>
+            <span><b>نتصل بيك بسعر الأصناف قبل ما نجهّز حاجة</b> — تقدر توافق أو تلغي، ومفيش دفع دلوقتي.</span>
+          </li>
+          <li className="flex gap-2.5">
+            <span className="shrink-0 w-5 h-5 rounded-full bg-sea text-white grid place-items-center text-[11px] font-bold">{scheduled ? '4' : '3'}</span>
+            <span>
+              التوصيل{' '}
+              {deliveryFee !== null ? <b className="text-foam">{deliveryFee} ج.م</b> : <span className="text-mist">…</span>}{' '}
+              — ده الرقم الوحيد المعروف من دلوقتي.
+            </span>
+          </li>
+        </ol>
+      )}
+
+      {/* A prescription is a complete order, so it goes FIRST -- ahead of the
+          search box, the chips and the list. It is the shortest possible
+          pharmacy order (one photo, zero typing) and it used to sit below the
+          category chips where most people never scrolled. */}
+      {vendor.vendor_type === 'pharmacy' && (
+        <div className="card p-4 mb-4 border-sea/40 bg-sea/[0.04]">
+          {rxPreview ? (
+            <div className="flex items-center gap-3">
+              <img src={rxPreview} alt="الروشتة" className="w-14 h-14 rounded-xl object-cover border border-line shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-emerald-700">الروشتة اترفعت ✓</p>
+                <p className="text-xs text-mist mt-0.5">الصيدلي هيقراها ويتصل بيك بالسعر</p>
+              </div>
+              <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0"
+                onClick={() => { setRxPath(null); setRxPreview(null) }}>شيلها</button>
+            </div>
+          ) : (
+            <>
+              <p className="font-bold text-sm">📷 عندك روشتة؟</p>
+              <p className="text-xs text-mist mt-1 mb-3">
+                صوّرها وابعتها — مش محتاج تكتب أي حاجة تانية.
+              </p>
+              <input type="file" accept="image/jpeg,image/png,image/webp,image/avif"
+                capture="environment" disabled={rxUploading}
+                onChange={e => { const f = e.target.files?.[0]; if (f) uploadRx(f) }}
+                className="text-sm" />
+              {rxUploading && <p className="text-xs text-mist mt-1">جاري الرفع…</p>}
+            </>
+          )}
+        </div>
+      )}
 
       {/* The slot picker used to sit between the notes field and the address,
           two thirds of the way down. Supermarket is the only flow that requires
@@ -388,6 +541,25 @@ export default function CustomOrder() {
           step they had no warning about -- and the submit button stayed dead
           with the explanation scrolled off screen. It is now the second thing
           on the page, framed as a choice rather than a blocker. */}
+      {/* A closed market used to be one grey sentence, after which the
+          customer could still write a full shopping list against an order that
+          would never be accepted. It is a state with two good answers -- book
+          the first slot tomorrow, or go to the pharmacy, which is usually open
+          and is the nearest thing to what they came for -- so offer both. */}
+      {scheduled && slots.length === 0 && (
+        <div className="card p-4 mb-4 border-sand/50 bg-sand/10">
+          <p className="font-bold text-sm text-sandink">الماركت مقفول دلوقتي</p>
+          <p className="text-xs text-mist mt-1 mb-3">
+            الماركت بيوصل في فترات محددة ومفيش فترة متاحة دلوقتي. جرب بكرة الصبح،
+            أو الصيدلية شغالة دلوقتي.
+          </p>
+          <button className="btn-sea w-full !py-2.5 text-sm"
+            onClick={() => nav('/custom-order?type=pharmacy')}>
+            روح للصيدلية
+          </button>
+        </div>
+      )}
+
       {scheduled && (
         <div className="mb-4">
           <h2 className="font-bold mb-1">فترة التوصيل</h2>
@@ -417,140 +589,181 @@ export default function CustomOrder() {
         </div>
       )}
 
-      {/* Categories now STEER the screen. They used to write their own name
-          into the customer's order, so tapping "أدوية بروشتة" put the words
-          "أدوية بروشتة" on the list -- a shelf label, not a medicine, and
-          nothing the pharmacist could actually fetch. */}
-      {categories.length > 0 && (
-        <div className="mb-4">
-          <p className="text-sm text-mist mb-2">عايز إيه من {vendor.name}؟</p>
-          <div className="flex flex-wrap gap-2">
-            {categories.map(cat => (
-              <button key={cat}
-                aria-pressed={intent === cat}
-                className={`tab ${intent === cat ? 'tab-active' : 'bg-shellup/60'}`}
-                onClick={() => setIntent(intent === cat ? null : cat)}>
-                {artFor(cat).emoji} {cat}
+      {/* SEARCH, not categories.
+          Categories made the customer guess which shelf their thing lives on
+          before they were allowed to see it -- and the shelf names themselves
+          leaked onto orders ("أدوية بروشتة × 1", a real order today). Search
+          works from the first letter and, when nothing matches, offers to add
+          exactly what was typed. Free text still works; it is the fallback now
+          rather than the only road.
+
+          Only products are searchable. is_shelf_label is a real column now, so
+          this is no longer the `name !== category` guess that still let
+          "أدوية بروشتة" through. */}
+      <div className="mb-4">
+        <label className="label" htmlFor={`${fid}-1`}>عايز إيه؟</label>
+        <div className="relative">
+          <input id={`${fid}-1`} className="field !pr-10" value={search}
+            onChange={e => setSearch(e.target.value)}
+            onKeyDown={e => {
+              if (e.key !== 'Enter') return
+              e.preventDefault()
+              const typed = search.trim()
+              const first = matches[0]
+              // The old addDraft() opened with `if (!t) return`; losing that
+              // guard meant Enter on an empty box added a nameless line with
+              // qty 1 -- which counted towards "1 صنف", satisfied the submit
+              // check, and reached the vendor as an order line with no name.
+              if (!first && !typed) return
+              addNamed(first && !exactMatch ? first.name : typed)
+              setSearch('')
+            }}
+            placeholder={vendor.vendor_type === 'pharmacy' ? 'دوّر على دوا أو منتج…' : 'دوّر على منتج…'} />
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mist pointer-events-none">🔍</span>
+        </div>
+
+        {searchQ && (
+          <div className="card divide-y divide-line mt-2">
+            {matches.map(it => {
+              const added = lines.some(l => l.name.toLowerCase() === it.name.toLowerCase())
+              return (
+                <button key={it.id} className="w-full flex items-center gap-2 px-3 py-2.5 text-right"
+                  onClick={() => { addNamed(it.name); setSearch('') }}>
+                  <span className="flex-1 min-w-0 text-sm truncate">{it.name}</span>
+                  {it.price > 0 && <span className="text-xs font-bold text-sea shrink-0">{it.price} ج.م</span>}
+                  <span className={`w-7 h-7 rounded-lg grid place-items-center shrink-0 text-sm ${
+                    added ? 'bg-sea/10 text-sea' : 'bg-sea text-white'}`}>{added ? '✓' : '+'}</span>
+                </button>
+              )
+            })}
+            {/* Always offered, never hidden behind "no results". The catalogue
+                has 13 rows; almost everything a customer wants is not in it. */}
+            {!exactMatch && (
+              <button className="w-full flex items-center gap-2 px-3 py-2.5 text-right"
+                onClick={() => { addNamed(search.trim()); setSearch('') }}>
+                <span className="flex-1 min-w-0 text-sm text-mist truncate">
+                  {matches.length === 0 ? 'مش في القايمة — ' : ''}ضيف «<b className="text-foam">{search.trim()}</b>» زي ما كتبته
+                </span>
+                <span className="w-7 h-7 rounded-lg grid place-items-center shrink-0 text-sm bg-shellup text-foam">+</span>
               </button>
-            ))}
+            )}
           </div>
+        )}
 
-          {/* Picking a category used to do nothing but tint a chip (and, before
-              that, type the shelf label into the order). It now offers the
-              things on that shelf as one-tap additions, so someone who does not
-              know what to write has somewhere to start.
-
-              No prices. Nine of the thirteen rows behind this are shelf labels
-              with round placeholder values -- 100.00, 50.00 -- and a number
-              printed next to an item reads as a quote. The whole flow's promise
-              is that the price comes by phone; putting a fake one here would
-              break that in the first thirty seconds. */}
-          {intent && (
-            <div className="mt-3">
-              {(() => {
-                // Only real products. For the pharmacy, all five menu_items rows
-                // are shelf LABELS whose name equals their category ("أدوية
-                // بروشتة", "أجهزة طبية"), and offering them as one-tap additions
-                // put "أدوية بروشتة" on a customer's order as a line item --
-                // a category, not a medicine, and nothing a pharmacist can
-                // fetch. Seen on a real order, 2026-08-05.
-                //
-                // This is the exact bug the category chips were changed to avoid
-                // in the first place; the comment above them says so. Adding
-                // quick-add reintroduced it through a different door. The
-                // name-vs-category test is what separates "أرز الملك بسمتي
-                // (1 كجم)" from "بقالة".
-                const inCat = knownItems.filter(it =>
-                  it.category === intent && it.name.trim() !== it.category.trim())
-                if (inCat.length === 0) {
-                  return <p className="text-xs text-mist">اكتب اللي محتاجه تحت وإحنا نجيبه.</p>
-                }
+        {/* One-tap starting points for someone who does not know what to write.
+            Server-ranked by what people actually ordered, falling back to real
+            products; shelf labels are excluded on both sides. Empty for the
+            pharmacy until history exists, which is honest -- better an absent
+            row than five fake suggestions. */}
+        {!searchQ && popular.length > 0 && (
+          <div className="mt-3">
+            <p className="text-xs text-mist mb-2">الأكتر طلبًا</p>
+            <div className="flex flex-wrap gap-2">
+              {popular.map(nm => {
+                const added = lines.some(l => l.name.toLowerCase() === nm.toLowerCase())
                 return (
-                  <>
-                    <p className="text-xs text-mist mb-2">دوس على أي حاجة تضيفها لقايمتك:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {inCat.map(it => {
-                        const added = lines.some(l => l.name.toLowerCase() === it.name.toLowerCase())
-                        return (
-                          <button key={it.id}
-                            className={`rounded-full border px-3 min-h-[36px] text-xs font-semibold transition-colors ${
-                              added ? 'border-sea bg-sea/10 text-sea' : 'border-line bg-shell text-foam'}`}
-                            onClick={() => addNamed(it.name)}>
-                            {added ? '✓ ' : '+ '}{it.name}
-                          </button>
-                        )
-                      })}
-                    </div>
-                    <p className="text-[11px] text-mist mt-2">
-                      الأسعار بتتأكد بالمكالمة — مفيش أسعار ثابتة هنا.
-                    </p>
-                  </>
+                  <button key={nm}
+                    className={`rounded-full border px-3 min-h-[36px] text-xs font-semibold transition-colors ${
+                      added ? 'border-sea bg-sea/10 text-sea' : 'border-line bg-shell text-foam'}`}
+                    onClick={() => addNamed(nm)}>
+                    {added ? '✓ ' : '+ '}{nm}
+                  </button>
                 )
-              })()}
+              })}
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
 
-      {/* Prescription upload, only where it means something: any pharmacy
-          order, or a category that mentions a prescription. Optional -- plenty
-          of pharmacy orders are shampoo. */}
-      {(vendor.vendor_type === 'pharmacy' || (intent ?? '').includes('روشتة')) && (
-        <div className="card p-4 mb-4 border-sea/40">
-          <p className="font-bold text-sm">📷 عندك روشتة؟ صوّرها</p>
-          <p className="text-xs text-mist mt-1 mb-3">
-            هتوصل للصيدلي مع طلبك، فمش هيحتاج يتصل بيك عشان يشوفها. اختياري.
-          </p>
-          {rxPreview ? (
-            <div className="flex items-center gap-3">
-              <img src={rxPreview} alt="الروشتة" className="w-16 h-16 rounded-xl object-cover border border-line" />
-              <span className="text-sm font-semibold text-emerald-700 flex-1">اترفعت ✓</span>
-              <button className="btn-ghost !py-1.5 !px-3 text-xs"
-                onClick={() => { setRxPath(null); setRxPreview(null) }}>شيلها</button>
-            </div>
-          ) : (
-            <>
-              <input type="file" accept="image/jpeg,image/png,image/webp,image/avif"
-                capture="environment" disabled={rxUploading}
-                onChange={e => { const f = e.target.files?.[0]; if (f) uploadRx(f) }}
-                className="text-sm" />
-              {rxUploading && <p className="text-xs text-mist mt-1">جاري الرفع…</p>}
-            </>
-          )}
-        </div>
-      )}
+        {/* Reordering is the single most useful thing we can offer a repeat
+            customer of a shop like this -- people rebuy the same things. Only
+            shown to someone we can identify; my_last_request refuses to answer
+            to a typed phone number. */}
+        {!searchQ && lines.length === 0 && lastRequest && lastRequest.request_items?.length > 0 && (
+          <button className="card p-3 mt-3 w-full text-right flex items-center gap-3 border-sea/30"
+            onClick={() => lastRequest.request_items.forEach(it => {
+              for (let n = 0; n < Math.max(1, it.qty); n++) addNamed(it.name)
+            })}>
+            <span className="text-lg shrink-0">↺</span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-sm font-bold">اطلب زي المرة اللي فاتت</span>
+              <span className="block text-xs text-mist truncate mt-0.5">
+                {lastRequest.request_items.map(it => it.name).join(' · ')}
+              </span>
+            </span>
+          </button>
+        )}
+      </div>
 
       <div className="mb-4">
-        <label className="label" htmlFor={`${fid}-1`}>قايمة طلبك *</label>
-
-        {lines.map((l, i) => (
-          <div key={i} className="flex items-center gap-2 card p-2.5 mb-2">
-            <span className="flex-1 text-sm min-w-0 truncate">{l.name}</span>
-            <div className="flex items-center gap-1 bg-shellup rounded-lg p-1 shrink-0">
-              <button className="w-8 h-8 rounded-md grid place-items-center" aria-label="تقليل"
-                onClick={() => setQty(i, -1)}>−</button>
-              <span className="font-bold text-sm w-6 text-center">{l.qty}</span>
-              <button className="w-8 h-8 rounded-md grid place-items-center bg-sea text-white" aria-label="زيادة"
-                onClick={() => setQty(i, +1)}>+</button>
-            </div>
-            <button className="w-9 h-9 grid place-items-center text-mist shrink-0" aria-label="حذف"
-              onClick={() => setLines(ls => ls.filter((_, j) => j !== i))}>✕</button>
-          </div>
-        ))}
-
-        <div className="flex gap-2">
-          <input id={`${fid}-1`} className="field flex-1" value={draft}
-            onChange={e => setDraft(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addDraft() } }}
-            placeholder={vendor.vendor_type === 'pharmacy' ? 'مثال: بنادول اكسترا' : 'مثال: خبز توست'} />
-          <button className="btn-sea shrink-0 !px-5" onClick={addDraft} disabled={!draft.trim()}>إضافة</button>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="label !mb-0">قايمتك</label>
+          {lines.length > 0 && <span className="text-xs text-mist">{lines.length} صنف</span>}
         </div>
+
         {lines.length === 0 && (
-          <p className="text-xs text-mist mt-1.5">
-            {vendor.vendor_type === 'pharmacy'
-              ? 'اكتب كل صنف لوحده واضغط إضافة — كده الصيدلي يقدر يشطب صنف صنف.'
-              : 'اكتب كل صنف لوحده واضغط إضافة — كده اللي بيجهّز طلبك يقدر يشطب صنف صنف.'}
+          <p className="text-xs text-mist mb-2">
+            {rxPath
+              ? 'الروشتة لوحدها كفاية — تقدر تبعت كده، أو تضيف حاجات تانية فوق.'
+              : 'دوّر فوق أو اكتب اللي محتاجه — كل صنف لوحده عشان اللي بيجهّز يقدر يشطبه.'}
           </p>
+        )}
+
+        {lines.map((l, i) => {
+          const price = priceOf(l.name)
+          return (
+            <div key={i} className="flex items-center gap-2 card p-2.5 mb-2">
+              <span className="flex-1 min-w-0">
+                <span className="block text-sm truncate">{l.name}</span>
+                {/* Says which of the two kinds of line this is, on the line
+                    itself. A price here is the catalogue price; no price means
+                    the phone call decides, and it should say so rather than
+                    leave a silent gap. */}
+                <span className="block text-[11px] mt-0.5">
+                  {price !== null
+                    ? <span className="text-sea font-semibold">{price} ج.م</span>
+                    : <span className="text-sandink">السعر بالمكالمة</span>}
+                </span>
+              </span>
+              <div className="flex items-center gap-1 bg-shellup rounded-lg p-1 shrink-0">
+                <button className="w-8 h-8 rounded-md grid place-items-center" aria-label="تقليل"
+                  onClick={() => setQty(i, -1)}>−</button>
+                <span className="font-bold text-sm w-6 text-center">{l.qty}</span>
+                <button className="w-8 h-8 rounded-md grid place-items-center bg-sea text-white" aria-label="زيادة"
+                  onClick={() => setQty(i, +1)}>+</button>
+              </div>
+              <button className="w-9 h-9 grid place-items-center text-mist shrink-0" aria-label="حذف"
+                onClick={() => setLines(ls => ls.filter((_, j) => j !== i))}>✕</button>
+            </div>
+          )
+        })}
+
+        {/* An estimate, labelled as one in three places. Four of the eight
+            supermarket rows carry a real price and the old screen hid every one
+            of them, so a basket of entirely-known items was still presented as
+            a total mystery. The unpriced count is stated rather than folded in,
+            so "تقريبًا" cannot be mistaken for a quote. */}
+        {lines.length > 0 && knownSubtotal > 0 && (
+          <div className="card p-3.5 bg-shellup border-none mt-1">
+            <div className="flex justify-between text-sm py-0.5">
+              <span className="text-mist">الأصناف المعروفة</span>
+              <span>{Math.round(knownSubtotal * 100) / 100} ج.م</span>
+            </div>
+            {deliveryFee !== null && (
+              <div className="flex justify-between text-sm py-0.5">
+                <span className="text-mist">التوصيل</span><span>{deliveryFee} ج.م</span>
+              </div>
+            )}
+            {unpricedCount > 0 && (
+              <div className="flex justify-between text-sm py-0.5 text-sandink">
+                <span>{unpricedCount === 1 ? 'صنف واحد لسه بالمكالمة' : `${unpricedCount} أصناف لسه بالمكالمة`}</span>
+                <span>؟</span>
+              </div>
+            )}
+            <div className="flex justify-between text-sm font-bold border-t border-line mt-1.5 pt-2">
+              <span>تقريبًا</span>
+              <span>{Math.round((knownSubtotal + (deliveryFee ?? 0)) * 100) / 100} ج.م{unpricedCount > 0 ? ' +' : ''}</span>
+            </div>
+          </div>
         )}
       </div>
 
@@ -670,7 +883,7 @@ export default function CustomOrder() {
           مفيش فترات توصيل متاحة دلوقتي، فمش هينفع نستقبل الطلب. جرب بكرة الصبح.
         </p>
       )}
-      {scheduled && slots.length > 0 && !slot && lines.length > 0 && (
+      {scheduled && slots.length > 0 && !slot && hasSomethingToOrder && (
         <p className="text-sm text-mist bg-shellup/60 rounded-xl p-3 mb-3">اختار فترة التوصيل فوق عشان تكمل</p>
       )}
 
@@ -678,6 +891,11 @@ export default function CustomOrder() {
         {saving ? 'جاري الإرسال…'
           : deliveryFee === null && compoundId ? 'بنحسب التوصيل…'
           : scheduled && slots.length === 0 ? 'مفيش فترات متاحة'
+          // A scheduled order sent with a button that just says "ابعت الطلب"
+          // reaches a customer who thinks it is coming now. Name the moment.
+          : scheduled && slot
+            ? `ابعت الطلب — التسليم ${slot.scheduled_date === new Date().toISOString().slice(0, 10) ? 'النهاردة' : 'بكرة'} ${slot.start_time.slice(0, 5)}–${slot.end_time.slice(0, 5)}`
+          : rxPath && lines.length === 0 ? 'ابعت الروشتة — هنتصل بيك بالسعر'
           : 'ابعت الطلب — هنتصل بيك بالسعر'}
       </button>
     </div>

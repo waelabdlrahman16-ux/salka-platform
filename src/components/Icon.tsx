@@ -20,10 +20,20 @@ type IconName =
   | 'forkKnife' | 'boxOpen' | 'bagShopping' | 'receipt' | 'magnifyingGlass'
   | 'locationDot' | 'star' | 'clock' | 'minus' | 'plus' | 'clone'
   | 'moneyBill' | 'mobileScreen' | 'house' | 'rectangleList' | 'penToSquare' | 'creditCard'
+  | 'cartShopping'
 
 type Variant = 'solid' | 'regular'
 
 const SOLID: Record<IconName, { viewBox: string; d: string }> = {
+  // Added for the bottom nav. The صيدلية/ماركت tab was the only one drawing an
+  // emoji (🛒) while the other four drew Font Awesome paths: different weight,
+  // different baseline, and on Android it rendered in the system emoji font,
+  // so one tab was full-colour among four monochrome ones and sat a couple of
+  // pixels low. Solid-only in the free tier, like most of this file.
+  cartShopping: {
+    viewBox: '0 0 576 512',
+    d: 'M0 24C0 10.7 10.7 0 24 0L69.5 0c22 0 41.5 12.8 50.6 32l411 0c26.3 0 45.5 25 38.6 50.4l-41 152.3c-8.5 31.4-37 53.3-69.5 53.3l-288.5 0 5.4 28.5c2.2 11.3 12.1 19.5 23.6 19.5L488 336c13.3 0 24 10.7 24 24s-10.7 24-24 24l-288.3 0c-34.6 0-64.3-24.6-70.7-58.5L77.4 54.5c-.7-3.8-4-6.5-7.9-6.5L24 48C10.7 48 0 37.3 0 24zM128 464a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zm288-48a48 48 0 1 1 0 96 48 48 0 1 1 0-96z'
+  },
   forkKnife: {
     viewBox: '0 0 512 512',
     d: 'M63.9 14.4C63.1 6.2 56.2 0 48 0s-15.1 6.2-16 14.3L17.9 149.7c-1.3 6-1.9 12.1-1.9 18.2 0 45.9 35.1 83.6 80 87.7L96 480c0 17.7 14.3 32 32 32s32-14.3 32-32l0-224.4c44.9-4.1 80-41.8 80-87.7 0-6.1-.6-12.2-1.9-18.2L223.9 14.3C223.1 6.2 216.2 0 208 0s-15.1 6.2-15.9 14.4L178.5 149.9c-.6 5.7-5.4 10.1-11.1 10.1-5.8 0-10.6-4.4-11.2-10.2L143.9 14.6C143.2 6.3 136.3 0 128 0s-15.2 6.3-15.9 14.6L99.8 149.8c-.5 5.8-5.4 10.2-11.2 10.2-5.8 0-10.6-4.4-11.1-10.1L63.9 14.4zM448 0C432 0 320 32 320 176l0 112c0 35.3 28.7 64 64 64l32 0 0 128c0 17.7 14.3 32 32 32s32-14.3 32-32l0-448c0-17.7-14.3-32-32-32z'

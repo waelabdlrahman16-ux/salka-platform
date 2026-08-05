@@ -17,6 +17,11 @@ export interface MenuItem {
   available_from: string | null; available_until: string | null
   /** Wording for the "make it a combo" toggle. Null falls back to a default. */
   combo_label: string | null
+  // True = a browsing heading ("بقالة", "أدوية بروشتة"), never orderable and
+  // never searchable. The pharmacy/market catalogue mixes headings and real
+  // products in one table; before this column the client guessed with
+  // `name !== category`, which still let "أدوية بروشتة" onto real orders.
+  is_shelf_label?: boolean
 }
 export interface MenuItemSize {
   id: number; menu_item_id: number; name: string; price: number
@@ -92,6 +97,11 @@ export interface Driver {
   rating: number; total_deliveries: number; commission_value: number
   cash_held: number; payout_schedule: 'daily' | 'weekly'
   instapay_number: string | null
+  // One phone per driver account -- see supabase driver_claim_device(). Null
+  // means unbound, so the next phone to open the account claims it.
+  device_id?: string | null
+  device_label?: string | null
+  device_bound_at?: string | null
 }
 export interface Assignment {
   id: number; order_id: number; driver_id: number; attempt_number: number
