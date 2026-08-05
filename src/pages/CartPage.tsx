@@ -148,7 +148,7 @@ export default function CartPage() {
       <div className="card p-3.5 mb-24 space-y-1.5">
         <div className="flex justify-between text-sm text-mist"><span>المنتجات</span><span>{subtotal} ج.م</span></div>
         <div className="flex justify-between text-sm text-mist">
-          <span>التوصيل{quote ? ` (${quote.distance_km} كم)` : ''}</span>
+          <span>التوصيل{quote ? ` لـ ${quote.compound_name}` : ''}</span>
           <span>
             {deliveryFee !== null ? `${deliveryFee} ج.م`
               : feeLoading ? '…'

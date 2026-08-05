@@ -20,6 +20,12 @@ export default function CustomOrder() {
   const [vendors, setVendors] = useState<Restaurant[]>([])
   const [vendor, setVendor] = useState<Restaurant | null>(null)
   const [categories, setCategories] = useState<string[]>([])
+  // The vendor's known items. Deliberately used as typing shortcuts and NOT as
+  // a priced catalogue: of the supermarket's 13 rows, nine are shelf labels
+  // ("مستلزمات التنظيف المنزلي") carrying round placeholder prices. Showing
+  // those numbers would be the client-side-default bug in its purest form --
+  // a price the customer reads as a quote that no server will honour.
+  const [knownItems, setKnownItems] = useState<MenuItem[]>([])
   // Structured lines, not a text blob.
   //
   // submit_custom_order has always ACCEPTED p_request_items, and the UI has
@@ -151,6 +157,7 @@ export default function CustomOrder() {
         const cats: string[] = []
         for (const it of items) if (!seen.has(it.category)) { seen.add(it.category); cats.push(it.category) }
         setCategories(cats)
+        setKnownItems(items)
       })
     setSlot(null)
     if (vendor.vendor_type === 'supermarket') {
@@ -159,6 +166,16 @@ export default function CustomOrder() {
       setSlots([])
     }
   }, [vendor])
+
+  // Tapping a known item is a shortcut for typing its name -- same list, same
+  // pricing-by-phone. It is not "adding to a cart".
+  function addNamed(itemName: string) {
+    setLines(ls => {
+      const i = ls.findIndex(l => l.name.toLowerCase() === itemName.toLowerCase())
+      if (i === -1) return [...ls, { name: itemName, qty: 1 }]
+      const copy = [...ls]; copy[i] = { ...copy[i], qty: copy[i].qty + 1 }; return copy
+    })
+  }
 
   function addDraft() {
     const t = draft.trim()
@@ -300,7 +317,83 @@ export default function CustomOrder() {
         if (siblings.length > 1) setVendor(null); else nav('/')
       }}>← رجوع</button>
       <h1 className="text-2xl font-bold mb-1">{vendor.name}</h1>
-      <p className="text-mist text-sm mb-4">اكتب اللي محتاجه، وهنقولك السعر النهائي بمكالمة قبل ما نجهز الطلب</p>
+      <p className="text-mist text-sm mb-3">
+        {scheduled
+          ? 'اكتب اللي محتاجه، اختار فترة التوصيل، وإحنا نتصل بيك نأكد السعر'
+          : 'اكتب اللي محتاجه، وهنقولك السعر النهائي بمكالمة قبل ما نجهز الطلب'}
+      </p>
+
+      {/* The single biggest complaint about this screen was that the customer
+          reached the end of a form and still had no total. That is inherent --
+          a supermarket basket cannot be priced before someone walks the aisle --
+          but it was only admitted in one grey line just above the submit button,
+          after all the work. Saying it first turns a nasty surprise into the
+          deal the customer agreed to. The delivery fee IS known now, so it is
+          stated here rather than held back with the rest. */}
+      <ol className="card p-4 mb-4 text-sm space-y-2 bg-shellup/50">
+        <li className="flex gap-2.5">
+          <span className="shrink-0 w-5 h-5 rounded-full bg-sea text-white grid place-items-center text-[11px] font-bold">1</span>
+          <span>اكتب قايمة اللي محتاجه — مش لازم تكون دقيقة.</span>
+        </li>
+        {scheduled && (
+          <li className="flex gap-2.5">
+            <span className="shrink-0 w-5 h-5 rounded-full bg-sea text-white grid place-items-center text-[11px] font-bold">2</span>
+            <span>اختار فترة التوصيل اللي تناسبك.</span>
+          </li>
+        )}
+        <li className="flex gap-2.5">
+          <span className="shrink-0 w-5 h-5 rounded-full bg-sea text-white grid place-items-center text-[11px] font-bold">{scheduled ? '3' : '2'}</span>
+          <span>
+            <b>نتصل بيك بسعر الأصناف قبل ما نجهّز حاجة</b> — تقدر توافق أو تلغي،
+            ومفيش دفع دلوقتي.
+          </span>
+        </li>
+        <li className="flex gap-2.5">
+          <span className="shrink-0 w-5 h-5 rounded-full bg-sea text-white grid place-items-center text-[11px] font-bold">{scheduled ? '4' : '3'}</span>
+          <span>
+            التوصيل{' '}
+            {deliveryFee !== null
+              ? <b className="text-foam">{deliveryFee} ج.م</b>
+              : <span className="text-mist">…</span>}{' '}
+            — ده الرقم الوحيد المعروف من دلوقتي.
+          </span>
+        </li>
+      </ol>
+
+      {/* The slot picker used to sit between the notes field and the address,
+          two thirds of the way down. Supermarket is the only flow that requires
+          one, so a customer who had already written a full list met a mandatory
+          step they had no warning about -- and the submit button stayed dead
+          with the explanation scrolled off screen. It is now the second thing
+          on the page, framed as a choice rather than a blocker. */}
+      {scheduled && (
+        <div className="mb-4">
+          <h2 className="font-bold mb-1">فترة التوصيل</h2>
+          <p className="text-xs text-mist mb-2">
+            الماركت بيوصل في فترات محددة، فاختار فترة الأول عشان نعرف نجهّزلك.
+          </p>
+          {slots.length === 0 && (
+            <p className="text-sm text-sandink">
+              مفيش فترات متاحة دلوقتي — جرب بكرة الصبح.
+            </p>
+          )}
+          <div className="grid grid-cols-2 gap-2">
+            {slots.map(sl => {
+              const on = slot?.id === sl.id && slot?.scheduled_date === sl.scheduled_date
+              const today = sl.scheduled_date === new Date().toISOString().slice(0, 10)
+              return (
+                <button key={`${sl.id}-${sl.scheduled_date}`}
+                  aria-pressed={on}
+                  className={`card p-3 text-right ${on ? 'border-sea' : ''}`}
+                  onClick={() => setSlot(sl)}>
+                  <p className="text-sm font-semibold">{sl.start_time.slice(0, 5)} — {sl.end_time.slice(0, 5)}</p>
+                  <p className="text-xs text-mist mt-0.5">{today ? 'النهاردة' : 'بكرة'} · باقي {sl.remaining}</p>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Categories now STEER the screen. They used to write their own name
           into the customer's order, so tapping "أدوية بروشتة" put the words
@@ -312,12 +405,55 @@ export default function CustomOrder() {
           <div className="flex flex-wrap gap-2">
             {categories.map(cat => (
               <button key={cat}
+                aria-pressed={intent === cat}
                 className={`tab ${intent === cat ? 'tab-active' : 'bg-shellup/60'}`}
                 onClick={() => setIntent(intent === cat ? null : cat)}>
                 {artFor(cat).emoji} {cat}
               </button>
             ))}
           </div>
+
+          {/* Picking a category used to do nothing but tint a chip (and, before
+              that, type the shelf label into the order). It now offers the
+              things on that shelf as one-tap additions, so someone who does not
+              know what to write has somewhere to start.
+
+              No prices. Nine of the thirteen rows behind this are shelf labels
+              with round placeholder values -- 100.00, 50.00 -- and a number
+              printed next to an item reads as a quote. The whole flow's promise
+              is that the price comes by phone; putting a fake one here would
+              break that in the first thirty seconds. */}
+          {intent && (
+            <div className="mt-3">
+              {(() => {
+                const inCat = knownItems.filter(it => it.category === intent)
+                if (inCat.length === 0) {
+                  return <p className="text-xs text-mist">اكتب اللي محتاجه تحت وإحنا نجيبه.</p>
+                }
+                return (
+                  <>
+                    <p className="text-xs text-mist mb-2">دوس على أي حاجة تضيفها لقايمتك:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {inCat.map(it => {
+                        const added = lines.some(l => l.name.toLowerCase() === it.name.toLowerCase())
+                        return (
+                          <button key={it.id}
+                            className={`rounded-full border px-3 min-h-[36px] text-xs font-semibold transition-colors ${
+                              added ? 'border-sea bg-sea/10 text-sea' : 'border-line bg-shell text-foam'}`}
+                            onClick={() => addNamed(it.name)}>
+                            {added ? '✓ ' : '+ '}{it.name}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <p className="text-[11px] text-mist mt-2">
+                      الأسعار بتتأكد بالمكالمة — مفيش أسعار ثابتة هنا.
+                    </p>
+                  </>
+                )
+              })()}
+            </div>
+          )}
         </div>
       )}
 
@@ -375,7 +511,11 @@ export default function CustomOrder() {
           <button className="btn-sea shrink-0 !px-5" onClick={addDraft} disabled={!draft.trim()}>إضافة</button>
         </div>
         {lines.length === 0 && (
-          <p className="text-xs text-mist mt-1.5">اكتب كل صنف لوحده واضغط إضافة — كده الصيدلي يقدر يشطب صنف صنف.</p>
+          <p className="text-xs text-mist mt-1.5">
+            {vendor.vendor_type === 'pharmacy'
+              ? 'اكتب كل صنف لوحده واضغط إضافة — كده الصيدلي يقدر يشطب صنف صنف.'
+              : 'اكتب كل صنف لوحده واضغط إضافة — كده اللي بيجهّز طلبك يقدر يشطب صنف صنف.'}
+          </p>
         )}
       </div>
 
@@ -385,24 +525,6 @@ export default function CustomOrder() {
           placeholder="مثال: لو مش موجود، جيب أي بديل" />
       </div>
 
-      {scheduled && (
-        <div className="mb-4">
-          <h2 className="font-bold mb-2">فترة التوصيل</h2>
-          {slots.length === 0 && <p className="text-sm text-sandink">لا توجد فترات متاحة حالياً</p>}
-          <div className="grid grid-cols-2 gap-2">
-            {slots.map(sl => {
-              const on = slot?.id === sl.id && slot?.scheduled_date === sl.scheduled_date
-              const today = sl.scheduled_date === new Date().toISOString().slice(0, 10)
-              return (
-                <button key={`${sl.id}-${sl.scheduled_date}`} className={`card p-3 text-right ${on ? 'border-sea' : ''}`} onClick={() => setSlot(sl)}>
-                  <p className="text-sm font-semibold">{sl.start_time.slice(0, 5)} — {sl.end_time.slice(0, 5)}</p>
-                  <p className="text-xs text-mist mt-0.5">{today ? 'النهاردة' : 'بكرة'} · باقي {sl.remaining}</p>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
 
       {/* Six fields collapse to one line as soon as we already know the answers.
           A signed-in customer with a saved address sees a summary and a تغيير
@@ -481,7 +603,7 @@ export default function CustomOrder() {
       {compoundId && (
         <div className="card p-3.5 mb-3">
           <div className="flex justify-between text-sm">
-            <span className="text-mist">رسوم التوصيل{quote ? ` (${quote.distance_km} كم)` : ''}</span>
+            <span className="text-mist">رسوم التوصيل{quote ? ` لـ ${quote.compound_name}` : ''}</span>
             <span className="font-semibold">
               {deliveryFee !== null ? `${deliveryFee} ج.م`
                 : feeLoading ? '…'
@@ -492,7 +614,7 @@ export default function CustomOrder() {
       )}
 
       <p className="text-sm text-mist bg-shellup/60 rounded-xl p-3 mb-4">
-        💬 سعر الأصناف هيتحدد لما نتصل بيك نأكد الطلب — مفيش دفع دلوقتي
+        💬 لسه مش هتدفع حاجة دلوقتي. هنتصل بيك بسعر الأصناف وتقرر وقتها.
       </p>
 
       {feeFailed && compoundId && (
@@ -521,7 +643,7 @@ export default function CustomOrder() {
         {saving ? 'جاري الإرسال…'
           : deliveryFee === null && compoundId ? 'بنحسب التوصيل…'
           : scheduled && slots.length === 0 ? 'مفيش فترات متاحة'
-          : 'إرسال الطلب'}
+          : 'ابعت الطلب — هنتصل بيك بالسعر'}
       </button>
     </div>
   )

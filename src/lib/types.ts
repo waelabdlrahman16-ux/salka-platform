@@ -4,6 +4,9 @@ export interface Restaurant {
   vendor_type: string; prep_minutes: number
   order_mode: 'catalog' | 'custom_request' | 'pickup_request'
   archived: boolean; logo_url: string | null; max_delivery_km: number | null
+  // Only restaurants_for_compound() supplies this. `rating` defaults to 5.0 on
+  // an unrated vendor, so nothing may render a score without checking it first.
+  review_count?: number
 }
 export interface MenuItem {
   id: number; restaurant_id: number; name: string; description: string
@@ -94,6 +97,8 @@ export interface Assignment {
   called_customer_at: string | null; no_answer_reported_at: string | null
   no_answer_admin_action: string | null
   cash_confirmed_at: string | null
+  arrived_at_customer_at: string | null
+  delivery_problem_reason: string | null
   orders?: Order
   drivers?: Driver
 }
@@ -132,6 +137,9 @@ export interface Compound {
   distance_km: number; direction: 'north' | 'south'
   est_travel_minutes: number; active: boolean
   latitude: number | null; longitude: number | null
+  // Delivery is priced per compound, not per kilometre. distance_km survives
+  // only because the SLA is still derived from it.
+  delivery_fee: number
 }
 export interface Region { id: number; name: string }
 

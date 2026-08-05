@@ -8,6 +8,8 @@ import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { registerPush } from '../lib/push'
 import { orderStatusLabel } from '../lib/statusLabels'
+import { rpc } from '../lib/rpc'
+import PrescriptionLink from '../components/PrescriptionLink'
 import type { Compound, MenuItem, Order, OrderItem, Restaurant } from '../lib/types'
 
 const KITCHEN = [
@@ -152,7 +154,13 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
   const [orderNotes, setOrderNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [sent, setSent] = useState(false)
+  // request_pickup returns { id, token }, and this screen used to destructure
+  // only `error` -- so the public_token was created and thrown away on every
+  // pickup order. my_orders() withholds the token from an unverified phone
+  // lookup, so MyOrders then linked the customer to /track/null. The vendor is
+  // the only party who ever holds this token; if they do not pass it on, the
+  // order is untrackable for its whole life.
+  const [sent, setSent] = useState<{ id: number; token: string } | null>(null)
 
   async function loadRecent() {
     const { data } = await supabase.from('orders').select('*')
@@ -179,7 +187,7 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
   async function submit() {
     if (!valid) return
     setSaving(true); setError('')
-    const { error: err } = await supabase.rpc('request_pickup', {
+    const { data, error: err } = await supabase.rpc('request_pickup', {
       p_restaurant_id: restaurant.id,
       p_customer_name: name.trim(),
       p_customer_phone: phone.trim(),
@@ -196,8 +204,9 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
     if (err) { setError('حصل خطأ، جرب تاني'); return }
     setName(''); setPhone(''); setUnit(''); setAddrNotes(''); setCompoundId(null)
     setCollectAmount(''); setOrderNotes(''); setPaymentMode('prepaid')
-    setSent(true); loadRecent()
-    setTimeout(() => setSent(false), 3000)
+    const created = data as { id: number; token: string } | null
+    setSent(created && created.token ? { id: created.id, token: created.token } : null)
+    loadRecent()
   }
 
   return (
@@ -212,7 +221,22 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
           : 'لأوردر جالك من غير سالكة (تليفون أو عميل حاضر)، سجّل بياناته هنا وهنبعتلك مندوب'}
       </p>
 
-      {sent && <p className="bg-emerald-50 text-emerald-700 rounded-xl p-3 text-sm mb-4 text-center">✅ تم إرسال الطلب للمندوبين</p>}
+      {sent && (
+        <div className="bg-emerald-50 text-emerald-800 rounded-xl p-3.5 text-sm mb-4 space-y-2">
+          <p className="font-semibold text-center">✅ تم إرسال الطلب للمندوبين — طلب #{sent.id}</p>
+          <p className="text-xs">ابعت اللينك ده للعميل عشان يتابع المندوب:</p>
+          <div className="flex gap-2">
+            <input readOnly dir="ltr" className="field !py-1.5 text-xs flex-1"
+              value={`${window.location.origin}/track/${sent.token}`}
+              onFocus={e => e.currentTarget.select()} />
+            <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0"
+              onClick={() => navigator.clipboard?.writeText(`${window.location.origin}/track/${sent.token}`)}>
+              نسخ
+            </button>
+          </div>
+          <button className="text-xs text-mist underline" onClick={() => setSent(null)}>إخفاء</button>
+        </div>
+      )}
 
       <div className="card p-4 mb-4">
         <h2 className="font-bold mb-3">هل العميل دفع بالفعل؟</h2>
@@ -263,7 +287,7 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
       {compoundId && (
         <div className="card p-4 mb-4 space-y-2">
           <div className="flex justify-between text-sm">
-            <span>رسوم التوصيل{quote ? ` (${quote.distance_km} كم)` : ''}</span>
+            <span>رسوم التوصيل{quote ? ` لـ ${quote.compound_name}` : ''}</span>
             <span>
               {deliveryFee !== null ? `${deliveryFee} ج.م`
                 : feeLoading ? '…'
@@ -329,7 +353,8 @@ function KitchenVendor({ rid }: { rid: number }) {
   const [isOpen, setIsOpen] = useState(true)
   const [name, setName] = useState('')
   const [declining, setDeclining] = useState<Order | null>(null)
-  const decliningRef = useDismissable(() => setDeclining(null), !!declining)
+  const [declineError, setDeclineError] = useState('')
+  const decliningRef = useDismissable(() => { setDeclining(null); setDeclineError('') }, !!declining)
   const [reliability, setReliability] = useState<{ avg_accept_minutes: number | null; total_orders: number } | null>(null)
   const audioUnlocked = useRef(false)
   const stockRef = useRef<HTMLDivElement>(null)
@@ -422,10 +447,18 @@ function KitchenVendor({ rid }: { rid: number }) {
     load()
   }
 
+  // The error was discarded outright, so when cancel_order refused -- it raises
+  // `too_late_to_cancel` for a non-admin the moment status leaves 'pending', and
+  // the رفض button renders on every live ticket -- the modal closed, the list
+  // repainted from server state, and the vendor was left believing they had
+  // declined an order that was still coming.
   async function decline() {
     if (!declining) return
-    await supabase.rpc('cancel_order', { p_order_id: declining.id, p_reason: 'vendor_declined' })
-    setDeclining(null); load()
+    const res = await rpc('cancel_order', { p_order_id: declining.id, p_reason: 'vendor_declined' }, {
+      too_late_to_cancel: 'الطلب اتقبل بالفعل ومعاه مندوب — كلّم الإدارة عشان تلغيه',
+    })
+    if (!res.ok) { setDeclineError(res.error); return }
+    setDeclining(null); setDeclineError(''); load()
   }
 
   function remaining(o: Order) {
@@ -528,7 +561,42 @@ function KitchenVendor({ rid }: { rid: number }) {
           </div>
         </div>
 
-        <div className="mt-3 bg-night border border-line !rounded-2xl p-3.5 text-sm space-y-1.5">
+        {/* A custom_request order writes NO order_items rows -- the whole list
+            lives in orders.request_items -- so this ticket used to render an
+            empty box. The pharmacist was being asked to press "قبول · 20 د" on
+            an order whose contents only the admin and the customer could see.
+            There are no prices here because there are none yet: the admin quotes
+            them by phone, and pricing_status stays 'pending_quote' until then. */}
+        {o.order_type === 'custom_request' && (
+          <div className="mt-3 bg-night border border-line !rounded-2xl p-3.5 text-sm space-y-1.5">
+            {o.pricing_status === 'pending_quote' && (
+              <p className="text-sandink text-xs font-semibold pb-1.5 border-b border-line">
+                🧾 طلب لسه ما اتسعّرش — الإدارة هتتصل بالعميل وتحط السعر
+              </p>
+            )}
+            {(o.request_items ?? []).length === 0 && (
+              <p className="text-mist">مفيش أصناف مكتوبة على الطلب ده</p>
+            )}
+            {(o.request_items ?? []).map((it, i) => (
+              <div key={i} className="flex justify-between">
+                <span>{it.name}</span>
+                <span className="text-mist shrink-0 mr-2">× {it.qty}</span>
+              </div>
+            ))}
+            {o.request_notes && (
+              <p className="text-sandink pt-1.5 border-t border-line">📝 {o.request_notes}</p>
+            )}
+            {o.prescription_path && (
+              <div className="pt-1.5 border-t border-line"><PrescriptionLink path={o.prescription_path} /></div>
+            )}
+            {o.slot_id && o.scheduled_date && (
+              <p className="text-mist pt-1.5 border-t border-line">🕐 فترة التوصيل: {o.scheduled_date}</p>
+            )}
+          </div>
+        )}
+
+        <div className={`mt-3 bg-night border border-line !rounded-2xl p-3.5 text-sm space-y-1.5 ${
+          o.order_type === 'custom_request' && (items[o.id] ?? []).length === 0 ? 'hidden' : ''}`}>
           {(items[o.id] ?? []).map(it => (
             <div key={it.id} className="flex justify-between">
               <span>
@@ -753,6 +821,9 @@ function KitchenVendor({ rid }: { rid: number }) {
           <div className="card !rounded-2xl w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold mb-2">رفض الطلب #{declining.id}</h3>
             <p className="text-sm text-mist mb-4">هيتم إلغاء الطلب وإخطار العميل. متاح فقط قبل بدء التحضير.</p>
+            {declineError && (
+              <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3">{declineError}</p>
+            )}
             <div className="flex gap-3">
               <button className="btn-ghost !rounded-2xl flex-1" onClick={() => setDeclining(null)}>تراجع</button>
               <button className="btn-danger !rounded-2xl flex-1" onClick={decline}>تأكيد الرفض</button>

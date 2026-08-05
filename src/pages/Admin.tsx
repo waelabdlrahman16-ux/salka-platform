@@ -8,6 +8,7 @@ import { uploadVendorImage } from '../lib/upload'
 import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel,
          ORDER_STATUSES, CLOSED_ORDER_STATUSES, UNPAID_ORDER_STATUSES, type OrderStatus } from '../lib/statusLabels'
 import { rpc } from '../lib/rpc'
+import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import Icon from '../components/Icon'
 import BannersAdmin from '../components/BannersAdmin'
 import PrescriptionLink from '../components/PrescriptionLink'
@@ -64,7 +65,18 @@ function AccountActionsMenu({ busy, onChangeEmail, onResetPassword, onCustomPass
   )
 }
 
-type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet' | 'banners'
+type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet' | 'banners' | 'refunds'
+
+// What is actually owed back, decided by the server. A COD order only ever took
+// the 50% deposit, so refunding `total` would be a gift -- and that is exactly
+// what the old block inside the complaints tab displayed.
+type PendingRefund = {
+  id: number; customer_name: string; customer_phone: string
+  total: number; payment_method: string; cod_deposit_amount: number | null
+  status: string; cancel_reason: string | null; cancelled_at: string | null
+  instapay_claimed_at: string | null; vendor_name: string | null
+  refund_amount: number
+}
 const TABS: { key: Tab; label: string }[] = [
   { key: 'unassigned', label: 'طلبات غير معيّنة' },
   { key: 'active', label: 'توصيلات جارية' },
@@ -76,6 +88,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'shifts', label: 'الورديات' },
   { key: 'payouts', label: 'مدفوعات المندوبين' },
   { key: 'wallet', label: 'محفظة العميل' },
+  { key: 'refunds', label: 'الاستردادات' },
   { key: 'complaints', label: 'الشكاوى' },
   { key: 'coverage', label: 'تغطية المطاعم' },
   { key: 'accounts', label: 'حسابات الدخول' },
@@ -120,6 +133,7 @@ export default function Admin() {
   const [compounds, setCompounds] = useState<Compound[]>([])
   const [coverage, setCoverage] = useState<VendorCoverage[]>([])
   const [lowRatings, setLowRatings] = useState<OrderRating[]>([])
+  const [pendingRefunds, setPendingRefunds] = useState<PendingRefund[]>([])
   const [coverageFor, setCoverageFor] = useState<number | null>(null)
   const [reliability, setReliability] = useState<Record<number, Reliability>>({})
   const [walletPhone, setWalletPhone] = useState('')
@@ -197,7 +211,7 @@ export default function Admin() {
       // uncapped; the caps only ever apply to display-only history.
       const [
         openO, refundO, recentO, activeA, recentA, d, unpaidE, recentE, r, m, st, sh, esc, sl,
-        openComp, recentComp, sr, cpd, cov, lr, wt, stalled, rel,
+        openComp, recentComp, sr, cpd, cov, lr, wt, stalled, refunds, rel,
       ] = await Promise.all([
         // "Operationally live" is NOT the same as "not terminal in the order
         // lifecycle": Failed_Delivery is retryable and must stay loaded so it
@@ -237,6 +251,7 @@ export default function Admin() {
           .or('driver_rating.lte.2,restaurant_rating.lte.2').order('id', { ascending: false }).limit(30)),
         withTimeout(supabase.from('wallet_transactions').select('order_id').not('order_id', 'is', null).ilike('reason', 'تعويض%')),
         withTimeout(supabase.rpc('admin_stalled_orders')),
+        withTimeout(supabase.rpc('admin_pending_refunds')),
         // Was an N+1: restaurant_reliability() once per restaurant, sequentially
         // awaited, inside the same 15s cycle.
         withTimeout(supabase.rpc('restaurants_reliability_all')),
@@ -275,6 +290,7 @@ export default function Admin() {
       if (!lr.error) setLowRatings(lr.data ?? [])
       if (!wt.error) setCompensatedOrderIds(new Set((wt.data ?? []).map((t: any) => t.order_id)))
       if (!stalled.error) setStalled((stalled.data as StalledOrder[]) ?? [])
+      if (!refunds.error) setPendingRefunds((refunds.data as PendingRefund[]) ?? [])
       if (!rel.error) setReliability((rel.data as Record<number, Reliability>) ?? {})
 
       const { data: accounts, error: accErr } = await supabase.rpc('admin_list_accounts')
@@ -392,6 +408,31 @@ export default function Admin() {
       return
     }
     setAssigning(null); load(true)
+  }
+
+  // Bulk import is the only way a driver record is created, and it parses
+  // "الاسم, رقم, النوع" out of a textarea -- so a typo, a swapped column or a
+  // driver who simply goes by another name was permanent. The RLS policy
+  // "admin manages drivers" already allows an admin UPDATE on this table; only
+  // the field was missing.
+  async function editDriverDetails(d: Driver) {
+    const name = prompt('اسم المندوب:', d.name ?? '')
+    if (name === null) return
+    if (!name.trim()) { setActionError('الاسم ماينفعش يكون فاضي'); return }
+
+    const phone = prompt('رقم موبايل المندوب:', d.phone ?? '')
+    if (phone === null) return
+    if (!isValidEgyptPhone(phone)) { setActionError(PHONE_HINT); return }
+
+    const patch: Record<string, unknown> = {}
+    if (name.trim() !== (d.name ?? '')) patch.name = name.trim()
+    if (phone.trim() !== (d.phone ?? '')) patch.phone = phone.trim()
+    if (Object.keys(patch).length === 0) { setActionError(''); return }
+
+    const { error } = await supabase.from('drivers').update(patch).eq('id', d.id)
+    if (error) { setActionError('مش قادرين نحفظ بيانات المندوب دلوقتي'); return }
+    setActionError('')
+    load(true)
   }
 
   async function editInstapay(d: Driver) {
@@ -728,6 +769,62 @@ export default function Admin() {
     load(true)
   }
 
+  // Admin could not cancel an order at all outside the "customer didn't answer"
+  // banner, so a wrong, duplicate or abandoned order past `pending` had no exit
+  // -- the only way out was to drive it to Delivered or leave it open forever.
+  // cancel_order() has always permitted an admin at any status (the
+  // `too_late_to_cancel` guard is `and not is_admin()`); nothing but the button
+  // was missing. It refunds wallet credit, flags a refund where money was taken,
+  // and releases the driver, so this must go through the RPC and never through a
+  // direct status update.
+  async function cancelOrder(o: Order) {
+    const warn = CLOSED_ORDER_STATUSES.includes(o.status as OrderStatus)
+      ? null
+      : o.status === 'pending'
+        ? `إلغاء الطلب #${o.id}؟`
+        : `الطلب #${o.id} حالته "${orderStatusLabel(o.status)}" — يعني اتقبل أو خرج للتوصيل بالفعل.\n\nالإلغاء هيسحبه من المندوب ويرجّع رصيد المحفظة لو استُخدم. لو العميل دفع، هيتسجل استرداد مطلوب.`
+    if (warn === null) return
+    const reason = prompt(`${warn}\n\nالسبب (هيتسجل على الطلب):`, '')
+    if (reason === null) return
+    if (!reason.trim()) { setActionError('اكتب سبب الإلغاء'); return }
+    setActionError('')
+    const res = await rpc('cancel_order', { p_order_id: o.id, p_reason: reason.trim() })
+    if (!res.ok) { setActionError(res.error); return }
+    load(true)
+  }
+
+  // Delivery used to be five distance bands in `settings`, so 20 of the 62
+  // compounds shared one 350 ج.م price across an 11 km spread and no individual
+  // place could be corrected without moving every other place in its band.
+  // The fee now lives on the compound row. This is the only way to edit it --
+  // the bands survive solely to seed a newly added compound.
+  async function saveCompoundFee(c: Compound, raw: string) {
+    const fee = Number(raw)
+    if (raw.trim() === '' || !Number.isFinite(fee)) { setActionError('اكتب رقم صحيح'); return }
+    if (fee === Number(c.delivery_fee)) return
+    setActionError('')
+    const res = await rpc('admin_set_compound_fee', { p_compound_id: c.id, p_fee: fee })
+    if (!res.ok) { setActionError(res.error); return }
+    load(true)
+  }
+
+  // A driver whose phone dies mid-round strands the order: mark_delivered is
+  // gated on my_driver_id(), so nobody else could finish it. The alternative was
+  // to record a real delivery as Failed or Cancelled, which corrupts the
+  // driver's stats and the day's cash reconciliation at the same time.
+  async function forceDelivered(a: Assignment) {
+    const reason = prompt(`تسجيل الطلب #${a.order_id} كمُسلَّم بدل المندوب؟\n\nاستخدم ده لما المندوب يكون سلّم فعلاً ومش قادر يأكد بنفسه (بطارية، شبكة).\n\nالسبب:`, '')
+    if (reason === null) return
+    if (!reason.trim()) { setActionError('اكتب السبب'); return }
+    const cash = confirm('المندوب استلم الكاش من العميل؟\n\nموافق = أيوه، هيتسجل على عهدته.\nإلغاء = لأ، مش هيتسجل عليه كاش.')
+    setActionError('')
+    const res = await rpc('admin_force_delivered', {
+      p_order_id: a.order_id, p_reason: reason.trim(), p_cash_collected: cash,
+    })
+    if (!res.ok) { setActionError(res.error); return }
+    load(true)
+  }
+
   async function reassignOrder(a: Assignment, driver: Driver) {
     setModalError(''); setReassignBusy(true)
     const res = await rpc('admin_reassign_order', {
@@ -828,8 +925,14 @@ export default function Admin() {
     alert('اتسجلت في سجل المندوب')
   }
 
-  async function resolveNoAnswer(a: Assignment, action: 'wait' | 'contact' | 'cancel') {
-    if (action === 'cancel' && !confirm('إلغاء الطلب فعلاً؟ المندوب هياخد أجرة التوصيل كاملة.')) return
+  // 'cancel' used to call mark_delivery_failed, which sets Failed_Delivery, pays
+  // the driver and stops -- it never touched refund_status and never returned
+  // wallet credit. So a customer who paid by InstaPay and was not home lost the
+  // money silently, under a button reading إلغاء الطلب. The two outcomes are
+  // different and are now named differently.
+  async function resolveNoAnswer(a: Assignment, action: 'wait' | 'contact' | 'fail' | 'refund') {
+    if (action === 'fail' && !confirm('تسجيل الطلب كتوصيل فاشل؟\n\nالمندوب هياخد أجره، ومفيش استرداد للعميل. لو العميل دفع، استخدم "إلغاء واسترداد" بدل ده.')) return
+    if (action === 'refund' && !confirm('إلغاء الطلب واسترداد فلوس العميل؟\n\nرصيد المحفظة هيرجع، ولو العميل حوّل فلوس هيتسجل استرداد مطلوب في تبويب الاستردادات.')) return
     const { error } = await supabase.rpc('admin_resolve_no_answer', { p_assignment_id: a.id, p_action: action })
     if (error) { alert('حصل خطأ، جرب تاني'); return }
     load(true)
@@ -897,6 +1000,11 @@ export default function Admin() {
                       {orderStatusLabel(o.status)}
                     </span>
                   </div>
+                  {orders.find(x => x.id === o.id)?.pricing_status === 'pending_quote' && (
+                    <p className="text-xs text-sandink font-semibold mt-1.5 bg-sand/10 rounded-lg px-2 py-1">
+                      🧾 واقف عليك إنت — الطلب ده محتاج تسعير قبل ما أي مندوب يقدر ياخده
+                    </p>
+                  )}
                   <p className="text-xs text-red-700 font-semibold mt-1.5">
                     واقف من {since} (الحد {o.threshold_minutes} دقيقة)
                     {o.payment_method === 'cod' ? ' · كاش' : o.payment_method === 'instapay' ? ' · إنستاباي' : ''}
@@ -937,11 +1045,17 @@ export default function Admin() {
                   <p className="font-semibold text-sm">طلب #{o.id} — {o.restaurants?.name} — {o.total} ج.م</p>
                   <p className="text-xs text-mist mt-0.5">👤 {o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
                   <p className="text-xs text-mist mt-0.5">📍 {addr(o)}</p>
-                  <p className="text-xs text-sandink mt-1">المندوب اتصل ومردش حد، اتبلّغ الإدارة</p>
-                  <div className="flex gap-2 mt-2.5">
-                    <a className="btn-ghost !py-1.5 text-xs flex-1 text-center" href={`tel:${o.customer_phone}`}>اتصل بالعميل</a>
-                    <button className="btn-ghost !py-1.5 text-xs flex-1" onClick={() => resolveNoAnswer(a, 'wait')}>قول للمندوب يستنى 5 دقايق</button>
-                    <button className="btn-danger !py-1.5 text-xs flex-1" onClick={() => resolveNoAnswer(a, 'cancel')}>إلغاء الطلب</button>
+                  <p className="text-xs text-sandink mt-1">
+                    {a.delivery_problem_reason
+                      ? `🛵 المندوب بلّغ: ${a.delivery_problem_reason}`
+                      : 'المندوب اتصل ومردش حد، اتبلّغ الإدارة'}
+                  </p>
+                  <div className="flex gap-2 mt-2.5 flex-wrap">
+                    <a className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem] text-center" href={`tel:${o.customer_phone}`}>اتصل بالعميل</a>
+                    <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem]" onClick={() => resolveNoAnswer(a, 'wait')}>يستنى 5 دقايق</button>
+                    <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem]" onClick={() => forceDelivered(a)}>سجّله كمُسلَّم</button>
+                    <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem] !text-red-600" onClick={() => resolveNoAnswer(a, 'fail')}>توصيل فاشل</button>
+                    <button className="btn-danger !py-1.5 text-xs flex-1 min-w-[7rem]" onClick={() => resolveNoAnswer(a, 'refund')}>إلغاء واسترداد</button>
                   </div>
                 </div>
               )
@@ -980,7 +1094,12 @@ export default function Admin() {
 
       <div className="flex gap-1.5 overflow-x-auto pb-2 mb-4 -mx-4 px-4">
         {TABS.map(t => (
-          <button key={t.key} className={`tab ${tab === t.key ? 'tab-active' : ''}`} onClick={() => { if (t.key !== 'wallet') setWalletOrderId(null); setTab(t.key) }}>{t.label}</button>
+          <button key={t.key} className={`tab ${tab === t.key ? 'tab-active' : ''}`} onClick={() => { if (t.key !== 'wallet') setWalletOrderId(null); setTab(t.key) }}>
+            {t.label}
+            {t.key === 'refunds' && pendingRefunds.length > 0 && (
+              <span className="mr-1.5 bg-red-600 text-white rounded-full px-1.5 text-[11px] font-bold">{pendingRefunds.length}</span>
+            )}
+          </button>
         ))}
       </div>
 
@@ -1048,6 +1167,12 @@ export default function Admin() {
                       <div className="flex gap-2 mt-3">
                         <button className="btn-ghost !py-1.5 text-xs flex-1" onClick={() => setReassigning(a)}>غيّر المندوب</button>
                         <button className="btn-ghost !py-1.5 text-xs flex-1" onClick={() => unassignOrder(a)}>اسحب الطلب</button>
+                        {a.status === 'Out_for_Delivery' && (
+                          <button className="btn-ghost !py-1.5 text-xs flex-1" onClick={() => forceDelivered(a)}>سجّله كمُسلَّم</button>
+                        )}
+                        {a.orders && (
+                          <button className="btn-danger !py-1.5 text-xs flex-1" onClick={() => cancelOrder(a.orders!)}>إلغاء</button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -1087,9 +1212,10 @@ export default function Admin() {
                 </div>
                 <span className={d.active ? 'badge-open' : 'badge-closed'}>{driverStatusLabel(d.status)}</span>
               </div>
-              <div className="flex gap-2.5 mt-3">
+              <div className="flex flex-wrap gap-2.5 mt-3">
                 <button className="btn-ghost text-sm flex-1" onClick={() => toggleDriver(d, 'available')}>{d.available ? 'إيقاف مؤقت' : 'إتاحة'}</button>
                 <button className={`text-sm flex-1 ${d.active ? 'btn-danger' : 'btn-sea'}`} onClick={() => toggleDriver(d, 'active')}>{d.active ? 'إيقاف الحساب' : 'تفعيل الحساب'}</button>
+                <button className="btn-ghost text-sm flex-1" onClick={() => editDriverDetails(d)}>تعديل الاسم والرقم</button>
                 <button className="btn-ghost text-sm flex-1" onClick={() => editInstapay(d)}>تعديل إنستاباي</button>
               </div>
             </div>
@@ -1185,6 +1311,12 @@ export default function Admin() {
                     const el = document.getElementById(`quote-${o.id}`) as HTMLInputElement
                     confirmCustomOrderPrice(o.id, Number(el.value))
                   }}>تأكيد السعر</button>
+                </div>
+              )}
+
+              {!CLOSED_ORDER_STATUSES.includes(o.status as OrderStatus) && (
+                <div className="flex gap-2 mt-3">
+                  <button className="btn-danger !py-1.5 text-xs" onClick={() => cancelOrder(o)}>إلغاء الطلب</button>
                 </div>
               )}
 
@@ -1417,7 +1549,11 @@ export default function Admin() {
 
       {tab === 'settings' && (
         <div className="space-y-3">
-          {settings.map(st => {
+          {/* The fee_tier_* rows are no longer what anyone pays. They are only a
+              seed for a compound added later. Leaving them in the same list as
+              live settings invites someone to "fix delivery pricing" here and
+              watch nothing change. */}
+          {settings.filter(st => !st.key.startsWith('fee_tier')).map(st => {
             const isBool = st.value === 'true' || st.value === 'false'
             const on = st.value === 'true'
             return (
@@ -1444,6 +1580,43 @@ export default function Admin() {
             وقت وصول المندوب بيتحسب قبل ما الأكل يجهز، عشان يوصل المطعم في الوقت المناسب
             من غير ما يستنى.
           </p>
+
+          <div className="pt-6">
+            <h3 className="font-bold mb-1">رسوم التوصيل لكل كمبوند</h3>
+            <p className="text-xs text-mist mb-3 leading-relaxed">
+              السعر بقى لكل كمبوند لوحده — مش بالكيلومتر. غيّر الرقم واخرج من الخانة
+              عشان يتحفظ. العميل بيشوف الرقم ده على طول قبل ما يبدأ يطلب.
+            </p>
+            {(() => {
+              const groups: { label: string; items: Compound[] }[] = []
+              for (const c of compounds) {
+                const label = c.direction === 'north' ? 'شمال' : 'جنوب'
+                const last = groups[groups.length - 1]
+                if (last && last.label === label) last.items.push(c)
+                else groups.push({ label, items: [c] })
+              }
+              return groups.map(g => (
+                <div key={g.label} className="mb-4">
+                  <h4 className="text-sm font-bold text-mist mb-2">{g.label} ({g.items.length})</h4>
+                  <div className="space-y-2">
+                    {g.items.map(c => (
+                      <div key={c.id} className="card p-3 flex items-center justify-between gap-3">
+                        <p className="font-semibold text-sm truncate min-w-0">{c.name}</p>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <input type="number" inputMode="numeric" min={0}
+                            defaultValue={String(c.delivery_fee)}
+                            aria-label={`رسوم التوصيل لـ ${c.name}`}
+                            className="field !w-24 !py-1.5 text-center"
+                            onBlur={e => saveCompoundFee(c, e.target.value)} />
+                          <span className="text-xs text-mist">ج.م</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))
+            })()}
+          </div>
         </div>
       )}
 
@@ -1588,22 +1761,54 @@ export default function Admin() {
         </div>
       )}
 
-      {tab === 'complaints' && (
+      {tab === 'refunds' && (
         <div className="space-y-3">
-          {orders.filter(o => o.refund_status === 'pending').length > 0 && (
-            <div className="space-y-2 mb-1">
-              <p className="text-sm font-semibold">💸 مبالغ محتاجة استرداد يدوي (InstaPay/أونلاين)</p>
-              {orders.filter(o => o.refund_status === 'pending').map(o => (
-                <div key={o.id} className="card p-3.5 flex items-center justify-between gap-2 border-sand/40">
-                  <div className="min-w-0">
-                    <p className="font-semibold text-sm truncate">طلب #{o.id} — {o.restaurants?.name} — {o.total} ج.م</p>
-                    <p className="text-xs text-mist truncate">{o.customer_name} · {o.customer_phone}</p>
+          {pendingRefunds.length === 0 ? (
+            <div className="card p-6 text-center text-mist">مفيش مبالغ مستحقة للاسترداد 👌</div>
+          ) : (
+            <>
+              <p className="text-sm text-mist leading-relaxed">
+                دي فلوس العميل دفعها فعلاً والطلب اتلغى. حوّلها بنفسك على إنستاباي،
+                وبعدين دوس "حوّلت المبلغ" — الزرار بيسجّل التحويل بس، مش بيحوّل.
+              </p>
+              {pendingRefunds.map(o => (
+                <div key={o.id} className="card p-4 border-sand/40">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm truncate">طلب #{o.id} — {o.vendor_name ?? '—'}</p>
+                      <p className="text-xs text-mist mt-0.5">
+                        👤 {o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a>
+                      </p>
+                      {o.cancel_reason && <p className="text-xs text-mist mt-0.5">📝 {o.cancel_reason}</p>}
+                      <p className="text-xs text-mist mt-0.5">
+                        {o.payment_method === 'cod' ? 'عربون كاش أونلاين' : o.payment_method === 'instapay' ? 'إنستاباي' : o.payment_method}
+                        {o.cancelled_at ? ` · اتلغى ${fmtTime(o.cancelled_at)}` : ''}
+                      </p>
+                    </div>
+                    <div className="text-left shrink-0">
+                      <span className="font-bold text-sea block">{o.refund_amount} ج.م</span>
+                      {Number(o.refund_amount) !== Number(o.total) && (
+                        <span className="text-[11px] text-mist">من إجمالي {o.total}</span>
+                      )}
+                    </div>
                   </div>
-                  <button className="btn-sea !py-1.5 !px-2.5 text-xs shrink-0" onClick={() => markRefunded(o.id)}>حوّلت المبلغ ✓</button>
+                  <button className="btn-sea w-full !py-2 text-sm mt-3" onClick={() => markRefunded(o.id)}>
+                    حوّلت المبلغ ✓
+                  </button>
                 </div>
               ))}
-            </div>
+            </>
           )}
+        </div>
+      )}
+
+      {tab === 'complaints' && (
+        <div className="space-y-3">
+          {/* The refunds list used to live here, inside الشكاوى, where nobody
+              looking for money they owed would think to open it -- and it printed
+              o.total as the amount, which for a COD order that only ever took a
+              50% deposit is roughly double. It is its own tab now, with the
+              amount computed by admin_pending_refunds(). */}
           {lowRatings.length > 0 && (
             <div className="space-y-2 mb-1">
               <p className="text-sm font-semibold">⭐ تقييمات منخفضة (نجمتين أو أقل)</p>

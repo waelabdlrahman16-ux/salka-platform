@@ -7,6 +7,7 @@ import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { BROWSE_KINDS, vendorKind, type VendorKind } from '../lib/categoryArt'
 import Icon from '../components/Icon'
 import BannerRail from '../components/BannerRail'
+import RestaurantCard from '../components/RestaurantCard'
 import type { Compound, Discount, Restaurant } from '../lib/types'
 import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
 
@@ -139,6 +140,18 @@ export default function Home() {
   const eta = (r: Restaurant) => selected ? r.prep_minutes + selected.est_travel_minutes : r.prep_minutes
   const catalogRestaurants = restaurants.filter(r =>
     r.order_mode !== 'custom_request' && r.vendor_type !== 'pharmacy' && r.vendor_type !== 'supermarket')
+  // Pharmacy and supermarket are excluded from the restaurant grid because they
+  // are errands, not menus. On 2026-08-04 they moved to the bottom nav and their
+  // cards were deleted from Home -- which removed the only thing that told a
+  // first-time visitor they exist. A nav icon is a destination for someone who
+  // already knows; it is not discovery. Two tiles here, one line each, and no
+  // third card offering a choice between the other two (that was the redundancy
+  // the deletion was right to remove).
+  const errandVendors = restaurants.filter(r =>
+    r.vendor_type === 'pharmacy' || r.vendor_type === 'supermarket')
+  const errandTiles = (['pharmacy', 'supermarket'] as const)
+    .map(t => ({ type: t, vendors: errandVendors.filter(v => v.vendor_type === t) }))
+    .filter(g => g.vendors.length > 0)
   // Only offer a kind that actually has a vendor delivering to this compound --
   // a chip that leads to an empty list is worse than no chip.
   const availableKinds = BROWSE_KINDS.filter(({ kind: k }) =>
@@ -165,7 +178,7 @@ export default function Home() {
       {!picking && <BannerRail />}
 
       {/* The delivery fee used to appear for the first time in the cart. It is
-          distance-based and can be 350 ج.م, so someone adding a 90 ج.م burger
+          set per compound and can be 350 ج.م, so someone adding a 90 ج.م burger
           from a far compound met a total three times what they expected, at the
           last step. The compound is chosen before anything else is visible, so
           the fee is knowable this whole time -- state it up front and let people
@@ -176,7 +189,6 @@ export default function Home() {
           <span>
             التوصيل لـ{selected ? ` ${selected.name}` : ''}
             <span className="text-foam font-semibold"> {deliveryFee} ج.م</span>
-            {deliveryQuote ? ` · ${deliveryQuote.distance_km} كم` : ''}
           </span>
         </p>
       )}
@@ -200,6 +212,30 @@ export default function Home() {
           <button className="btn-sea !py-2 !px-5 text-sm" onClick={() => setPicking(true)}>
             {compoundsFailed ? 'جرب تاني' : 'اختار مكانك'}
           </button>
+        </div>
+      )}
+
+      {!picking && !loading && compoundId && errandTiles.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          {errandTiles.map(({ type, vendors: vs }) => {
+            const open = vs.some(v => v.is_open)
+            const isRx = type === 'pharmacy'
+            return (
+              <Link key={type} to={`/custom-order?type=${type}`}
+                className={`card p-3.5 flex items-center gap-3 hover:border-sea/50 transition-colors ${
+                  open ? '' : 'opacity-60'}`}>
+                <span className="w-11 h-11 rounded-xl bg-shellup grid place-items-center text-2xl shrink-0" aria-hidden="true">
+                  {isRx ? '💊' : '🛒'}
+                </span>
+                <span className="min-w-0">
+                  <span className="block font-bold text-sm truncate">{isRx ? 'صيدلية' : 'سوبر ماركت'}</span>
+                  <span className="block text-xs text-mist truncate">
+                    {open ? 'قول لنا اللي محتاجه' : 'مقفول دلوقتي'}
+                  </span>
+                </span>
+              </Link>
+            )
+          })}
         </div>
       )}
 
@@ -237,32 +273,12 @@ export default function Home() {
               </p>
             )}
             {shownRestaurants.map(r => (
-              <Link key={r.id} to={`/restaurant/${r.id}`} className="card p-4 hover:border-sea/50 transition-colors">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-3 min-w-0">
-                    {r.logo_url
-                      ? <img src={r.logo_url} alt="" className="w-11 h-11 rounded-xl object-cover shrink-0 border border-line" />
-                      : <div className="w-11 h-11 rounded-xl bg-shellup grid place-items-center shrink-0 text-lg font-bold text-mist">{r.name.charAt(0)}</div>}
-                    <div className="min-w-0">
-                      <h2 className="font-bold truncate">{r.name}</h2>
-                      <p className="text-xs text-mist truncate">{r.category}</p>
-                    </div>
-                  </div>
-                  <span className={r.is_open ? 'badge-open' : 'badge-closed'}>{r.is_open ? 'مفتوح' : 'مغلق'}</span>
-                </div>
-                {discountedRestaurantIds.has(r.id) && (
-                  <span className="inline-flex items-center gap-1 bg-sand/15 text-sandink text-xs font-bold rounded-full px-2 py-0.5 mt-2">
-                    🏷️ عروض وخصومات
-                  </span>
-                )}
-                <p className="text-sm text-mist mt-1.5 leading-relaxed">{r.description}</p>
-                <div className="flex items-center gap-3 mt-3 text-sm text-mist">
-                  <span className="flex items-center gap-1"><Icon name="star" className="w-3.5 h-3.5 text-sand" /> {r.rating}</span>
-                  <span className="flex items-center gap-1">
-                    {r.order_mode === 'pickup_request' ? '🛵 اطلب مندوب توصيل' : <><Icon name="clock" className="w-3.5 h-3.5" /> {eta(r)} دقيقة</>}
-                  </span>
-                </div>
-              </Link>
+              <RestaurantCard
+                key={r.id}
+                restaurant={r}
+                etaMinutes={selected ? eta(r) : null}
+                hasDiscount={discountedRestaurantIds.has(r.id)}
+              />
             ))}
           </div>
         </div>

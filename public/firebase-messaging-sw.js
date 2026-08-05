@@ -14,9 +14,33 @@
  * the project ever changes, BOTH files have to change -- exactly the duplicated
  * -source-of-truth shape that caused today's pricing bugs, so it is called out
  * here rather than left to be discovered.
+ *
+ * THE SDK VERSION BELOW MUST MATCH `firebase` IN package.json.
+ *
+ * It did not, and that was the whole push bug. The bundle ships firebase
+ * 12.17.0; this file pinned compat 10.14.1. Both halves share one IndexedDB on
+ * the origin, and they disagree about its schema version: the page's v12 opens
+ * `firebase-messaging-database` at version 2, and 10.14.1 then asks for version
+ * 1 and throws
+ *
+ *     VersionError: The requested version (1) is less than the existing version (2)
+ *
+ * Reproduced live on app.gosalka.com, 2026-08-05: getToken() under 10.14.1
+ * threw exactly that; under 12.17.0, against this same origin and the same
+ * VAPID key, it returned a 142-character token immediately. Nothing else about
+ * the setup was wrong -- not the key, not the service worker MIME type, not the
+ * permission, not send-push, not the triggers.
+ *
+ * The failure is also order-dependent, which is why it could look intermittent:
+ * whichever half opens the database first sets its version, so a browser that
+ * loads the worker before the page fails in the opposite direction. Do not
+ * "fix" a future recurrence by clearing site data -- bump the version here.
+ *
+ * scripts/check-firebase-sw-version.mjs runs on every build and fails it if
+ * these drift again. Reading a warning was not enough the first time.
  */
-importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js')
-importScripts('https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js')
+importScripts('https://www.gstatic.com/firebasejs/12.17.0/firebase-app-compat.js')
+importScripts('https://www.gstatic.com/firebasejs/12.17.0/firebase-messaging-compat.js')
 
 firebase.initializeApp({
   apiKey: 'AIzaSyA3UH_5TZ2oWDcI6LRTcAl04QI3bKpsslI',

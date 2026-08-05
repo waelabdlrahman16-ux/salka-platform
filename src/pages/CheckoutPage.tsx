@@ -462,7 +462,7 @@ export default function CheckoutPage() {
           )
         })}
         <div className="flex justify-between text-sm text-mist">
-          <span>التوصيل{quote ? ` (${quote.distance_km} كم)` : ''}</span>
+          <span>التوصيل{quote ? ` لـ ${quote.compound_name}` : ''}</span>
           <span>
             {deliveryFee !== null ? `${deliveryFee} ج.م`
               : feeLoading ? '…'

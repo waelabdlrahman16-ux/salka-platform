@@ -432,6 +432,36 @@ export default function DriverPage() {
     })
   }
 
+  // The customer's last update is "مندوبك في الطريق إليك", sent when the order
+  // goes Out_for_Delivery. In a compound the final stretch -- gate, block,
+  // chalet -- is the slow part, and the driver's only tool for it was a phone
+  // call. One tap here pushes "المندوب وصل عندك" instead.
+  async function markArrivedAtCustomer(a: Assignment) {
+    await runAction(`arrived:${a.id}`, async () => {
+      if (navigator.vibrate) navigator.vibrate(15)
+      const { error } = await supabase.rpc('driver_arrived_at_customer', { p_assignment_id: a.id })
+      if (error) { alert('حصل خطأ، جرب تاني'); return }
+      await load(true)
+    })
+  }
+
+  // The only escalation a driver had was "اتصلت ومردش", gated behind a call and
+  // a five-minute wait. A wrong address, a customer refusing the order, a gate
+  // that will not let them in -- none of those are "no answer", and the honest
+  // driver's only option was to claim a call they had not made.
+  async function reportProblem(a: Assignment) {
+    const reason = prompt('في مشكلة في الطلب ده؟ اكتبها والإدارة هتشوفها فورًا:\n\n(مثال: العنوان غلط · العميل رفض الطلب · البوابة مش بتدخلني)', '')
+    if (reason === null) return
+    if (!reason.trim()) return
+    await runAction(`problem:${a.id}`, async () => {
+      const { error } = await supabase.rpc('driver_report_problem', {
+        p_assignment_id: a.id, p_reason: reason.trim(),
+      })
+      if (error) { alert('حصل خطأ، جرب تاني'); return }
+      await load(true)
+    })
+  }
+
   async function markCalledCustomer(a: Assignment) {
     await runAction(`called:${a.id}`, async () => {
       if (navigator.vibrate) navigator.vibrate(15)
@@ -841,12 +871,26 @@ export default function DriverPage() {
                       {cashDue > 0 && a.cash_confirmed_at && (
                         <p className="text-emerald-800 bg-emerald-500/10 rounded-xl p-3 text-sm font-semibold text-center">✓ استلمت الكاش</p>
                       )}
+                      {/* Above the delivery swipe, because it happens before it:
+                          arriving is not the same event as handing the bag over,
+                          and the customer needs the first one to come outside. */}
+                      {a.arrived_at_customer_at ? (
+                        <p className="text-mist text-xs text-center">✓ العميل اتبلّغ إنك وصلت</p>
+                      ) : (
+                        <button className="btn-ghost w-full text-sm" disabled={isBusy(`arrived:${a.id}`)}
+                          onClick={() => markArrivedAtCustomer(a)}>
+                          {isBusy(`arrived:${a.id}`) ? 'لحظة…' : '📍 وصلت — بلّغ العميل'}
+                        </button>
+                      )}
                       <SwipeToConfirm
                         label={isBusy(`deliver:${a.id}`) ? 'جاري التأكيد…' : "اسحب لتأكيد التسليم"}
                         disabled={!confirmed || isBusy(`deliver:${a.id}`)}
                         onConfirm={() => setStatus(a, 'Delivered')} />
                       {a.no_answer_reported_at ? (
-                        <p className="text-sandink text-sm text-center">⏳ اتبلّغت الإدارة، مستنيين قرارهم</p>
+                        <p className="text-sandink text-sm text-center">
+                          ⏳ اتبلّغت الإدارة، مستنيين قرارهم
+                          {a.delivery_problem_reason ? ` — "${a.delivery_problem_reason}"` : ''}
+                        </p>
                       ) : !a.called_customer_at ? (
                         <button className="btn-ghost w-full text-sm" disabled={isBusy(`called:${a.id}`)} onClick={() => markCalledCustomer(a)}>
                           {isBusy(`called:${a.id}`) ? 'لحظة…' : '📞 اتصلت بالعميل ومردش'}
@@ -855,6 +899,13 @@ export default function DriverPage() {
                         <button className="btn-danger w-full text-sm" onClick={() => reportNoAnswer(a)}>العميل لسه ما ردش — بلّغ الإدارة</button>
                       ) : (
                         <p className="text-mist text-xs text-center">✓ اتصلت — لو ما ردش خلال 5 دقايق من خروجك، هيظهر لك زرار الإبلاغ</p>
+                      )}
+                      {!a.no_answer_reported_at && (
+                        <button className="w-full text-xs text-mist underline py-1"
+                          disabled={isBusy(`problem:${a.id}`)}
+                          onClick={() => reportProblem(a)}>
+                          {isBusy(`problem:${a.id}`) ? 'لحظة…' : 'مشكلة تانية؟ بلّغ الإدارة'}
+                        </button>
                       )}
                     </div>
                   )

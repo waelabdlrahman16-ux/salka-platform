@@ -38,6 +38,7 @@ export const ERROR_AR: Record<string, string> = {
   login_required: 'لازم تسجل دخولك الأول',
   compound_id_required: 'اختار مكانك الأول',
   compound_missing_distance: 'المكان ده لسه مش مظبوط عندنا، كلّمنا لو سمحت',
+  compound_missing_fee: 'المكان ده لسه مش متسعّر عندنا، كلّمنا لو سمحت',
   slot_full: 'الفترة دي اتملت، اختار فترة تانية',
   slot_unavailable: 'الفترة دي مابقتش متاحة، اختار فترة تانية',
 
@@ -46,6 +47,8 @@ export const ERROR_AR: Record<string, string> = {
   not_authorized: 'مش مسموح بالعملية دي',
   too_late_to_cancel: 'الطلب بدأ تجهيزه بالفعل، محدش يقدر يلغيه غير الإدارة',
   order_not_delivered: 'الطلب لسه ما اتسلّمش',
+  order_closed: 'الطلب ده خلص أو اتلغى قبل كده',
+  order_not_priced: 'الطلب لسه محتاج تسعير قبل ما يتعيّن لمندوب',
 
   // dispatch / driver
   already_taken: 'الطلب اتاخد من مندوب تاني',
@@ -58,6 +61,12 @@ export const ERROR_AR: Record<string, string> = {
   must_call_customer_first: 'لازم تتصل بالعميل الأول',
   too_early: 'لسه بدري، استنى 5 دقايق من وقت خروجك للتوصيل',
   not_your_assignment: 'الطلب ده مش متعيّن ليك',
+  already_assigned: 'الطلب ده معروض على مندوب بالفعل — اسحبه الأول لو عايز تغيّره',
+  driver_already_declined: 'المندوب ده رفض الطلب ده قبل كده',
+  too_many_attempts: 'الطلب ده اتعرض 5 مرات — راجع السبب قبل ما تعرضه تاني',
+  no_active_assignment: 'الطلب ده مش مع مندوب دلوقتي',
+  driver_not_found: 'المندوب ده مش موجود',
+  driver_suspended: 'المندوب ده موقوف',
   not_your_order: 'الطلب ده مش بتاع مطعمك',
   wrong_stage: 'الخطوة دي مش دورها دلوقتي',
   not_a_driver: 'حسابك مش مربوط بمندوب',
@@ -65,6 +74,10 @@ export const ERROR_AR: Record<string, string> = {
 
   // tips / feedback
   invalid_amount: 'المبلغ مش مظبوط',
+  invalid_fee: 'الرسوم لازم تكون رقم موجب',
+  fee_too_large: 'الرقم ده كبير أوي — أقصى رسوم توصيل 2000 ج.م',
+  compound_not_found: 'المكان ده مش موجود',
+  admin_only: 'العملية دي للإدارة بس',
   no_driver_on_this_order: 'مفيش مندوب متسجل على الطلب ده',
 
   // account

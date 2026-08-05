@@ -28,6 +28,9 @@ interface TrackData {
     collect_amount: number | null
     payment_method: 'cod' | 'online' | 'instapay' | null
     online_payment_status: 'pending' | 'paid' | 'failed' | null
+    cancel_reason: string | null
+    cancelled_at: string | null
+    refund_status: string | null
     cod_deposit_amount: number | null
     instapay_claimed: boolean
   } | null
@@ -242,6 +245,31 @@ export default function Track() {
               {claimingPayment ? 'جاري التأكيد…' : 'حوّلت المبلغ ✓'}
             </button>
           )}
+
+          {/* This screen used to have no way out. An InstaPay or deposit order is
+              CREATED at awaiting_payment, and cancel_order refused a non-admin
+              once status left 'pending' -- so from the very first thing the
+              customer saw, cancelling was already impossible. The cancel button
+              further down this file never rendered either, because this branch
+              returns before it. Someone who changed their mind could only close
+              the tab, and the order stayed open on the admin's list forever. */}
+          {!cancelled ? (
+            <>
+              {errFor('cancel') && (
+                <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mt-4">{errFor('cancel')}</p>
+              )}
+              <button className="text-sm text-mist underline mt-4" disabled={cancelling} onClick={cancelOrder}>
+                {cancelling ? 'جاري الإلغاء…' : 'مش عايز أكمل — الغِ الطلب'}
+              </button>
+              {o.instapay_claimed && (
+                <p className="text-xs text-mist mt-1.5">
+                  لو كنت حوّلت فعلاً، هنرجّعلك الفلوس.
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="text-sm text-mist mt-4">تم إلغاء الطلب.</p>
+          )}
         </div>
       </div>
     )
@@ -275,6 +303,23 @@ export default function Track() {
         <div className="card p-4 text-center mb-4">
           <p className="text-4xl mb-2">📦</p>
           <h1 className="font-bold text-lg">تم إلغاء الطلب</h1>
+          {o.cancel_reason && (
+            <p className="text-sm text-mist mt-1.5">{o.cancel_reason}</p>
+          )}
+          {/* Silence here was the worst version of this screen: the customer had
+              paid, the order was gone, and the page said nothing about the money
+              -- while an admin was looking at the same row in a refunds queue. */}
+          {o.refund_status === 'pending' && (
+            <p className="text-sm text-sandink bg-sand/10 rounded-xl p-3 mt-3">
+              💰 فلوسك في طريقها ليك — هنحوّلها على نفس الرقم اللي حوّلت منه.
+              لو اتأخرت، كلّمنا.
+            </p>
+          )}
+          {o.refund_status === 'refunded' && (
+            <p className="text-sm text-emerald-700 bg-emerald-500/10 rounded-xl p-3 mt-3">
+              ✓ تم تحويل المبلغ ليك
+            </p>
+          )}
         </div>
       ) : (
         <div className="card p-4 mb-4">

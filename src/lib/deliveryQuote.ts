@@ -2,8 +2,13 @@ import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
 
 // The delivery fee is owned by the server. place_order / submit_custom_order /
-// request_pickup all recompute it from the compound's distance and ignore
-// whatever the client sends, so the ONLY safe way to show a price is to ask.
+// request_pickup all read it from compounds.delivery_fee and ignore whatever the
+// client sends, so the ONLY safe way to show a price is to ask.
+//
+// It is a per-compound number, not a distance band. Do not render distance_km
+// next to the fee -- it is still returned because the SLA is derived from it,
+// but showing kilometres beside a price tells the customer the price is
+// computed from them, which it no longer is.
 //
 // This deliberately replaces the old lib/deliveryFee.ts, which kept a local copy
 // of the pricing formula. That copy silently drifted the moment the server tiers
