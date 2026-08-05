@@ -11,7 +11,7 @@ import Icon from '../components/Icon'
 import DriverActiveMap from '../components/DriverActiveMap'
 import DriverPoolMap from '../components/DriverPoolMap'
 import SwipeToConfirm from '../components/SwipeToConfirm'
-import { rpc } from '../lib/rpc'
+import { rpc, describeError } from '../lib/rpc'
 import { haversineKm } from '../lib/geo'
 import { assignmentStatusLabel, driverStatusLabel } from '../lib/statusLabels'
 
@@ -215,7 +215,12 @@ export default function DriverPage() {
         withTimeout(supabase.rpc('my_driver_stats')),
         withTimeout(supabase.from('delivery_assignments')
           .select('*, orders(*, restaurants(name), compounds(name, latitude, longitude))').eq('driver_id', id)
-          .in('status', ['Offered', 'Accepted', 'Picked_Up', 'Out_for_Delivery', 'Delivered'])
+          // Cancelled and Failed are here on purpose. Without them, an order
+          // an admin pulls disappears from the driver's screen on the next
+          // 10-second poll -- address, phone, the whole task -- while the driver
+          // may be holding the food. The only other signal was a push the
+          // trigger swallows on any error, to a token most drivers do not have.
+          .in('status', ['Offered', 'Accepted', 'Picked_Up', 'Out_for_Delivery', 'Delivered', 'Cancelled', 'Failed'])
           .order('id', { ascending: false }).limit(20)),
         withTimeout(supabase.rpc('available_orders')),
         withTimeout(supabase.from('shifts').select('*')
@@ -369,7 +374,7 @@ export default function DriverPage() {
     if (status === 'Delivered') {
       await runAction(`deliver:${a.id}`, async () => {
         const { error } = await supabase.rpc('mark_delivered', { p_assignment_id: a.id, p_order_id: a.order_id })
-        if (error) { alert('حصل خطأ، جرب تاني'); return }
+        if (error) { alert(describeError(error?.message)); return }
         // Show it immediately -- gating on load() left the driver swiping a
         // control that gave no sign of life for several seconds on mobile data.
         // The totals inside refresh when the reload lands, still within the 3s.
@@ -385,7 +390,7 @@ export default function DriverPage() {
     await runAction(`arrived:${a.id}`, async () => {
       if (navigator.vibrate) navigator.vibrate(15)
       const { error } = await supabase.rpc('driver_arrived_at_restaurant', { p_assignment_id: a.id })
-      if (error) { alert('حصل خطأ، جرب تاني'); return }
+      if (error) { alert(describeError(error?.message)); return }
       await load(true)
     })
   }
@@ -410,7 +415,7 @@ export default function DriverPage() {
     await runAction(`out:${a.id}`, async () => {
       if (navigator.vibrate) navigator.vibrate(15)
       const { error } = await supabase.rpc('driver_mark_out_for_delivery', { p_assignment_id: a.id })
-      if (error) { alert('حصل خطأ، جرب تاني'); return }
+      if (error) { alert(describeError(error?.message)); return }
       await load(true)
     })
   }
@@ -426,7 +431,7 @@ export default function DriverPage() {
       const { error } = await supabase.rpc('driver_confirm_cash_received', { p_assignment_id: a.id })
       if (error) {
         setCashConfirmed(s => { const next = new Set(s); next.delete(a.id); return next })
-        alert('حصل خطأ، جرب تاني')
+        alert(describeError(error?.message))
         return
       }
       await load(true)
@@ -441,7 +446,7 @@ export default function DriverPage() {
     await runAction(`arrived:${a.id}`, async () => {
       if (navigator.vibrate) navigator.vibrate(15)
       const { error } = await supabase.rpc('driver_arrived_at_customer', { p_assignment_id: a.id })
-      if (error) { alert('حصل خطأ، جرب تاني'); return }
+      if (error) { alert(describeError(error?.message)); return }
       await load(true)
     })
   }
@@ -458,7 +463,7 @@ export default function DriverPage() {
       const { error } = await supabase.rpc('driver_report_problem', {
         p_assignment_id: a.id, p_reason: reason.trim(),
       })
-      if (error) { alert('حصل خطأ، جرب تاني'); return }
+      if (error) { alert(describeError(error?.message)); return }
       await load(true)
     })
   }
@@ -485,7 +490,7 @@ export default function DriverPage() {
     await runAction(`called:${a.id}`, async () => {
       if (navigator.vibrate) navigator.vibrate(15)
       const { error } = await supabase.rpc('driver_called_customer', { p_assignment_id: a.id })
-      if (error) { alert('حصل خطأ، جرب تاني'); return }
+      if (error) { alert(describeError(error?.message)); return }
       await load(true)
     })
   }
@@ -519,7 +524,7 @@ export default function DriverPage() {
     const { error } = await supabase.rpc('request_swap', {
       p_shift_id: shiftId, p_reason: swapReason[shiftId] || ''
     })
-    if (error) alert('حصل خطأ، جرب تاني')
+    if (error) alert(describeError(error?.message))
     load(true)
   }
 
@@ -531,7 +536,7 @@ export default function DriverPage() {
 
   async function escalate(requestId: number) {
     const { error } = await supabase.rpc('escalate_swap', { p_request_id: requestId })
-    if (error) { alert('حصل خطأ، جرب تاني'); return }
+    if (error) { alert(describeError(error?.message)); return }
     load(true)
   }
 
@@ -565,7 +570,7 @@ export default function DriverPage() {
   async function reject() {
     if (!rejecting) return
     const { error } = await supabase.rpc('driver_reject_assignment', { p_assignment_id: rejecting.id, p_reason: reason.trim() })
-    if (error) { alert('حصل خطأ، جرب تاني'); return }
+    if (error) { alert(describeError(error?.message)); return }
     setRejecting(null); setReason(''); load(true)
   }
 
@@ -650,7 +655,14 @@ export default function DriverPage() {
             <p className="text-lg font-bold text-foam">تم التسليم</p>
             <div className="bg-shellup rounded-2xl px-5 py-3 mt-5">
               <p className="text-xs text-mist">أرباح النهاردة</p>
-              <p className="text-lg font-bold text-sea mt-0.5">{todayEarnings} ج.م · {todayOrders} طلبات</p>
+              {/* money() and haveStats exist precisely so a failed my_driver_stats
+                  renders "— ج.م" instead of a confident zero -- and this overlay,
+                  the one full-screen moment a driver actually reads their
+                  earnings, used the raw values. Deliver an order with stats down
+                  and the celebration said "0 ج.م · 0 طلبات". */}
+              <p className="text-lg font-bold text-sea mt-0.5">
+                {money(todayEarnings)} · {haveStats ? `${todayOrders} طلبات` : '—'}
+              </p>
               {/* Was a hardcoded "+10" that could disagree with the recorded
                   earning. Show the tier progress instead -- it is the number
                   that actually changes what the driver does next. */}
@@ -853,6 +865,20 @@ export default function DriverPage() {
                 </p>
               )}
 
+              {/* An order the admin pulled or wrote off. Without this the card
+                  silently disappeared mid-delivery. */}
+              {(a.status === 'Cancelled' || a.status === 'Failed') && (
+                <div className="mt-3 bg-red-500/10 rounded-2xl p-3.5 text-center">
+                  <p className="font-bold text-red-700 text-sm">
+                    {a.status === 'Cancelled' ? 'الطلب اتلغى — متكملش توصيله' : 'الطلب اتسجل كتوصيل فاشل'}
+                  </p>
+                  {a.rejection_reason && (
+                    <p className="text-xs text-mist mt-1">{a.rejection_reason}</p>
+                  )}
+                  <p className="text-xs text-mist mt-1">لو الأكل معاك، كلّم الإدارة.</p>
+                </div>
+              )}
+
               <div className="mt-3">
                 {a.status === 'Offered' && (
                   <div className="flex gap-3">
@@ -877,6 +903,14 @@ export default function DriverPage() {
                     {isBusy(`out:${a.id}`) ? 'لحظة…' : 'خرجت للتوصيل'}
                   </button>
                 )}
+                {['Accepted', 'Picked_Up'].includes(a.status) && (
+                  <button className="btn-ghost w-full text-sm mt-2"
+                    disabled={isBusy(`problem:${a.id}`)}
+                    onClick={() => reportProblem(a)}>
+                    {isBusy(`problem:${a.id}`) ? 'لحظة…' : 'في مشكلة؟ بلّغ الإدارة'}
+                  </button>
+                )}
+
                 {a.status === 'Out_for_Delivery' && (() => {
                   const confirmed = cashDue === 0 || !!a.cash_confirmed_at || cashConfirmed.has(a.id)
                   return (
@@ -928,13 +962,12 @@ export default function DriverPage() {
                       ) : (
                         <p className="text-mist text-xs text-center">✓ اتصلت — لو ما ردش خلال 5 دقايق من خروجك، هيظهر لك زرار الإبلاغ</p>
                       )}
-                      {!a.no_answer_reported_at && (
-                        <button className="w-full text-xs text-mist underline py-1"
-                          disabled={isBusy(`problem:${a.id}`)}
-                          onClick={() => reportProblem(a)}>
-                          {isBusy(`problem:${a.id}`) ? 'لحظة…' : 'مشكلة تانية؟ بلّغ الإدارة'}
-                        </button>
-                      )}
+                      <button className="btn-ghost w-full text-sm"
+                        disabled={isBusy(`problem:${a.id}`)}
+                        onClick={() => reportProblem(a)}>
+                        {isBusy(`problem:${a.id}`) ? 'لحظة…' : 'في مشكلة؟ بلّغ الإدارة'}
+                      </button>
+
                     </div>
                   )
                 })()}
@@ -1120,7 +1153,14 @@ export default function DriverPage() {
           <p className="text-emerald-700 text-sm text-center mt-3">✅ طلب التسوية المبكرة وصل للإدارة</p>
         ) : (
           <button className="btn-ghost w-full mt-3 text-sm" disabled={requestingSettlement || !haveStats || unpaidEarnings === 0} onClick={requestSettlement}>
-            {requestingSettlement ? 'جاري الإرسال…' : 'اطلب تسوية مبكرة'}
+            {/* disabled:pointer-events-none means a dead button does not even
+                flash. The !haveStats case is the cruel one: the figure above
+                reads "— ج.م" and the button is dead, so a driver whose stats
+                call failed reads it as "the system lost my money". */}
+            {requestingSettlement ? 'جاري الإرسال…'
+              : !haveStats ? 'مش قادرين نجيب أرباحك — حدّث الصفحة'
+              : unpaidEarnings === 0 ? 'مفيش أرباح مستحقة دلوقتي'
+              : 'اطلب تسوية مبكرة'}
           </button>
         )}
       </div>

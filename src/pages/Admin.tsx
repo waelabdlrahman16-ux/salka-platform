@@ -431,6 +431,9 @@ export default function Admin() {
 
     const { error } = await supabase.from('drivers').update(patch).eq('id', d.id)
     if (error) { setActionError('مش قادرين نحفظ بيانات المندوب دلوقتي'); return }
+    // create_driver_login copies the driver's name onto their profile, so a
+    // rename here would otherwise leave the two disagreeing forever.
+    if (patch.name) await supabase.from('profiles').update({ name: patch.name }).eq('driver_id', d.id)
     setActionError('')
     load(true)
   }
