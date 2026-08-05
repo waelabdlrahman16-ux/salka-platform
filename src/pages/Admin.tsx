@@ -80,23 +80,48 @@ type PendingRefund = {
   instapay_claimed_at: string | null; vendor_name: string | null
   refund_amount: number
 }
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'unassigned', label: 'طلبات غير معيّنة' },
-  { key: 'active', label: 'توصيلات جارية' },
-  { key: 'drivers', label: 'إدارة المندوبين' },
-  { key: 'menu', label: 'المطاعم والمنيو' },
-  { key: 'orders', label: 'كل الطلبات' },
-  { key: 'customers', label: 'العملاء' },
-  { key: 'earnings', label: 'الأرباح' },
-  { key: 'settings', label: 'الإعدادات' },
-  { key: 'shifts', label: 'الورديات' },
-  { key: 'payouts', label: 'مدفوعات المندوبين' },
-  { key: 'wallet', label: 'محفظة العميل' },
-  { key: 'refunds', label: 'الاستردادات' },
-  { key: 'complaints', label: 'الشكاوى' },
-  { key: 'coverage', label: 'تغطية المطاعم' },
-  { key: 'accounts', label: 'حسابات الدخول' },
-  { key: 'banners', label: '📣 الإعلانات' },
+/**
+ * Sixteen tabs in one horizontally-scrolling row meant the answer to "where is
+ * that?" was always "scroll and read all sixteen". They are not sixteen equal
+ * things: four are what you do minute to minute, four are money, and the rest
+ * are setup you touch once a week.
+ *
+ * Grouping hides things, and hiding an alert is worse than a long row -- so
+ * every count that used to demand attention from the flat row is summed onto
+ * its GROUP chip. A refund waiting is still visible from anywhere; you just do
+ * not have to read fifteen other labels to notice it.
+ */
+type TabGroup = 'now' | 'money' | 'catalog' | 'people' | 'setup'
+
+const GROUPS: { key: TabGroup; label: string }[] = [
+  { key: 'now',     label: '🚦 التشغيل' },
+  { key: 'money',   label: '💰 الفلوس' },
+  { key: 'catalog', label: '🍽️ المطاعم' },
+  { key: 'people',  label: '👥 الناس' },
+  { key: 'setup',   label: '⚙️ الإعدادات' },
+]
+
+const TABS: { key: Tab; label: string; group: TabGroup }[] = [
+  { key: 'unassigned', label: 'طلبات غير معيّنة', group: 'now' },
+  { key: 'active', label: 'توصيلات جارية', group: 'now' },
+  { key: 'orders', label: 'كل الطلبات', group: 'now' },
+  { key: 'complaints', label: 'الشكاوى', group: 'now' },
+
+  { key: 'earnings', label: 'الأرباح', group: 'money' },
+  { key: 'payouts', label: 'مدفوعات المندوبين', group: 'money' },
+  { key: 'refunds', label: 'الاستردادات', group: 'money' },
+  { key: 'wallet', label: 'محفظة العميل', group: 'money' },
+
+  { key: 'menu', label: 'المطاعم والمنيو', group: 'catalog' },
+  { key: 'coverage', label: 'تغطية المطاعم', group: 'catalog' },
+  { key: 'banners', label: '📣 الإعلانات', group: 'catalog' },
+
+  { key: 'drivers', label: 'إدارة المندوبين', group: 'people' },
+  { key: 'shifts', label: 'الورديات', group: 'people' },
+  { key: 'customers', label: 'العملاء', group: 'people' },
+  { key: 'accounts', label: 'حسابات الدخول', group: 'people' },
+
+  { key: 'settings', label: 'الإعدادات', group: 'setup' },
 ]
 
 interface StalledOrder {
@@ -112,6 +137,7 @@ const ACTIVE_ASSIGNMENT_STATUSES = ['Offered', 'Accepted', 'Picked_Up', 'Out_for
 
 export default function Admin() {
   const [tab, setTab] = useState<Tab>('unassigned')
+  const [openGroup, setOpenGroup] = useState<TabGroup>('now')
   const [orders, setOrders] = useState<Order[]>([])
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [drivers, setDrivers] = useState<Driver[]>([])
@@ -415,6 +441,26 @@ export default function Admin() {
   const reassignCandidates = (reassignNeedsVan
     ? availableDrivers.filter(d => d.vehicle_type === 'van')
     : availableDrivers).filter(d => d.id !== reassigning?.driver_id)
+  // Anything can call setTab -- the wallet button on an order row, a banner
+  // action -- and that tab may live under a group that is not open, which would
+  // render a body with no matching chip. The group follows the tab, never the
+  // other way round.
+  useEffect(() => {
+    const g = TABS.find(t => t.key === tab)?.group
+    if (g) setOpenGroup(g)
+  }, [tab])
+
+  // What each tab is asking for. One place, so the group chip and the tab agree
+  // by construction rather than by two people remembering to update both.
+  const tabBadges: Partial<Record<Tab, number>> = {
+    unassigned: unassigned.length,
+    active: noAnswerReports.length,
+    refunds: pendingRefunds.length,
+    complaints: complaints.filter(c => c.status !== 'resolved').length,
+    payouts: settlementRequests.length,
+    shifts: escalations.length,
+  }
+
   useEffect(() => { ping('unassigned_late', unassigned.filter(isLate).length, 'طلب متأخر', 'في طلب محدش استلمه من زمان') },
     [unassigned.filter(isLate).length])
   useEffect(() => { ping('no_answer', noAnswerReports.length, 'عميل ما ردش', 'مندوب اتصل بعميل ومردش، محتاج قرارك') },
@@ -1259,12 +1305,42 @@ export default function Admin() {
         label="فعّل تنبيهات الإدارة"
       />
 
+      {/* Two rows instead of one row of sixteen. The group carries the alert
+          count of everything inside it, so nothing that needed you becomes
+          invisible by being one level down. */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1.5 -mx-4 px-4">
+        {GROUPS.map(g => {
+          const n = TABS.filter(t => t.group === g.key).reduce((sum, t) => sum + (tabBadges[t.key] ?? 0), 0)
+          const on = openGroup === g.key
+          return (
+            <button key={g.key}
+              className={`shrink-0 rounded-xl px-3.5 py-2 text-sm font-semibold border-2 transition-colors
+                ${on ? 'bg-sea text-white border-sea' : 'bg-shell border-line text-mist hover:border-sea/40'}`}
+              onClick={() => {
+                setOpenGroup(g.key)
+                // Land on the first tab that is asking for something, otherwise
+                // the first tab in the group.
+                const inGroup = TABS.filter(t => t.group === g.key)
+                const urgent = inGroup.find(t => (tabBadges[t.key] ?? 0) > 0)
+                const next = (urgent ?? inGroup[0]).key
+                if (next !== 'wallet') setWalletOrderId(null)
+                setTab(next)
+              }}>
+              {g.label}
+              {n > 0 && (
+                <span className={`mr-1.5 rounded-full px-1.5 text-[11px] font-bold ${on ? 'bg-white text-sea' : 'bg-red-600 text-white'}`}>{n}</span>
+              )}
+            </button>
+          )
+        })}
+      </div>
+
       <div className="flex gap-1.5 overflow-x-auto pb-2 mb-4 -mx-4 px-4">
-        {TABS.map(t => (
+        {TABS.filter(t => t.group === openGroup).map(t => (
           <button key={t.key} className={`tab ${tab === t.key ? 'tab-active' : ''}`} onClick={() => { if (t.key !== 'wallet') setWalletOrderId(null); setTab(t.key) }}>
             {t.label}
-            {t.key === 'refunds' && pendingRefunds.length > 0 && (
-              <span className="mr-1.5 bg-red-600 text-white rounded-full px-1.5 text-[11px] font-bold">{pendingRefunds.length}</span>
+            {(tabBadges[t.key] ?? 0) > 0 && (
+              <span className="mr-1.5 bg-red-600 text-white rounded-full px-1.5 text-[11px] font-bold">{tabBadges[t.key]}</span>
             )}
           </button>
         ))}
