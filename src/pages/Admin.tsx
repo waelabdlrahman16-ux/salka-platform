@@ -174,6 +174,18 @@ export default function Admin() {
   const [compensatedOrderIds, setCompensatedOrderIds] = useState<Set<number>>(new Set())
   const [showResolvedComplaints, setShowResolvedComplaints] = useState(false)
   const [openHistory, setOpenHistory] = useState<number | null>(null)
+  // Items are NOT loaded with the 500-order window -- that would be thousands of
+  // rows nobody reads. They are fetched once, on expand, and kept.
+  const [orderItems, setOrderItems] = useState<Record<number, { name: string; qty: number; total: number; size_name: string | null; combo_name: string | null; addon_names: string[] | null }[]>>({})
+
+  async function toggleOrderDetail(id: number) {
+    const next = openHistory === id ? null : id
+    setOpenHistory(next)
+    if (next === null || orderItems[id]) return
+    const { data } = await supabase.from('order_items')
+      .select('name, qty, total, size_name, combo_name, addon_names').eq('order_id', id).order('id')
+    setOrderItems(prev => ({ ...prev, [id]: data ?? [] }))
+  }
   const [vendorAccounts, setVendorAccounts] = useState<{ profile_id: string; restaurant_id: number; email: string }[]>([])
   const [driverAccounts, setDriverAccounts] = useState<{ profile_id: string; driver_id: number; email: string }[]>([])
   const [catalogAccounts, setCatalogAccounts] = useState<{ profile_id: string; name: string; email: string; role: 'catalog' | 'supervisor' }[]>([])
@@ -1573,11 +1585,81 @@ export default function Admin() {
                 </div>
               )}
 
-              <button className="text-xs text-sea font-semibold mt-3" onClick={() => setOpenHistory(openHistory === o.id ? null : o.id)}>
-                {openHistory === o.id ? 'إخفاء السجل الزمني ▲' : 'عرض السجل الزمني ▼'}
+              {/* A delivered order used to end at a total and a status word.
+                  Everything you actually reach for afterwards -- who drove it,
+                  how long it took against the SLA it promised, whether the cash
+                  came back -- was either inside a collapsed timeline or nowhere.
+                  This is the answer to "what happened with #41", on the card. */}
+              {(() => {
+                if (!CLOSED_ORDER_STATUSES.includes(o.status as OrderStatus)) return null
+                const done = assignments.find(a => a.order_id === o.id && a.delivered_at)
+                const mins = done?.delivered_at
+                  ? Math.round((new Date(done.delivered_at).getTime() - new Date(o.created_at).getTime()) / 60000)
+                  : null
+                const late = mins != null && o.sla_minutes != null && mins > o.sla_minutes
+                const cash = o.payment_method === 'cod'
+                  ? (o.cod_deposit_amount != null
+                      ? `كاش ${Math.round((o.total - o.cod_deposit_amount) * 100) / 100} + عربون ${o.cod_deposit_amount}`
+                      : `كاش ${o.total}`)
+                  : o.payment_method === 'instapay' ? 'InstaPay' : 'أونلاين'
+                return (
+                  <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
+                    <span className="bg-night border border-line rounded-lg px-2 py-1">
+                      🛵 {done?.drivers?.name ?? 'محدش'}
+                    </span>
+                    {mins != null && (
+                      <span className={`rounded-lg px-2 py-1 border ${late ? 'bg-red-500/10 border-red-500/30 text-red-700' : 'bg-night border-line'}`}>
+                        ⏱ {mins} دقيقة{o.sla_minutes ? ` / ${o.sla_minutes}` : ''}{late ? ' — متأخر' : ''}
+                      </span>
+                    )}
+                    <span className="bg-night border border-line rounded-lg px-2 py-1">💵 {cash}</span>
+                    {o.status === 'Cancelled' && o.cancel_reason && (
+                      <span className="bg-red-500/10 border border-red-500/30 text-red-700 rounded-lg px-2 py-1">
+                        ✕ {o.cancel_reason}
+                      </span>
+                    )}
+                  </div>
+                )
+              })()}
+
+              <button className="text-xs text-sea font-semibold mt-3" onClick={() => toggleOrderDetail(o.id)}>
+                {openHistory === o.id ? 'إخفاء التفاصيل ▲' : 'عرض التفاصيل الكاملة ▼'}
               </button>
               {openHistory === o.id && (
                 <div className="mt-2 bg-night border border-line rounded-xl p-3 text-xs space-y-1.5">
+                  {/* What was actually in the bag. Never shown anywhere in Admin
+                      for a catalogue order before now -- so "the customer says
+                      an item was missing" had no answer on this screen. */}
+                  {o.order_type === 'catalog' && (
+                    <div className="pb-2 mb-2 border-b border-line">
+                      <p className="font-semibold mb-1">🧾 الأصناف</p>
+                      {orderItems[o.id] === undefined ? (
+                        <p className="text-mist">بنحمّل…</p>
+                      ) : orderItems[o.id].length === 0 ? (
+                        <p className="text-mist">مفيش أصناف مسجلة</p>
+                      ) : orderItems[o.id].map((it, i) => (
+                        <p key={i}>
+                          <span className="font-semibold">{it.qty}×</span> {it.name}
+                          {[it.size_name, it.combo_name, ...(it.addon_names ?? [])].filter(Boolean).length > 0 && (
+                            <span className="text-mist"> — {[it.size_name, it.combo_name, ...(it.addon_names ?? [])].filter(Boolean).join(' · ')}</span>
+                          )}
+                          <span className="text-mist"> · {it.total} ج.م</span>
+                        </p>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* The money, itemised. The card shows one number; a customer
+                      querying their bill is asking about these four. */}
+                  <div className="pb-2 mb-2 border-b border-line">
+                    <p className="font-semibold mb-1">💰 الحساب</p>
+                    <p>المنتجات: {o.subtotal} ج.م</p>
+                    <p>التوصيل: {o.delivery_fee} ج.م</p>
+                    {Number(o.service_fee ?? 0) > 0 && <p>رسوم الخدمة: {o.service_fee} ج.م</p>}
+                    {Number(o.wallet_used ?? 0) > 0 && <p className="text-sea">من المحفظة: −{o.wallet_used} ج.م</p>}
+                    <p className="font-semibold">الإجمالي: {o.total} ج.م</p>
+                  </div>
+
                   <p>🕐 الطلب اتعمل: {fmtTime(o.created_at)}</p>
                   {assignments.filter(a => a.order_id === o.id).map(a => (
                     <div key={a.id} className="border-t border-line pt-1.5 mt-1.5 first:border-t-0 first:pt-0 first:mt-0">

@@ -70,6 +70,11 @@ export interface Order {
   zone: string; unit_number: string; address_notes: string; customer_note: string | null
   status: string; kitchen_status: string
   subtotal: number; delivery_fee: number; total: number
+  // Present on every row in the database and used all over Admin, but never
+  // declared -- so every read of them was a type error waiting to be written.
+  service_fee: number | null; wallet_used: number | null
+  sla_minutes: number | null
+  cancel_reason: string | null; cancelled_at: string | null
   payment_method: string; created_at: string
   ready_at: string | null; dispatch_at: string | null
   slot_id: number | null; scheduled_date: string | null
