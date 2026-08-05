@@ -247,6 +247,17 @@ export default function Profile() {
           <p className="text-xs text-mist mt-0.5">كلّمنا على واتساب</p>
         </div>
       </a>
+
+      {/* The only door to the staff workspaces from inside the installed app.
+          The manifest is display:standalone, so there is no address bar -- which
+          meant a driver who installed Salka could not reach /driver at all and
+          had to keep using Chrome. There was no link to /login anywhere in the
+          customer UI; in a browser you type the path, and in an app you cannot.
+          Deliberately plain: a customer who taps it meets a staff login and
+          leaves. */}
+      <Link to="/login" className="block text-center text-xs text-mist hover:text-foam py-3 min-h-[44px]">
+        دخول فريق سالكة
+      </Link>
     </div>
   )
 }

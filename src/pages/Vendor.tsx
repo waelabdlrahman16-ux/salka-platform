@@ -316,6 +316,11 @@ function KitchenVendor({ rid }: { rid: number }) {
   const [orders, setOrders] = useState<Order[]>([])
   const [completedToday, setCompletedToday] = useState<Order[]>([])
   const [completedView, setCompletedView] = useState<'delivered' | 'rejected'>('delivered')
+  // Live work and finished work were one scroll. On a busy evening that is two
+  // tickets needing a response sitting above twenty completed ones, each
+  // rendering the same full card. The vendor screen has one job -- show what
+  // still needs doing -- so finished orders move behind a tab.
+  const [board, setBoard] = useState<'live' | 'done'>('live')
   const [items, setItems] = useState<Record<number, OrderItem[]>>({})
   const [menu, setMenu] = useState<MenuItem[]>([])
   const [deliveryByOrder, setDeliveryByOrder] = useState<Record<number, { status: string; driver_name: string; driver_phone: string | null; arrived_at_restaurant_at: string | null; out_for_delivery_at: string | null }>>({})
@@ -428,9 +433,41 @@ function KitchenVendor({ rid }: { rid: number }) {
     return Math.round((+new Date(o.ready_at) - Date.now()) / 60000)
   }
 
+  // The tab bar hides when nothing has finished, so the selection must follow
+  // it -- otherwise the vendor's last delivery of the night leaves them staring
+  // at an empty board.
+  const liveBoard = completedToday.length === 0 ? 'live' : board
+
   const newOrders = orders.filter(o => (o.kitchen_status || 'new') === 'new')
   const active = orders.filter(o => (o.kitchen_status || 'new') === 'preparing')
   const ready = orders.filter(o => o.kitchen_status === 'ready')
+
+  const compactRow = (o: Order) => {
+    const label = COMPLETED_LABEL[o.status] ?? orderStatusLabel(o.status)
+    const ok = o.status === 'Delivered'
+    return (
+      <div key={o.id} className="card !rounded-2xl p-3.5 flex items-center gap-3">
+        <span className={`w-9 h-9 rounded-full grid place-items-center shrink-0 ${ok ? 'bg-emerald-100 text-emerald-700' : 'bg-shellup text-mist'}`}>
+          {ok ? '✓' : '✗'}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-sm truncate">#{o.id} — {o.customer_name}</p>
+          <p className="text-xs text-mist mt-0.5 truncate">{label}</p>
+        </div>
+        <span className="text-xs text-mist shrink-0">{o.zone}</span>
+      </div>
+    )
+  }
+
+  // A new ticket yanks the screen back to the live board. A vendor reviewing
+  // the evening's takings would otherwise have an order land on a tab they are
+  // not looking at, and this screen already treats an unanswered ticket as the
+  // most urgent thing in the building.
+  const prevNewRef = useRef(newOrders.length)
+  useEffect(() => {
+    if (newOrders.length > prevNewRef.current) setBoard('live')
+    prevNewRef.current = newOrders.length
+  }, [newOrders.length])
 
   const COMPLETED_LABEL: Record<string, string> = {
     Delivered: '✅ تم التوصيل', Cancelled: '✗ ملغي', Failed_Delivery: '⚠️ فشل التوصيل'
@@ -464,8 +501,10 @@ function KitchenVendor({ rid }: { rid: number }) {
             </div>
             <p className="text-sm text-mist mt-0.5">{o.zone} — وحدة {o.unit_number}</p>
           </div>
+          {/* No order total. The vendor prices what they cook, line by line --
+              an order-level figure is a Salka number (it moved with delivery and
+              service fees) and gave them a second total to argue with. */}
           <div className="text-left">
-            <span className="font-bold text-sea block text-lg">{o.subtotal} ج.م</span>
             <span className="text-xs text-mist">{completed ?? stage.label}</span>
           </div>
         </div>
@@ -496,18 +535,14 @@ function KitchenVendor({ rid }: { rid: number }) {
           <p className="text-sandink text-sm mt-2 bg-sand/10 rounded-lg p-2.5">📝 {o.customer_note}</p>
         )}
 
-        <p className="text-sm mt-2">
-          {o.payment_method === 'instapay' ? (
-            <span className="text-sea font-semibold">🔵 مدفوع أونلاين بالكامل</span>
-          ) : o.cod_deposit_amount != null ? (
-            <span className="inline-flex items-center gap-2 flex-wrap">
-              <span className="text-sea font-semibold">🔵 عربون: {o.cod_deposit_amount} ج.م</span>
-              <span className="text-emerald-700 font-semibold">🟢 كاش: {o.total - o.cod_deposit_amount} ج.م</span>
-            </span>
-          ) : (
-            <span className="text-emerald-700 font-semibold">🟢 كاش: {o.total} ج.م</span>
-          )}
-        </p>
+        {/* No money on this ticket beyond the per-item prices.
+            It used to carry the customer's payment arrangement -- cash vs
+            InstaPay, any deposit, and a total including delivery and service
+            fees -- plus an order subtotal in the header and a day's-takings
+            figure on the finished board. The vendor collects nothing from the
+            customer; the driver does. Those numbers were Salka's, printed on a
+            kitchen ticket, and the biggest of them was not even what the vendor
+            was owed. What a kitchen needs is what to cook. */}
 
         {!completed && remaining(o) !== null && o.kitchen_status !== 'ready' && (
           <div className={`mt-3 rounded-2xl p-3 text-center ${remaining(o)! <= 2 ? 'bg-red-500/10' : 'bg-shellup'}`}>
@@ -624,31 +659,54 @@ function KitchenVendor({ rid }: { rid: number }) {
       )}
       {(!reliability || reliability.total_orders === 0) && <div className="mb-4" />}
 
-      {orders.length === 0 && <div className="card p-6 text-center text-mist">لا توجد طلبات حالياً</div>}
-
-      {newOrders.length > 0 && (
-        <div className="mb-5 space-y-3">
-          <p className="text-sandink font-bold animate-pulse">🔔 محتاج ردّك — {newOrders.length}</p>
-          {newOrders.map(o => card(o, true))}
+      {/* Only once something has finished today -- the first order of the day
+          should not arrive behind a tab bar explaining itself. */}
+      {completedToday.length > 0 && (
+        <div className="flex gap-2 mb-4">
+          <button className={`tab flex-1 ${liveBoard === 'live' ? 'tab-active' : 'bg-shellup/60'}`}
+            onClick={() => setBoard('live')}>
+            شغل دلوقتي{orders.length > 0 ? ` (${orders.length})` : ''}
+          </button>
+          <button className={`tab flex-1 ${liveBoard === 'done' ? 'tab-active' : 'bg-shellup/60'}`}
+            onClick={() => setBoard('done')}>
+            خلصت النهاردة ({completedToday.length})
+          </button>
         </div>
       )}
 
-      <div className="space-y-3">{active.map(o => card(o))}</div>
-
-      {ready.length > 0 && (
+      {liveBoard === 'live' && (
         <>
-          <h2 className="font-bold text-mist mt-6 mb-3">جاهز للاستلام</h2>
-          <div className="space-y-3">{ready.map(o => card(o))}</div>
+          {orders.length === 0 && (
+            <div className="card p-6 text-center text-mist">
+              {completedToday.length > 0 ? 'مفيش طلبات مستنية — كله خلص ✅' : 'لا توجد طلبات حالياً'}
+            </div>
+          )}
+
+          {newOrders.length > 0 && (
+            <div className="mb-5 space-y-3">
+              <p className="text-sandink font-bold animate-pulse">🔔 محتاج ردّك — {newOrders.length}</p>
+              {newOrders.map(o => card(o, true))}
+            </div>
+          )}
+
+          <div className="space-y-3">{active.map(o => card(o))}</div>
+
+          {ready.length > 0 && (
+            <>
+              <h2 className="font-bold text-mist mt-6 mb-3">جاهز للاستلام</h2>
+              <div className="space-y-3">{ready.map(o => card(o))}</div>
+            </>
+          )}
         </>
       )}
 
-      {completedToday.length > 0 && (() => {
+      {liveBoard === 'done' && (() => {
         const deliveredToday = completedToday.filter(o => o.status === 'Delivered')
         const rejectedToday = completedToday.filter(o => o.status !== 'Delivered')
         const shown = completedView === 'delivered' ? deliveredToday : rejectedToday
         return (
           <>
-            <div className="flex items-center justify-between mt-6 mb-3">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex gap-1.5">
                 <button className={`tab !text-sm ${completedView === 'delivered' ? 'tab-active' : 'bg-shellup/60'}`}
                   onClick={() => setCompletedView('delivered')}>✅ تم التوصيل ({deliveredToday.length})</button>
@@ -656,15 +714,16 @@ function KitchenVendor({ rid }: { rid: number }) {
                   onClick={() => setCompletedView('rejected')}>✗ ملغي/مرفوض ({rejectedToday.length})</button>
               </div>
               {completedView === 'delivered' && (
-                <span className="text-sea font-bold text-sm shrink-0">
-                  {deliveredToday.reduce((s, o) => s + Number(o.subtotal), 0)} ج.م
-                </span>
+                <span className="text-mist text-sm shrink-0">{deliveredToday.length} طلب</span>
               )}
             </div>
             {shown.length === 0 ? (
               <p className="text-mist text-sm text-center py-4">لا يوجد طلبات هنا</p>
             ) : (
-              <div className="space-y-3">{shown.map(o => card(o))}</div>
+              /* A finished order is a line in a ledger. It used to render the
+                 same card as a live ticket -- kitchen stages, item list, driver
+                 tracking, action buttons that no longer do anything. */
+              <div className="space-y-2.5">{shown.map(o => compactRow(o))}</div>
             )}
           </>
         )

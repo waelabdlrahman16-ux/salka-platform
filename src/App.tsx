@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react'
 import Icon from './components/Icon'
-import { Routes, Route, Link, useLocation } from 'react-router-dom'
-import { AuthProvider, useAuth } from './lib/auth'
+import { Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
+import { AuthProvider, homeFor, useAuth } from './lib/auth'
 import { CartProvider, useCart } from './lib/cart'
 import Protected from './components/Protected'
 import Home from './pages/Home'
@@ -136,6 +136,19 @@ function AppShell() {
   const { pathname } = useLocation()
   const isStaff = isStaffRoute(pathname)
   const { customer, loading } = useCustomerAuth()
+  // A signed-in driver or vendor opening the app lands in their workspace, not
+  // on the customer home. In a browser they could type /driver; in the installed
+  // app there is no address bar, so without this a driver who had already signed
+  // in still had to go through حسابي -> دخول فريق سالكة on every single launch.
+  //
+  // Narrow on purpose: only from "/", and only for drivers and vendors -- the
+  // two roles who live in the installed app. Admin and catalog staff work on a
+  // desktop with an address bar and have good reason to open the customer home,
+  // so they are left alone.
+  const { profile, loading: staffLoading } = useAuth()
+  const staffHome = !staffLoading && pathname === '/'
+    && (profile?.role === 'driver' || profile?.role === 'vendor')
+    ? homeFor(profile.role) : null
   useScrollRestoration()
   const [skipped, setSkipped] = useState(() => !!localStorage.getItem('salka_onboarded'))
 
@@ -155,6 +168,8 @@ function AppShell() {
   // move after picking instead of interrupting them the instant they choose.
   const hasPlace = !!sessionStorage.getItem('salka_compound_id')
   const showOnboarding = !isStaff && !loading && !customer && !skipped && hasPlace
+
+  if (staffHome) return <Navigate to={staffHome} replace />
 
   return (
     <div className="min-h-screen font-arabic">

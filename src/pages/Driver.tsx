@@ -52,6 +52,11 @@ export default function DriverPage() {
   const id = profile?.driver_id
   const [driver, setDriver] = useState<Driver | null>(null)
   const [assignments, setAssignments] = useState<Assignment[]>([])
+  // Delivered runs pile up under the live ones and every completed card looked
+  // exactly like a job still needing work -- same header, same progress bar,
+  // same call/maps buttons. Four finished orders and one live one meant hunting
+  // for the live one. Two tabs; finished work is one tap away, never in the way.
+  const [tab, setTab] = useState<'active' | 'done'>('active')
   const [rejecting, setRejecting] = useState<Assignment | null>(null)
   const rejectingRef = useDismissable(() => setRejecting(null), !!rejecting)
   const [reason, setReason] = useState('')
@@ -111,11 +116,32 @@ export default function DriverPage() {
     return () => { if (justDeliveredTimeoutRef.current) clearTimeout(justDeliveredTimeoutRef.current) }
   }, [])
 
+  // Declared here, not further down, because the effect below reads
+  // liveAssignments.length in its dependency array -- which is evaluated during
+  // render, so a const defined later would still be in its temporal dead zone.
+  const liveAssignments = assignments.filter(a => a.status !== 'Delivered')
+  const doneAssignments = assignments.filter(a => a.status === 'Delivered')
+  // Never strand the driver on an empty history tab -- the tab bar hides itself
+  // when there is nothing finished, and the selection has to follow it.
+  const activeTab = doneAssignments.length === 0 ? 'active' : tab
+  const shown = activeTab === 'active' ? liveAssignments : doneAssignments
+
+  // A new offer pulls the driver back to the live tab. Without this, a driver
+  // reading yesterday's deliveries would get a push notification, open the app,
+  // and be looking at a screen where the new offer does not appear at all --
+  // and offers expire.
+  const offeredCount = liveAssignments.filter(a => a.status === 'Offered').length
+  const prevOfferedRef = useRef(offeredCount)
+  useEffect(() => {
+    if (offeredCount > prevOfferedRef.current) setTab('active')
+    prevOfferedRef.current = offeredCount
+  }, [offeredCount])
+
   useEffect(() => {
     if (refsInitialised.current || !haveStats) return
     refsInitialised.current = true
-    setRefsOpen(assignments.length === 0)
-  }, [haveStats, assignments.length])
+    setRefsOpen(liveAssignments.length === 0)
+  }, [haveStats, liveAssignments.length])
 
   // Every query used to destructure only `data`, so a dropped request on weak
   // signal set state to [] -- wiping the driver's in-progress delivery, the
@@ -547,10 +573,54 @@ export default function DriverPage() {
         </div>
       )}
 
+      {/* Only shown once there is something in the finished pile -- a driver on
+          their first run of the day should not have to parse a tab bar. */}
+      {doneAssignments.length > 0 && (
+        <div className="flex gap-2 mb-3">
+          <button className={`tab flex-1 ${activeTab === 'active' ? 'tab-active' : 'bg-shellup/60'}`}
+            onClick={() => setTab('active')}>
+            شغل دلوقتي{liveAssignments.length > 0 ? ` (${liveAssignments.length})` : ''}
+          </button>
+          <button className={`tab flex-1 ${activeTab === 'done' ? 'tab-active' : 'bg-shellup/60'}`}
+            onClick={() => setTab('done')}>
+            تم التوصيل ({doneAssignments.length})
+          </button>
+        </div>
+      )}
+
+      {activeTab === 'active' && liveAssignments.length === 0 && doneAssignments.length > 0 && (
+        <p className="card p-5 text-center text-mist text-sm mb-3">مفيش شغل دلوقتي — كل الطلبات اتسلمت ✅</p>
+      )}
+
       <div className="space-y-3">
-        {assignments.map(a => {
+        {shown.map(a => {
           const o = a.orders
           if (!o) return null
+
+          // A finished run is a receipt, not a task. It carried the full task
+          // card -- progress bar, live map, call/WhatsApp/Maps buttons, the
+          // customer's address -- which is why five of them buried the one job
+          // that still needed doing.
+          if (a.status === 'Delivered') {
+            const collected = o.payment_method === 'instapay' ? 0
+              : o.cod_deposit_amount != null ? o.total - o.cod_deposit_amount
+              : o.total
+            return (
+              <div key={a.id} className="card !rounded-2xl p-3.5 flex items-center gap-3">
+                <span className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 grid place-items-center shrink-0">✓</span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-sm truncate">#{o.id} — {o.restaurants?.name}</p>
+                  <p className="text-xs text-mist mt-0.5 truncate">
+                    {o.zone}{a.delivered_at ? ` · ${fmt(a.delivered_at)}` : ''}
+                  </p>
+                </div>
+                <span className="text-sm font-semibold text-emerald-700 shrink-0">
+                  {collected > 0 ? `${collected} ج.م` : 'مدفوع'}
+                </span>
+              </div>
+            )
+          }
+
           const cashDue = o.payment_method === 'instapay' ? 0
             : o.cod_deposit_amount != null ? o.total - o.cod_deposit_amount
             : o.total
@@ -640,6 +710,20 @@ export default function DriverPage() {
                 </div>
               )}
 
+              {/* An offer is a yes/no question: which restaurant, where to, how
+                  much cash. The customer's name, exact unit and the call /
+                  WhatsApp / Maps buttons are for a job you have taken -- shown
+                  before accepting they are clutter on the deciding screen, and
+                  they hand out a customer's phone number to a driver who may
+                  well reject the run. */}
+              {a.status === 'Offered' ? (
+                <div className="mt-3 bg-night border border-line rounded-xl p-3.5 text-sm">
+                  <p className="text-mist flex items-start gap-1.5">
+                    <Icon name="locationDot" className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                    <span>التوصيل لـ {o.zone}</span>
+                  </p>
+                </div>
+              ) : (
               <div className="mt-3 bg-night border border-line rounded-xl p-3.5 text-sm space-y-2">
                 <p className="font-semibold">{o.customer_name}</p>
                 <p className="text-mist flex items-start gap-1.5">
@@ -662,6 +746,7 @@ export default function DriverPage() {
                   )}
                 </div>
               </div>
+              )}
 
               <div className="mt-3">
                 {a.status === 'Offered' && (
@@ -725,7 +810,6 @@ export default function DriverPage() {
                     </div>
                   )
                 })()}
-                {a.status === 'Delivered' && <p className="text-emerald-700 font-semibold text-center">اكتمل</p>}
               </div>
 
               {(a.responded_at || a.picked_up_at || a.delivered_at) && (
@@ -739,6 +823,67 @@ export default function DriverPage() {
           )
         })}
       </div>
+
+      {/* Unclaimed orders, directly under the driver's own work.
+
+          This block used to sit BELOW the earnings-and-shifts panel, so a new
+          order nobody had taken yet was the last thing on the page -- under
+          today's takings, the bonus meter, the next shift and the swap board.
+          These are first-come-first-served: burying them does not just annoy
+          the driver, it hands the order to whoever scrolled less. */}
+      {activeTab === 'active' && pool.length > 0 && (
+        <div className="mb-5">
+          <h2 className="font-bold text-mist mb-3">طلبات متاحة — أول واحد يقبل ياخدها</h2>
+          {pool.some(o => o.dest_lat != null && o.dest_lng != null) && (
+            <div className="mb-3">
+              <DriverPoolMap
+                pins={pool.filter(o => o.dest_lat != null && o.dest_lng != null)
+                  .map(o => ({ id: o.id, lat: o.dest_lat!, lng: o.dest_lng! }))}
+                selectedId={selectedPoolId}
+                onSelect={setSelectedPoolId}
+                myPos={myPos}
+              />
+            </div>
+          )}
+          <div className="space-y-3">
+            {pool.map(o => {
+              const notReadyYet = !!o.dispatch_at && new Date(o.dispatch_at) > new Date()
+              const minsLeft = notReadyYet ? Math.max(1, Math.round((+new Date(o.dispatch_at!) - Date.now()) / 60000)) : 0
+              const isSelected = selectedPoolId === o.id
+              return (
+                <div key={o.id}
+                  className={`card !rounded-2xl p-4 ${isSelected ? 'border-sea border-2' : notReadyYet ? 'border-line opacity-80' : 'border-sea/40'}`}
+                  onClick={() => setSelectedPoolId(o.id)}>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="font-bold">{o.restaurant_name}</h3>
+                      <p className="text-sm text-mist mt-0.5">📍 {o.zone}</p>
+                      <p className="text-xs text-mist mt-1">
+                        {notReadyYet ? `🕐 هيبقى جاهز خلال ${minsLeft} د`
+                          : o.kitchen_status === 'ready' ? '✅ جاهز للاستلام'
+                          : o.kitchen_status === 'preparing' ? '👨‍🍳 قيد التحضير' : '🕐 المطعم لسه ما بدأش'}
+                      </p>
+                    </div>
+                    {/* Order value is irrelevant to driver pay under the flat
+                        10 EGP model, but it was the boldest brand-coloured
+                        number on the card -- styled exactly like the earnings
+                        figure -- which reads as "this one pays more" and invites
+                        cherry-picking. Labelled and de-emphasised. */}
+                    <div className="text-left shrink-0">
+                      <p className="text-[10px] text-mist leading-none">قيمة الطلب</p>
+                      <p className="text-sm text-mist mt-0.5">{o.total} ج.م</p>
+                    </div>
+                  </div>
+                  <button className="btn-sea w-full mt-3" disabled={claiming !== null || notReadyYet}
+                    onClick={e => { e.stopPropagation(); claim(o.id) }}>
+                    {claiming === o.id ? 'جاري القبول…' : notReadyYet ? 'لسه معلش' : 'أستلم الطلب'}
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Everything below this point is reference, not work.
 
@@ -922,59 +1067,6 @@ export default function DriverPage() {
       </details>
 
 
-      {pool.length > 0 && (
-        <div className="mb-5">
-          <h2 className="font-bold text-mist mb-3">طلبات متاحة — أول واحد يقبل ياخدها</h2>
-          {pool.some(o => o.dest_lat != null && o.dest_lng != null) && (
-            <div className="mb-3">
-              <DriverPoolMap
-                pins={pool.filter(o => o.dest_lat != null && o.dest_lng != null)
-                  .map(o => ({ id: o.id, lat: o.dest_lat!, lng: o.dest_lng! }))}
-                selectedId={selectedPoolId}
-                onSelect={setSelectedPoolId}
-                myPos={myPos}
-              />
-            </div>
-          )}
-          <div className="space-y-3">
-            {pool.map(o => {
-              const notReadyYet = !!o.dispatch_at && new Date(o.dispatch_at) > new Date()
-              const minsLeft = notReadyYet ? Math.max(1, Math.round((+new Date(o.dispatch_at!) - Date.now()) / 60000)) : 0
-              const isSelected = selectedPoolId === o.id
-              return (
-                <div key={o.id}
-                  className={`card !rounded-2xl p-4 ${isSelected ? 'border-sea border-2' : notReadyYet ? 'border-line opacity-80' : 'border-sea/40'}`}
-                  onClick={() => setSelectedPoolId(o.id)}>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-bold">{o.restaurant_name}</h3>
-                      <p className="text-sm text-mist mt-0.5">📍 {o.zone}</p>
-                      <p className="text-xs text-mist mt-1">
-                        {notReadyYet ? `🕐 هيبقى جاهز خلال ${minsLeft} د`
-                          : o.kitchen_status === 'ready' ? '✅ جاهز للاستلام'
-                          : o.kitchen_status === 'preparing' ? '👨‍🍳 قيد التحضير' : '🕐 المطعم لسه ما بدأش'}
-                      </p>
-                    </div>
-                    {/* Order value is irrelevant to driver pay under the flat
-                        10 EGP model, but it was the boldest brand-coloured
-                        number on the card -- styled exactly like the earnings
-                        figure -- which reads as "this one pays more" and invites
-                        cherry-picking. Labelled and de-emphasised. */}
-                    <div className="text-left shrink-0">
-                      <p className="text-[10px] text-mist leading-none">قيمة الطلب</p>
-                      <p className="text-sm text-mist mt-0.5">{o.total} ج.م</p>
-                    </div>
-                  </div>
-                  <button className="btn-sea w-full mt-3" disabled={claiming !== null || notReadyYet}
-                    onClick={e => { e.stopPropagation(); claim(o.id) }}>
-                    {claiming === o.id ? 'جاري القبول…' : notReadyYet ? 'لسه معلش' : 'أستلم الطلب'}
-                  </button>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
 
       {assignments.length === 0 && pool.length === 0 && !syncFailed && (
         <div className="card p-6 text-center text-mist">لا توجد طلبات حالياً</div>
