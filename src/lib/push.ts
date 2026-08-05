@@ -35,8 +35,15 @@ import { supabase } from './supabase'
  */
 export type PushPlatform = 'web' | 'android' | 'ios'
 
-/** The callback every register/enable entry point hands its result to. */
-export type PushTokenSink = (token: string, platform: PushPlatform) => void
+/**
+ * The callback every register/enable entry point hands its result to.
+ *
+ * It may return a promise resolving to false to say "I could not store this".
+ * That matters: minting a token from FCM and failing to save it to the server
+ * leaves a driver who has been told notifications are on and whom no trigger can
+ * reach -- the exact state push_tokens = 0 describes.
+ */
+export type PushTokenSink = (token: string, platform: PushPlatform) => void | Promise<boolean | void>
 
 /** Where a native token came from. Web is anything that is not a Capacitor app. */
 function nativePlatform(): PushPlatform {
@@ -51,8 +58,16 @@ function nativePlatform(): PushPlatform {
  * silently register an APK as a browser -- and a token filed as 'web' gets a
  * data-only message the killed app will never display.
  */
-export function persistPushToken(token: string, platform: PushPlatform) {
-  return supabase.rpc('save_my_push_token', { p_push_token: token, p_platform: platform })
+export async function persistPushToken(token: string, platform: PushPlatform): Promise<boolean> {
+  const { error } = await supabase.rpc('save_my_push_token', { p_push_token: token, p_platform: platform })
+  if (error) {
+    // Reported, not swallowed. Every call site used to drop this promise, so a
+    // rejected write produced a hidden button and a silent phone.
+    lastPushError = `save_my_push_token: ${error.message}`
+    console.error('saving push token failed', error)
+    return false
+  }
+  return true
 }
 
 // Must match ANDROID_CHANNEL in supabase/functions/send-push. A message naming
@@ -236,8 +251,13 @@ async function nativeToken(onToken: PushTokenSink, allowPrompt: boolean): Promis
 
     PushNotifications.addListener('registration', t => {
       diag(`registration -> token ${t.value.slice(0, 12)}… (${t.value.length} chars)`)
-      onToken(t.value, nativePlatform())
-      finish(true)
+      // The token existing is not the same as the server holding it.
+      void Promise.resolve(onToken(t.value, nativePlatform()))
+        .then(saved => {
+          diag(saved === false ? 'server did NOT store the token' : 'token stored on the server')
+          finish(saved !== false)
+        })
+        .catch(e => { lastPushError = `store: ${(e as Error).message}`; diag(lastPushError); finish(false) })
     })
     // This is the message that actually diagnoses a broken setup -- a wrong
     // google-services.json, an API key restricted away from FCM, no Play
@@ -283,8 +303,7 @@ export async function registerPush(onToken: PushTokenSink): Promise<boolean> {
 
     const token = await webToken()
     if (!token) return false
-    onToken(token, 'web')
-    return true
+    return (await onToken(token, 'web')) !== false
   } catch (e) {
     // Push is an enhancement. It must never break the page it sits on.
     lastPushError = `registerPush: ${(e as Error)?.message ?? String(e)}`
@@ -310,8 +329,7 @@ export async function enablePush(onToken: PushTokenSink): Promise<boolean> {
 
     const token = await webToken()
     if (!token) return false
-    onToken(token, 'web')
-    return true
+    return (await onToken(token, 'web')) !== false
   } catch (e) {
     lastPushError = `enablePush: ${(e as Error)?.message ?? String(e)}`
     console.error('push enable failed', e)

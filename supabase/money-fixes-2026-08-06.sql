@@ -1,0 +1,66 @@
+-- Applied to production 2026-08-06, from the sanity sweep
+-- (claude/salka-sanity-sweep-2026-08-06.md). Recorded here because
+-- supabase/*.sql is the only place a future session can read what the database
+-- does, and all three of these change what a customer is charged.
+--
+-- All three verified by execution in a rolled-back transaction:
+--   M1) google customer w/ 200 credit -> wallet_used=200.00 total=1381.00
+--       status=pending wallet_left=0.00 ledger=t
+--   M2) unclaimed instapay -> refused (payment_not_claimed); p_force -> paid
+--   M3a) quoted 3000 -> total=3065 awaiting_payment deposit=1533
+--   M3b) quoted 300  -> total=365  pending          deposit=NULL
+
+-- =====================================================================
+-- M1. place_order could never spend wallet credit
+-- =====================================================================
+-- wallet_balance_for_phone resolves the caller from p_session_token OR
+-- auth.uid(). place_order resolved v_session_phone from p_session_token alone,
+-- and salka_session_token is written only by the phone-OTP path. All 27
+-- customers arrived via Google or email and customer_sessions has never had a
+-- row -- so the balance always displayed and the spend always silently
+-- no-opped. The checkout screen promised «من رصيدك −200» and a 945 ج.م button
+-- while the server charged 1145 and raised a 573 ج.م deposit wall.
+--
+-- Added immediately after the my_customer_id() fallback:
+--
+--   if v_session_phone is null and v_customer_id is not null then
+--     select phone into v_session_phone from customers where id = v_customer_id;
+--   end if;
+--
+-- APPLIED PROGRAMMATICALLY, not retyped: the body is ~200 lines and a
+-- transcription slip in place_order changes what every customer is charged. The
+-- migration reads pg_get_functiondef, does a single replace(), asserts the
+-- anchor text was found, and refuses to redeploy an unchanged body. Use the
+-- same technique next time.
+
+-- =====================================================================
+-- M2. An InstaPay transfer nobody claimed could be marked received
+-- =====================================================================
+-- The verified queue only offers the confirm button when instapay_claimed_at is
+-- set. The stalled-orders banner offered the same button on
+-- status = 'awaiting_payment' alone, and the function checked neither -- so one
+-- tap on an abandoned order marked it paid and dispatched it. The driver's
+-- screen then reads «مدفوع أونلاين بالكامل — متحصلش فلوس», he collects nothing,
+-- and the full order value is gone with no refund flag and no trace.
+--
+-- admin_confirm_instapay_payment(int) is DROPPED and replaced by
+-- admin_confirm_instapay_payment(p_order_id int, p_force boolean default false)
+-- which raises 'payment_not_claimed' when instapay_claimed_at is null.
+-- p_force exists for the real case -- a customer transfers but never taps the
+-- button -- and must stay a deliberate second action, never the default.
+-- The one-named-arg call from the deployed bundle still resolves via the
+-- default, same as save_my_push_token.
+
+-- =====================================================================
+-- M3. A quoted custom order skipped the COD deposit rule entirely
+-- =====================================================================
+-- confirm_custom_order_price did total = subtotal + delivery_fee and moved
+-- straight to pending. So a 3000 ج.م pharmacy basket dispatched as pure cash
+-- with no deposit, while a 1145 ج.م catalogue order to the same door was held
+-- for 573. This is the order type most likely to be large, and the one where
+-- the driver is fronting someone else's stock.
+--
+-- It now reads cod_deposit_threshold_egp and sets cod_deposit_amount =
+-- ceil(total * 0.5) with status 'awaiting_payment', mirroring place_order
+-- exactly. Written out rather than shared because place_order applies the rule
+-- before the order exists; extract it if a third caller ever needs it.

@@ -420,15 +420,29 @@ export default function Admin() {
   useEffect(() => { ping('no_answer', noAnswerReports.length, 'عميل ما ردش', 'مندوب اتصل بعميل ومردش، محتاج قرارك') },
     [noAnswerReports.length])
 
+  // admin_assign_order can refuse for TEN distinct reasons. This handled one of
+  // them and answered «حصل خطأ، جرب تاني» to the other nine -- so an order that
+  // had been round the houses five times, or a driver who had already declined
+  // that exact order, both read as a broken button. The system was working and
+  // refusing to say so, which is worse than a bug: it sends you back to tap
+  // again, which is how order #41 reached attempt number 8.
   async function assign(order: Order, driver: Driver) {
-    const { error } = await supabase.rpc('admin_assign_order', { p_order_id: order.id, p_driver_id: driver.id })
-    if (error) {
-      alert(error.message.includes('dispatch_rule_blocked')
-        ? 'المندوب ده وصل للحد الأقصى (٣ طلبات) أو شغال في اتجاه مختلف'
-        : 'حصل خطأ، جرب تاني')
-      return
-    }
-    setAssigning(null); load(true)
+    setModalError('')
+    const res = await rpc('admin_assign_order', { p_order_id: order.id, p_driver_id: driver.id }, {
+      dispatch_rule_blocked: 'المندوب ده وصل للحد الأقصى (٣ طلبات) أو شغال في اتجاه مختلف',
+      driver_already_declined: `${driver.name} رفض الطلب ده قبل كده — اختار مندوب تاني`,
+      too_many_attempts: 'الطلب ده اتعرض على مندوبين ٥ مرات. ده مشكلة توزيع مش مشكلة إعادة محاولة — كلّم مندوب بنفسك أو الغِ الطلب',
+      already_assigned: 'الطلب ده مع مندوب بالفعل — حدّث الصفحة',
+      order_closed: 'الطلب ده اتقفل خلاص (اتسلّم أو اتلغى)',
+      order_not_paid: 'الطلب لسه مادفعش — أكّد الدفع الأول',
+      order_not_priced: 'الطلب لسه مسعّرش — حط السعر الأول',
+      driver_suspended: 'حساب المندوب ده موقوف',
+      driver_not_found: 'المندوب ده مش موجود — حدّث الصفحة',
+      order_not_found: 'الطلب ده مش موجود — حدّث الصفحة',
+      admin_only: 'مش من صلاحياتك تعيّن مندوب للطلب ده',
+    })
+    if (!res.ok) { setModalError(res.error); return }
+    setAssigning(null); setModalError(''); load(true)
   }
 
   // Bulk import is the only way a driver record is created, and it parses
@@ -2292,11 +2306,18 @@ export default function Admin() {
       )}
 
       {assigning && (
-        <div ref={assigningRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true" onClick={() => setAssigning(null)}>
+        <div ref={assigningRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true" onClick={() => { setAssigning(null); setModalError('') }}>
           <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold mb-4">اختيار مندوب متاح — طلب #{assigning.id}</h3>
             {assigningNeedsVan && (
               <p className="text-sandink text-sm mb-3">🚐 الطلب محتاج فان — لسه السعر متأكدش أو الطلب كبير</p>
+            )}
+            {/* The refusal has to be readable HERE. The page-level banner sits
+                behind a fixed inset-0 overlay, so a failed assign produced no
+                visible message at all -- which is how ten distinct reasons
+                became one alert() saying nothing. */}
+            {modalError && (
+              <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3" role="alert">{modalError}</p>
             )}
             {assignableDrivers.length === 0 && (
               <p className="text-mist text-sm">

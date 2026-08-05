@@ -33,6 +33,20 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteBlockedReason, setDeleteBlockedReason] = useState('')
+  // Every write below used to be `await supabase.from(...).update(...)` with no
+  // error destructured, then onSaved()/loadOptions() regardless. A failed save
+  // closed the sheet, or repainted the list with the OLD value, and said
+  // nothing -- indistinguishable from a save that worked. This is the only
+  // screen the catalog role has, and place_order charges exactly what these
+  // tables say, so a silently-dropped price edit bills the old price forever.
+  const [writeError, setWriteError] = useState('')
+
+  async function write(q: PromiseLike<{ error: { message?: string } | null }>, what: string): Promise<boolean> {
+    const { error } = await q
+    if (error) { setWriteError(`${what} — ${error.message ?? 'الحفظ فشل'}`); return false }
+    setWriteError('')
+    return true
+  }
 
   const [sizes, setSizes] = useState<MenuItemSize[]>([])
   const [combos, setCombos] = useState<MenuItemCombo[]>([])
@@ -79,14 +93,16 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
   async function save() {
     if (!name.trim() || !price) return
     setSaving(true)
-    await supabase.from('menu_items').update({
+    const ok = await write(supabase.from('menu_items').update({
       name: name.trim(), description: description.trim(), category: category.trim(), price: Number(price), available,
       image_url: imageUrl,
       available_from: hasWindow ? availFrom : null,
       available_until: hasWindow ? availUntil : null
-    }).eq('id', item.id)
+    }).eq('id', item.id), 'حفظ الصنف')
     setSaving(false)
-    onSaved()
+    // Only close on success. Closing regardless is what made a failed price
+    // edit look like a stale list.
+    if (ok) onSaved()
   }
 
   async function deleteItem() {
@@ -107,15 +123,15 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
 
   async function addSizeNamed(name: string, priceValue: string) {
     if (!name.trim() || !priceValue) return
-    await supabase.from('menu_item_sizes').insert({
+    if (!await write(supabase.from('menu_item_sizes').insert({
       menu_item_id: item.id, name: name.trim(), price: Number(priceValue),
       is_default: sizes.length === 0, display_order: sizes.length
-    })
+    }), 'إضافة حجم')) return
     loadOptions()
   }
   async function removeSize(id: number) {
     if (!confirm('حذف الحجم ده؟')) return
-    await supabase.from('menu_item_sizes').delete().eq('id', id)
+    if (!await write(supabase.from('menu_item_sizes').delete().eq('id', id), 'حذف حجم')) return
     loadOptions()
   }
 
@@ -136,33 +152,49 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
       is_default: sizes.length === 0 && i === 0, display_order: sizes.length + i
     }))
     if (!rows.length) return
-    await supabase.from('menu_item_sizes').insert(rows)
+    if (!await write(supabase.from('menu_item_sizes').insert(rows), 'إضافة الأحجام')) return
+    loadOptions()
+  }
+
+  // A preset names these rows for you; renaming one should not mean deleting it
+  // and losing its price. The add-on group beside them has always been
+  // renameable -- sizes and combos were simply missed.
+  async function updateSizeName(id: number, value: string) {
+    const n = value.trim()
+    if (!n) return
+    if (!await write(supabase.from('menu_item_sizes').update({ name: n }).eq('id', id), 'اسم الحجم')) return
+    loadOptions()
+  }
+  async function updateComboName(id: number, value: string) {
+    const n = value.trim()
+    if (!n) return
+    if (!await write(supabase.from('menu_item_combos').update({ name: n }).eq('id', id), 'اسم الكومبو')) return
     loadOptions()
   }
 
   async function updateSizePrice(id: number, value: string) {
     const n = Number(value)
     if (!value.trim() || Number.isNaN(n) || n < 0) return
-    await supabase.from('menu_item_sizes').update({ price: n }).eq('id', id)
+    if (!await write(supabase.from('menu_item_sizes').update({ price: n }).eq('id', id), 'سعر الحجم')) return
     loadOptions()
   }
 
   async function addCombo(name: string, priceValue: string) {
     if (!name.trim() || !priceValue) return
-    await supabase.from('menu_item_combos').insert({
+    if (!await write(supabase.from('menu_item_combos').insert({
       menu_item_id: item.id, name: name.trim(), price: Number(priceValue), display_order: combos.length
-    })
+    }), 'إضافة كومبو')) return
     loadOptions()
   }
   async function removeCombo(id: number) {
     if (!confirm('حذف الكومبو ده؟')) return
-    await supabase.from('menu_item_combos').delete().eq('id', id)
+    if (!await write(supabase.from('menu_item_combos').delete().eq('id', id), 'حذف كومبو')) return
     loadOptions()
   }
   async function updateComboPrice(id: number, value: string) {
     const n = Number(value)
     if (!value.trim() || Number.isNaN(n) || n < 0) return
-    await supabase.from('menu_item_combos').update({ price: n }).eq('id', id)
+    if (!await write(supabase.from('menu_item_combos').update({ price: n }).eq('id', id), 'سعر الكومبو')) return
     loadOptions()
   }
   // Seeded at the item's own price, same reasoning as the size preset: a
@@ -174,17 +206,17 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
       menu_item_id: item.id, name: n, price: Number(price) || 0, display_order: combos.length + i
     }))
     if (!rows.length) return
-    await supabase.from('menu_item_combos').insert(rows)
+    if (!await write(supabase.from('menu_item_combos').insert(rows), 'إضافة الكومبو')) return
     loadOptions()
   }
 
   async function addGroup() {
     if (!newGroup.name.trim()) return
-    await supabase.from('menu_item_addon_groups').insert({
+    if (!await write(supabase.from('menu_item_addon_groups').insert({
       menu_item_id: item.id, name: newGroup.name.trim(),
       min_select: newGroup.required ? 1 : 0,
       max_select: newGroup.kind === 'swap' ? 1 : (newGroup.maxSelect ? Number(newGroup.maxSelect) : null)
-    })
+    }), 'إضافة مجموعة')) return
     setNewGroup({ name: '', kind: 'multi', required: false, maxSelect: '' })
     loadOptions()
   }
@@ -198,13 +230,15 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
    * anywhere. Now the intent is the button.
    */
   async function applyGroupPreset(kind: 'required-one' | 'extras') {
-    const { data } = await supabase.from('menu_item_addon_groups').insert({
+    const { data, error: groupErr } = await supabase.from('menu_item_addon_groups').insert({
       menu_item_id: item.id,
       name: kind === 'required-one' ? 'اختار نوع الساندوتش' : 'إضافات',
       min_select: kind === 'required-one' ? 1 : 0,
       max_select: kind === 'required-one' ? 1 : null,
       display_order: groups.length
     }).select('id').single()
+    if (groupErr) { setWriteError(`إضافة مجموعة — ${groupErr.message}`); return }
+    setWriteError('')
     await loadOptions()
     // Drop the cursor straight into the group that was just made, so the next
     // action is typing an option name rather than hunting for where it went.
@@ -213,29 +247,29 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
 
   async function renameGroup(id: number, name: string) {
     if (!name.trim()) return
-    await supabase.from('menu_item_addon_groups').update({ name: name.trim() }).eq('id', id)
+    if (!await write(supabase.from('menu_item_addon_groups').update({ name: name.trim() }).eq('id', id), 'اسم المجموعة')) return
     loadOptions()
   }
 
   async function updateAddonPrice(id: number, value: string) {
     const n = Number(value)
     if (!value.trim() || Number.isNaN(n) || n < 0) return
-    await supabase.from('menu_item_addons').update({ price: n }).eq('id', id)
+    if (!await write(supabase.from('menu_item_addons').update({ price: n }).eq('id', id), 'سعر الإضافة')) return
     loadOptions()
   }
 
   async function removeGroup(id: number) {
     if (!confirm('حذف المجموعة دي هيحذف كل الخيارات اللي جواها. متأكد؟')) return
-    await supabase.from('menu_item_addon_groups').delete().eq('id', id)
+    if (!await write(supabase.from('menu_item_addon_groups').delete().eq('id', id), 'حذف المجموعة')) return
     loadOptions()
   }
 
   async function addAddonTo(groupId: number) {
     const draft = newAddon[groupId]
     if (!draft?.name.trim()) return
-    await supabase.from('menu_item_addons').insert({
+    if (!await write(supabase.from('menu_item_addons').insert({
       group_id: groupId, name: draft.name.trim(), price: Number(draft.price) || 0, image_url: draft.imageUrl
-    })
+    }), 'إضافة خيار')) return
     setNewAddon(prev => ({ ...prev, [groupId]: { name: '', price: '', imageUrl: null, uploading: false } }))
     loadOptions()
   }
@@ -245,21 +279,26 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
   // library or any other item.
   async function addAddonFromLibrary(groupId: number, entry: VendorAddonLibraryItem) {
     if (addons.some(a => a.group_id === groupId && a.name === entry.name)) return
-    await supabase.from('menu_item_addons').insert({
+    if (!await write(supabase.from('menu_item_addons').insert({
       group_id: groupId, name: entry.name, price: entry.price, image_url: entry.image_url,
       display_order: addons.filter(a => a.group_id === groupId).length
-    })
+    }), 'إضافة من المكتبة')) return
     loadOptions()
   }
 
   async function removeAddon(id: number) {
-    await supabase.from('menu_item_addons').delete().eq('id', id)
+    if (!await write(supabase.from('menu_item_addons').delete().eq('id', id), 'حذف الخيار')) return
     loadOptions()
   }
 
   return (
     <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 grid place-items-end sm:place-items-center p-0 sm:p-4" onClick={onClose}>
       <div className="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto bg-shellup rounded-t-2xl sm:rounded-2xl p-4" onClick={e => e.stopPropagation()}>
+        {writeError && (
+          <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3" role="alert">
+            ما اتحفظش: {writeError}
+          </p>
+        )}
         <div className="flex items-center justify-between mb-3 px-1">
           <h2 className="font-bold text-lg text-foam">تعديل الصنف</h2>
           <button className="text-mist text-sm bg-shell rounded-full px-3 py-1" onClick={onClose}>✗ إغلاق</button>
@@ -303,7 +342,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
             ? 'فيه حجمين بنفس السعر — عدّلهم.' : null}
           addPlaceholder="حجم تاني"
           onApplyPreset={applySizePreset} onAdd={addSizeNamed}
-          onRemove={removeSize} onPriceChange={updateSizePrice}
+          onRemove={removeSize} onPriceChange={updateSizePrice} onNameChange={updateSizeName}
         />
 
         <OptionRowsCard
@@ -322,7 +361,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
           })()}
           addPlaceholder="حجم تاني"
           onApplyPreset={applyComboPreset} onAdd={addCombo}
-          onRemove={removeCombo} onPriceChange={updateComboPrice}
+          onRemove={removeCombo} onPriceChange={updateComboPrice} onNameChange={updateComboName}
         />
 
         <AddonsCard

@@ -23,7 +23,7 @@ export interface OptionRow {
  */
 export default function OptionRowsCard({
   title, hint, rows, presets, warning, addPlaceholder,
-  onApplyPreset, onAdd, onRemove, onPriceChange, children
+  onApplyPreset, onAdd, onRemove, onPriceChange, onNameChange, children
 }: {
   title: string
   hint: string
@@ -36,6 +36,15 @@ export default function OptionRowsCard({
   onAdd: (name: string, price: string) => void
   onRemove: (id: number) => void
   onPriceChange: (id: number, price: string) => void
+  /**
+   * A preset names these rows for you (عادي / دوبل, وسط / كبير). Those names
+   * are shown to the customer on the options sheet and printed on the driver's
+   * card, and until now the only way to change one was to delete the row and
+   * re-add it -- which also threw away its price. The add-on group name beside
+   * this one has always been editable; the size and combo names were the
+   * oversight.
+   */
+  onNameChange: (id: number, name: string) => void
   /** Extra control shown above the rows (the combo card's button label). */
   children?: ReactNode
 }) {
@@ -64,9 +73,14 @@ export default function OptionRowsCard({
           <div className="space-y-2 mb-3">
             {rows.map(r => (
               <div key={r.id} className="flex items-center gap-2 bg-night border border-line rounded-lg p-2.5 text-sm">
-                <span className="flex-1 min-w-0 truncate">
-                  {r.name} {r.note && <span className="text-xs text-mist">{r.note}</span>}
-                </span>
+                {/* Uncontrolled with defaultValue and written on blur, the same
+                    shape as the add-on group name: a controlled input here would
+                    fight the parent's reload after every save. */}
+                <input className="field !py-1 flex-1 min-w-0 !text-sm"
+                  defaultValue={r.name} aria-label={`اسم ${r.name}`}
+                  onBlur={e => { if (e.target.value.trim() && e.target.value.trim() !== r.name) onNameChange(r.id, e.target.value) }}
+                  onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }} />
+                {r.note && <span className="text-xs text-mist shrink-0">{r.note}</span>}
                 <input className="field !py-1 !w-20 !text-sm text-center" type="number" inputMode="numeric"
                   value={priceDraft[r.id] ?? String(r.price)} aria-label={`سعر ${r.name}`}
                   onChange={e => setPriceDraft(d => ({ ...d, [r.id]: e.target.value }))}

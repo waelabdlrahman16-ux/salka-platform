@@ -12,11 +12,18 @@ import Icon from '../components/Icon'
 // no driver rendered "قيد التجهيز" with "الوصول المتوقع 7:15 ص". Nothing was
 // being prepared and no one had committed to a time. The bar had three stages
 // and the first one absorbed everything that had not started yet.
+//
+// The stage is now derived from the KITCHEN, not from orders.status. 'pending'
+// was mapped to "قيد التجهيز", but pending means "placed and dispatchable" --
+// the restaurant has not seen it yet (kitchen_status = 'new'). So a customer who
+// had just tapped confirm was told their food was being prepared, seconds after
+// ordering, by a restaurant that had not accepted. Whether a driver is being
+// searched for is a parallel track and must not move this bar backwards either.
 const STAGES = [
-  { key: 'received',  label: 'استلمنا طلبك',   statuses: ['awaiting_quote', 'Scheduled', 'Driver_Searching', 'No_Driver_Found'] },
-  { key: 'placed',    label: 'قيد التجهيز',    statuses: ['pending', 'Accepted'] },
-  { key: 'onway',     label: 'في الطريق إليك', statuses: ['Picked_Up', 'Out_for_Delivery'] },
-  { key: 'delivered', label: 'تم التوصيل',     statuses: ['Delivered'] },
+  { key: 'received',  label: 'استلمنا طلبك' },
+  { key: 'placed',    label: 'قيد التجهيز' },
+  { key: 'onway',     label: 'في الطريق إليك' },
+  { key: 'delivered', label: 'تم التوصيل' },
 ]
 
 interface TrackData {
@@ -365,7 +372,17 @@ export default function Track() {
   const current = data.assignment?.status && data.assignment.status !== 'Offered'
     ? data.assignment.status
     : o.status
-  const stageIdx = Math.max(0, STAGES.findIndex(s => s.statuses.includes(current)))
+
+  // Furthest point actually reached. The kitchen and the dispatch run in
+  // parallel -- an order can be cooking while we are still looking for a rider,
+  // and neither of them should be able to pull the bar back.
+  const kitchen = o.kitchen_status ?? 'new'
+  const asg = data.assignment?.status && data.assignment.status !== 'Offered' ? data.assignment.status : null
+  const stageIdx =
+    o.status === 'Delivered' || asg === 'Delivered' ? 3
+    : asg === 'Picked_Up' || asg === 'Out_for_Delivery' ? 2
+    : kitchen === 'preparing' || kitchen === 'ready' ? 1
+    : 0
 
   // The customer keeps the right to cancel until the vendor accepts. It used to
   // survive until a driver appeared, so the page offered "إلغاء الطلب" directly

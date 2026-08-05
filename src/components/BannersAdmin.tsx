@@ -78,11 +78,17 @@ export default function BannersAdmin() {
   }
 
   async function save() {
-    if (!form.title.trim()) { setError('العنوان مطلوب'); return }
+    // Nothing here is required any more. A banner can legitimately be an image
+    // with no words on it at all -- the artwork carries the message and a
+    // forced headline just paints text over someone's design.
+    if (!form.title.trim() && !form.subtitle.trim() && !form.image_url) {
+      setError('اكتب عنوان أو حط صورة — لازم يكون فيه حاجة تتعرض')
+      return
+    }
     if (!LINK_OK(form.link_url)) { setError('اللينك لازم يبدأ بـ / أو https://'); return }
     setSaving(true); setError('')
     const payload = {
-      title: form.title.trim(),
+      title: form.title.trim() || null,
       subtitle: form.subtitle.trim() || null,
       image_url: form.image_url.trim() || null,
       bg_color: form.bg_color,
@@ -153,7 +159,7 @@ export default function BannersAdmin() {
           <h3 className="font-bold">{editing === 'new' ? 'إعلان جديد' : 'تعديل الإعلان'}</h3>
 
           <div
-            className="relative h-[110px] rounded-xl overflow-hidden"
+            className="relative h-[168px] rounded-xl overflow-hidden"
             style={{ background: form.bg_color }}>
             {form.image_url && <img src={form.image_url} alt="" className="absolute inset-0 w-full h-full object-cover" />}
             {form.image_url && <span className="absolute inset-0 bg-gradient-to-l from-black/70 via-black/25 to-transparent" />}
@@ -164,7 +170,7 @@ export default function BannersAdmin() {
           </div>
           <p className="text-xs text-mist -mt-1">ده شكله عند العميل.</p>
 
-          <div><label className="label" htmlFor={`${fid}-t`}>العنوان *</label>
+          <div><label className="label" htmlFor={`${fid}-t`}>العنوان</label>
             <input id={`${fid}-t`} className="field" maxLength={60} value={form.title}
               onChange={e => setForm(f => ({ ...f, title: e.target.value }))} /></div>
 
@@ -217,7 +223,7 @@ export default function BannersAdmin() {
 
           <div className="flex gap-2">
             <button className="btn-ghost flex-1 text-sm" onClick={() => setEditing(null)} disabled={saving}>إلغاء</button>
-            <button className="btn-sea flex-1 text-sm" onClick={save} disabled={saving || uploading || !form.title.trim()}>
+            <button className="btn-sea flex-1 text-sm" onClick={save} disabled={saving || uploading || (!form.title.trim() && !form.subtitle.trim() && !form.image_url)}>
               {saving ? 'جاري الحفظ…' : 'حفظ'}
             </button>
           </div>

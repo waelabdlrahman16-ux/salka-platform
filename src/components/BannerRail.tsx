@@ -96,7 +96,7 @@ export default function BannerRail() {
               key={b.id}
               {...(clickable ? { onClick: () => open(b), type: 'button' as const } : {})}
               aria-label={clickable ? `${b.title}${b.subtitle ? ` — ${b.subtitle}` : ''}` : undefined}
-              className={`relative shrink-0 snap-start w-[86%] sm:w-[420px] h-[124px] rounded-2xl overflow-hidden
+              className={`relative shrink-0 snap-start w-[86%] sm:w-[420px] h-[188px] rounded-2xl overflow-hidden
                           text-right ${clickable ? 'cursor-pointer' : ''}`}
               style={{ background: b.bg_color }}>
 
