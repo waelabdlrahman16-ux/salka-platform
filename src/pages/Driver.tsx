@@ -819,7 +819,7 @@ export default function DriverPage() {
           // that still needed doing.
           if (a.status === 'Delivered') {
             const collected = o.payment_method === 'instapay' ? 0
-              : o.cod_deposit_amount != null ? o.total - o.cod_deposit_amount
+              : o.cod_deposit_amount != null ? Math.round((o.total - o.cod_deposit_amount) * 100) / 100
               : o.total
             return (
               <div key={a.id} className="card !rounded-2xl p-3.5 flex items-center gap-3">
@@ -866,7 +866,7 @@ export default function DriverPage() {
           }
 
           const cashDue = o.payment_method === 'instapay' ? 0
-            : o.cod_deposit_amount != null ? o.total - o.cod_deposit_amount
+            : o.cod_deposit_amount != null ? Math.round((o.total - o.cod_deposit_amount) * 100) / 100
             : o.total
           const stages = cashDue > 0 ? [
             { key: 'Accepted', label: 'قبلت' },
@@ -901,7 +901,7 @@ export default function DriverPage() {
                     ) : o.cod_deposit_amount != null ? (
                       <span className="inline-flex items-center gap-2 flex-wrap">
                         <span className="text-sea font-semibold">🔵 عربون مدفوع: {o.cod_deposit_amount} ج.م</span>
-                        <span className="text-emerald-700 font-semibold">🟢 حصّل: {o.total - o.cod_deposit_amount} ج.م</span>
+                        <span className="text-emerald-700 font-semibold">🟢 حصّل: {Math.round((o.total - o.cod_deposit_amount) * 100) / 100} ج.م</span>
                       </span>
                     ) : (
                       <span className="text-emerald-700 font-semibold">🟢 حصّل: {o.total} ج.م كاش</span>

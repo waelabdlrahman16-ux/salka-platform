@@ -491,8 +491,18 @@ function KitchenVendor({ rid }: { rid: number }) {
 
   async function delay(o: Order) {
     if (navigator.vibrate) navigator.vibrate(15)
-    const { error } = await supabase.rpc('vendor_delay', { p_order_id: o.id, p_minutes: 5 })
-    if (error?.message.includes('delay_limit_reached')) { alert('وصلت لأقصى عدد تأجيلات مسموح (3) للطلب ده'); return }
+    // Only delay_limit_reached was handled; not_your_order, wrong_stage and a
+    // dropped connection all fell through to a repaint. The phone vibrates
+    // regardless, so the vendor reads an unchanged ticket as a missed tap and
+    // presses again -- while the customer's ETA has not moved and the SLA badge
+    // is about to flip to متأخر.
+    const res = await rpc('vendor_delay', { p_order_id: o.id, p_minutes: 5 }, {
+      delay_limit_reached: 'وصلت لأقصى عدد تأجيلات مسموح (3) للطلب ده',
+      wrong_stage: 'الطلب اتحرك خلاص — مش هينفع تأجله دلوقتي',
+      not_your_order: 'الطلب ده مش بتاع مطعمك',
+    })
+    if (!res.ok) { setBoardError(res.error); return }
+    setBoardError('')
     load()
   }
 

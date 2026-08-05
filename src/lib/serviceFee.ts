@@ -17,11 +17,20 @@ import { supabase } from './supabase'
 
 const SETTING_KEY = 'service_fee_percent'
 
+// A session-lifetime cache was fine for a browser tab. It is NOT fine for a
+// Capacitor WebView, whose session lasts days -- and the driver/customer app is
+// one now. An admin raising service_fee_percent mid-day left every warm session
+// quoting the old number and being billed the new one, which is exactly the
+// client/server drift this whole module exists to prevent, reintroduced one
+// layer down as a cache lifetime.
+const TTL_MS = 5 * 60 * 1000
+
 let cache: number | null = null
+let cachedAt = 0
 let inflight: Promise<number | null> | null = null
 
 export async function fetchServiceFeePct(): Promise<number | null> {
-  if (cache !== null) return cache
+  if (cache !== null && Date.now() - cachedAt < TTL_MS) return cache
   if (inflight) return inflight
 
   const request = (async () => {
@@ -33,10 +42,11 @@ export async function fetchServiceFeePct(): Promise<number | null> {
     if (error) return null
     // A missing row is a real answer: place_order coalesces it to 0, so 0 is
     // what the customer will actually be charged. Only a failed read is null.
-    if (!data) { cache = 0; return 0 }
+    if (!data) { cache = 0; cachedAt = Date.now(); return 0 }
     const pct = Number(data.value)
     if (!Number.isFinite(pct) || pct < 0) return null
     cache = pct
+    cachedAt = Date.now()
     return pct
   })()
 

@@ -26,12 +26,19 @@ export type DeliveryQuote = {
 // Fees change rarely (an admin edits a settings row), so a session-lifetime
 // cache is fine and keeps the checkout snappy. inflight dedupes the burst of
 // concurrent callers you get when several components mount at once.
-const cache = new Map<number, DeliveryQuote>()
+// "Session-lifetime" was written for a browser tab. The app is a Capacitor
+// WebView now and a session lasts days, so a compound moved from 65 to 120 left
+// every warm session quoting 65 while place_order charged 120.
+// clearDeliveryQuoteCache() exists and is called from nowhere, so nothing else
+// would ever have expired it.
+const TTL_MS = 5 * 60 * 1000
+
+const cache = new Map<number, { at: number; quote: DeliveryQuote }>()
 const inflight = new Map<number, Promise<DeliveryQuote | null>>()
 
 export async function fetchDeliveryQuote(compoundId: number): Promise<DeliveryQuote | null> {
   const cached = cache.get(compoundId)
-  if (cached) return cached
+  if (cached && Date.now() - cached.at < TTL_MS) return cached.quote
 
   const pending = inflight.get(compoundId)
   if (pending) return pending
@@ -40,7 +47,7 @@ export async function fetchDeliveryQuote(compoundId: number): Promise<DeliveryQu
     const { data, error } = await supabase.rpc('delivery_quote', { p_compound_id: compoundId })
     if (error || !data) return null
     const quote = data as DeliveryQuote
-    cache.set(compoundId, quote)
+    cache.set(compoundId, { at: Date.now(), quote })
     return quote
   })()
 

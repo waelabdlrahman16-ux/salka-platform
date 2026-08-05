@@ -118,12 +118,36 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     return { ok: true }
   }
 
+  /**
+   * Every trace of the person, not just their session.
+   *
+   * This used to revoke the token and stop. MyOrders had its own signOut() that
+   * additionally cleared the remembered phone and the cached order list, with a
+   * comment explaining that on a shared phone none of it may survive -- but
+   * Profile's «خروج» called plain logout(), so the same leak was reachable
+   * through the other door: person A signs out from حسابي, person B opens
+   * طلباتي, finds A's number already in the field, and one tap returns A's
+   * order history with live tracking links.
+   *
+   * Doing it here means it cannot be forgotten by the next screen that adds a
+   * sign-out button.
+   */
   async function logout() {
     const { data: { session } } = await supabase.auth.getSession()
     if (session) await supabase.auth.signOut()
     const token = localStorage.getItem(TOKEN_KEY)
     if (token) await supabase.rpc('session_logout', { p_token: token })
-    localStorage.removeItem(TOKEN_KEY)
+    try {
+      localStorage.removeItem(TOKEN_KEY)
+      localStorage.removeItem('salka_phone')
+      // One key per phone number ever typed on this device, each holding that
+      // number AND its last known wallet balance. Nothing ever removed them, so
+      // a shared device accumulated a list of everyone who had checked out on it.
+      for (const k of Object.keys(localStorage)) {
+        if (k.startsWith('salka_wallet_seen_')) localStorage.removeItem(k)
+      }
+      sessionStorage.removeItem('salka_my_orders_cache')
+    } catch { /* private mode: nothing to clear */ }
     setCustomer(null)
   }
 

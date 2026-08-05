@@ -25,6 +25,9 @@ const REPORT_INTERVAL_MS = 20000
 // acquisition, the second permission prompt, and the generation/starting
 // concurrency guard that existed only because start() had to await a fix before
 // it could install its interval.
+/** Last rejection from update_my_location, so a caller can surface it. */
+export let lastReportError = ''
+
 let lastPos: { lat: number; lng: number } | null = null
 let timerId: ReturnType<typeof setInterval> | null = null
 let inFlight = false
@@ -40,8 +43,19 @@ async function send() {
     // The server ignores this unless the caller has an assignment in Picked_Up
     // or Out_for_Delivery, so a position arriving in the seconds after the last
     // delivery completes is discarded rather than parked on the driver's row.
-    await supabase.rpc('update_my_location', { p_lat: lat, p_lng: lng })
+    //
+    // postgrest-js RESOLVES with { error } rather than rejecting, so the catch
+    // below never saw a rejected write -- the pin just stopped updating and
+    // dispatch could not tell a lost signal from a refused one.
+    const { error } = await supabase.rpc('update_my_location', { p_lat: lat, p_lng: lng })
+    if (error) {
+      lastReportError = error.message
+      console.error('location report rejected', error)
+    } else {
+      lastReportError = ''
+    }
   } catch (e) {
+    lastReportError = (e as Error)?.message ?? String(e)
     console.error('location report failed', e)
   } finally {
     inFlight = false

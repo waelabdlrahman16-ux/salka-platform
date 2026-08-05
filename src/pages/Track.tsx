@@ -201,8 +201,14 @@ export default function Track() {
 
   useEffect(() => {
     if (!token) return
-    registerPush(pushToken => {
-      supabase.rpc('save_customer_push_token', { p_token: token, p_push_token: pushToken })
+    // Was a floating promise inside a floating promise: no await, no catch, no
+    // error check. And the server does a bare `update ... where public_token =
+    // p_token`, so a token matching nothing updates 0 rows and raises nothing --
+    // meaning even a successful call could silently do nothing.
+    registerPush(async pushToken => {
+      const { error } = await supabase.rpc('save_customer_push_token', { p_token: token, p_push_token: pushToken })
+      if (error) { console.error('saving customer push token failed', error); return false }
+      return true
     })
   }, [token])
 

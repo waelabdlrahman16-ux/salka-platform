@@ -62,8 +62,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false
     setLoading(true)
     supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         if (cancelled) return
+        // The error was discarded and profile set to null, which Protected
+        // renders as «الحساب غير مفعّل — تواصل مع الإدارة». One dropped request
+        // at a compound gate told a driver his account was deactivated. A
+        // failed read is not an answer about the account: keep loading and let
+        // the next attempt decide.
+        // A failed READ is not an answer about the account. Discarding the
+        // error and setting profile to null made Protected render
+        // «الحساب غير مفعّل — تواصل مع الإدارة», so one dropped request at a
+        // compound gate told a driver he had been deactivated. Retry once
+        // before believing it, and never overwrite a profile we already hold.
+        if (error) {
+          setTimeout(() => {
+            if (cancelled) return
+            supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle()
+              .then(({ data: retry }) => {
+                if (cancelled) return
+                if (retry) setProfile(retry as Profile)
+                setLoading(false)
+              })
+          }, 2000)
+          return
+        }
         setProfile((data as Profile) ?? null)
         setLoading(false)
       })

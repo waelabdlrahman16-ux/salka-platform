@@ -16,6 +16,10 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
   const [startsAt, setStartsAt] = useState('')
   const [endsAt, setEndsAt] = useState('')
   const [conflicts, setConflicts] = useState<Discount[] | null>(null)
+  // All four writes here used to discard their error. remove() was the worst:
+  // it cleared the panel unconditionally, so a failed write showed the discount
+  // gone while it kept coming off every order.
+  const [writeError, setWriteError] = useState('')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => { load() }, [scope, menuItemId, category])
@@ -50,7 +54,8 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
   async function doSave(deactivateIds: number[] = []) {
     setSaving(true)
     if (deactivateIds.length > 0) {
-      await supabase.from('discounts').update({ active: false }).in('id', deactivateIds)
+      const { error } = await supabase.from('discounts').update({ active: false }).in('id', deactivateIds)
+      if (error) { setSaving(false); setWriteError(`إيقاف الخصم القديم فشل — ${error.message}`); return }
     }
     const payload = {
       restaurant_id: restaurantId, scope,
@@ -60,12 +65,12 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
       starts_at: hasWindow && startsAt ? new Date(startsAt).toISOString() : null,
       ends_at: hasWindow && endsAt ? new Date(endsAt).toISOString() : null
     }
-    if (existing) {
-      await supabase.from('discounts').update(payload).eq('id', existing.id)
-    } else {
-      await supabase.from('discounts').insert(payload)
-    }
+    const { error } = existing
+      ? await supabase.from('discounts').update(payload).eq('id', existing.id)
+      : await supabase.from('discounts').insert(payload)
     setSaving(false)
+    if (error) { setWriteError(`حفظ الخصم فشل — ${error.message}`); return }
+    setWriteError('')
     setConflicts(null)
     setEditing(false)
     load()
@@ -74,13 +79,23 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
   async function remove() {
     if (!existing) return
     if (!confirm('حذف الخصم ده؟')) return
-    await supabase.from('discounts').update({ active: false }).eq('id', existing.id)
+    // Was optimistic: it cleared the panel whether or not the row changed, so a
+    // failed write showed the promotion gone while it kept applying to every
+    // order. Margin is the one thing this file is careful about everywhere else.
+    const { error } = await supabase.from('discounts').update({ active: false }).eq('id', existing.id)
+    if (error) { setWriteError(`إلغاء الخصم فشل — ${error.message}`); return }
+    setWriteError('')
     setExisting(null)
     setEditing(false)
+    load()
   }
 
   if (!editing && existing) {
     return (
+      <div>
+        {writeError && (
+          <p className="text-xs text-red-600 bg-red-500/10 rounded-lg p-2.5 mb-2" role="alert">{writeError}</p>
+        )}
       <div className="flex items-center justify-between bg-sand/10 rounded-lg px-3 py-2 text-sm">
         <span>
           🏷️ خصم {existing.discount_type === 'percent' ? `${existing.value}%` : `${existing.value} ج.م`}
@@ -91,6 +106,7 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
           <button className="text-red-500 text-xs font-semibold" onClick={remove}>حذف</button>
         </div>
       </div>
+      </div>
     )
   }
 
@@ -100,6 +116,9 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
 
   return (
     <div className="bg-shellup/60 rounded-lg p-2.5 space-y-2">
+      {writeError && (
+        <p className="text-xs text-red-600 bg-red-500/10 rounded-lg p-2.5" role="alert">{writeError}</p>
+      )}
       {conflicts && conflicts.length > 0 && (
         <div className="bg-sand/15 rounded-lg p-2.5 text-xs">
           <p className="font-semibold mb-1.5">

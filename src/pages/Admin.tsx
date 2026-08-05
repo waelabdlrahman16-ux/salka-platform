@@ -601,10 +601,14 @@ export default function Admin() {
   }
 
   async function addSlot(restaurantId: number) {
-    await supabase.from('delivery_slots').insert({
+    const { error } = await supabase.from('delivery_slots').insert({
       restaurant_id: restaurantId, start_time: newSlot.start_time,
       end_time: newSlot.end_time, capacity: Number(newSlot.capacity)
     })
+    // Cleared the form and reloaded whether or not the row existed, so a failed
+    // insert was indistinguishable from a stale list.
+    if (error) { setActionError(`إضافة الفترة فشلت — ${error.message}`); return }
+    setActionError('')
     setNewSlot({ start_time: '', end_time: '', capacity: '6' })
     load(true)
   }
@@ -633,10 +637,12 @@ export default function Admin() {
   }
 
   async function addShift() {
-    await supabase.from('shifts').insert({
+    const { error } = await supabase.from('shifts').insert({
       driver_id: Number(newShift.driver_id), shift_date: newShift.shift_date,
       start_time: newShift.start_time, end_time: newShift.end_time
     })
+    if (error) { setActionError(`إضافة الوردية فشلت — ${error.message}`); return }
+    setActionError('')
     setNewShift({ driver_id: '', shift_date: '', start_time: '', end_time: '' })
     load(true)
   }
@@ -829,7 +835,7 @@ export default function Admin() {
 
   async function addRestaurant() {
     if (!newRestaurant.name.trim()) return
-    await supabase.from('restaurants').insert({
+    const { error } = await supabase.from('restaurants').insert({
       name: newRestaurant.name.trim(),
       description: newRestaurant.description.trim(),
       category: newRestaurant.category.trim() || 'أصناف',
@@ -837,6 +843,8 @@ export default function Admin() {
       prep_minutes: Number(newRestaurant.prep_minutes) || 20,
       rating: 5, is_open: true, order_mode: 'catalog'
     })
+    if (error) { setActionError(`إضافة المطعم فشلت — ${error.message}`); return }
+    setActionError('')
     setNewRestaurant({ name: '', description: '', category: '', vendor_type: 'restaurant', prep_minutes: '20' })
     load(true)
   }
@@ -849,9 +857,18 @@ export default function Admin() {
     load(true)
   }
 
+  // The result was discarded. You agree 400 ج.م on the phone and hang up; the
+  // RPC fails; the order sits unpriced and un-dispatchable while the customer
+  // waits for a driver who can never be assigned.
   async function confirmCustomOrderPrice(orderId: number, subtotal: number) {
-    if (!subtotal || subtotal <= 0) return
-    await supabase.rpc('confirm_custom_order_price', { p_order_id: orderId, p_subtotal: subtotal })
+    if (!subtotal || subtotal <= 0) { setActionError('اكتب سعر صحيح'); return }
+    const res = await rpc('confirm_custom_order_price', { p_order_id: orderId, p_subtotal: subtotal }, {
+      not_authorized: 'التسعير للإدارة بس',
+      order_not_found: 'الطلب ده مش طلب خاص أو مش موجود',
+      invalid_amount: 'السعر لازم يكون رقم أكبر من صفر',
+    })
+    if (!res.ok) { setActionError(res.error); return }
+    setActionError('')
     load(true)
   }
 
@@ -883,7 +900,16 @@ export default function Admin() {
 
   async function settleEarnings(driverId: number) {
     const d = drivers.find(x => x.id === driverId)
-    const unpaid = earnings.filter(e => e.driver_id === d?.id && !e.paid).reduce((s, e) => s + Number(e.driver_earning), 0)
+    // Re-read before quoting, exactly as settleCash does. The client array is up
+    // to one 15s poll stale and settle_driver_earnings settles whatever is
+    // unpaid NOW -- so two deliveries landing in the gap had the dialog say 120
+    // while the ledger recorded 140 paid, and the driver had no unpaid rows left
+    // to claim the missing 20 against.
+    const { data: fresh, error: freshErr } = await supabase
+      .from('driver_earnings').select('driver_earning').eq('driver_id', driverId).eq('paid', false)
+    if (freshErr) { setActionError('مش قادرين نتأكد من الأرباح دلوقتي، جرب تاني'); return }
+    const unpaid = (fresh ?? []).reduce((s, e) => s + Number(e.driver_earning), 0)
+    if (unpaid <= 0) { setActionError('مفيش أرباح مستحقة للمندوب ده'); return }
     if (!confirm(`تأكيد دفع ${unpaid} ج.م أرباح لـ ${d?.name ?? 'المندوب'}؟\n\nمش هينفع يتراجع.`)) return
     setActionError('')
     const res = await rpc('settle_driver_earnings', { p_driver_id: driverId })
