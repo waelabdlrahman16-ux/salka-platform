@@ -80,11 +80,21 @@ export const ERROR_AR: Record<string, string> = {
   admin_only: 'العملية دي للإدارة بس',
   no_driver_on_this_order: 'مفيش مندوب متسجل على الطلب ده',
 
+  // Payment-method switching (switch_to_cash). These MUST live here, not only
+  // in a call-site `overrides` map: describeError() resolves a code by matching
+  // ERROR_AR's own keys against the server message, so a code absent from this
+  // map resolves to 'unknown' and the override -- which is keyed by the
+  // resolved code -- never fires. Caught in review: both of these were silently
+  // falling through to "حصل خطأ، جرب تاني", including the one that fires when
+  // someone has already told us they transferred the money.
+  payment_already_claimed: 'قلت لنا إنك حوّلت بالفعل — استنى المراجعة، ولو في مشكلة كلّمنا',
+  already_cash: 'الطلب ده أصلاً كاش عند الاستلام',
+
   // account
   not_logged_in: 'لازم تسجل دخولك الأول',
   invalid_phone: 'رقم الموبايل مش مظبوط',
   phone_already_registered: 'الرقم ده مسجل على حساب تاني',
-  rate_limited: 'حاولت كتير — البحث بالرقم مسموح 3 مرات كل 10 دقايق. سجّل دخولك بجوجل أو الإيميل وهتشوف طلباتك من غير أي حد.',
+  rate_limited: 'حاولت كتير — البحث بالرقم مسموح 5 مرات كل 10 دقايق. سجّل دخولك وهتشوف طلباتك من غير أي حد.',
 }
 
 export function isOffline(): boolean {

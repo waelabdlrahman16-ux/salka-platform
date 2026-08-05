@@ -84,6 +84,7 @@ export default function Track() {
   const errFor = (scope: string) => (actionError?.scope === scope ? actionError.message : '')
   const [staleSince, setStaleSince] = useState<number | null>(null)
   const [switchingToCash, setSwitchingToCash] = useState(false)
+  const [switchedNote, setSwitchedNote] = useState('')
 
   // Changing your mind about HOW you pay should not mean cancelling WHAT you
   // ordered. An InstaPay order is created at awaiting_payment, so by the time
@@ -103,6 +104,17 @@ export default function Track() {
       })
     setSwitchingToCash(false)
     if (!res.ok) { setActionError({ scope: 'instapay', message: res.error }); return }
+
+    // A cash order above cod_deposit_threshold_egp still owes a 50% deposit --
+    // the same rule it would have met had cash been picked at checkout. So this
+    // screen can reappear, now headed "ادفع عربون 50%", and without a word of
+    // warning that reads as the button having done nothing, or worse, as a
+    // bait-and-switch after a button that said "cash on delivery". Say it.
+    if (res.data?.deposit_required) {
+      setSwitchedNote(`الطلب أكبر من الحد المسموح كاش بالكامل، فمحتاجين عربون ${res.data.deposit_required} ج.م دلوقتي والباقي كاش عند الاستلام.`)
+    } else {
+      setSwitchedNote('تمام — الطلب بقى كاش عند الاستلام.')
+    }
     load()
   }
 
@@ -250,6 +262,9 @@ export default function Track() {
         {errFor('instapay') && (
           <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mt-3">{errFor('instapay')}</p>
         )}
+        {switchedNote && (
+          <p className="text-sm bg-sea/10 text-seadeep rounded-xl p-3 mt-3">{switchedNote}</p>
+        )}
         <div className="card p-4 mt-3 text-center">
           <h1 className="font-bold text-lg mb-1">{isDeposit ? 'ادفع عربون 50% على InstaPay' : 'حوّل المبلغ على InstaPay'}</h1>
           <p className="text-mist text-sm mb-3">طلب #{o.id} من {o.restaurant_name}</p>
@@ -283,7 +298,7 @@ export default function Track() {
                   offered on a deposit order -- that one is already cash. */}
               {o.payment_method === 'instapay' && (
                 <button className="btn-ghost w-full mt-2.5" disabled={switchingToCash} onClick={switchToCash}>
-                  {switchingToCash ? 'لحظة…' : '💵 هدفع كاش عند الاستلام بدل'}
+                  {switchingToCash ? 'لحظة…' : '💵 هدفع كاش بدل'}
                 </button>
               )}
             </>

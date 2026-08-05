@@ -24,13 +24,26 @@ function readCache(phone: string): Row[] | null {
 }
 
 function writeCache(phone: string, rows: Row[]) {
+  // Never cache a VERIFIED result. Verified rows carry public_token, which is a
+  // live tracking link to someone's order -- their address, their driver, their
+  // phone. logout() clears the session but cannot reach into sessionStorage, so
+  // a cached verified list would outlive "خروج" and hand the next person on a
+  // shared phone working links into the previous account. Unverified rows have
+  // public_token withheld by the server, so they are safe to park.
+  if (rows.some(r => r.public_token)) return
   try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ phone, rows })) } catch { /* quota */ }
+}
+
+export function clearOrdersCache() {
+  try { sessionStorage.removeItem(CACHE_KEY) } catch { /* nothing to do */ }
 }
 
 export default function MyOrders() {
   const { customer, loading: authLoading, logout } = useCustomerAuth()
   const [phone, setPhone] = useState(() => customer?.phone ?? localStorage.getItem('salka_phone') ?? '')
   const [rows, setRows] = useState<Row[] | null>(null)
+  /** Which number `rows` belongs to, so a new search cannot show the old one's. */
+  const [rowsPhone, setRowsPhone] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [limited, setLimited] = useState(false)
@@ -39,6 +52,15 @@ export default function MyOrders() {
   async function search(overridePhone?: string) {
     const target = (overridePhone ?? phone).trim()
     if (!target) return
+
+    // Drop results belonging to a DIFFERENT number before searching. Without
+    // this, typing a new number and failing (rate limit, network) left the
+    // previous number's orders on screen underneath the red error -- the list
+    // is not gated on `error` -- so the customer read someone else's history as
+    // the answer to their own question. Same number: keep them, so a transient
+    // failure does not blank a list that is still correct.
+    if (rowsPhone !== null && rowsPhone !== target) { setRows(null); setRowsPhone(null) }
+
     setBusy(true); setError(''); setLimited(false)
     const res = await rpc<Row[]>('my_orders', { p_phone: target, p_session_token: getSessionToken() })
     setBusy(false)
@@ -49,7 +71,18 @@ export default function MyOrders() {
     }
     const data = res.data ?? []
     setRows(data)
-    writeCache(target.trim(), data)
+    setRowsPhone(target)
+    writeCache(target, data)
+  }
+
+  function signOut() {
+    // Clearing the session is not enough on a shared phone: the remembered
+    // number, the rendered list and the sessionStorage cache all had to go too,
+    // or the next person sees the previous account's orders.
+    clearOrdersCache()
+    setRows(null); setRowsPhone(null); setPhone(''); setError(''); setLimited(false)
+    try { localStorage.removeItem('salka_phone') } catch { /* nothing to do */ }
+    logout()
   }
 
   // This effect used to auto-search on EVERY mount using whatever phone was in
@@ -86,7 +119,7 @@ export default function MyOrders() {
     const remembered = phone.trim()
     if (!remembered) return
     const cached = readCache(remembered)
-    if (cached) setRows(cached)
+    if (cached) { setRows(cached); setRowsPhone(remembered) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, customer?.phone])
 
@@ -104,7 +137,7 @@ export default function MyOrders() {
               <p className="font-semibold">{customer.name || 'حسابك'}</p>
               <p className="text-xs text-mist mt-0.5" dir="ltr">{customer.phone}</p>
             </div>
-            <button className="btn-ghost !py-1.5 !px-3 text-sm" onClick={logout}>خروج</button>
+            <button className="btn-ghost !py-1.5 !px-3 text-sm" onClick={signOut}>خروج</button>
           </div>
           <Link to="/profile" className="btn-ghost w-full mt-3 text-sm !flex items-center justify-center">📍 عناويني ومحفظتي</Link>
           {/* A signed-in account with no phone on file has nothing to look up.
@@ -147,7 +180,7 @@ export default function MyOrders() {
       {error && (
         <div className="card p-4 mt-5 text-center">
           <p className="text-sm text-red-600">{error}</p>
-          {limited ? (
+          {limited && !customer ? (
             <>
               <button className="btn-sea w-full mt-3 text-sm" onClick={() => setShowLogin(true)}>
                 سجّل دخولك وشوف طلباتك على طول

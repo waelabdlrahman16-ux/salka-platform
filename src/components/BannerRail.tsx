@@ -10,6 +10,8 @@ export interface Banner {
   bg_color: string
   link_url: string | null
   sort: number
+  starts_at?: string | null
+  ends_at?: string | null
 }
 
 /**
@@ -44,14 +46,29 @@ export default function BannerRail() {
   const [banners, setBanners] = useState<Banner[]>([])
 
   useEffect(() => {
-    const now = new Date().toISOString()
+    // The window is checked in JS, not with two chained .or() calls.
+    //
+    // Those serialise to two separate `or=(...)` query parameters, and while
+    // PostgREST does AND repeated filters, I could not reach the REST endpoint
+    // from here to prove it -- and the failure mode is silent and total: this
+    // component swallows `error` and renders nothing, so a 400 means no banner
+    // ever appears again and nothing says why. Not a risk worth carrying on a
+    // go-live day to save filtering a handful of rows on the client.
+    //
+    // `active` stays server-side because that is the switch Wael actually uses
+    // and it is unambiguous. Row count here is single digits.
     supabase.from('banners')
-      .select('id,title,subtitle,image_url,bg_color,link_url,sort')
+      .select('id,title,subtitle,image_url,bg_color,link_url,sort,starts_at,ends_at')
       .eq('active', true)
-      .or(`starts_at.is.null,starts_at.lte.${now}`)
-      .or(`ends_at.is.null,ends_at.gt.${now}`)
       .order('sort').order('id')
-      .then(({ data, error }) => { if (!error) setBanners(data ?? []) })
+      .then(({ data, error }) => {
+        if (error) return
+        const now = Date.now()
+        setBanners((data ?? []).filter(b =>
+          (!b.starts_at || new Date(b.starts_at).getTime() <= now) &&
+          (!b.ends_at   || new Date(b.ends_at).getTime()   >  now)
+        ))
+      })
   }, [])
 
   if (banners.length === 0) return null

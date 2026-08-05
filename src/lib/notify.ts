@@ -97,9 +97,39 @@ function showNotification(title: string, body: string) {
   }
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.ready
-      .then(reg => reg.showNotification(title, options))
-      .catch(() => fallbackNotification(title, options))
+    // RACED AGAINST A TIMEOUT, deliberately.
+    //
+    // `serviceWorker.ready` never rejects. With no registration it stays
+    // pending forever -- so a plain `.catch()` here is dead code, and the
+    // fallback below could never run. That is not theoretical: main.tsx
+    // registers /sw.js inside a `load` handler and swallows the error, so a
+    // 404 on sw.js, a storage-blocked context or a private window all leave
+    // `ready` hanging. The driver would get the beep, no banner, and nothing
+    // in the console -- the exact silent failure this whole file was rewritten
+    // to remove, reintroduced one layer down.
+    //
+    // 1.5s is generous: the worker is registered on page load and these alerts
+    // fire minutes later, so on any healthy install it is already active and
+    // `ready` resolves in the same tick.
+    let settled = false
+    const done = () => { settled = true }
+
+    const timeout = new Promise<null>(resolve => setTimeout(() => resolve(null), 1500))
+    Promise.race([navigator.serviceWorker.ready, timeout])
+      .then(reg => {
+        if (!reg) {
+          console.warn('notification: service worker not ready in time, using constructor')
+          fallbackNotification(title, options)
+          return
+        }
+        done()
+        return reg.showNotification(title, options)
+      })
+      .catch(e => {
+        // showNotification() itself can reject (permission revoked mid-flight).
+        if (!settled) fallbackNotification(title, options)
+        else console.warn('notification failed', e)
+      })
     return
   }
   fallbackNotification(title, options)
@@ -107,10 +137,12 @@ function showNotification(title: string, body: string) {
 
 function fallbackNotification(title: string, options: NotificationOptions) {
   try {
+    // Throws on Android Chrome ("Illegal constructor") -- which is fine, this
+    // is only reached when the service worker path was unavailable, and on
+    // Android that means there was no way to show it at all. Log rather than
+    // swallow, so the next person sees why.
     new Notification(title, options)
   } catch (e) {
-    // Android reaches here only when the service worker never became ready.
-    // Log it -- the previous silent catch is what hid this for a week.
     console.warn('notification failed', e)
   }
 }
