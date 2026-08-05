@@ -327,16 +327,39 @@ export default function Track() {
         </div>
       </div>
 
-      {/* payment */}
+      {/* payment
+          Two bugs lived in these four lines.
+          1. After a COD deposit is paid, admin_confirm_cod_deposit moves the
+             order to 'pending' but leaves payment_method='cod' and
+             cod_deposit_amount set -- so this printed the FULL total as
+             "كاش عند الاستلام". On a 1215 order with a 607.50 deposit already
+             paid, the customer was told to have 1215 at the door while the
+             driver's screen said 607.50. Two people, one doorway, 607.50 apart.
+          2. An unquoted pharmacy basket has total = the delivery fee alone, so
+             a 400 ج.م order announced "65 ج.م — كاش عند الاستلام", directly
+             contradicting the قيد التسعير line further down the same page. */}
       <div className="card p-4 mb-4">
-        <div>
-          <p className="font-semibold text-sm">{o.total} ج.م</p>
-          <p className="text-sm text-mist">
-            {o.payment_method === 'online' ? 'مدفوع أونلاين'
-              : o.payment_method === 'instapay' ? 'مدفوع InstaPay'
-              : 'كاش عند الاستلام'}
-          </p>
-        </div>
+        {o.pricing_status === 'pending_quote' ? (
+          <div>
+            <p className="font-semibold text-sm">لسه بنسعّر الطلب</p>
+            <p className="text-sm text-mist">هنتصل بيك نأكد السعر قبل ما نجهّزه. التوصيل {o.delivery_fee} ج.م.</p>
+          </div>
+        ) : (
+          <div>
+            <p className="font-semibold text-sm">
+              {o.cod_deposit_amount != null && o.payment_method === 'cod'
+                ? `${Math.round((o.total - o.cod_deposit_amount) * 100) / 100} ج.م`
+                : `${o.total} ج.م`}
+            </p>
+            <p className="text-sm text-mist">
+              {o.payment_method === 'online' ? 'مدفوع أونلاين'
+                : o.payment_method === 'instapay' ? 'مدفوع InstaPay'
+                : o.cod_deposit_amount != null
+                  ? `كاش عند الاستلام · العربون ${o.cod_deposit_amount} ج.م مدفوع`
+                  : 'كاش عند الاستلام'}
+            </p>
+          </div>
+        )}
       </div>
 
       {o.status !== 'Cancelled' && data.assignment

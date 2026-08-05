@@ -7,7 +7,7 @@ import Icon from './Icon'
 import type { Discount, MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemCombo, MenuItemSize } from '../lib/types'
 
 export default function ProductDetailSheet({
-  item, items, sizes, combos, addonGroups, addons, discounts, disabled, qtyFor, onAdd, onRemove, onCustomize, onClose
+  item, items, sizes, combos, addonGroups, addons, discounts, disabled, optionsLoaded, qtyFor, onAdd, onRemove, onCustomize, onClose
 }: {
   item: MenuItem
   items: MenuItem[]
@@ -17,6 +17,8 @@ export default function ProductDetailSheet({
   addons: MenuItemAddon[]
   discounts: Discount[]
   disabled?: boolean
+  /** False while sizes/combos/add-ons are still in flight. */
+  optionsLoaded?: boolean
   qtyFor: (id: number) => number
   onAdd: (item: MenuItem) => void
   onRemove: (item: MenuItem) => void
@@ -39,7 +41,8 @@ export default function ProductDetailSheet({
   // combo upgrade would render a plain +/- stepper here and the customer would
   // never be shown the offer at all.
   const itemCombos = combos.filter(c => c.menu_item_id === active.id)
-  const hasOptions = itemSizes.length > 0 || itemGroups.length > 0 || itemCombos.length > 0
+  // Same rule as the menu card: unknown options are treated as options.
+  const hasOptions = optionsLoaded === false || itemSizes.length > 0 || itemGroups.length > 0 || itemCombos.length > 0
   const qty = qtyFor(active.id)
   const baseActivePrice = itemSizes.length > 0 ? Math.min(...itemSizes.map(s => s.price)) : active.price
   const activeDiscount = effectiveDiscount(active.id, active.category, discounts)

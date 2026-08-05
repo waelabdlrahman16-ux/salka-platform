@@ -78,6 +78,7 @@ export default function CheckoutPage() {
   // Same rule as the delivery fee and the service fee: never guess a
   // server-owned number.
   const [codDepositThreshold, setCodDepositThreshold] = useState<number | null>(null)
+  const [codThresholdFailed, setCodThresholdFailed] = useState(false)
   const [useWallet, setUseWallet] = useState(true)
 
   // Saved addresses, and the default one preselected. Guarded on `customer`
@@ -141,8 +142,17 @@ export default function CheckoutPage() {
     supabase.rpc('open_slots', { p_restaurant_id: cart.restaurantId }).then(({ data }) => setSlots((data as Slot[]) ?? []))
     supabase.from('discounts').select('*').eq('restaurant_id', cart.restaurantId).eq('active', true)
       .then(({ data }) => setDiscounts(data ?? []))
+    // A failed read, a missing row or a value of "0" all left this null, and
+    // the deposit warning is gated on it being non-null -- so the customer was
+    // shown no payment terms at all, tapped 'تأكيد الطلب · 1215 ج.م' believing
+    // it was cash on delivery, and landed on a full-screen InstaPay wall. The
+    // old bug quoted the WRONG terms; this one quoted none. Both are the same
+    // shape: a server-owned number the screen guesses at.
     supabase.from('settings').select('value').eq('key', 'cod_deposit_threshold_egp').maybeSingle()
-      .then(({ data }) => { if (data?.value) setCodDepositThreshold(Number(data.value)) })
+      .then(({ data, error }) => {
+        if (error || data?.value == null) { setCodThresholdFailed(true); return }
+        setCodDepositThreshold(Number(data.value)); setCodThresholdFailed(false)
+      })
     ;(async () => {
       const ids = (await supabase.from('menu_items').select('id').eq('restaurant_id', cart.restaurantId)).data?.map(x => x.id) ?? []
       if (!ids.length) { setOptionsLoaded(true); return }
@@ -206,6 +216,7 @@ export default function CheckoutPage() {
   // a basket the customer was shown an understated total for.
   const valid = name.trim() && isValidEgyptPhone(phone) && !!selectedCompound && unit.trim()
     && deliveryFee !== null && serviceFee !== null && optionsLoaded && (!scheduled || !!slot)
+    && !(paymentMethod === 'cod' && codThresholdFailed)
 
   // Changing the place here never wrote back, so the cart and home stayed priced
   // for the previous compound.
@@ -420,7 +431,7 @@ export default function CheckoutPage() {
           {paymentMethod === 'cod' && serviceFee !== null && deliveryFee !== null
             && codDepositThreshold !== null && finalTotal > codDepositThreshold && (
             <p className="text-xs text-sandink -mt-1 px-1">
-              الطلب ده أكبر من {codDepositThreshold} ج.م، فهيتطلب عربون 50% ({Math.round(finalTotal / 2)} ج.م) عن طريق InstaPay قبل التجهيز، والباقي كاش عند الاستلام
+              الطلب ده أكبر من {codDepositThreshold} ج.م، فهيتطلب عربون 50% ({Math.round(finalTotal * 50) / 100} ج.م) عن طريق InstaPay قبل التجهيز، والباقي كاش عند الاستلام
             </p>
           )}
           <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${paymentMethod === 'instapay' ? 'border-sea bg-sea/5' : 'border-line'}`}>
@@ -471,7 +482,10 @@ export default function CheckoutPage() {
         )}
         <div className="flex justify-between font-bold border-t border-line pt-2">
           <span>الإجمالي</span>
-          <span className="text-sea">{valid || (deliveryFee !== null && serviceFee !== null) ? `${finalTotal} ج.م` : '…'}</span>
+          {/* optionsLoaded belongs here too: a combo line prices from the base
+              item price until menu_item_combos lands, so this figure could read
+              284 for an order the server charges 410 for. */}
+          <span className="text-sea">{optionsLoaded && deliveryFee !== null && serviceFee !== null ? `${finalTotal} ج.م` : '…'}</span>
         </div>
       </div>
 
@@ -499,6 +513,12 @@ export default function CheckoutPage() {
         <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">
           مش قادرين نحسب رسوم الخدمة دلوقتي.{' '}
           <button className="underline font-semibold" onClick={retryServiceFee}>جرب تاني</button>
+        </p>
+      )}
+
+      {codThresholdFailed && paymentMethod === 'cod' && (
+        <p className="text-sm text-sandink bg-sandink/10 rounded-xl p-3 mb-4">
+          مش قادرين نتأكد من شروط الدفع دلوقتي. جرب تحدّث الصفحة، أو اختار إنستاباي.
         </p>
       )}
 

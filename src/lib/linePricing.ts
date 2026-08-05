@@ -79,5 +79,13 @@ export function lineIsStale(
   if (!item || !item.available || !isItemAvailableNow(item.available_from, item.available_until)) return true
   if (line.comboId != null && !data.combos.some(c => c.id === line.comboId)) return true
   if (line.sizeId != null && !data.sizes.some(s => s.id === line.sizeId)) return true
+  // A line with NO size on an item that HAS sizes. This is not hypothetical:
+  // the menu card used to render a direct + button during the round trip
+  // before sizes loaded, producing exactly this line. place_order refuses it
+  // with size_required, and nothing on the cart or checkout can add a size to
+  // an existing line -- so the basket stayed unorderable until it was emptied.
+  // Priced from menu_items.price it also under-reads: 190 instead of 300.
+  if (line.comboId == null && line.sizeId == null
+      && data.sizes.some(s => s.menu_item_id === line.menuItemId)) return true
   return false
 }

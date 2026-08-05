@@ -21,6 +21,14 @@ export default function RestaurantDetail() {
   const [items, setItems] = useState<MenuItem[]>([])
   const [sizes, setSizes] = useState<MenuItemSize[]>([])
   const [combos, setCombos] = useState<MenuItemCombo[]>([])
+  // Items arrive one round trip before their sizes/combos/add-ons do. In that
+  // window every card computed hasOptions=false and priced from
+  // menu_items.price -- so "6 وينجز" showed 190 with a direct + button while
+  // its only size is 300. Tapping it built a line with sizeId:null that the
+  // cart happily priced at 190 and place_order refuses with size_required,
+  // with no size control anywhere on the cart or checkout to fix it. The
+  // basket was dead until "مسح الكل".
+  const [optionsLoaded, setOptionsLoaded] = useState(false)
   const [addonGroups, setAddonGroups] = useState<MenuItemAddonGroup[]>([])
   const [addons, setAddons] = useState<MenuItemAddon[]>([])
   const [discounts, setDiscounts] = useState<Discount[]>([])
@@ -56,6 +64,7 @@ export default function RestaurantDetail() {
     supabase.from('menu_items').select('*').eq('restaurant_id', id).eq('available', true).then(async ({ data }) => {
       const list = data ?? []
       setItems(list)
+      if (!list.length) setOptionsLoaded(true)
       if (list.length) {
         const ids = list.map(it => it.id)
         const [{ data: sz }, { data: gr }, { data: cb }] = await Promise.all([
@@ -71,6 +80,7 @@ export default function RestaurantDetail() {
           const { data: ad } = await supabase.from('menu_item_addons').select('*').in('group_id', groupIds).order('display_order').order('id')
           setAddons(ad ?? [])
         }
+        setOptionsLoaded(true)
       }
     })
     supabase.from('compounds').select('*').eq('active', true).order('direction').order('distance_km')
@@ -201,7 +211,10 @@ export default function RestaurantDetail() {
                   // A combo upgrade is an option like any other: the card has to
                   // route to the sheet, or the customer never sees the offer.
                   const itemCombos = combos.filter(c => c.menu_item_id === it.id)
-                  const hasOptions = itemSizes.length > 0 || itemGroups.length > 0 || itemCombos.length > 0
+                  // Until the options land, treat every item as if it HAS
+                  // options: routing to the sheet is always safe, adding
+                  // straight to the cart is not.
+                  const hasOptions = !optionsLoaded || itemSizes.length > 0 || itemGroups.length > 0 || itemCombos.length > 0
                   const basePrice = itemSizes.length > 0 ? Math.min(...itemSizes.map(s => s.price)) : it.price
                   const discount = effectiveDiscount(it.id, it.category, discounts)
                   const displayPrice = applyDiscount(basePrice, discount)
@@ -238,6 +251,7 @@ export default function RestaurantDetail() {
           addons={addons}
           discounts={discounts}
           disabled={!restaurant.is_open}
+          optionsLoaded={optionsLoaded}
           qtyFor={id => cart.qtyFor(id)}
           onAdd={it => cart.add(it, 1)}
           onRemove={it => cart.add(it, -1)}

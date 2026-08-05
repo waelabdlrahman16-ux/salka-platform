@@ -8,6 +8,7 @@ import CustomerLogin from '../components/CustomerLogin'
 interface Row {
   id: number; public_token: string; total: number
   status: string; created_at: string; restaurant_name: string
+  pricing_status?: 'n/a' | 'pending_quote' | 'confirmed'
 }
 
 export default function MyOrders() {
@@ -110,7 +111,11 @@ export default function MyOrders() {
                   {new Date(r.created_at).toLocaleDateString('ar-EG-u-nu-latn')} · {orderStatusLabel(r.status)}
                 </p>
               </div>
-              <span className="font-bold text-sea">{r.total} ج.م</span>
+              {/* An unquoted pharmacy order has total = the delivery fee, so
+                  this printed "65 ج.م" as if that were the price. */}
+              <span className={`font-bold shrink-0 ${r.pricing_status === 'pending_quote' ? 'text-mist text-xs' : 'text-sea'}`}>
+                {r.pricing_status === 'pending_quote' ? 'قيد التسعير' : `${r.total} ج.م`}
+              </span>
             </div>
           </Link>
         ))}

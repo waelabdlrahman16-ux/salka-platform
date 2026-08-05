@@ -1,6 +1,6 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect, useRef } from 'react'
 import Icon from './components/Icon'
-import { Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom'
 import { AuthProvider, homeFor, useAuth } from './lib/auth'
 import { CartProvider, useCart } from './lib/cart'
 import Protected from './components/Protected'
@@ -141,14 +141,29 @@ function AppShell() {
   // app there is no address bar, so without this a driver who had already signed
   // in still had to go through حسابي -> دخول فريق سالكة on every single launch.
   //
-  // Narrow on purpose: only from "/", and only for drivers and vendors -- the
-  // two roles who live in the installed app. Admin and catalog staff work on a
-  // desktop with an address bar and have good reason to open the customer home,
-  // so they are left alone.
+  // ONCE, on launch -- not on every visit to "/".
+  //
+  // As a render-time redirect this was a trap: BottomNav is hidden on staff
+  // routes, so the only way off /driver is the header logo, which links to "/"
+  // and bounced straight back. A signed-in driver could not reach the cart, the
+  // pharmacy, their profile or the restaurant list at all, in an app with no
+  // address bar -- and the same change had just added a door IN to /login with
+  // no door back out.
+  //
+  // Now it fires once per mount, so opening the app lands a driver in their
+  // workspace and tapping the logo afterwards actually goes home.
   const { profile, loading: staffLoading } = useAuth()
-  const staffHome = !staffLoading && pathname === '/'
-    && (profile?.role === 'driver' || profile?.role === 'vendor')
-    ? homeFor(profile.role) : null
+  const nav = useNavigate()
+  const launchRedirectDone = useRef(false)
+  useEffect(() => {
+    if (launchRedirectDone.current || staffLoading) return
+    if (!profile) return
+    launchRedirectDone.current = true
+    if (pathname === '/' && (profile.role === 'driver' || profile.role === 'vendor')) {
+      nav(homeFor(profile.role), { replace: true })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [staffLoading, profile?.role])
   useScrollRestoration()
   const [skipped, setSkipped] = useState(() => !!localStorage.getItem('salka_onboarded'))
 
@@ -168,8 +183,6 @@ function AppShell() {
   // move after picking instead of interrupting them the instant they choose.
   const hasPlace = !!sessionStorage.getItem('salka_compound_id')
   const showOnboarding = !isStaff && !loading && !customer && !skipped && hasPlace
-
-  if (staffHome) return <Navigate to={staffHome} replace />
 
   return (
     <div className="min-h-screen font-arabic">

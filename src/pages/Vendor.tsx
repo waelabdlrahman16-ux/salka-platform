@@ -463,11 +463,26 @@ function KitchenVendor({ rid }: { rid: number }) {
   // the evening's takings would otherwise have an order land on a tab they are
   // not looking at, and this screen already treats an unanswered ticket as the
   // most urgent thing in the building.
-  const prevNewRef = useRef(newOrders.length)
+  // Compared as a SET of ids, not a count: a ticket being cancelled server-side
+  // in the same 8s poll as a new one arriving reads as 1 -> 1, and the genuinely
+  // new ticket then sits unanswered on a board nobody is looking at.
+  const newKey = newOrders.map(o => o.id).sort().join(',')
+  const seenNewRef = useRef<Set<string> | null>(null)
   useEffect(() => {
-    if (newOrders.length > prevNewRef.current) setBoard('live')
-    prevNewRef.current = newOrders.length
-  }, [newOrders.length])
+    const ids = new Set(newKey ? newKey.split(',') : [])
+    const prev = seenNewRef.current
+    seenNewRef.current = ids
+    if (prev === null) return
+    for (const k of ids) if (!prev.has(k)) { setBoard('live'); return }
+  }, [newKey])
+
+  // Reset, not mask. completedToday is filtered to today, so it empties at
+  // midnight -- and a kitchen open past midnight with board='done' would be
+  // thrown back onto the finished board the moment the first delivery of the
+  // new day landed, mid-service, without touching anything.
+  useEffect(() => {
+    if (completedToday.length === 0) setBoard('live')
+  }, [completedToday.length])
 
   const COMPLETED_LABEL: Record<string, string> = {
     Delivered: '✅ تم التوصيل', Cancelled: '✗ ملغي', Failed_Delivery: '⚠️ فشل التوصيل'
@@ -475,6 +490,10 @@ function KitchenVendor({ rid }: { rid: number }) {
 
   const card = (o: Order, big = false) => {
     const stage = KITCHEN.find(k => k.key === (o.kitchen_status || 'new'))!
+    // Always undefined now: card() is only rendered from the live board, and
+    // `orders` excludes Delivered/Cancelled/Failed_Delivery. Left in place --
+    // inert, and the guard is correct if a completed order ever reaches here
+    // again -- but do not read it as a live branch.
     const completed = COMPLETED_LABEL[o.status]
     // How long this order has been sitting unanswered. remaining() already
     // counts DOWN to ready_at, but that only matters once cooking has started --

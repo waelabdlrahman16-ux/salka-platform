@@ -2,6 +2,7 @@ import { useEffect, useState, useId } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
+import { homeFor, useAuth } from '../lib/auth'
 import { orderStatusLabel } from '../lib/statusLabels'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { describeError, rpc } from '../lib/rpc'
@@ -20,6 +21,7 @@ export default function Profile() {
   const fid = useId()
   const nav = useNavigate()
   const { customer, logout, updatePhone, updateName } = useCustomerAuth()
+  const { profile: staffProfile } = useAuth()
   const [editingIdentity, setEditingIdentity] = useState(false)
   const [addresses, setAddresses] = useState<Address[]>([])
   const [orders, setOrders] = useState<OrderRow[]>([])
@@ -255,9 +257,22 @@ export default function Profile() {
           customer UI; in a browser you type the path, and in an app you cannot.
           Deliberately plain: a customer who taps it meets a staff login and
           leaves. */}
-      <Link to="/login" className="block text-center text-xs text-mist hover:text-foam py-3 min-h-[44px]">
-        دخول فريق سالكة
-      </Link>
+      {/* Signed-in staff get the way BACK, not another way in. Without it a
+          driver browsing the customer app had no route to their own screen
+          except the address bar, which the installed app does not have. */}
+      {staffProfile ? (
+        <Link to={homeFor(staffProfile.role)} className="card p-4 flex items-center gap-3 hover:border-sea/50 transition-colors">
+          <span className="w-11 h-11 rounded-xl grid place-items-center text-xl shrink-0 bg-sea/10">🛵</span>
+          <div>
+            <p className="font-bold">شاشة الشغل</p>
+            <p className="text-xs text-mist mt-0.5">ارجع لشاشة {staffProfile.role === 'vendor' ? 'المطعم' : 'المندوب'}</p>
+          </div>
+        </Link>
+      ) : (
+        <Link to="/login" className="block text-center text-xs text-mist hover:text-foam py-3 min-h-[44px]">
+          دخول فريق سالكة
+        </Link>
+      )}
     </div>
   )
 }

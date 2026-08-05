@@ -161,7 +161,8 @@ export default function CartPage() {
         <div className="flex justify-between font-bold border-t border-line pt-2">
           <span>{grandTotal !== null ? 'الإجمالي' : 'الإجمالي قبل التوصيل'}</span>
           <span className="text-sea">
-            {grandTotal !== null ? `${grandTotal} ج.م`
+            {!optionsLoaded ? '…'
+              : grandTotal !== null ? `${grandTotal} ج.م`
               : partialTotal !== null ? `${partialTotal} ج.م`
               : '…'}
           </span>
@@ -175,7 +176,9 @@ export default function CartPage() {
         <button className="btn-sea w-full !rounded-xl !py-4 shadow-lg shadow-sea/20 flex items-center justify-between px-4"
           disabled={!optionsLoaded} onClick={() => nav('/checkout')}>
           <span>{optionsLoaded ? 'روح للدفع' : 'لحظة…'}</span>
-          {grandTotal !== null && <span className="font-bold">{grandTotal} ج.م</span>}
+          {/* The number was still printed next to 'لحظة…', which is the number
+              being waited for. */}
+          {optionsLoaded && grandTotal !== null && <span className="font-bold">{grandTotal} ج.م</span>}
         </button>
       </div>
     </div>

@@ -126,16 +126,38 @@ export default function DriverPage() {
   const activeTab = doneAssignments.length === 0 ? 'active' : tab
   const shown = activeTab === 'active' ? liveAssignments : doneAssignments
 
-  // A new offer pulls the driver back to the live tab. Without this, a driver
-  // reading yesterday's deliveries would get a push notification, open the app,
-  // and be looking at a screen where the new offer does not appear at all --
-  // and offers expire.
-  const offeredCount = liveAssignments.filter(a => a.status === 'Offered').length
-  const prevOfferedRef = useRef(offeredCount)
+  // Anything new to claim pulls the driver back to the live tab: an offer
+  // addressed to them, OR an unclaimed pool order -- the pool sends its own
+  // push ("في طلب جديد متاح للاستلام"), and it only renders on the live tab, so
+  // without this the notification lands someone on a board where the order it
+  // is about does not appear at all. Both expire.
+  //
+  // Compared as a SET of ids, not a count. A count only moves on a net
+  // increase, so an offer expiring in the same poll as a new one arrives reads
+  // as 1 -> 1 and nothing switches -- the exact case where a missed switch
+  // costs the order.
+  const claimableKey = [
+    ...liveAssignments.filter(a => a.status === 'Offered').map(a => `a${a.id}`),
+    ...pool.map(o => `p${o.id}`),
+  ].sort().join(',')
+  const seenClaimableRef = useRef<Set<string> | null>(null)
   useEffect(() => {
-    if (offeredCount > prevOfferedRef.current) setTab('active')
-    prevOfferedRef.current = offeredCount
-  }, [offeredCount])
+    const ids = new Set(claimableKey ? claimableKey.split(',') : [])
+    const prev = seenClaimableRef.current
+    seenClaimableRef.current = ids
+    // null on first run: everything is "new" on mount, which is not a reason to
+    // yank the tab -- the driver has not been shown anything yet.
+    if (prev === null) return
+    for (const k of ids) if (!prev.has(k)) { setTab('active'); return }
+  }, [claimableKey])
+
+  // Reset rather than mask. `activeTab` falls back to 'live' while the tab bar
+  // is hidden, but `tab` itself stayed 'done' -- so the next delivered order
+  // re-showed the bar and dropped the driver straight back onto the finished
+  // board without touching anything.
+  useEffect(() => {
+    if (doneAssignments.length === 0) setTab('active')
+  }, [doneAssignments.length])
 
   useEffect(() => {
     if (refsInitialised.current || !haveStats) return
@@ -503,6 +525,21 @@ export default function DriverPage() {
 
   const fmt = (t: string | null) => t ? new Date(t).toLocaleTimeString('ar-EG-u-nu-latn', { hour: '2-digit', minute: '2-digit' }) : ''
 
+  // The assignment query is not filtered by date -- it is the last 20 rows. So
+  // تم التوصيل can hold yesterday's runs alongside today's, and a bare 21:40
+  // against a cash figure the driver is accountable for is not enough to tell
+  // them apart.
+  const fmtWhen = (t: string | null) => {
+    if (!t) return ''
+    const d = new Date(t)
+    const today = new Date().toDateString()
+    const yday = new Date(Date.now() - 86400000).toDateString()
+    const day = d.toDateString() === today ? '' 
+      : d.toDateString() === yday ? 'امبارح '
+      : `${d.toLocaleDateString('ar-EG-u-nu-latn', { day: '2-digit', month: '2-digit' })} `
+    return day + fmt(t)
+  }
+
   return (
     <div className="max-w-lg mx-auto">
       <div className="flex items-center justify-between mb-3">
@@ -588,7 +625,9 @@ export default function DriverPage() {
         </div>
       )}
 
-      {activeTab === 'active' && liveAssignments.length === 0 && doneAssignments.length > 0 && (
+      {/* pool.length guard: this used to print "كل الطلبات اتسلمت ✅" directly
+          above a list of unclaimed orders waiting to be taken. */}
+      {activeTab === 'active' && liveAssignments.length === 0 && pool.length === 0 && doneAssignments.length > 0 && (
         <p className="card p-5 text-center text-mist text-sm mb-3">مفيش شغل دلوقتي — كل الطلبات اتسلمت ✅</p>
       )}
 
@@ -611,7 +650,7 @@ export default function DriverPage() {
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-sm truncate">#{o.id} — {o.restaurants?.name}</p>
                   <p className="text-xs text-mist mt-0.5 truncate">
-                    {o.zone}{a.delivered_at ? ` · ${fmt(a.delivered_at)}` : ''}
+                    {o.zone}{a.delivered_at ? ` · ${fmtWhen(a.delivered_at)}` : ''}
                   </p>
                 </div>
                 <span className="text-sm font-semibold text-emerald-700 shrink-0">
@@ -639,9 +678,8 @@ export default function DriverPage() {
           const stageIndex = a.status === 'Out_for_Delivery' && cashDue > 0 && a.cash_confirmed_at
             ? stages.findIndex(s => s.key === 'Cash_Confirmed')
             : stages.findIndex(s => s.key === a.status)
-          const statusColor = a.status === 'Delivered' ? 'bg-emerald-100 text-emerald-700'
-            : a.status === 'Offered' ? 'bg-sand/15 text-sandink'
-            : 'bg-sea/10 text-sea'
+          // No Delivered case: those returned above as a compact row.
+          const statusColor = a.status === 'Offered' ? 'bg-sand/15 text-sandink' : 'bg-sea/10 text-sea'
           const destLat = o.compounds?.latitude ?? null
           const destLng = o.compounds?.longitude ?? null
           const etaMin = (myPos && destLat != null && destLng != null && a.status === 'Out_for_Delivery')
@@ -746,6 +784,17 @@ export default function DriverPage() {
                   )}
                 </div>
               </div>
+              )}
+
+              {/* A driver_pays pickup means the driver puts their OWN money in
+                  the vendor's till and gets it back from the customer. The
+                  customer is told this on the tracking page; the driver was
+                  told only "حصّل: 465" -- the sum of both halves -- with no
+                  hint that 400 of it leaves their pocket first. */}
+              {o.order_type === 'pickup_request' && o.payment_mode === 'driver_pays' && o.collect_amount != null && (
+                <p className="mt-3 text-sm text-sandink bg-sandink/10 rounded-xl p-3 font-semibold">
+                  💵 هتدفع {o.collect_amount} ج.م للمحل من فلوسك، وتحصّلها من العميل مع التوصيل
+                </p>
               )}
 
               <div className="mt-3">
