@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useDismissable } from '../lib/useDismissable'
 import { useAuth } from '../lib/auth'
 import { pingIds, askNotificationPermission } from '../lib/notify'
-import { registerPush } from '../lib/push'
+import { registerPush, persistPushToken } from '../lib/push'
 import EnablePushButton from '../components/EnablePushButton'
 import { startLocationReporting, stopLocationReporting, reportPosition } from '../lib/geolocation'
 import type { Assignment, Driver, Shift, SwapRequest } from '../lib/types'
@@ -362,7 +362,7 @@ export default function DriverPage() {
         const locked = !res.ok && res.code === 'device_locked'
         setDeviceLocked(locked)
         if (res.ok) {
-          registerPush(pushToken => { supabase.rpc('save_my_push_token', { p_push_token: pushToken }) })
+          registerPush(persistPushToken)
         }
       })
   }, [id])
@@ -731,7 +731,7 @@ export default function DriverPage() {
       {/* The single most useful control on this page. Without it a driver has
           to keep the tab open and foregrounded to learn an order exists. */}
       <EnablePushButton
-        onToken={pushToken => { supabase.rpc('save_my_push_token', { p_push_token: pushToken }) }}
+        onToken={persistPushToken}
       />
 
       {(syncFailed || (lastSyncAt !== null && Date.now() - lastSyncAt > STALE_AFTER_MS)) && (

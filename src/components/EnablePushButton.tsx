@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { enablePush, lastPushError, pushPermission, pushSupport, registerPush } from '../lib/push'
+import type { PushTokenSink } from '../lib/push'
 
 /**
  * Explicit opt-in control for notifications.
@@ -18,7 +19,7 @@ export default function EnablePushButton({
   onToken,
   label = 'فعّل تنبيهات الطلبات',
 }: {
-  onToken: (token: string) => void
+  onToken: PushTokenSink
   label?: string
 }) {
   const [support, setSupport] = useState(() => pushSupport())

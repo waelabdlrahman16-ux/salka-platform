@@ -6,7 +6,7 @@ import { startRinging, stopRinging } from '../lib/ring'
 import { ping, askNotificationPermission } from '../lib/notify'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
-import { registerPush } from '../lib/push'
+import { registerPush, persistPushToken } from '../lib/push'
 import { orderStatusLabel } from '../lib/statusLabels'
 import { rpc } from '../lib/rpc'
 import PrescriptionLink from '../components/PrescriptionLink'
@@ -44,7 +44,7 @@ export default function Vendor() {
 
   useEffect(() => {
     if (!rid) return
-    registerPush(pushToken => { supabase.rpc('save_my_push_token', { p_push_token: pushToken }) })
+    registerPush(persistPushToken)
   }, [rid])
 
   // Ring for new orders regardless of which screen the vendor is currently

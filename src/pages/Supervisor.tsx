@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { rpc } from '../lib/rpc'
 import { useAuth } from '../lib/auth'
 import { ping, askNotificationPermission } from '../lib/notify'
-import { registerPush } from '../lib/push'
+import { registerPush, persistPushToken } from '../lib/push'
 import { orderStatusLabel, assignmentStatusLabel } from '../lib/statusLabels'
 import type { Assignment, Driver, LiveDelivery, Order } from '../lib/types'
 import Icon from '../components/Icon'
@@ -95,7 +95,7 @@ export default function Supervisor() {
     load()
     const t = setInterval(load, 15000)
     askNotificationPermission()
-    registerPush(pushToken => { supabase.rpc('save_my_push_token', { p_push_token: pushToken }) })
+    registerPush(persistPushToken)
     return () => clearInterval(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -182,7 +182,7 @@ export default function Supervisor() {
       </div>
 
       <EnablePushButton
-        onToken={pushToken => { supabase.rpc('save_my_push_token', { p_push_token: pushToken }) }}
+        onToken={persistPushToken}
       />
 
       {/* Said plainly rather than left to be discovered by pressing something

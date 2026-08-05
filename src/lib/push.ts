@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core'
 import { PushNotifications } from '@capacitor/push-notifications'
 import { firebaseConfig, VAPID_PUBLIC_KEY } from './firebaseConfig'
+import { supabase } from './supabase'
 
 // Push used to be native-only: this file opened with
 //   if (!Capacitor.isNativePlatform()) return
@@ -23,6 +24,42 @@ import { firebaseConfig, VAPID_PUBLIC_KEY } from './firebaseConfig'
 //   enablePush()    ask for permission. Must come from a user gesture; a
 //                   prompt fired on page load is bad practice and Chrome
 //                   penalises origins that do it.
+
+/**
+ * Which kind of token this device produces. The server needs to know, because
+ * the two want opposite FCM payloads: a browser must get a data-only message
+ * (the service worker draws the banner; a `notification` block produces either
+ * two banners or none -- both were shipped and observed), while Android needs
+ * an `android.notification` block or the system shows nothing at all while the
+ * app is killed. That is the exact moment a driver misses an order.
+ */
+export type PushPlatform = 'web' | 'android' | 'ios'
+
+/** The callback every register/enable entry point hands its result to. */
+export type PushTokenSink = (token: string, platform: PushPlatform) => void
+
+/** Where a native token came from. Web is anything that is not a Capacitor app. */
+function nativePlatform(): PushPlatform {
+  const p = Capacitor.getPlatform()
+  return p === 'android' || p === 'ios' ? p : 'web'
+}
+
+/**
+ * The one place a staff push token is persisted. Every page used to inline
+ * `supabase.rpc('save_my_push_token', { p_push_token })`, which meant six
+ * copies that all had to learn about the platform argument at the same time or
+ * silently register an APK as a browser -- and a token filed as 'web' gets a
+ * data-only message the killed app will never display.
+ */
+export function persistPushToken(token: string, platform: PushPlatform) {
+  return supabase.rpc('save_my_push_token', { p_push_token: token, p_platform: platform })
+}
+
+// Must match ANDROID_CHANNEL in supabase/functions/send-push. A message naming
+// a channel that does not exist falls back to the FCM SDK's default channel at
+// DEFAULT importance: no heads-up banner, no sound. That is indistinguishable
+// from the push having failed, which is the bug this whole change exists to fix.
+const ANDROID_CHANNEL = 'salka_orders'
 
 export type PushSupport =
   | 'native'        // Capacitor app
@@ -81,7 +118,7 @@ async function webToken(): Promise<string | null> {
   }
 }
 
-async function nativeToken(onToken: (token: string) => void): Promise<void> {
+async function nativeToken(onToken: PushTokenSink): Promise<void> {
   const current = await PushNotifications.checkPermissions()
   let granted = current.receive === 'granted'
   if (!granted) {
@@ -90,8 +127,33 @@ async function nativeToken(onToken: (token: string) => void): Promise<void> {
   }
   if (!granted) return
 
+  // Android 8+ takes importance, sound and vibration from the CHANNEL, not from
+  // the message. A high-priority message on a DEFAULT-importance channel is
+  // still a silent line in the shade -- which is what a driver with the phone
+  // in his pocket would never notice.
+  //
+  // A channel's importance is fixed at creation and cannot be raised later. If
+  // this ever needs to get louder, ship a NEW channel id; editing this one has
+  // no effect on a phone that already installed the app.
+  if (Capacitor.getPlatform() === 'android') {
+    try {
+      await PushNotifications.createChannel({
+        id: ANDROID_CHANNEL,
+        name: 'طلبات سالكة',
+        description: 'تنبيه صوتي لكل طلب جديد أو تغيير في طلب شغال',
+        importance: 5,      // MAX -- heads-up banner over whatever is on screen
+        visibility: 1,      // PUBLIC -- readable on the lock screen
+        vibration: true,
+        lights: true,
+      })
+    } catch (e) {
+      // A missing channel degrades to a quiet notification, not to no app.
+      console.error('notification channel setup failed', e)
+    }
+  }
+
   await PushNotifications.removeAllListeners()
-  PushNotifications.addListener('registration', t => onToken(t.value))
+  PushNotifications.addListener('registration', t => onToken(t.value, nativePlatform()))
   PushNotifications.addListener('registrationError', err => console.error('push registration error', err))
   await PushNotifications.register()
 }
@@ -101,7 +163,7 @@ async function nativeToken(onToken: (token: string) => void): Promise<void> {
  * it is safe to call on mount. FCM tokens rotate, so re-registering on each
  * load is what keeps a driver reachable weeks later.
  */
-export async function registerPush(onToken: (token: string) => void): Promise<boolean> {
+export async function registerPush(onToken: PushTokenSink): Promise<boolean> {
   try {
     const support = pushSupport()
     if (support === 'native') { await nativeToken(onToken); return true }
@@ -110,7 +172,7 @@ export async function registerPush(onToken: (token: string) => void): Promise<bo
 
     const token = await webToken()
     if (!token) return false
-    onToken(token)
+    onToken(token, 'web')
     return true
   } catch (e) {
     // Push is an enhancement. It must never break the page it sits on.
@@ -124,7 +186,7 @@ export async function registerPush(onToken: (token: string) => void): Promise<bo
  * Ask for notification permission and register. Call from a click handler.
  * Resolves true only when a token was actually obtained and handed back.
  */
-export async function enablePush(onToken: (token: string) => void): Promise<boolean> {
+export async function enablePush(onToken: PushTokenSink): Promise<boolean> {
   try {
     const support = pushSupport()
     if (support === 'native') { await nativeToken(onToken); return true }
@@ -137,7 +199,7 @@ export async function enablePush(onToken: (token: string) => void): Promise<bool
 
     const token = await webToken()
     if (!token) return false
-    onToken(token)
+    onToken(token, 'web')
     return true
   } catch (e) {
     lastPushError = `enablePush: ${(e as Error)?.message ?? String(e)}`

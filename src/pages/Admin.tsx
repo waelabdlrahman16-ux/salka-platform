@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useDismissable } from '../lib/useDismissable'
 import type { Assignment, Compound, Complaint, Driver, DeliverySlotRow, Earning, LiveDelivery, MenuItem, Order, OrderRating, Reliability, Restaurant, Setting, SettlementRequest, Shift, VendorCoverage } from '../lib/types'
 import { ping, askNotificationPermission } from '../lib/notify'
-import { registerPush } from '../lib/push'
+import { registerPush, persistPushToken } from '../lib/push'
 import { uploadVendorImage } from '../lib/upload'
 import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel,
          ORDER_STATUSES, CLOSED_ORDER_STATUSES, UNPAID_ORDER_STATUSES, type OrderStatus } from '../lib/statusLabels'
@@ -363,7 +363,7 @@ export default function Admin() {
 
   useEffect(() => {
     askNotificationPermission()
-    registerPush(pushToken => { supabase.rpc('save_my_push_token', { p_push_token: pushToken }) })
+    registerPush(persistPushToken)
     load()
     const t = setInterval(load, 15000)
     return () => clearInterval(t)
@@ -1241,7 +1241,7 @@ export default function Admin() {
           quietly stopped being reachable once closed. Renders nothing once a
           token is actually in hand. */}
       <EnablePushButton
-        onToken={pushToken => { supabase.rpc('save_my_push_token', { p_push_token: pushToken }) }}
+        onToken={persistPushToken}
         label="فعّل تنبيهات الإدارة"
       />
 
