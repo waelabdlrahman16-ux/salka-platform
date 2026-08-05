@@ -1,9 +1,10 @@
-import { useEffect, useState, useId } from 'react'
+import { useEffect, useRef, useState, useId } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { artFor } from '../lib/categoryArt'
+import Icon from '../components/Icon'
 import { getSessionToken, useCustomerAuth } from '../lib/customerAuth'
 import type { Compound, MenuItem, Restaurant, Slot } from '../lib/types'
 import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
@@ -19,7 +20,6 @@ export default function CustomOrder() {
   const vendorParam = Number(searchParams.get('vendor')) || null
   const [vendors, setVendors] = useState<Restaurant[]>([])
   const [vendor, setVendor] = useState<Restaurant | null>(null)
-  const [categories, setCategories] = useState<string[]>([])
   // The vendor's known items. Deliberately used as typing shortcuts and NOT as
   // a priced catalogue: of the supermarket's 13 rows, nine are shelf labels
   // ("مستلزمات التنظيف المنزلي") carrying round placeholder prices. Showing
@@ -34,13 +34,7 @@ export default function CustomOrder() {
   // they could rely on, no way to tick an item off, no way to price line by
   // line. The server was ready; the screen never used it.
   const [lines, setLines] = useState<{ name: string; qty: number }[]>([])
-  const [draft, setDraft] = useState('')
   const [notes, setNotes] = useState('')
-  // Which sub-flow the customer picked. Tapping a category used to type the
-  // category's NAME into the order -- so someone following the app's own
-  // prompt asked the pharmacist for "أدوية بروشتة", which is a shelf label,
-  // not a medicine.
-  const [intent, setIntent] = useState<string | null>(null)
   // Search replaced the category chips as the PRIMARY way in. Categories made
   // the customer guess which shelf their thing lives on before they could see
   // it; search works from the first letter, and when nothing matches it offers
@@ -50,6 +44,13 @@ export default function CustomOrder() {
   const [popular, setPopular] = useState<string[]>([])
   const [lastRequest, setLastRequest] = useState<{ id: number; created_at: string; request_items: { name: string; qty: number }[] } | null>(null)
   const [howOpen, setHowOpen] = useState(false)
+  // The address form used to sit under the item list on the same screen, so
+  // every order -- including a one-line "بنادول" -- was a long scroll past six
+  // delivery fields before the send button. It is a separate step now: build
+  // the list, then say where it goes. A signed-in customer whose address we
+  // already have never sees the step at all; they get a summary line and a
+  // تغيير button on the confirm screen.
+  const [step, setStep] = useState<'items' | 'address'>('items')
   /** Open slots per vendor, for the chooser cards. Keyed by restaurant id. */
   const [vendorSlots, setVendorSlots] = useState<Record<number, Slot[]>>({})
   const [rxPath, setRxPath] = useState<string | null>(null)
@@ -192,8 +193,21 @@ export default function CustomOrder() {
   // path sends a grocery list to the pharmacist via the new "الماركت مقفول →
   // روح للصيدلية" button, which only changes the query string.
   const vendorId = vendor?.id ?? null
+  const lastVendorRef = useRef<number | null>(null)
   useEffect(() => {
-    setLines([]); setNotes(''); setSearch(''); setDraft('')
+    const prevId = lastVendorRef.current
+    if (vendorId !== null) lastVendorRef.current = vendorId
+
+    // Only clear when moving from one REAL vendor to a DIFFERENT one.
+    //
+    // Keying straight off vendorId destroyed the basket on a path that has
+    // nothing to do with switching shops: tapping ← رجوع sets vendor to null,
+    // and re-picking the SAME shop from the chooser then read as a change. A
+    // customer who went back to check the opening hours lost their whole list.
+    // A null in the middle is navigation, not a switch.
+    if (prevId === null || vendorId === null || prevId === vendorId) return
+
+    setLines([]); setNotes(''); setSearch(''); setStep('items')
     setRxPath(null)
     setRxPreview(prev => { if (prev) URL.revokeObjectURL(prev); return null })
   }, [vendorId])
@@ -201,14 +215,7 @@ export default function CustomOrder() {
   useEffect(() => {
     if (!vendor) return
     supabase.from('menu_items').select('*').eq('restaurant_id', vendor.id).eq('available', true)
-      .then(({ data }) => {
-        const items = (data as MenuItem[]) ?? []
-        const seen = new Set<string>()
-        const cats: string[] = []
-        for (const it of items) if (!seen.has(it.category)) { seen.add(it.category); cats.push(it.category) }
-        setCategories(cats)
-        setKnownItems(items)
-      })
+      .then(({ data }) => setKnownItems((data as MenuItem[]) ?? []))
     setSlot(null)
     if (vendor.vendor_type === 'supermarket') {
       supabase.rpc('open_slots', { p_restaurant_id: vendor.id }).then(({ data }) => setSlots((data as Slot[]) ?? []))
@@ -227,18 +234,6 @@ export default function CustomOrder() {
     })
   }
 
-  function addDraft() {
-    const t = draft.trim()
-    if (!t) return
-    // Same item typed twice bumps the quantity rather than making a second row
-    // the vendor has to notice and reconcile.
-    setLines(ls => {
-      const i = ls.findIndex(l => l.name.toLowerCase() === t.toLowerCase())
-      if (i === -1) return [...ls, { name: t, qty: 1 }]
-      const copy = [...ls]; copy[i] = { ...copy[i], qty: copy[i].qty + 1 }; return copy
-    })
-    setDraft('')
-  }
   const setQty = (i: number, d: number) =>
     setLines(ls => ls.flatMap((l, j) => j !== i ? [l] : (l.qty + d <= 0 ? [] : [{ ...l, qty: l.qty + d }])))
 
@@ -383,9 +378,12 @@ export default function CustomOrder() {
             const today = next?.scheduled_date === new Date().toISOString().slice(0, 10)
             return (
               <button key={v.id}
-                className="card p-3.5 w-full text-right flex items-center gap-3 hover:border-sea/40 transition-colors"
+                className="card p-3 w-full text-right flex items-center gap-3 hover:border-sea/40 transition-colors"
                 onClick={() => setVendor(v)}>
-                <span className="w-14 h-14 rounded-xl overflow-hidden grid place-items-center text-2xl shrink-0"
+                {/* Tighter than a restaurant card: these are two fixed shops the
+                    customer already knows, not a browsable list, so the logo is
+                    an identifier rather than the subject. */}
+                <span className="w-12 h-12 rounded-lg overflow-hidden grid place-items-center text-xl shrink-0"
                   style={{ background: art.tint }}>
                   {v.logo_url
                     ? <img src={v.logo_url} alt="" loading="eager" className="w-full h-full object-cover"
@@ -409,7 +407,7 @@ export default function CustomOrder() {
                       : ` · خلال ${v.prep_minutes + 20} دقيقة تقريبًا`}
                   </span>
                 </span>
-                <span className="text-mist shrink-0" aria-hidden="true">‹</span>
+                <Icon name="chevronLeft" className="w-3 h-3 text-mist shrink-0" />
               </button>
             )
           })}
@@ -455,7 +453,7 @@ export default function CustomOrder() {
       <button className="text-sm text-mist hover:text-foam mb-3" onClick={() => {
         const siblings = typeFilter ? vendors.filter(v => v.vendor_type === typeFilter) : vendors
         if (siblings.length > 1) setVendor(null); else nav('/')
-      }}>← رجوع</button>
+      }}><Icon name="chevronLeft" className="w-3 h-3 inline-block align-middle ml-1" />رجوع</button>
       <div className="flex items-center gap-2 mb-1 flex-wrap">
         <h1 className="text-2xl font-bold">{vendor.name}</h1>
         <span className="text-[11px] font-bold text-sea bg-sea/10 rounded px-2 py-0.5">
@@ -503,6 +501,8 @@ export default function CustomOrder() {
         </ol>
       )}
 
+      {step === 'items' ? (
+        <>
       {/* A prescription is a complete order, so it goes FIRST -- ahead of the
           search box, the chips and the list. It is the shortest possible
           pharmacy order (one photo, zero typing) and it used to sit below the
@@ -773,6 +773,40 @@ export default function CustomOrder() {
           placeholder="مثال: لو مش موجود، جيب أي بديل" />
       </div>
 
+          {/* The whole point of the split: this screen ends here. Someone
+              ordering one box of paracetamol no longer scrolls past six
+              delivery fields to reach a button. */}
+          {/* The slot picker lives on THIS step, so the slot has to be chosen
+              before moving on -- otherwise step two shows a dead send button
+              next to a hint pointing "فوق" at a picker on the previous
+              screen. */}
+          <button className="btn-sea w-full !py-3.5"
+            disabled={!hasSomethingToOrder || (scheduled && !slot)}
+            onClick={() => setStep('address')}>
+            {!hasSomethingToOrder
+              ? (vendor.vendor_type === 'pharmacy' ? 'ضيف صنف أو صوّر الروشتة' : 'ضيف اللي محتاجه الأول')
+              : scheduled && slots.length === 0 ? 'مفيش فترات متاحة'
+              : scheduled && !slot ? 'اختار فترة التوصيل'
+              : addressComplete ? 'كمّل الطلب' : 'كمّل — فين نوصّله؟'}
+          </button>
+        </>
+      ) : (
+        <>
+          <button className="text-sm text-mist hover:text-foam mb-3" onClick={() => setStep('items')}>
+            <Icon name="chevronLeft" className="w-3 h-3 inline-block align-middle ml-1" />رجوع للقايمة
+          </button>
+
+          {/* A short recap, so the second step is not a form with no memory of
+              what it is for. */}
+          <div className="card p-3.5 mb-4 bg-shellup/60 border-none">
+            <p className="text-sm font-bold mb-1">{vendor.name}</p>
+            <p className="text-xs text-mist">
+              {rxPath && lines.length === 0
+                ? 'روشتة مرفوعة'
+                : [rxPath ? 'روشتة مرفوعة' : null, lines.map(l => `${l.name}${l.qty > 1 ? ` ×${l.qty}` : ''}`).join(' · ')]
+                    .filter(Boolean).join(' · ')}
+            </p>
+          </div>
 
       {/* Six fields collapse to one line as soon as we already know the answers.
           A signed-in customer with a saved address sees a summary and a تغيير
@@ -884,7 +918,11 @@ export default function CustomOrder() {
         </p>
       )}
       {scheduled && slots.length > 0 && !slot && hasSomethingToOrder && (
-        <p className="text-sm text-mist bg-shellup/60 rounded-xl p-3 mb-3">اختار فترة التوصيل فوق عشان تكمل</p>
+        <p className="text-sm text-mist bg-shellup/60 rounded-xl p-3 mb-3">
+          <button className="underline font-semibold" onClick={() => setStep('items')}>
+            ارجع اختار فترة التوصيل
+          </button>{' '}عشان تكمل
+        </p>
       )}
 
       <button className="btn-sea w-full !py-3.5" disabled={!valid || saving} onClick={submit}>
@@ -898,6 +936,8 @@ export default function CustomOrder() {
           : rxPath && lines.length === 0 ? 'ابعت الروشتة — هنتصل بيك بالسعر'
           : 'ابعت الطلب — هنتصل بيك بالسعر'}
       </button>
+        </>
+      )}
     </div>
   )
 }

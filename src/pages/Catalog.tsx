@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth'
 import MenuItemEditor from '../components/MenuItemEditor'
 import AddMenuItemModal from '../components/AddMenuItemModal'
 import AddonLibrary from '../components/AddonLibrary'
+import Icon from '../components/Icon'
 import type { MenuItem, Restaurant } from '../lib/types'
 
 // Catalogue-only workspace for the `catalog` staff role.
@@ -95,7 +96,9 @@ export default function Catalog() {
                     {' · '}{countFor(r.id)} صنف
                   </p>
                 </div>
-                <span className="text-mist shrink-0" aria-hidden="true">‹</span>
+                {/* Same U+2039 bidi-mirroring bug as the chooser: the
+                    character flips in an RTL paragraph and points backwards. */}
+                <Icon name="chevronLeft" className="w-3 h-3 text-mist shrink-0" />
               </button>
             ))}
             {restaurants.length === 0 && (
@@ -108,7 +111,7 @@ export default function Catalog() {
       {selected && (
         <>
           <button className="text-sm text-mist hover:text-foam mb-3" onClick={() => setSelectedId(null)}>
-            ← كل المطاعم
+            <Icon name="chevronLeft" className="w-3 h-3 inline-block align-middle ml-1" />كل المطاعم
           </button>
 
           <div className="flex items-center justify-between gap-2 mb-3">

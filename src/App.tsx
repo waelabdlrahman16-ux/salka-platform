@@ -55,12 +55,40 @@ function isStaffRoute(pathname: string): boolean {
 function Header() {
   const { pathname } = useLocation()
   const { session, profile, signOut } = useAuth()
+  const nav = useNavigate()
   const isStaff = isStaffWorkspace(pathname)
+
+  // The logo used to be a plain <Link to="/">, which threw a driver or a vendor
+  // out of the workspace they were working in and into the customer storefront
+  // -- mid-shift, mid-order, with no address bar to get back and no bottom nav
+  // on staff routes to find the way in again. The only route home was the
+  // once-per-launch redirect below, which had already fired.
+  //
+  // A logo in a workspace header is not a way out of the workspace; it is the
+  // thing you tap when a screen looks stale. So for signed-in staff it goes to
+  // their OWN dashboard: already there, and it is a refresh; anywhere else in
+  // the workspace, it is the way back to the board. Customers keep the plain
+  // link home, which is what they expect.
+  const staffHome = profile ? homeFor(profile.role) : null
+  const logoTarget = staffHome && isStaff ? staffHome : '/'
+
+  function onLogo(e: React.MouseEvent) {
+    if (!staffHome || !isStaff) return           // customer: let the Link work
+    e.preventDefault()
+    if (pathname.startsWith(staffHome)) {
+      // Already on the board. Re-fetch rather than navigate to where we are --
+      // React Router treats that as a no-op and nothing would happen, which
+      // reads as a broken logo.
+      window.location.reload()
+      return
+    }
+    nav(staffHome)
+  }
 
   return (
     <header className="sticky top-0 z-40 bg-night/90 backdrop-blur border-b border-line" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
+        <Link to={logoTarget} onClick={onLogo} className="flex items-center gap-2">
           <img src="/icon-192.png" alt="سالكة" className="w-8 h-8 rounded-xl" />
           <span className="font-bold text-lg">سالكة</span>
         </Link>
@@ -241,11 +269,15 @@ function AppShell() {
           </Routes>
         </Suspense>
       </main>
-      {!isStaff && (
-        <footer className="max-w-5xl mx-auto px-4 pb-8 text-center">
-          <Link to="/terms" className="inline-flex items-center justify-center min-h-[44px] px-3 text-xs text-mist hover:text-foam">الشروط وسياسة الخصوصية</Link>
-        </footer>
-      )}
+      {/* The terms footer used to render on EVERY customer page. It is legal
+          furniture, not content: it sat under the restaurant list, under the
+          cart, under an order the customer was tracking, adding a line of grey
+          text and 44px of dead space to screens that had nothing to do with it.
+          A terms link belongs at the moment of agreement, and there is exactly
+          one -- the confirm button on checkout, which already carries "بضغطك
+          على تأكيد الطلب إنت موافق على الشروط والأحكام" with the same link.
+          The sign-in sheet keeps its own line for the same reason.
+          /terms itself is untouched and still reachable from both. */}
       <BottomNav />
     </div>
   )

@@ -90,14 +90,14 @@ export default function MyOrders() {
   // screenshot -- reached without the customer typing anything or tapping
   // anything.
   //
-  // An unverified phone lookup is capped at 3 per number per 10 minutes,
+  // An unverified phone lookup is capped at 5 per number per 10 minutes,
   // deliberately: my_orders() returns a stranger's order history (ids, totals,
   // dates, which restaurants) to anyone who knows their number, and this is a
   // small resort community where people know each other's numbers. The cap is
   // right. Spending it on page views was not. Opening the tab three times --
-  // home, back, cart, back -- exhausted a real customer's quota before they had
-  // asked a single question, and the "جرب تاني" button underneath could then
-  // only burn the next attempt and fail identically. That is the loop.
+  // home, back, cart, back -- burned most of a real customer's quota before
+  // they had asked a single question, and the "جرب تاني" button underneath
+  // could then only burn the next attempt and fail identically. That is the loop.
   //
   // So now:
   //   verified session  -> auto-search freely; check_rate_limit is skipped

@@ -7,7 +7,10 @@ export interface Restaurant {
   // Only restaurants_for_compound() supplies this. `rating` defaults to 5.0 on
   // an unrated vendor, so nothing may render a score without checking it first.
   review_count?: number
-  /** Best available menu-item photo, chosen server-side. */
+  /** Cover photo chosen in the admin. Overrides hero_image_url. */
+  cover_image_url?: string | null
+  /** What the home card actually renders: cover_image_url, else the
+   *  best-ranked photographed menu item. Computed by restaurants_for_compound(). */
   hero_image_url?: string | null
 }
 export interface MenuItem {

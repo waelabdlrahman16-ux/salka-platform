@@ -9,6 +9,7 @@ import Icon from '../components/Icon'
 import { isItemAvailableNow } from '../lib/itemAvailability'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { applyDiscount, effectiveDiscount } from '../lib/discounts'
+import { priceLine } from '../lib/linePricing'
 import type { Compound, Discount, MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemCombo, MenuItemSize, Restaurant } from '../lib/types'
 import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
 
@@ -35,6 +36,9 @@ export default function RestaurantDetail() {
   const [discounts, setDiscounts] = useState<Discount[]>([])
   const [customizing, setCustomizing] = useState<MenuItem | null>(null)
   const [detailItem, setDetailItem] = useState<MenuItem | null>(null)
+  // أرابياتا has 85 items across 8 categories. Categories are a filing system,
+  // not a way to find one specific dish, and there was nothing else.
+  const [menuQ, setMenuQ] = useState('')
   const [compounds, setCompounds] = useState<Compound[]>([])
   // The chosen category lives in the URL, not in component state.
   //
@@ -120,7 +124,23 @@ export default function RestaurantDetail() {
     return list
   }, [items])
 
-  const shown = (cat: string) => items.filter(it => it.category === cat && isItemAvailableNow(it.available_from, it.available_until))
+  const menuQuery = menuQ.trim().toLowerCase()
+  const shown = (cat: string) => items.filter(it =>
+    it.category === cat
+    && isItemAvailableNow(it.available_from, it.available_until)
+    && (!menuQuery || it.name.toLowerCase().includes(menuQuery) || it.category.toLowerCase().includes(menuQuery)))
+  const menuMatchCount = menuQuery
+    ? items.filter(it => isItemAvailableNow(it.available_from, it.available_until)
+        && (it.name.toLowerCase().includes(menuQuery) || it.category.toLowerCase().includes(menuQuery))).length
+    : 0
+
+  // The basket total, computed from the SAME linePrice() the cart and checkout
+  // use. Re-deriving it here with a second formula is exactly how a screen ends
+  // up disagreeing with the cart about what the customer owes.
+  const cartSubtotal = cart.lines.reduce((sum, l) => {
+    const p = priceLine(l, { items, sizes, combos, addons, discounts })
+    return sum + p.unit * l.qty
+  }, 0)
   const compoundId = getCompoundId()
   const selectedCompound = compounds.find(c => c.id === compoundId)
   const totalEta = restaurant && selectedCompound ? restaurant.prep_minutes + selectedCompound.est_travel_minutes : null
@@ -139,7 +159,7 @@ export default function RestaurantDetail() {
 
   return (
     <div>
-      <Link to="/" className="text-sm text-mist hover:text-foam">← العودة للمطاعم</Link>
+      <Link to="/" className="text-sm text-mist hover:text-foam"><Icon name="chevronLeft" className="w-3 h-3 inline-block align-middle ml-1" />العودة للمطاعم</Link>
 
       <div className="mt-3 mb-4">
         <div className="flex items-center gap-3">
@@ -191,7 +211,50 @@ export default function RestaurantDetail() {
               seven of its items under a single "وجبات", so the bar rendered as
               "الكل | وجبات" -- two controls that filter to the same list and
               cost a row of vertical space to say nothing. */}
-          {categories.length > 1 && (
+          {/* A closed restaurant used to be a small grey word next to the
+              name, while every + button stayed live -- so a customer could
+              build a full basket and only discover at checkout that nothing
+              could be ordered. That loses the app, not just the restaurant.
+              The menu stays browsable on purpose; people look before a place
+              opens. What is blocked is ordering, and there is a way out. */}
+          {!restaurant.is_open && (
+            <div className="card p-4 mb-4 bg-shellup border-none">
+              <p className="font-bold text-sm">مقفول دلوقتي</p>
+              <p className="text-xs text-mist mt-1 mb-3">
+                تقدر تتفرج على القايمة، بس مش هينفع تطلب لحد ما يفتح.
+              </p>
+              <Link to="/" className="btn-ghost !py-2.5 text-sm !flex items-center justify-center">
+                شوف المطاعم المفتوحة دلوقتي
+              </Link>
+            </div>
+          )}
+
+          {/* Search before the category pills, because it answers a different
+              and more common question: "do they have X?" rather than "show me
+              everything under Y". */}
+          {items.length > 8 && (
+            <div className="relative mb-3">
+              <input className="field !pr-10" value={menuQ} onChange={e => setMenuQ(e.target.value)}
+                placeholder={`دوّر في قايمة ${restaurant.name}…`} />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mist pointer-events-none">
+                <Icon name="magnifyingGlass" className="w-4 h-4" />
+              </span>
+              {menuQ.trim() && (
+                <button className="absolute left-3 top-1/2 -translate-y-1/2 text-mist text-sm"
+                  aria-label="مسح" onClick={() => setMenuQ('')}>✕</button>
+              )}
+            </div>
+          )}
+
+          {menuQuery && (
+            <p className="text-xs text-mist mb-3">
+              {menuMatchCount === 0
+                ? `مفيش نتائج لـ «${menuQ.trim()}»`
+                : `${menuMatchCount} نتيجة لـ «${menuQ.trim()}»`}
+            </p>
+          )}
+
+          {categories.length > 1 && !menuQuery && (
           <div className="flex gap-2 overflow-x-auto pb-1 mb-4 -mx-4 px-4 scrollbar-none">
             <button className={`tab shrink-0 ${activeCat === ALL ? 'tab-active' : 'bg-shellup/60'}`} onClick={() => setActiveCat(ALL)}>الكل</button>
             {categories.map(cat => (
@@ -202,7 +265,7 @@ export default function RestaurantDetail() {
           </div>
           )}
 
-          {(activeCat === ALL ? categories : [activeCat]).map(cat => shown(cat).length === 0 ? null : (
+          {(activeCat === ALL || menuQuery ? categories : [activeCat]).map(cat => shown(cat).length === 0 ? null : (
             <section key={cat} className="mb-6">
               <h2 className="font-bold text-lg mb-3">{cat}</h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -275,6 +338,33 @@ export default function RestaurantDetail() {
             setCustomizing(null)
           }}
         />
+      )}
+
+      {/* A basket you cannot see is a basket you stop trusting.
+          Adding three things meant leaving the menu for the عربتي tab just to
+          learn the total, then finding your way back to the right category.
+          Sticky, above the bottom nav, and only while there is something in it.
+          The figure comes from priceLine() -- the same function the cart and
+          the checkout use -- because this screen quoting its own total is
+          precisely how two screens end up disagreeing about what is owed. */}
+      {cart.count > 0 && restaurant.is_open && (
+        <div className="fixed inset-x-0 z-30 px-4"
+          style={{ bottom: 'calc(env(safe-area-inset-bottom) + 68px)' }}>
+          <button className="max-w-lg mx-auto w-full bg-sea text-white rounded-2xl shadow-lg px-4 py-3.5 flex items-center justify-between gap-3"
+            onClick={() => nav('/cart')}>
+            <span className="flex items-center gap-2 min-w-0">
+              <span className="bg-white/20 rounded-lg min-w-[26px] h-[26px] grid place-items-center text-sm font-bold px-1.5">
+                {cart.count}
+              </span>
+              <span className="font-bold text-sm truncate">
+                {cart.count === 1 ? 'صنف واحد' : `${cart.count} أصناف`}
+              </span>
+            </span>
+            <span className="font-bold text-sm shrink-0">
+              {Math.round(cartSubtotal * 100) / 100} ج.م · شوف العربة
+            </span>
+          </button>
+        </div>
       )}
 
     </div>

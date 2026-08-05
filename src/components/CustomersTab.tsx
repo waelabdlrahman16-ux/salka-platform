@@ -47,6 +47,9 @@ type Customer = {
   signed_up_at: string | null
   days_quiet: number | null
   wallet: number
+  banned: boolean
+  ban_reason: string | null
+  banned_at: string | null
   complaints: number
   avg_rating_given: number | null
   favourite_vendor: string | null
@@ -237,6 +240,7 @@ export default function CustomersTab() {
                     <Tag tone="warn">سجّل وماطلبش</Tag>
                   )}
                   {c.delivered >= 2 && <Tag tone="good">عميل راجع</Tag>}
+                  {c.banned && <Tag tone="bad">موقوف</Tag>}
                   {c.complaints > 0 && <Tag tone="bad">{c.complaints} شكوى</Tag>}
                   {c.refunds_due > 0 && <Tag tone="bad">استرداد مستحق</Tag>}
                 </div>
@@ -265,6 +269,7 @@ export default function CustomersTab() {
           detail={detail}
           error={detailError}
           onClose={() => setOpen(null)}
+          onChanged={() => { setOpen(null); load() }}
         />
       )}
     </div>
@@ -287,12 +292,43 @@ function Tag({ children, tone }: { children: React.ReactNode; tone: 'good' | 'wa
   return <span className={`${cls} text-[10px] font-bold rounded px-1.5 py-0.5 shrink-0`}>{children}</span>
 }
 
-function CustomerSheet({ customer: c, detail, error, onClose }: {
+function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
   customer: Customer
   detail: Detail | null
   error: string
   onClose: () => void
+  onChanged: () => void
 }) {
+  const [banBusy, setBanBusy] = useState(false)
+  const [banError, setBanError] = useState('')
+
+  // Banning is keyed on the PHONE, not on an account, because most orders here
+  // are placed without signing in at all -- a ban on a customer id would be
+  // defeated by simply not logging in, which is the default path. The server
+  // enforces it inside place_order() and submit_custom_order(), so it holds
+  // even if someone reloads past the UI.
+  async function toggleBan() {
+    if (c.banned) {
+      if (!confirm(`ترجّع ${c.name || c.phone} يقدر يطلب تاني؟`)) return
+    } else {
+      const reason = prompt(`إيقاف ${c.name || c.phone} عن الطلب.\n\nاكتب السبب (هيتسجل عندك، العميل مش هيشوفه):`)
+      if (reason === null) return
+      setBanError('')
+      setBanBusy(true)
+      const res = await rpc('admin_set_customer_ban', { p_phone: c.phone, p_banned: true, p_reason: reason })
+      setBanBusy(false)
+      if (!res.ok) { setBanError(res.error); return }
+      onChanged()
+      return
+    }
+    setBanError('')
+    setBanBusy(true)
+    const res = await rpc('admin_set_customer_ban', { p_phone: c.phone, p_banned: false })
+    setBanBusy(false)
+    if (!res.ok) { setBanError(res.error); return }
+    onChanged()
+  }
+
   // Escape closes. A full-screen panel with no keyboard exit is a trap on a
   // laptop, which is where this tab will actually be used.
   useEffect(() => {
@@ -348,6 +384,26 @@ function CustomerSheet({ customer: c, detail, error, onClose }: {
               ))}
             </div>
           )}
+
+          {/* Placed under the history, not next to the phone number: banning
+              someone is a decision you make after reading what they did, and a
+              destructive control beside a call button is a mis-tap waiting to
+              happen. */}
+          <div className="border-t border-line pt-3">
+            {c.banned && (
+              <div className="bg-red-500/10 rounded-xl p-3 mb-2">
+                <p className="text-sm font-bold text-red-700">موقوف عن الطلب</p>
+                {c.ban_reason && <p className="text-xs text-mist mt-0.5">{c.ban_reason}</p>}
+                {c.banned_at && <p className="text-xs text-mist mt-0.5">من {day(c.banned_at)}</p>}
+              </div>
+            )}
+            {banError && <p className="text-sm text-red-700 mb-2">{banError}</p>}
+            <button
+              className={`w-full text-sm !py-2.5 ${c.banned ? 'btn-sea' : 'btn-ghost !text-red-600'}`}
+              disabled={banBusy} onClick={toggleBan}>
+              {banBusy ? 'لحظة…' : c.banned ? 'رجّعه يقدر يطلب' : 'أوقف الحساب ده عن الطلب'}
+            </button>
+          </div>
 
           <div>
             <p className="font-bold text-sm mb-2">

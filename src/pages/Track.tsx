@@ -281,9 +281,18 @@ export default function Track() {
     const payNow = isDeposit ? o.cod_deposit_amount! : o.total
     return (
       <div className="max-w-lg mx-auto">
-        <Link to="/" className="text-sm text-mist hover:text-foam">← العودة للرئيسية</Link>
+        <Link to="/" className="text-sm text-mist hover:text-foam"><Icon name="chevronLeft" className="w-3 h-3 inline-block align-middle ml-1" />العودة للرئيسية</Link>
         {errFor('instapay') && (
           <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mt-3">{errFor('instapay')}</p>
+        )}
+        {/* Also rendered here, not only in the main return.
+            The two switch_to_cash outcomes leave by different doors: a small
+            order moves to pending and falls through to the main return, while
+            an order over the deposit threshold STAYS on this wall -- and it is
+            that one whose message matters, because the screen redraws headed
+            "ادفع عربون 50%" and looks like the button did nothing. */}
+        {switchedNote && (
+          <p className="text-sm bg-sea/10 text-seadeep rounded-xl p-3 mt-3">{switchedNote}</p>
         )}
         <div className="card p-4 mt-3 text-center">
           <h1 className="font-bold text-lg mb-1">{isDeposit ? 'ادفع عربون 50% على InstaPay' : 'حوّل المبلغ على InstaPay'}</h1>
@@ -339,11 +348,7 @@ export default function Track() {
               <button className="text-sm text-mist underline mt-4" disabled={cancelling} onClick={cancelOrder}>
                 {cancelling ? 'جاري الإلغاء…' : 'مش عايز أكمل — الغِ الطلب'}
               </button>
-              {o.instapay_claimed && (
-                <p className="text-xs text-mist mt-1.5">
-                  لو كنت حوّلت فعلاً، هنرجّعلك الفلوس.
-                </p>
-              )}
+
             </>
           ) : (
             <p className="text-sm text-mist mt-4">تم إلغاء الطلب.</p>
@@ -375,7 +380,7 @@ export default function Track() {
   return (
     <div className="max-w-lg mx-auto pb-6">
       <div className="flex items-center justify-between mb-3">
-        <Link to="/" className="text-sm text-mist hover:text-foam">← العودة</Link>
+        <Link to="/" className="text-sm text-mist hover:text-foam"><Icon name="chevronLeft" className="w-3 h-3 inline-block align-middle ml-1" />العودة</Link>
         <span className="text-sm font-semibold text-mist">طلب #{o.id}</span>
       </div>
 
@@ -589,6 +594,16 @@ export default function Track() {
               </button>
             )}
           </div>
+        ) : (isCancelled(o.status) || cancelled) && o.pricing_status === 'pending_quote' ? (
+          // Gating the quote panel on "not cancelled" pushed this case into the
+          // else branch below, which prints an amount due -- and an unpriced
+          // order's total is the delivery fee alone. A cancelled pharmacy
+          // basket announced "65 ج.م — كاش عند الاستلام" underneath its own
+          // cancellation banner. Nothing is owed on a cancelled unpriced order.
+          <div>
+            <p className="font-semibold text-sm">الطلب اتلغى</p>
+            <p className="text-sm text-mist mt-0.5">مفيش أي مبلغ مستحق.</p>
+          </div>
         ) : (
           <div>
             <p className="font-semibold text-sm">
@@ -795,11 +810,20 @@ export default function Track() {
             <button className="btn-danger flex-1 text-sm" disabled={!complaintText.trim()} onClick={sendComplaint}>إرسال</button>
           </div>
         </div>
-      ) : (
+      ) : !isCancelled(o.status) && !cancelled ? (
         <button className="text-red-600 text-sm underline block mx-auto mb-4" onClick={() => setComplaining(true)}>في مشكلة في الطلب؟</button>
-      )}
+      ) : null}
 
-      <p className="text-center text-xs text-mist">الصفحة بتتحدث تلقائياً كل 10 ثواني</p>
+      {/* Both of these belong to an order that is still happening.
+          On a CANCELLED order they are noise at best: "في مشكلة في الطلب؟" invites
+          a complaint about an order nobody is working on, and the auto-refresh
+          notice promises live updates for something whose state will never
+          change again. It was also the only remaining line of technical
+          plumbing shown to a customer -- how often the page polls is our
+          problem, not theirs. */}
+      {!isCancelled(o.status) && !cancelled && o.status !== 'Delivered' && (
+        <p className="text-center text-xs text-mist">الصفحة بتتحدث تلقائياً</p>
+      )}
     </div>
   )
 }

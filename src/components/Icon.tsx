@@ -20,7 +20,7 @@ type IconName =
   | 'forkKnife' | 'boxOpen' | 'bagShopping' | 'receipt' | 'magnifyingGlass'
   | 'locationDot' | 'star' | 'clock' | 'minus' | 'plus' | 'clone'
   | 'moneyBill' | 'mobileScreen' | 'house' | 'rectangleList' | 'penToSquare' | 'creditCard'
-  | 'cartShopping'
+  | 'cartShopping' | 'chevronLeft'
 
 type Variant = 'solid' | 'regular'
 
@@ -30,6 +30,16 @@ const SOLID: Record<IconName, { viewBox: string; d: string }> = {
   // different baseline, and on Android it rendered in the system emoji font,
   // so one tab was full-colour among four monochrome ones and sat a couple of
   // pixels low. Solid-only in the free tier, like most of this file.
+  // A real glyph, because the text characters are not safe here.
+  // The chooser rows used '‹' (U+2039). That character has the Unicode
+  // Bidi_Mirrored property, so inside an RTL paragraph the bidi algorithm
+  // MIRRORS it and it renders pointing right -- backwards, on every row, on
+  // every RTL screen. '›' has the same problem in the other direction. An SVG
+  // path is not text and is never mirrored, so it points where it is drawn.
+  chevronLeft: {
+    viewBox: '0 0 320 512',
+    d: 'M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l192 192c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L77.3 256 246.6 86.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-192 192z'
+  },
   cartShopping: {
     viewBox: '0 0 576 512',
     d: 'M0 24C0 10.7 10.7 0 24 0L69.5 0c22 0 41.5 12.8 50.6 32l411 0c26.3 0 45.5 25 38.6 50.4l-41 152.3c-8.5 31.4-37 53.3-69.5 53.3l-288.5 0 5.4 28.5c2.2 11.3 12.1 19.5 23.6 19.5L488 336c13.3 0 24 10.7 24 24s-10.7 24-24 24l-288.3 0c-34.6 0-64.3-24.6-70.7-58.5L77.4 54.5c-.7-3.8-4-6.5-7.9-6.5L24 48C10.7 48 0 37.3 0 24zM128 464a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zm288-48a48 48 0 1 1 0 96 48 48 0 1 1 0-96z'

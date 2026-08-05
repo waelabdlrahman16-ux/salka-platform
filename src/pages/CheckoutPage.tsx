@@ -104,11 +104,29 @@ export default function CheckoutPage() {
     if (!isValidEgyptPhone(phone)) { setWalletBalance(0); setWalletFailed(false); return }
     // A failed lookup used to be indistinguishable from an empty wallet, so the
     // customer's credit was silently not offered at checkout.
+    const key = `salka_wallet_seen_${phone.trim()}`
     supabase.rpc('wallet_balance_for_phone', { p_phone: phone.trim(), p_session_token: getSessionToken() })
       .then(({ data, error }) => {
-        if (error) { setWalletFailed(true); setWalletBalance(0); return }
+        if (error) {
+          // Only warn someone who has actually HAD credit.
+          //
+          // The banner used to fire on any failed lookup, which meant a warning
+          // about a wallet on the checkout screen of the overwhelming majority
+          // of customers who have never had one -- 1 of 16 accounts has a
+          // balance today. It is noise that reads as a payment problem at the
+          // exact moment someone is deciding whether to go through with the
+          // order. We cannot know the balance when the call fails, so use the
+          // last one we successfully read for this number.
+          let hadCredit = false
+          try { hadCredit = Number(localStorage.getItem(key) || 0) > 0 } catch { /* private mode */ }
+          setWalletFailed(hadCredit)
+          setWalletBalance(0)
+          return
+        }
         setWalletFailed(false)
-        setWalletBalance(Number(data) || 0)
+        const balance = Number(data) || 0
+        setWalletBalance(balance)
+        try { localStorage.setItem(key, String(balance)) } catch { /* private mode */ }
       })
   }, [phone])
 
@@ -321,39 +339,73 @@ export default function CheckoutPage() {
         {/* Saved addresses were reachable from the profile screen and nowhere
             else, so a signed-in customer with three saved addresses still
             retyped a compound and a unit number at every checkout. */}
+        {/* A saved address is meant to END the typing, so it is a full card
+            with everything on it -- icon, the label as the title, and the
+            actual address underneath -- not a narrow chip in a horizontal
+            scroller showing two truncated lines. Wael's note: "this should be a
+            saved address, not every order I enter my details".
+            Tapping one fills the form AND collapses it, so the five fields
+            below stop being the first thing a returning customer sees. */}
         {savedAddresses.length > 0 && (
-          <div>
-            <p className="label">عناوينك المحفوظة</p>
-            <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
-              {savedAddresses.map(a => {
-                const on = a.compound_id === compoundId && a.unit_number === unit
-                return (
-                  <button key={a.id} type="button"
-                    className={`shrink-0 text-right rounded-xl border-2 px-3 py-2 min-h-[44px] ${on ? 'border-sea bg-sea/5' : 'border-line'}`}
-                    onClick={() => {
-                      setCompoundId(a.compound_id)
-                      setUnit(a.unit_number)
-                      setNotes(a.notes ?? '')
-                      setAddressExpanded(false)
-                    }}>
-                    <span className="block text-sm font-bold">{a.label || a.compound_name}</span>
-                    <span className="block text-xs text-mist">{a.compound_name} · {a.unit_number}</span>
-                  </button>
-                )
-              })}
-            </div>
+          <div className="space-y-2">
+            <p className="label !mb-1">عناوينك المحفوظة</p>
+            {savedAddresses.map(a => {
+              const on = a.compound_id === compoundId && a.unit_number === unit
+              return (
+                <button key={a.id} type="button"
+                  className={`w-full text-right rounded-xl border-2 p-3 flex items-center gap-3 ${on ? 'border-sea bg-sea/5' : 'border-line'}`}
+                  onClick={() => {
+                    setCompoundId(a.compound_id)
+                    setUnit(a.unit_number)
+                    setNotes(a.notes ?? '')
+                    setAddressExpanded(false)
+                  }}>
+                  <span className={`w-10 h-10 rounded-xl grid place-items-center text-lg shrink-0 ${on ? 'bg-sea text-white' : 'bg-shellup'}`}
+                    aria-hidden="true">
+                    {/* The label decides the icon: a home is a home, anything
+                        else is just a pin. */}
+                    {(a.label || '').includes('شغل') || (a.label || '').includes('مكتب') ? '💼'
+                      : (a.label || '').includes('منزل') || (a.label || '').includes('بيت') ? '🏠'
+                      : '📍'}
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-sm font-bold truncate">{a.label || a.compound_name}</span>
+                    <span className="block text-xs text-mist truncate mt-0.5">{a.compound_name}</span>
+                    <span className="block text-xs text-mist truncate">
+                      {a.unit_number}{a.notes?.trim() ? ` — ${a.notes.trim()}` : ''}
+                    </span>
+                  </span>
+                  {on && <span className="text-sea text-sm font-bold shrink-0">✓</span>}
+                </button>
+              )
+            })}
           </div>
         )}
 
-        <div><label className="label" htmlFor={`${fid}-1`}>الاسم *</label>
-          <input id={`${fid}-1`} className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
-        <div><label className="label" htmlFor={`${fid}-2`}>رقم الموبايل *</label>
-          <input id={`${fid}-2`} className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-red-400' : ''}`}
-            dir="ltr" value={phone} onChange={e => setPhone(e.target.value)}
-            placeholder="01xxxxxxxxx" maxLength={13} />
-          {phone.trim() && !isValidEgyptPhone(phone) && (
-            <p className="text-xs text-red-600 mt-1">{PHONE_HINT}</p>
-          )}</div>
+        {/* Name and phone were the two fields that never collapsed, so even a
+            signed-in customer with a saved address still met a form at every
+            checkout -- which is the whole complaint. They fold into the same
+            summary line the address uses, and the تغيير button opens all of
+            it together. */}
+        {!addressExpanded && selectedCompound && name.trim() && isValidEgyptPhone(phone) ? (
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-mist shrink-0">👤</span>
+            <span className="flex-1 min-w-0 truncate">{name}</span>
+            <span className="text-mist shrink-0" dir="ltr">{phone}</span>
+          </div>
+        ) : (
+          <>
+            <div><label className="label" htmlFor={`${fid}-1`}>الاسم *</label>
+              <input id={`${fid}-1`} className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
+            <div><label className="label" htmlFor={`${fid}-2`}>رقم الموبايل *</label>
+              <input id={`${fid}-2`} className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-red-400' : ''}`}
+                dir="ltr" value={phone} onChange={e => setPhone(e.target.value)}
+                placeholder="01xxxxxxxxx" maxLength={13} />
+              {phone.trim() && !isValidEgyptPhone(phone) && (
+                <p className="text-xs text-red-600 mt-1">{PHONE_HINT}</p>
+              )}</div>
+          </>
+        )}
 
         {!addressExpanded && selectedCompound ? (
           <>
@@ -519,9 +571,11 @@ export default function CheckoutPage() {
         </p>
       )}
 
+      {/* Only shown to someone whose wallet we have previously seen carrying
+          credit -- see the lookup above. */}
       {walletFailed && (
         <p className="text-sm text-sandink bg-sand/10 rounded-xl p-3 mb-4">
-          مش قادرين نشوف رصيد محفظتك دلوقتي — لو عندك رصيد مش هيتخصم من الطلب ده
+          مش قادرين نشوف رصيد محفظتك دلوقتي — رصيدك مش هيتخصم من الطلب ده
         </p>
       )}
 

@@ -80,6 +80,10 @@ export const ERROR_AR: Record<string, string> = {
   fee_too_large: 'الرقم ده كبير أوي — أقصى رسوم توصيل 2000 ج.م',
   compound_not_found: 'المكان ده مش موجود',
   admin_only: 'العملية دي للإدارة بس',
+  // A banned customer is told the account is blocked and given a way to argue,
+  // not a generic failure they will retry ten times.
+  account_blocked: 'الحساب ده متوقف عن الطلب — كلّم الإدارة لو في مشكلة',
+  has_live_orders: 'العميل ده عنده طلب شغال دلوقتي — اقفله الأول قبل ما توقفه',
   no_driver_on_this_order: 'مفيش مندوب متسجل على الطلب ده',
 
   // Payment-method switching (switch_to_cash). These MUST live here, not only

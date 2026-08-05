@@ -11,6 +11,7 @@ import { orderStatusLabel } from '../lib/statusLabels'
 import { rpc } from '../lib/rpc'
 import PrescriptionLink from '../components/PrescriptionLink'
 import type { Compound, MenuItem, Order, OrderItem, Restaurant } from '../lib/types'
+import Icon from '../components/Icon'
 
 const KITCHEN = [
   { key: 'new', label: 'طلب جديد', next: 'preparing', action: 'قبول وبدء التحضير' },
@@ -113,7 +114,7 @@ export default function Vendor() {
       {view === 'request' && <DriverRequestPanel restaurant={restaurant} onClose={() => setView('main')} />}
       {view === 'history' && (
         <div>
-          <button className="text-sm text-mist hover:text-foam mb-4" onClick={() => setView('main')}>← رجوع</button>
+          <button className="text-sm text-mist hover:text-foam mb-4" onClick={() => setView('main')}><Icon name="chevronLeft" className="w-3 h-3 inline-block align-middle ml-1" />رجوع</button>
           <RideHistoryPanel restaurantId={restaurant.id} />
         </div>
       )}

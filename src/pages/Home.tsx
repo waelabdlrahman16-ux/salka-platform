@@ -40,6 +40,14 @@ export default function Home() {
   const [locating, setLocating] = useState(false)
   const [locationError, setLocationError] = useState('')
   const [compoundsFailed, setCompoundsFailed] = useState(false)
+  // Food search. The home screen has never had one, so the only way to find a
+  // dish was to already know which restaurant sold it.
+  const [foodQ, setFoodQ] = useState('')
+  const [foodHits, setFoodHits] = useState<
+    { id: number; name: string; price: number; image_url: string | null; category: string
+      restaurant_id: number; restaurant_name: string; is_open: boolean }[]
+  >([])
+  const [foodSearching, setFoodSearching] = useState(false)
 
   function loadCompounds() {
     setCompoundsFailed(false)
@@ -77,6 +85,21 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Debounced, because this fires per keystroke in Arabic where a word is
+  // often four taps. 250ms is below the threshold where typing feels laggy and
+  // well above the rate that would hammer the database.
+  useEffect(() => {
+    const q = foodQ.trim()
+    if (!compoundId || q.length < 2) { setFoodHits([]); setFoodSearching(false); return }
+    setFoodSearching(true)
+    const t = setTimeout(() => {
+      supabase.rpc('search_menu_for_compound', { p_compound_id: compoundId, p_q: q, p_limit: 12 })
+        .then(({ data }) => { setFoodHits((data as typeof foodHits) ?? []); setFoodSearching(false) })
+    }, 250)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [foodQ, compoundId])
+
   useEffect(() => {
     if (!compoundId) { setLoading(false); return }
     setLoading(true)
@@ -101,36 +124,100 @@ export default function Home() {
 
   function useMyLocation(compoundsList: Compound[] = compounds) {
     if (!navigator.geolocation) { setLocationError('المتصفح ده مش بيدعم تحديد الموقع'); return }
+
+    // WHY THERE IS A WATCHDOG HERE.
+    //
+    // "In some phones it doesn't respond" is this: getCurrentPosition is not
+    // guaranteed to call EITHER callback. If the permission prompt is dismissed
+    // rather than answered -- swiped away, or the user switches apps and comes
+    // back -- several mobile browsers simply never resolve it, and the `timeout`
+    // option does not apply because the clock only starts once permission is
+    // granted. So `locating` stayed true forever, the button stayed disabled
+    // showing a spinner, and the only way out was reloading the app.
+    //
+    // The watchdog is ours, it always fires, and it always re-enables the
+    // button. `settled` makes whichever of the three arrives first the winner.
+    let settled = false
+    const finish = (msg?: string) => {
+      if (settled) return
+      settled = true
+      clearTimeout(watchdog)
+      setLocating(false)
+      if (msg) setLocationError(msg)
+    }
+    const watchdog = setTimeout(
+      () => finish('الموقع اتأخر — اسمح للتطبيق بالوصول لموقعك من إعدادات المتصفح، أو دوّر على اسم مكانك تحت'),
+      20000
+    )
+
     setLocating(true); setLocationError('')
     navigator.geolocation.getCurrentPosition(
       pos => {
         const { latitude, longitude, accuracy } = pos.coords
         setMyCoords({ lat: latitude, lng: longitude })
+        // Number() on both, deliberately. compounds.latitude/longitude are
+        // Postgres `numeric`, which PostgREST serialises as a STRING to avoid
+        // float precision loss -- so these arrive as "29.6380" even though the
+        // Compound type says number. Subtraction coerces and happens to work,
+        // which is exactly why this would never have been noticed if any part
+        // of the formula ever used + instead of -.
         const withCoords = compoundsList.filter(c => c.latitude != null && c.longitude != null)
-        const ranked = [...withCoords].sort((a, b) =>
-          haversineKm(latitude, longitude, a.latitude!, a.longitude!) -
-          haversineKm(latitude, longitude, b.latitude!, b.longitude!))
+        const distKm = (c: Compound) =>
+          haversineKm(latitude, longitude, Number(c.latitude), Number(c.longitude))
+        const ranked = [...withCoords].sort((a, b) => distKm(a) - distKm(b))
         const nearest = ranked[0]
-        const nearestKm = nearest ? haversineKm(latitude, longitude, nearest.latitude!, nearest.longitude!) : null
+        const nearestKm = nearest ? distKm(nearest) : null
 
         setSearch('') // detected results replace a manual text search, not stack with it
 
-        // A low-confidence fix (network/cell-tower rather than real GPS -- common
-        // indoors or with weak signal) can be tens of km off. Surface that
-        // explicitly rather than silently treating an unreliable reading as accurate.
-        if (accuracy > 3000) {
-          setLocationError(`الموقع اللي وصلنا بيه مش دقيق (نطاق خطأ ~${Math.round(accuracy / 1000)} كم) — جرب تفعّل GPS دقيق من إعدادات الموبايل، أو دوّر على اسم مكانك تحت`)
-        } else if (nearestKm !== null && nearestKm > 15) {
-          setLocationError(`أقرب مكان لينا بعيد عنك حوالي ${Math.round(nearestKm)} كم — تأكد من اسم مكانك تحت لو مش قريب`)
+        // A BAD FIX MUST NOT PRODUCE A LIST.
+        //
+        // This used to rank from ANY reading and then add a warning above the
+        // results. So a customer sitting in بورتو السخنة was shown لونج بيتش,
+        // قرية برنسيس and كورال سي بيتش -- 24 to 30km south -- under a heading
+        // promising they were the closest places to him. The ranking maths was
+        // correct; the input was not. A desktop browser geolocates by IP, and a
+        // phone without a GPS lock falls back to cell towers; both land tens of
+        // kilometres out and both report it honestly in `accuracy`.
+        //
+        // A confidently wrong list is worse than no list, because the heading
+        // is the only thing telling the customer what those three names mean.
+        // Above 1km of claimed error, or when the entire catalogue is
+        // implausibly far, show nothing and say why.
+        const accKm = accuracy / 1000
+        if (accuracy > 1000) {
+          setNearby(null)
+          setLocationError(`تحديد الموقع مش دقيق (نطاق خطأ حوالي ${accKm >= 1 ? `${Math.round(accKm)} كم` : `${Math.round(accuracy)} متر`}) — دوّر على اسم مكانك تحت، هيبقى أدق.`)
+          finish()
+          return
         }
+        if (nearestKm !== null && nearestKm > 15) {
+          setNearby(null)
+          setLocationError(`الموقع اللي وصلنا بيه بعيد عن كل أماكننا (أقربها ${Math.round(nearestKm)} كم) — دوّر على اسم مكانك تحت.`)
+          finish()
+          return
+        }
+
         setNearby(ranked.slice(0, 3))
-        setLocating(false)
+        finish()
       },
-      () => {
-        setLocationError('مش قادرين نوصل لموقعك — دوّر على اسم مكانك تحت')
-        setLocating(false)
+      err => {
+        // Naming the reason matters: "denied" needs a settings change and no
+        // amount of re-tapping will help, while "unavailable" or "timeout" are
+        // worth another try. One generic sentence for all three sent people
+        // back to a button that could not work.
+        finish(
+          err.code === err.PERMISSION_DENIED
+            ? 'التطبيق مش مسموحله يشوف موقعك — فعّلها من إعدادات المتصفح، أو دوّر على اسم مكانك تحت'
+            : err.code === err.TIMEOUT
+              ? 'الموقع اتأخر — جرب تاني، أو دوّر على اسم مكانك تحت'
+              : 'مش قادرين نوصل لموقعك — دوّر على اسم مكانك تحت'
+        )
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      // 12s, not 15: it has to expire comfortably inside the 20s watchdog so
+      // the browser's own error (which names the cause) wins the race whenever
+      // the browser is actually answering.
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 }
     )
   }
 
@@ -146,19 +233,62 @@ export default function Home() {
   const shownRestaurants = kind
     ? catalogRestaurants.filter(r => vendorKind(r.category) === kind)
     : catalogRestaurants
+  // Split rather than interleave. Five of nine vendors are shut at any given
+  // moment, and they were mixed through the list at 55% opacity -- so more than
+  // half of what a customer scrolled past could not be ordered. Open first,
+  // closed collected underneath their own heading.
+  const openRestaurants = shownRestaurants.filter(r => r.is_open)
+  const closedRestaurants = shownRestaurants.filter(r => !r.is_open)
+  // Vendor names are matched locally -- the list is already in memory and a
+  // round trip to match nine names would be silly.
+  const matchedVendors = foodQ.trim().length >= 2
+    ? catalogRestaurants.filter(r =>
+        r.name.toLowerCase().includes(foodQ.trim().toLowerCase()) ||
+        (r.category ?? '').toLowerCase().includes(foodQ.trim().toLowerCase()))
+    : []
+  const kindCount = (k: VendorKind) =>
+    catalogRestaurants.filter(r => vendorKind(r.category) === k && r.is_open).length
   const filtered = search.trim() ? compounds.filter(c => c.name.toLowerCase().includes(search.toLowerCase())) : []
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4 gap-3">
-        <h1 className="text-2xl font-bold shrink-0">سالكة</h1>
-        <button className="btn-ghost text-sm shrink-0 max-w-[55%]" onClick={() => setPicking(true)}>
-          <span className="flex items-center gap-1">
-            <Icon name="locationDot" className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">{selected ? selected.name : 'اختر مكانك'}</span>
+      {/* The place is not a secondary control, it is the decision that governs
+          everything else on this screen -- which vendors exist, what delivery
+          costs, how long it takes. It used to be a grey ghost button beside the
+          title. Now it IS the title, and the delivery fee sits next to it:
+          stated once, because it is a property of the compound and is identical
+          on every card, so printing it nine times implied it varied. */}
+      <div className="flex items-start justify-between mb-3 gap-3">
+        <button className="text-right min-w-0 flex-1" onClick={() => setPicking(true)}>
+          <span className="block text-[11px] text-mist">التوصيل لـ</span>
+          <span className="flex items-center gap-1 min-w-0">
+            <Icon name="locationDot" className="w-4 h-4 shrink-0 text-sea" />
+            <span className="font-bold text-[17px] truncate">{selected ? selected.name : 'اختر مكانك'}</span>
+            <span className="text-mist text-xs shrink-0">▾</span>
           </span>
         </button>
+        {deliveryFee !== null && (
+          <span className="shrink-0 text-[11px] font-bold text-sandink bg-sand/20 rounded-lg px-2.5 py-1 mt-3">
+            {deliveryFee} ج.م توصيل
+          </span>
+        )}
       </div>
+
+      {/* One box, two kinds of answer: vendor names matched locally, dishes
+          matched on the server across every vendor delivering here. */}
+      {compoundId && !picking && (
+        <div className="relative mb-3">
+          <input className="field !pr-10" value={foodQ} onChange={e => setFoodQ(e.target.value)}
+            placeholder="دوّر على مطعم أو أكلة…" />
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mist pointer-events-none">
+            <Icon name="magnifyingGlass" className="w-4 h-4" />
+          </span>
+          {foodQ.trim() && (
+            <button className="absolute left-3 top-1/2 -translate-y-1/2 text-mist text-sm"
+              aria-label="مسح" onClick={() => setFoodQ('')}>✕</button>
+          )}
+        </div>
+      )}
 
       {/* Ads sit above the fee strip but below the place picker: the compound
           decides everything else on this screen, so it stays first. */}
@@ -210,32 +340,115 @@ export default function Home() {
               are offered, so tapping one can never land on an empty list. */}
           {availableKinds.length > 1 && (
             <div className="flex gap-2 overflow-x-auto pb-1 mb-4 -mx-4 px-4 scrollbar-none">
-              {availableKinds.map(({ kind: k, emoji }) => (
-                <button key={k}
-                  className={`tab shrink-0 ${kind === k ? 'tab-active' : 'bg-shellup/60'}`}
-                  onClick={() => setKind(kind === k ? null : k)}>
-                  <span className="flex items-center gap-1.5"><span aria-hidden="true">{emoji}</span>{k}</span>
-                </button>
-              ))}
+              {availableKinds.map(({ kind: k, emoji }) => {
+                // The count is how many are OPEN, not how many exist. A chip
+                // that leads to three shut restaurants is a wasted tap, and the
+                // number is the only warning available before taking it.
+                const n = kindCount(k)
+                return (
+                  <button key={k}
+                    className={`tab shrink-0 ${kind === k ? 'tab-active' : 'bg-shellup/60'}`}
+                    onClick={() => setKind(kind === k ? null : k)}>
+                    <span className="flex items-center gap-1.5">
+                      <span aria-hidden="true">{emoji}</span>{k}
+                      {n > 0 && <span className="text-[11px] text-mist">{n}</span>}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
           )}
 
-          <div className="divide-y divide-line">
+          {/* Search takes over the whole list while there is a query: a
+              customer who typed "برجر" is asking one question, and answering it
+              underneath the full restaurant list would bury it. */}
+          {foodQ.trim().length >= 2 ? (
+            <div>
+              {foodSearching && <p className="text-mist text-sm py-4">بندوّر…</p>}
+              {!foodSearching && foodHits.length === 0 && matchedVendors.length === 0 && (
+                <p className="text-mist text-sm py-6 text-center">
+                  مفيش نتائج لـ «{foodQ.trim()}» — جرب اسم تاني
+                </p>
+              )}
+
+              {matchedVendors.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-xs text-mist mb-2">مطاعم</p>
+                  <div className="space-y-3">
+                    {matchedVendors.map(r => (
+                      <RestaurantCard key={r.id} restaurant={r}
+                        etaMinutes={selected ? eta(r) : null}
+                        hasDiscount={discountedRestaurantIds.has(r.id)} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {foodHits.length > 0 && (
+                <div>
+                  <p className="text-xs text-mist mb-2">أكلات</p>
+                  <div className="card divide-y divide-line">
+                    {foodHits.map(h => (
+                      <Link key={h.id} to={`/restaurant/${h.restaurant_id}`}
+                        className={`flex items-center gap-3 p-3 ${h.is_open ? '' : 'opacity-60'}`}>
+                        <span className="w-11 h-11 rounded-lg overflow-hidden bg-shellup grid place-items-center text-base shrink-0">
+                          {h.image_url
+                            ? <img src={h.image_url} alt="" loading="lazy" className="w-full h-full object-cover"
+                                onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
+                            : '🍽️'}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-semibold truncate">{h.name}</span>
+                          <span className="block text-xs text-mist truncate">
+                            {h.restaurant_name}{h.is_open ? '' : ' · مقفول'}
+                          </span>
+                        </span>
+                        <span className="text-sm font-bold text-sea shrink-0">{h.price} ج.م</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+          <div className="space-y-3">
             {shownRestaurants.length === 0 && (
               <p className="text-mist py-6">
                 {kind ? `مفيش مطاعم ${kind} بتوصل لمكانك حاليًا` : 'لا يوجد مطاعم بتوصل لمكانك حاليًا'}
               </p>
             )}
-            {shownRestaurants.map(r => (
+            {openRestaurants.map(r => (
               <RestaurantCard
                 key={r.id}
                 restaurant={r}
                 etaMinutes={selected ? eta(r) : null}
-                deliveryFee={deliveryFee}
                 hasDiscount={discountedRestaurantIds.has(r.id)}
               />
             ))}
+
+            {/* Closed vendors, collected. Still reachable -- people browse a
+                menu before a place opens -- but no longer taking up half the
+                scroll between things that can actually be ordered. */}
+            {closedRestaurants.length > 0 && (
+              <div className="pt-2">
+                <p className="text-xs text-mist mb-2 pt-3 border-t border-line">هيفتحوا بعدين</p>
+                <div className="flex flex-wrap gap-2">
+                  {closedRestaurants.map(r => (
+                    <Link key={r.id} to={`/restaurant/${r.id}`}
+                      className="flex items-center gap-2 rounded-full border border-line bg-shell px-3 py-1.5 min-h-[40px]">
+                      <span className="w-6 h-6 rounded-md overflow-hidden bg-shellup grid place-items-center text-[11px] shrink-0">
+                        {r.logo_url
+                          ? <img src={r.logo_url} alt="" loading="lazy" className="w-full h-full object-cover" />
+                          : '🍽️'}
+                      </span>
+                      <span className="text-xs font-semibold truncate max-w-[130px]">{r.name}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
+          )}
         </div>
       )}
 
@@ -243,7 +456,7 @@ export default function Home() {
       {picking && (
         <div ref={pickerRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true"
           onClick={() => (selected || compoundsFailed) && setPicking(false)}>
-          <div className="card w-full max-w-md p-5 max-h-[85vh] overflow-y-auto relative" onClick={e => e.stopPropagation()}>
+          <div className="card w-full max-w-md p-4 max-h-[85vh] overflow-y-auto relative" onClick={e => e.stopPropagation()}>
             {/* The only way to dismiss this was tapping the backdrop *while a
                 compound was already selected*. If the compound query failed the
                 list was empty, nothing could be selected, and the overlay became
@@ -252,8 +465,7 @@ export default function Home() {
               <button className="absolute top-2 left-2 w-11 h-11 grid place-items-center text-mist hover:text-foam text-xl"
                 aria-label="إغلاق" onClick={() => setPicking(false)}>✕</button>
             )}
-            <h3 className="font-bold text-lg mb-1">فين مكانك؟</h3>
-            <p className="text-sm text-mist mb-3">هنعرض بس المطاعم اللي بتوصل لمنطقتك</p>
+            <h3 className="font-bold text-lg mb-3">فين مكانك؟</h3>
 
             {compoundsFailed && (
               <div className="bg-red-500/10 rounded-xl p-3 mb-3 text-center">
@@ -262,16 +474,29 @@ export default function Home() {
               </div>
             )}
 
+            {/* min-w-0 on BOTH the field and the input, and it is load-bearing.
+                A flex item defaults to min-width:auto, which means it refuses
+                to shrink below its content's intrinsic minimum -- and a bare
+                <input> reports a minimum of roughly its default 20-character
+                size regardless of the placeholder. So the search box would not
+                give up any width, the row overflowed the card, and in RTL the
+                overflow goes LEFT: the location button was pushed off the left
+                edge and clipped by the card's rounded corner. Reported from a
+                real phone with a screenshot showing a sliver of it outside the
+                dialog. */}
             <div className="flex items-center gap-2 mb-4">
-              <div className="field flex-1 flex items-center gap-2 !px-3.5">
+              <div className="field flex-1 min-w-0 flex items-center gap-2 !px-3.5">
                 <Icon name="magnifyingGlass" className="w-4 h-4 shrink-0 text-mist" />
-                <input className="flex-1 bg-transparent focus:outline-none placeholder:text-mist/60" value={search}
+                <input className="flex-1 min-w-0 bg-transparent focus:outline-none placeholder:text-mist/60" value={search}
                   onChange={e => { setSearch(e.target.value); if (e.target.value.trim()) setNearby(null) }}
                   placeholder="دوّر على اسم المكان…" />
               </div>
-              <button className="w-12 h-12 rounded-xl border border-line bg-night grid place-items-center shrink-0" disabled={locating} onClick={() => useMyLocation()}
+              <button className="w-12 h-12 rounded-xl border border-line bg-night grid place-items-center shrink-0 disabled:opacity-60"
+                disabled={locating} onClick={() => useMyLocation()}
                 title="استخدم موقعي الحالي" aria-label="استخدم موقعي الحالي">
-                {locating ? '…' : <Icon name="locationDot" className="w-4 h-4" />}
+                {locating
+                  ? <span className="inline-block w-4 h-4 rounded-full border-2 border-mist/40 border-t-sea animate-spin" />
+                  : <Icon name="locationDot" className="w-4 h-4 text-sea" />}
               </button>
             </div>
 
@@ -280,21 +505,38 @@ export default function Home() {
             {nearby && (
               <div className="mb-4">
                 <p className="text-sm text-mist mb-2">أقرب الأماكن ليك</p>
-                <div className="space-y-2">
-                  {nearby.map(c => (
-                    <button key={c.id} className={`w-full card !bg-night p-3 text-right border-sea/40 ${compoundId === c.id ? 'border-sea' : ''}`}
-                      onClick={() => choose(c.id)}>
-                      <span className="font-semibold block truncate">{c.name}</span>
-                      {/* No kilometres anywhere a customer can see. They are
-                          still used to ORDER this list nearest-first -- that is
-                          what the GPS fix is for -- but a distance printed next
-                          to a place implies the delivery fee is computed from
-                          it, and it is not. */}
-                      <span className="text-mist text-xs block mt-0.5">
-                        ~{c.est_travel_minutes} دقيقة توصيل
-                      </span>
-                    </button>
-                  ))}
+                <div className="space-y-1.5">
+                  {nearby.map(c => {
+                    // HOW FAR IT IS FROM *YOU*, under a heading that says
+                    // "أقرب الأماكن ليك".
+                    //
+                    // This row used to print est_travel_minutes, which is the
+                    // hub-to-compound delivery time and has nothing to do with
+                    // where the customer is standing. Sitting in Porto Sokhna
+                    // and reading "~42 دقيقة توصيل" against the top result is
+                    // how you conclude the app cannot find you -- when in fact
+                    // the ranking was right and the number was answering a
+                    // different question.
+                    //
+                    // Kilometres are still kept off every OTHER customer
+                    // screen, because a distance next to a place implies the
+                    // delivery fee is computed from it and it is not. Here it
+                    // is not a price, it is the whole point of the list.
+                    const km = myCoords && c.latitude != null && c.longitude != null
+                      ? haversineKm(myCoords.lat, myCoords.lng, Number(c.latitude), Number(c.longitude))
+                      : null
+                    return (
+                      <button key={c.id} className={`w-full card !bg-night p-3 text-right border-sea/40 ${compoundId === c.id ? 'border-sea' : ''}`}
+                        onClick={() => choose(c.id)}>
+                        <span className="font-semibold block truncate">{c.name}</span>
+                        <span className="text-mist text-xs block mt-0.5">
+                          {km === null ? `~${c.est_travel_minutes} دقيقة توصيل`
+                            : km < 1 ? 'إنت هنا تقريبًا'
+                            : `على بعد ${km < 10 ? km.toFixed(1) : Math.round(km)} كم منك`}
+                        </span>
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             )}

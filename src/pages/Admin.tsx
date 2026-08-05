@@ -695,6 +695,29 @@ export default function Admin() {
     load(true)
   }
 
+  // The COVER photo, which is a different picture doing a different job from
+  // the logo. The home card now leads with a photograph, and until this existed
+  // that photograph was picked automatically from the menu -- best-ranked
+  // photographed item -- which is a guess. On live data the guess gave أرابياتا
+  // a plain foul sandwich as its shopfront. This is the override.
+  async function uploadCover(r: Restaurant, file: File) {
+    setUploadingImage(`cover${r.id}`); setImageError(null)
+    const { url, error } = await uploadVendorImage(file, `restaurants/${r.id}/cover`)
+    setUploadingImage(null)
+    if (error) { setImageError(error); return }
+    const { error: linkError } = await supabase.from('restaurants').update({ cover_image_url: url }).eq('id', r.id)
+    if (linkError) { setActionError('الصورة اترفعت بس ماتربطتش بالمطعم — جرب تاني'); return }
+    setActionError('')
+    load(true)
+  }
+
+  async function removeCover(r: Restaurant) {
+    if (!confirm('إزالة صورة الواجهة؟ هنرجع نختار صورة تلقائيًا من القايمة.')) return
+    const { error } = await supabase.from('restaurants').update({ cover_image_url: null }).eq('id', r.id)
+    if (error) { setActionError('مش قادرين نشيل الصورة دلوقتي'); return }
+    load(true)
+  }
+
   async function removeLogo(r: Restaurant) {
     if (!confirm('إزالة شعار المطعم؟')) return
     const { error } = await supabase.from('restaurants').update({ logo_url: null }).eq('id', r.id)
@@ -945,8 +968,23 @@ export default function Admin() {
   const vehicleLabel = (v: string) => v === 'van' ? '🚐 فان' : '🏍️ موتوسيكل'
   const fmtTime = (iso: string | null) => iso ? new Date(iso).toLocaleString('ar-EG-u-nu-latn', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : null
 
+  // Only orders where the CUSTOMER has said they transferred.
+  //
+  // This used to list every order sitting at awaiting_payment, which is the
+  // state an InstaPay order is BORN in -- so a queue headed "تحويلات بانتظار
+  // التأكيد" filled up with orders where nobody had transferred anything and
+  // there was nothing to confirm. The one signal that a transfer actually
+  // needs checking is instapay_claimed_at, which is set by
+  // mark_instapay_claimed() when the customer taps "حوّلت المبلغ ✓".
+  //
+  // Orders still waiting for the customer to pay are not lost: they are in
+  // كل الطلبات under awaiting_payment, and the stalled-orders banner picks them
+  // up if they sit there. This queue is a work list, and work only exists once
+  // someone claims to have paid.
   const pendingInstapay = orders.filter(o =>
-    (o.payment_method === 'instapay' || o.cod_deposit_amount != null) && o.status === 'awaiting_payment')
+    (o.payment_method === 'instapay' || o.cod_deposit_amount != null)
+    && o.status === 'awaiting_payment'
+    && o.instapay_claimed_at != null)
 
   const CATEGORY_LABEL: Record<string, string> = {
     missing_item: '📦 نقص صنف', wrong_item: '❌ صنف غلط', driver_conduct: '🛵 مشكلة مع المندوب',
@@ -1162,10 +1200,12 @@ export default function Admin() {
                     {o.cod_deposit_amount != null ? `عربون ${o.cod_deposit_amount} ج.م (من ${o.total})` : `${o.total} ج.م`}
                   </p>
                   <p className="text-xs text-mist" dir="ltr">{o.customer_phone}</p>
-                  <p className="text-xs mt-0.5">
-                    {o.instapay_claimed_at
-                      ? <span className="text-emerald-700">✓ العميل قال إنه حوّل</span>
-                      : <span className="text-mist">لسه ماقالش إنه حوّل</span>}
+                  {/* Every row in this list is now a claimed transfer, so the
+                      "لسه ماقالش إنه حوّل" branch was unreachable. Show WHEN
+                      they said it instead -- that is the number that decides
+                      whether this is fresh or has been sitting. */}
+                  <p className="text-xs mt-0.5 text-emerald-700">
+                    ✓ قال إنه حوّل{o.instapay_claimed_at ? ` · ${new Date(o.instapay_claimed_at).toLocaleTimeString('ar-EG', { hour: 'numeric', minute: '2-digit' })}` : ''}
                   </p>
                 </div>
                 <button className="btn-sea !py-1.5 !px-3.5 text-sm shrink-0" disabled={accountBusy === `instapay-${o.id}`}
@@ -1506,11 +1546,41 @@ export default function Admin() {
                         : <div className="w-14 h-14 rounded-xl bg-shellup grid place-items-center text-mist text-[10px] group-hover:opacity-70">اضغط لإضافة</div>}
                     </label>
                     <div className="text-xs text-mist">
-                      <p>{uploadingImage === `r${r.id}` ? 'جاري رفع الشعار…' : 'اضغط على الصورة لتغيير شعار المطعم'}</p>
+                      <p>{uploadingImage === `r${r.id}` ? 'جاري رفع الشعار…' : 'الشعار — بيظهر جنب الاسم'}</p>
                       {r.logo_url && (
                         <button className="text-red-500 font-semibold mt-1" onClick={() => removeLogo(r)}>✗ إزالة الشعار</button>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {/* Two different pictures doing two different jobs, so they sit
+                    next to each other and say which is which. The logo is the
+                    small round mark beside the name; this is the wide photo the
+                    customer sees first on the home screen. */}
+                {expanded && (
+                  <div className="mt-3">
+                    <label className="relative cursor-pointer group block">
+                      <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
+                        onChange={e => e.target.files?.[0] && uploadCover(r, e.target.files[0])} />
+                      {r.cover_image_url
+                        ? <img src={r.cover_image_url} alt="" className="w-full aspect-[16/9] rounded-xl object-cover border border-line group-hover:opacity-80" />
+                        : <div className="w-full aspect-[16/9] rounded-xl bg-shellup border border-dashed border-linestrong grid place-items-center text-mist text-xs group-hover:opacity-80">
+                            اضغط لرفع صورة واجهة المطعم
+                          </div>}
+                    </label>
+                    <p className="text-xs text-mist mt-1.5">
+                      {uploadingImage === `cover${r.id}`
+                        ? 'جاري رفع صورة الواجهة…'
+                        : r.cover_image_url
+                          ? 'صورة الواجهة — دي اللي بتظهر في الرئيسية'
+                          : 'من غير صورة واجهة بنختار أحسن صورة من القايمة تلقائيًا'}
+                    </p>
+                    {r.cover_image_url && (
+                      <button className="text-red-500 text-xs font-semibold mt-1" onClick={() => removeCover(r)}>
+                        ✗ إزالة صورة الواجهة
+                      </button>
+                    )}
                   </div>
                 )}
                 {imageError && expanded && <p className="text-xs text-sandink mt-1">{imageError}</p>}
