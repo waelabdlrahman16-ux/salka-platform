@@ -45,21 +45,40 @@ export function pushPermission(): NotificationPermission | 'unavailable' {
   return Notification.permission
 }
 
+/** Set by webToken() when registration fails, so the UI can name the step. */
+export let lastPushError = ''
+
 async function webToken(): Promise<string | null> {
   // Loaded on demand: firebase/messaging is ~90KB and the main bundle is
   // already over Vite's size warning, so it must not ship to every customer.
   const [{ initializeApp, getApps, getApp }, { getMessaging, getToken, isSupported }] =
     await Promise.all([import('firebase/app'), import('firebase/messaging')])
 
-  if (!(await isSupported())) return null
+  if (!(await isSupported())) { lastPushError = 'المتصفح ده مش بيدعم التنبيهات'; return null }
 
   const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
-  const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js')
-  const token = await getToken(getMessaging(app), {
-    vapidKey: VAPID_PUBLIC_KEY,
-    serviceWorkerRegistration: registration,
-  })
-  return token || null
+  let registration: ServiceWorkerRegistration
+  try {
+    registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js')
+  } catch (e) {
+    lastPushError = `فشل تسجيل الـ service worker: ${(e as Error)?.message ?? e}`
+    return null
+  }
+  try {
+    const token = await getToken(getMessaging(app), {
+      vapidKey: VAPID_PUBLIC_KEY,
+      serviceWorkerRegistration: registration,
+    })
+    if (!token) { lastPushError = 'getToken رجع فاضي'; return null }
+    return token
+  } catch (e) {
+    // The message Firebase returns here is the whole diagnosis: a wrong-project
+    // VAPID key, a blocked Installations API, and an unreachable FCM endpoint
+    // all say different things -- and all of them used to surface as a button
+    // that quietly vanished.
+    lastPushError = `getToken: ${(e as Error)?.message ?? String(e)}`
+    return null
+  }
 }
 
 async function nativeToken(onToken: (token: string) => void): Promise<void> {
@@ -110,13 +129,14 @@ export async function enablePush(onToken: (token: string) => void): Promise<bool
     const permission = Notification.permission === 'granted'
       ? 'granted'
       : await Notification.requestPermission()
-    if (permission !== 'granted') return false
+    if (permission !== 'granted') { lastPushError = 'الإذن اترفض'; return false }
 
     const token = await webToken()
     if (!token) return false
     onToken(token)
     return true
   } catch (e) {
+    lastPushError = `enablePush: ${(e as Error)?.message ?? String(e)}`
     console.error('push enable failed', e)
     return false
   }
