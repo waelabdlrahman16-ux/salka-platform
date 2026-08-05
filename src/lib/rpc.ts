@@ -22,8 +22,8 @@ const OFFLINE_AR = 'مفيش اتصال بالنت — اتأكد من الشب�
 // (`raise exception 'slot_full'`), so we match on substring.
 export const ERROR_AR: Record<string, string> = {
   // ordering
-  restaurant_closed: 'المطعم قفل قبل ما تأكد الطلب، جرب تاني بعدين',
-  vendor_not_covering_compound: 'المطعم ده مش بيوصل لمنطقتك للأسف',
+  restaurant_closed: 'المكان ده قفل قبل ما تأكد الطلب، جرب تاني بعدين',
+  vendor_not_covering_compound: 'المكان ده مش بيوصل لمنطقتك للأسف',
   item_not_available_now: 'في صنف في عربتك مش متاح دلوقتي (وقت محدود)، شيله وجرب تاني',
   item_unavailable: 'في صنف في عربتك خلص، شيله وجرب تاني',
   menu_item_not_found: 'في صنف في عربتك مابقاش موجود، شيله وجرب تاني',

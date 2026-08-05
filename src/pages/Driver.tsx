@@ -13,11 +13,12 @@ import DriverPoolMap from '../components/DriverPoolMap'
 import SwipeToConfirm from '../components/SwipeToConfirm'
 import { rpc, describeError } from '../lib/rpc'
 import { haversineKm } from '../lib/geo'
+import { vendorNoun } from '../lib/vendorWords'
 import { assignmentStatusLabel, driverStatusLabel } from '../lib/statusLabels'
 
 interface PoolOrder {
   id: number; total: number; zone: string
-  kitchen_status: string; restaurant_name: string; created_at: string
+  kitchen_status: string; restaurant_name: string; vendor_type: string | null; created_at: string
   ready_at: string | null; dispatch_at: string | null
   dest_lat: number | null; dest_lng: number | null
 }
@@ -44,6 +45,10 @@ interface DriverStats {
 
 // How long since the last successful sync before we tell the driver the screen
 // may be stale. Two missed polls.
+// The daily bonus panel. Off until check_and_award_shift_bonus() is actually
+// called by something -- see the block it guards.
+const SHOW_BONUS = false
+
 const STALE_AFTER_MS = 25000
 // Per-request ceiling inside a load cycle -- see the comment at withTimeout.
 const LOAD_TIMEOUT_MS = 15000
@@ -214,7 +219,7 @@ export default function DriverPage() {
         withTimeout(supabase.from('drivers').select('*').eq('id', id).single()),
         withTimeout(supabase.rpc('my_driver_stats')),
         withTimeout(supabase.from('delivery_assignments')
-          .select('*, orders(*, restaurants(name), compounds(name, latitude, longitude))').eq('driver_id', id)
+          .select('*, orders(*, restaurants(name, vendor_type), compounds(name, latitude, longitude))').eq('driver_id', id)
           // Cancelled and Failed are here on purpose. Without them, an order
           // an admin pulls disappears from the driver's screen on the next
           // 10-second poll -- address, phone, the whole task -- while the driver
@@ -401,8 +406,8 @@ export default function DriverPage() {
       const { error } = await supabase.rpc('driver_mark_picked_up', { p_assignment_id: a.id })
       if (error) {
         alert(
-          error.message.includes('order_not_ready') ? 'الطلب لسه بيتحضر — استنى لحد ما المطعم يخليه جاهز'
-          : error.message.includes('must_arrive_first') ? 'لازم تسجل إنك وصلت المطعم الأول'
+          error.message.includes('order_not_ready') ? 'الطلب لسه بيتجهز — استنى لحد ما يبقى جاهز'
+          : error.message.includes('must_arrive_first') ? 'لازم تسجل إنك وصلت المكان الأول'
           : 'حصل خطأ، جرب تاني'
         )
         return
@@ -666,7 +671,11 @@ export default function DriverPage() {
               {/* Was a hardcoded "+10" that could disagree with the recorded
                   earning. Show the tier progress instead -- it is the number
                   that actually changes what the driver does next. */}
-              {bonus?.orders_to_next != null && bonus.next_amount != null && (
+              {/* Same SHOW_BONUS gate as the main panel. This is the second
+                  place that promised a bonus nothing awards, and it appears at
+                  the highest-trust moment there is -- straight after a
+                  successful delivery. */}
+              {SHOW_BONUS && bonus?.orders_to_next != null && bonus.next_amount != null && (
                 <p className="text-xs text-foam font-semibold mt-2">
                   فاضل {bonus.orders_to_next} طلب لبونص {bonus.next_amount} ج.م
                 </p>
@@ -890,12 +899,12 @@ export default function DriverPage() {
                 )}
                 {a.status === 'Accepted' && !a.arrived_at_restaurant_at && (
                   <button className="btn-sea w-full" disabled={isBusy(`arrived:${a.id}`)} onClick={() => markArrived(a)}>
-                    {isBusy(`arrived:${a.id}`) ? 'لحظة…' : '📍 وصلت المطعم'}
+                    {isBusy(`arrived:${a.id}`) ? 'لحظة…' : `📍 وصلت ${vendorNoun(a.orders?.restaurants?.vendor_type)}`}
                   </button>
                 )}
                 {a.status === 'Accepted' && a.arrived_at_restaurant_at && (
                   <button className="btn-sea w-full" disabled={isBusy(`pickup:${a.id}`)} onClick={() => markPickedUp(a)}>
-                    {isBusy(`pickup:${a.id}`) ? 'لحظة…' : 'استلمت الطلب من المطعم'}
+                    {isBusy(`pickup:${a.id}`) ? 'لحظة…' : `استلمت الطلب من ${vendorNoun(a.orders?.restaurants?.vendor_type)}`}
                   </button>
                 )}
                 {a.status === 'Picked_Up' && (
@@ -1022,7 +1031,7 @@ export default function DriverPage() {
                       <p className="text-xs text-mist mt-1">
                         {notReadyYet ? `🕐 هيبقى جاهز خلال ${minsLeft} د`
                           : o.kitchen_status === 'ready' ? '✅ جاهز للاستلام'
-                          : o.kitchen_status === 'preparing' ? '👨‍🍳 قيد التحضير' : '🕐 المطعم لسه ما بدأش'}
+                          : o.kitchen_status === 'preparing' ? '👨‍🍳 قيد التحضير' : `🕐 ${vendorNoun(o.vendor_type)} لسه ما بدأش`}
                       </p>
                     </div>
                     {/* Order value is irrelevant to driver pay under the flat
@@ -1088,7 +1097,19 @@ export default function DriverPage() {
           no representation in the UI at all -- the driver could not see how
           close they were to the next tier during the only window where it can
           change what they do. */}
-      {bonus && Array.isArray(bonus.tiers) && bonus.tiers.length > 0 && (
+      {/* HIDDEN 2026-08-05, at Wael's instruction, and it should stay hidden
+          until the bonus is real.
+          check_and_award_shift_bonus() exists but is called from nowhere in the
+          codebase -- driver_shift_bonuses has never had a row and never will
+          until something invokes it. Meanwhile this panel told a driver
+          "X ج.م مضمونين" and "فاضل N طلب توصل لبونص". That is a written promise
+          of money the system cannot pay. The tiers are also 24/30/38 completed
+          orders in a single day, which nobody reaches in launch week even if
+          the award did fire.
+          To bring it back: call check_and_award_shift_bonus(driver_id) from
+          wherever driver_earnings rows are created, set reachable tiers in
+          settings, then flip SHOW_BONUS to true. */}
+      {SHOW_BONUS && bonus && Array.isArray(bonus.tiers) && bonus.tiers.length > 0 && (
         <div className="card p-4 mb-4">
           <div className="flex items-baseline justify-between mb-2.5">
             <p className="text-xs text-mist">بونص النهاردة</p>

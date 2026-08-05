@@ -42,9 +42,17 @@ export default function ProductCard({
               خصم
             </span>
           )}
+          {/* An item with options never shows the +/- stepper -- the button
+              below stays "اختيار" forever, because each tap configures a new
+              variant. So this badge is the ONLY signal that the item is already
+              in the cart, and it has to be readable.
+              It was a 20px circle holding a 10px digit: at that size the number
+              is clipped by its own container and reads as a stray dark dot on
+              the photo. Nobody could tell it was a quantity, which is the one
+              thing it exists to say. Now a labelled pill that says it. */}
           {hasOptions && qty > 0 && (
-            <span className="absolute bottom-2 left-2 bg-sea text-white rounded-full min-w-[1.25rem] h-5 px-1 grid place-items-center text-[10px] font-bold">
-              {qty}
+            <span className="absolute bottom-2 left-2 bg-sea text-white rounded-full px-2.5 py-1 text-[11px] font-bold leading-none shadow-sm">
+              {qty} في العربة
             </span>
           )}
         </div>

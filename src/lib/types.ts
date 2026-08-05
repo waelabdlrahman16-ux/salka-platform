@@ -72,7 +72,10 @@ export interface Order {
   refund_status: 'pending' | 'refunded' | null
   delay_count: number
   cod_deposit_amount: number | null
-  restaurants?: { name: string }
+  // vendor_type is optional because not every query embedding the vendor asks
+  // for it. Any screen that NAMES the vendor in copy ("وصلت الصيدلية") has to
+  // select it -- see lib/vendorWords.ts for why hardcoding "المطعم" was wrong.
+  restaurants?: { name: string; vendor_type?: string | null }
   compounds?: { name: string; latitude: number | null; longitude: number | null }
 }
 export interface OrderItem {

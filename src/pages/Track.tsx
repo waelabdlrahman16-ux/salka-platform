@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { rpc } from '../lib/rpc'
 import { registerPush } from '../lib/push'
+import { vendorNoun } from '../lib/vendorWords'
 import { INSTAPAY_QR_URL, INSTAPAY_LINK } from '../lib/instapay'
 import LiveMap from '../components/LiveMap'
 import Icon from '../components/Icon'
@@ -21,7 +22,7 @@ const STAGES = [
 interface TrackData {
   order: {
     id: number; status: string; subtotal: number; delivery_fee: number; service_fee: number; wallet_used: number; total: number
-    zone: string; unit_number: string; address_notes: string; restaurant_name: string
+    zone: string; unit_number: string; address_notes: string; restaurant_name: string; vendor_type: string | null
     ready_at: string | null; scheduled_date: string | null
     created_at: string; sla_minutes: number | null
     dest_lat: number | null; dest_lng: number | null
@@ -82,6 +83,28 @@ export default function Track() {
   const [actionError, setActionError] = useState<{ scope: string; message: string } | null>(null)
   const errFor = (scope: string) => (actionError?.scope === scope ? actionError.message : '')
   const [staleSince, setStaleSince] = useState<number | null>(null)
+  const [switchingToCash, setSwitchingToCash] = useState(false)
+
+  // Changing your mind about HOW you pay should not mean cancelling WHAT you
+  // ordered. An InstaPay order is created at awaiting_payment, so by the time
+  // this screen appears the cart is emptied and checkout is gone -- and the
+  // only exit here was "الغِ الطلب", i.e. rebuild the whole basket to swap a
+  // payment method. switch_to_cash() moves the order to cash in place; if it is
+  // over the cash-deposit threshold it stays on this screen owing the deposit
+  // instead of the full amount, which the server tells us so we can say so.
+  async function switchToCash() {
+    if (!token) return
+    setSwitchingToCash(true); setActionError(null)
+    const res = await rpc<{ status: string; deposit_required: number | null }>(
+      'switch_to_cash', { p_token: token }, {
+        payment_already_claimed: 'قلت لنا إنك حوّلت بالفعل — استنى المراجعة، ولو في مشكلة كلّمنا',
+        wrong_stage: 'الطلب اتحرك خلاص — مش هينفع نغيّر طريقة الدفع دلوقتي',
+        already_assigned: 'المندوب استلم الطلب خلاص — ادفع كاش عند التوصيل عادي',
+      })
+    setSwitchingToCash(false)
+    if (!res.ok) { setActionError({ scope: 'instapay', message: res.error }); return }
+    load()
+  }
 
   async function claimInstapayPayment() {
     if (!token) return
@@ -248,9 +271,22 @@ export default function Track() {
               تمام، إحنا بنراجع التحويل دلوقتي. الطلب هيتأكد خلال دقايق.
             </p>
           ) : (
-            <button className="btn-sea w-full" disabled={claimingPayment} onClick={claimInstapayPayment}>
-              {claimingPayment ? 'جاري التأكيد…' : 'حوّلت المبلغ ✓'}
-            </button>
+            <>
+              <button className="btn-sea w-full" disabled={claimingPayment} onClick={claimInstapayPayment}>
+                {claimingPayment ? 'جاري التأكيد…' : 'حوّلت المبلغ ✓'}
+              </button>
+
+              {/* The missing door. Before this, someone who opened InstaPay and
+                  decided they would rather pay cash had exactly one option:
+                  cancel the order and rebuild the basket from scratch, because
+                  the cart was emptied the moment the order was created. Not
+                  offered on a deposit order -- that one is already cash. */}
+              {o.payment_method === 'instapay' && (
+                <button className="btn-ghost w-full mt-2.5" disabled={switchingToCash} onClick={switchToCash}>
+                  {switchingToCash ? 'لحظة…' : '💵 هدفع كاش عند الاستلام بدل'}
+                </button>
+              )}
+            </>
           )}
 
           {/* This screen used to have no way out. An InstaPay or deposit order is
@@ -446,7 +482,7 @@ export default function Track() {
       {o.order_type === 'pickup_request' && (
         <p className="text-sm bg-shellup/60 rounded-xl p-3 mb-4">
           {o.payment_mode === 'driver_pays'
-            ? `💵 المندوب هيدفع ${o.collect_amount} ج.م للمطعم، ويحصلها منك كاش عند التوصيل`
+            ? `💵 المندوب هيدفع ${o.collect_amount} ج.م لـ${vendorNoun(o.vendor_type)}، ويحصلها منك كاش عند التوصيل`
             : '✅ الأوردر متدفوع بالفعل — هتدفع رسوم التوصيل بس'}
         </p>
       )}
@@ -603,7 +639,7 @@ export default function Track() {
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-mist">المطعم</span>
+              <span className="text-sm text-mist">{vendorNoun(o.vendor_type)}</span>
               <div className="flex gap-1">
                 {[1,2,3,4,5].map(n => (
                   <button key={n} onClick={() => setRestaurantRating(n)} aria-label={`${n} من 5`}

@@ -254,8 +254,8 @@ export default function CheckoutPage() {
       setError(
         err?.message.includes('slot_full') ? 'الفترة دي اتملت، اختار فترة تانية'
         : err?.message.includes('invalid_combo') ? 'فيه كومبو في عربتك مابقاش متاح — امسح الصنف وضيفه تاني'
-        : err?.message.includes('restaurant_closed') ? 'المطعم قفل قبل ما تأكد الطلب، جرب تاني بعدين'
-        : err?.message.includes('vendor_not_covering_compound') ? 'المطعم ده مش بيوصل لمنطقتك للأسف'
+        : err?.message.includes('restaurant_closed') ? 'المكان ده قفل قبل ما تأكد الطلب، جرب تاني بعدين'
+        : err?.message.includes('vendor_not_covering_compound') ? 'المكان ده مش بيوصل لمنطقتك للأسف'
         : err?.message.includes('item_not_available_now') ? 'في صنف في عربتك مش متاح دلوقتي (وقت محدود)، شيله وجرب تاني'
         : err?.message.includes('item_unavailable') ? 'في صنف في عربتك خلص، شيله وجرب تاني'
         : err?.message.includes('size_required') || err?.message.includes('invalid_size') ? 'اختار حجم الصنف قبل ما تكمل'
