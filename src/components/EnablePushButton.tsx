@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { enablePush, lastPushError, pushPermission, pushSupport, registerPush } from '../lib/push'
+import { enablePush, lastPushError, pushDiag, pushPermission, pushSupport, registerPush, resetPushDiag } from '../lib/push'
 import type { PushTokenSink } from '../lib/push'
 
 /**
@@ -15,6 +15,25 @@ import type { PushTokenSink } from '../lib/push'
  * VAPID key configured yet, or a browser without web push (iOS Safari in a tab
  * rather than installed to the Home Screen).
  */
+// diag-v3 -- if this block never appears after a tap, the phone is running an
+// older bundle and the problem is caching, not push.
+function Trail({ lines }: { lines: string[] }) {
+  if (lines.length === 0) return null
+  const text = lines.join('\n')
+  return (
+    <div className="mt-2 rounded-xl bg-night border border-line p-2.5">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-[10px] text-mist">تشخيص (diag-v3)</span>
+        <button className="text-[10px] text-sea underline"
+          onClick={() => { try { navigator.clipboard?.writeText(text) } catch { /* selectable below either way */ } }}>
+          نسخ
+        </button>
+      </div>
+      <pre dir="ltr" className="text-[10px] leading-4 text-mist whitespace-pre-wrap break-all select-all">{text}</pre>
+    </div>
+  )
+}
+
 export default function EnablePushButton({
   onToken,
   label = 'فعّل تنبيهات الطلبات',
@@ -33,6 +52,10 @@ export default function EnablePushButton({
   // registration had succeeded. The button stayed on screen after a successful
   // tap, which is indistinguishable from the button not working.
   const [granted, setGranted] = useState(false)
+  // Rendered on screen because the release APK has no console and no remote
+  // debugging. Without this, "the button does nothing" is the entire bug report
+  // available from a phone.
+  const [trail, setTrail] = useState<string[]>([])
 
   useEffect(() => {
     const s = pushSupport()
@@ -79,11 +102,12 @@ export default function EnablePushButton({
       <div className="mb-3 text-xs bg-red-500/10 rounded-xl p-3 space-y-2">
         <p className="text-red-700 font-semibold">التنبيهات مافعّلتش</p>
         <p className="text-mist break-all" dir="ltr">{reason || 'سبب غير معروف'}</p>
+        <Trail lines={trail} />
         <button className="btn-ghost !py-1.5 !px-3 text-xs"
           onClick={async () => {
-            setBusy(true); setFailed(false)
+            setBusy(true); setFailed(false); resetPushDiag()
             const ok = await enablePush(onToken)
-            setBusy(false); setPermission(pushPermission())
+            setBusy(false); setPermission(pushPermission()); setTrail([...pushDiag])
             if (ok) setGranted(true)
             else { setReason(lastPushError); setFailed(true) }
           }}>جرب تاني</button>
@@ -111,10 +135,10 @@ export default function EnablePushButton({
         className="btn-sea w-full !py-3"
         disabled={busy}
         onClick={async () => {
-          setBusy(true); setFailed(false)
+          setBusy(true); setFailed(false); resetPushDiag()
           const ok = await enablePush(onToken)
           setBusy(false)
-          setPermission(pushPermission())
+          setPermission(pushPermission()); setTrail([...pushDiag])
           if (ok) setGranted(true)
           else { setReason(lastPushError); setFailed(true) }
         }}>
@@ -123,6 +147,7 @@ export default function EnablePushButton({
       <p className="text-xs text-mist mt-1.5 text-center">
         من غير التنبيهات لازم تسيب الصفحة مفتوحة عشان تعرف إن في طلب جديد
       </p>
+      <Trail lines={trail} />
       {failed && (
         <p className="text-xs text-red-600 bg-red-500/10 rounded-xl p-2.5 mt-2">
           مش قادرين نفعّل التنبيهات دلوقتي — جرب تاني، ولو المشكلة اتكررت افتح الموقع من المتصفح مباشرة

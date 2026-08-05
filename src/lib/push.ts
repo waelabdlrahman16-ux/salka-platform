@@ -85,6 +85,30 @@ export function pushPermission(): NotificationPermission | 'unavailable' {
 /** Set by webToken() when registration fails, so the UI can name the step. */
 export let lastPushError = ''
 
+// A phone running a release APK has no console, no DevTools and no remote
+// debugging -- Capacitor only enables WebView contents debugging for debug
+// builds. So when registration stalls there is literally nothing to look at.
+// Every step therefore records itself here and the UI renders the trail.
+export const pushDiag: string[] = []
+let diagStart = 0
+function diag(msg: string) {
+  const t = diagStart ? `+${Date.now() - diagStart}ms ` : ''
+  pushDiag.push(t + msg)
+  if (pushDiag.length > 40) pushDiag.shift()
+}
+export function resetPushDiag() { pushDiag.length = 0; diagStart = Date.now() }
+
+// Nothing native may be awaited unguarded. A Capacitor bridge call that never
+// calls back leaves the UI in its busy state forever, which is
+// indistinguishable from a dead button -- exactly the symptom this is chasing.
+function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label}: no response after ${ms}ms`)), ms)),
+  ])
+}
+
 async function webToken(): Promise<string | null> {
   // Loaded on demand: firebase/messaging is ~90KB and the main bundle is
   // already over Vite's size warning, so it must not ship to every customer.
@@ -135,16 +159,43 @@ async function webToken(): Promise<string | null> {
  * reason in lastPushError so the failure card can name it.
  */
 async function nativeToken(onToken: PushTokenSink, allowPrompt: boolean): Promise<boolean> {
-  const current = await PushNotifications.checkPermissions()
-  let granted = current.receive === 'granted'
+  diag(`platform=${Capacitor.getPlatform()} native=${Capacitor.isNativePlatform()}`)
+
+  // If the plugin is not in the APK, or the bridge did not attach to the remote
+  // URL, every call below hangs rather than throwing. Check first and say so.
+  if (!Capacitor.isPluginAvailable('PushNotifications')) {
+    lastPushError = 'PushNotifications plugin not available in this build'
+    diag(lastPushError)
+    return false
+  }
+  diag('plugin available')
+
+  let granted = false
+  try {
+    const current = await withTimeout(PushNotifications.checkPermissions(), 8000, 'checkPermissions')
+    diag(`checkPermissions -> ${current.receive}`)
+    granted = current.receive === 'granted'
+  } catch (e) {
+    lastPushError = (e as Error).message
+    diag(lastPushError)
+    return false
+  }
+
   if (!granted) {
     // registerPush() promises never to prompt. On native that promise was
     // broken -- it called requestPermissions() like enablePush() did.
-    if (!allowPrompt) { lastPushError = 'لسه محدش سمح بالتنبيهات'; return false }
-    const requested = await PushNotifications.requestPermissions()
-    granted = requested.receive === 'granted'
+    if (!allowPrompt) { lastPushError = 'لسه محدش سمح بالتنبيهات'; diag('no prompt allowed, stopping'); return false }
+    try {
+      const requested = await withTimeout(PushNotifications.requestPermissions(), 60000, 'requestPermissions')
+      diag(`requestPermissions -> ${requested.receive}`)
+      granted = requested.receive === 'granted'
+    } catch (e) {
+      lastPushError = (e as Error).message
+      diag(lastPushError)
+      return false
+    }
   }
-  if (!granted) { lastPushError = 'الإذن اترفض من إعدادات الجهاز'; return false }
+  if (!granted) { lastPushError = 'الإذن اترفض من إعدادات الجهاز'; diag(lastPushError); return false }
 
   // Android 8+ takes importance, sound and vibration from the CHANNEL, not from
   // the message. A high-priority message on a DEFAULT-importance channel is
@@ -156,7 +207,7 @@ async function nativeToken(onToken: PushTokenSink, allowPrompt: boolean): Promis
   // no effect on a phone that already installed the app.
   if (Capacitor.getPlatform() === 'android') {
     try {
-      await PushNotifications.createChannel({
+      await withTimeout(PushNotifications.createChannel({
         id: ANDROID_CHANNEL,
         name: 'طلبات سالكة',
         description: 'تنبيه صوتي لكل طلب جديد أو تغيير في طلب شغال',
@@ -164,20 +215,27 @@ async function nativeToken(onToken: PushTokenSink, allowPrompt: boolean): Promis
         visibility: 1,      // PUBLIC -- readable on the lock screen
         vibration: true,
         lights: true,
-      })
+      }), 8000, 'createChannel')
+      diag('channel created')
     } catch (e) {
       // A missing channel degrades to a quiet notification, not to no app.
-      console.error('notification channel setup failed', e)
+      diag(`createChannel failed (continuing): ${(e as Error).message}`)
     }
   }
 
-  await PushNotifications.removeAllListeners()
+  try {
+    await withTimeout(PushNotifications.removeAllListeners(), 8000, 'removeAllListeners')
+    diag('listeners cleared')
+  } catch (e) {
+    diag(`removeAllListeners failed (continuing): ${(e as Error).message}`)
+  }
 
   return await new Promise<boolean>(resolve => {
     let settled = false
     const finish = (ok: boolean) => { if (!settled) { settled = true; resolve(ok) } }
 
     PushNotifications.addListener('registration', t => {
+      diag(`registration -> token ${t.value.slice(0, 12)}… (${t.value.length} chars)`)
       onToken(t.value, nativePlatform())
       finish(true)
     })
@@ -186,20 +244,28 @@ async function nativeToken(onToken: PushTokenSink, allowPrompt: boolean): Promis
     // Services. It used to go to console.error on a phone with no console.
     PushNotifications.addListener('registrationError', err => {
       lastPushError = `registrationError: ${(err as any)?.error ?? JSON.stringify(err)}`
+      diag(lastPushError)
       finish(false)
     })
 
-    PushNotifications.register().catch(e => {
-      lastPushError = `register: ${(e as Error)?.message ?? String(e)}`
-      finish(false)
-    })
+    diag('calling register()')
+    PushNotifications.register()
+      .then(() => diag('register() returned'))
+      .catch(e => {
+        lastPushError = `register: ${(e as Error)?.message ?? String(e)}`
+        diag(lastPushError)
+        finish(false)
+      })
 
     // FCM can simply never answer -- no Play Services, no network. Without this
     // the button would spin forever, which reads exactly like doing nothing.
     setTimeout(() => {
-      if (!lastPushError) lastPushError = 'FCM مارجعش توكن خلال ١٥ ثانية'
+      if (!settled) {
+        if (!lastPushError) lastPushError = 'FCM مارجعش توكن خلال ٢٠ ثانية'
+        diag('timed out waiting for the registration listener')
+      }
       finish(false)
-    }, 15000)
+    }, 20000)
   })
 }
 
