@@ -22,12 +22,24 @@ export default function Vendor() {
   const { profile } = useAuth()
   const rid = profile?.restaurant_id
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
+  const [restaurantFailed, setRestaurantFailed] = useState(false)
   const [view, setView] = useState<'main' | 'request' | 'history'>('main')
 
-  useEffect(() => {
+  // The error was discarded, so one failed request on a bad connection left the
+  // vendor on "جاري التحميل…" permanently -- no orders, no ring, no retry, and
+  // nothing on screen suggesting a reload. Driver.tsx already handles this; this
+  // screen did not.
+  function loadRestaurant() {
     if (!rid) return
-    supabase.from('restaurants').select('*').eq('id', rid).single().then(({ data }) => setRestaurant(data))
-  }, [rid])
+    setRestaurantFailed(false)
+    supabase.from('restaurants').select('*').eq('id', rid).single()
+      .then(({ data, error }) => {
+        if (error || !data) { setRestaurantFailed(true); return }
+        setRestaurant(data)
+      })
+  }
+
+  useEffect(loadRestaurant, [rid])
 
   useEffect(() => {
     if (!rid) return
@@ -54,7 +66,13 @@ export default function Vendor() {
   }, [rid])
 
   if (!rid) return <p className="text-mist text-center py-10">حسابك غير مرتبط بمطعم. تواصل مع الإدارة.</p>
-  if (!restaurant) return <p className="text-mist text-center py-10">جاري التحميل…</p>
+  if (!restaurant) return restaurantFailed ? (
+    <div className="card p-6 text-center max-w-sm mx-auto mt-10">
+      <p className="font-semibold">مش قادرين نحمّل بيانات المطعم</p>
+      <p className="text-sm text-mist mt-1 mb-4">اتأكد إن النت شغال وجرب تاني.</p>
+      <button className="btn-sea !py-2 !px-5 text-sm" onClick={loadRestaurant}>حاول تاني</button>
+    </div>
+  ) : <p className="text-mist text-center py-10">جاري التحميل…</p>
 
   // "Own system" vendors (McDonald's/KFC/Pizza Hut style) have no menu ordering
   // through Salka at all — requesting a driver IS their whole workflow, with
@@ -338,6 +356,11 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
 // ── Normal catalog vendors: kitchen ticket flow (accept/prepare/ready)
 function KitchenVendor({ rid }: { rid: number }) {
   const [orders, setOrders] = useState<Order[]>([])
+  // Per-order in-flight key + a board-level error line. Neither existed: the two
+  // kitchen buttons were fire-and-forget with no pending state, so a 3-second
+  // mobile round trip left them tappable and a double tap fired twice.
+  const [busyOrder, setBusyOrder] = useState<number | null>(null)
+  const [boardError, setBoardError] = useState('')
   const [completedToday, setCompletedToday] = useState<Order[]>([])
   const [completedView, setCompletedView] = useState<'delivered' | 'rejected'>('delivered')
   // Live work and finished work were one scroll. On a busy evening that is two
@@ -430,13 +453,38 @@ function KitchenVendor({ rid }: { rid: number }) {
     setMenu(prev => prev.map(m => m.id === it.id ? { ...m, available: !m.available } : m))
   }
 
+  // The error was not even destructured. If the server refused -- the customer
+  // cancelled, the order closed, the network dropped -- the phone buzzed, the
+  // list repainted the ticket unchanged as "طلب جديد", and the vendor concluded
+  // the tap had missed. Mid-rush they tap again, and again. decline() was fixed
+  // for exactly this and advance() was left behind; both now use the shared
+  // rpc() helper, whose ERROR_AR already carries the right Arabic for every
+  // code these two raise.
   async function advance(o: Order, next: string, prepMinutes?: number) {
+    if (busyOrder) return
+    setBusyOrder(o.id); setBoardError('')
     if (navigator.vibrate) navigator.vibrate(15)
-    if (next === 'ready') {
-      await supabase.rpc('vendor_ready', { p_order_id: o.id })
-    } else if (next === 'preparing') {
-      await supabase.rpc('vendor_accept_order', { p_order_id: o.id, p_prep_minutes: prepMinutes ?? null })
-    }
+    const res = next === 'ready'
+      ? await rpc('vendor_ready', { p_order_id: o.id })
+      : await rpc('vendor_accept_order', { p_order_id: o.id, p_prep_minutes: prepMinutes ?? null }, {
+          order_not_priced: 'الطلب ده لسه محتاج تسعير من الإدارة — استنى مكالمتهم',
+        })
+    setBusyOrder(null)
+    if (!res.ok) { setBoardError(`طلب #${o.id}: ${res.error}`); return }
+    load()
+  }
+
+  // The vendor could not open their own restaurant. The badge looked like a
+  // control -- same classes and same text as the admin screen's button -- and
+  // did nothing, so a restaurant that opened at 5pm sat closed all evening with
+  // no orders and no way to fix it.
+  async function toggleOpen() {
+    const next = !isOpen
+    if (!next && !confirm('تقفل المطعم؟ مش هتوصلك طلبات جديدة لحد ما تفتحه تاني.')) return
+    setBoardError('')
+    const res = await rpc('vendor_set_open', { p_open: next })
+    if (!res.ok) { setBoardError(res.error); return }
+    setIsOpen(next)
     load()
   }
 
@@ -649,13 +697,15 @@ function KitchenVendor({ rid }: { rid: number }) {
             {stage.next === 'preparing' ? (
               <div className="flex gap-2">
                 {[15, 20, 30].map(m => (
-                  <button key={m} className="btn-sea flex-1 !rounded-2xl !text-base !py-3.5" onClick={() => advance(o, 'preparing', m)}>
+                  <button key={m} className="btn-sea flex-1 !rounded-2xl !text-base !py-3.5"
+                    disabled={busyOrder === o.id} onClick={() => advance(o, 'preparing', m)}>
                     قبول · {m} د
                   </button>
                 ))}
               </div>
             ) : (
-              <button className="btn-sea w-full !rounded-2xl !text-lg !py-4" onClick={() => advance(o, stage.next!)}>
+              <button className="btn-sea w-full !rounded-2xl !text-lg !py-4"
+                disabled={busyOrder === o.id} onClick={() => advance(o, stage.next!)}>
                 ✅ {stage.action}
               </button>
             )}
@@ -666,14 +716,18 @@ function KitchenVendor({ rid }: { rid: number }) {
             {stage.next === 'preparing' ? (
               <div className="flex gap-2 mt-3">
                 {[15, 20, 30].map(m => (
-                  <button key={m} className="btn-sea flex-1 !rounded-2xl !text-sm !py-2.5 active:scale-95 transition-transform" onClick={() => advance(o, 'preparing', m)}>
+                  <button key={m} className="btn-sea flex-1 !rounded-2xl !text-sm !py-2.5 active:scale-95 transition-transform"
+                    disabled={busyOrder === o.id} onClick={() => advance(o, 'preparing', m)}>
                     قبول · {m} د
                   </button>
                 ))}
               </div>
             ) : stage.next && (
               <div className="flex gap-2.5 mt-3">
-                <button className="btn-sea flex-1 !rounded-2xl active:scale-95 transition-transform" onClick={() => advance(o, stage.next!)}>{stage.action}</button>
+                <button className="btn-sea flex-1 !rounded-2xl active:scale-95 transition-transform"
+                  disabled={busyOrder === o.id} onClick={() => advance(o, stage.next!)}>
+                  {busyOrder === o.id ? 'لحظة…' : stage.action}
+                </button>
                 {o.delay_count < 3 && (
                   <button className="btn-ghost !rounded-2xl active:scale-95 transition-transform" onClick={() => delay(o)}>+5 دقائق</button>
                 )}
@@ -714,10 +768,32 @@ function KitchenVendor({ rid }: { rid: number }) {
 
   return (
     <div>
+      {/* A failed accept used to be completely silent. This is the only place
+          the vendor learns the tap did not take. */}
+      {boardError && (
+        <div className="card p-3 mb-3 border-red-400/50 bg-red-500/5 flex items-center justify-between gap-3">
+          <p className="text-sm text-red-700 font-semibold">{boardError}</p>
+          <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0" onClick={() => setBoardError('')}>تمام</button>
+        </div>
+      )}
+
+      {/* Closed is not a small badge. It means zero orders all evening, and it
+          is the single most likely reason a vendor thinks the app is broken. */}
+      {!isOpen && (
+        <div className="card p-4 mb-3 border-sand/50 bg-sand/10 text-center">
+          <p className="font-bold text-sandink">المطعم مقفول دلوقتي</p>
+          <p className="text-sm text-mist mt-1 mb-3">مش هتوصلك أي طلبات جديدة لحد ما تفتحه.</p>
+          <button className="btn-sea !py-2 !px-6 text-sm" onClick={toggleOpen}>افتح المطعم</button>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-2">
         <h1 className="text-xl font-bold">🍽️ {name}</h1>
         <div className="flex items-center gap-2">
-          <span className={isOpen ? 'badge-open' : 'badge-closed'}>{isOpen ? 'مفتوح' : 'مغلق'}</span>
+          <button className={isOpen ? 'badge-open' : 'badge-closed'} onClick={toggleOpen}
+            aria-pressed={isOpen} title={isOpen ? 'اقفل المطعم' : 'افتح المطعم'}>
+            {isOpen ? 'مفتوح' : 'مغلق — اضغط للفتح'}
+          </button>
           <div className="relative" ref={stockRef}>
             <button className="btn-ghost !py-1.5 !px-2.5 text-xs" onClick={() => setStockOpen(v => !v)}>
               📋 الأصناف {menu.filter(m => !m.available).length > 0 && `(${menu.filter(m => !m.available).length} خلص)`}

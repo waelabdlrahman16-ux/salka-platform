@@ -67,7 +67,16 @@ export default function BannerRail() {
                 // object-cover so any upload fills the frame at the same shape.
                 // The title still renders underneath as the alt text, which is
                 // what a screen reader reads and what shows if the image 404s.
-                <img src={b.image_url} alt={b.title} loading="lazy"
+                // NOT loading="lazy". This is the first thing on the home
+                // screen, so there is nothing to defer -- and lazy actively
+                // broke it: the rail is a horizontal snap-scroller that mounts
+                // behind the place-picker modal, and Chrome's lazy heuristics
+                // never fired for it. Measured on production: the <img> sat at
+                // complete=false, naturalWidth=0 forever, while `new Image()`
+                // on the exact same URL loaded it at 704x704 immediately. The
+                // customer saw a flat colour block where the advert should be.
+                <img src={b.image_url} alt={b.title} loading="eager" fetchPriority="high"
+                  onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
                   className="absolute inset-0 w-full h-full object-cover" />
               )}
 

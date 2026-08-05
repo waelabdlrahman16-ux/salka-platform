@@ -330,10 +330,13 @@ export default function Home() {
                     <button key={c.id} className={`w-full card !bg-night p-3 text-right border-sea/40 ${compoundId === c.id ? 'border-sea' : ''}`}
                       onClick={() => choose(c.id)}>
                       <span className="font-semibold block truncate">{c.name}</span>
+                      {/* No kilometres anywhere a customer can see. They are
+                          still used to ORDER this list nearest-first -- that is
+                          what the GPS fix is for -- but a distance printed next
+                          to a place implies the delivery fee is computed from
+                          it, and it is not. */}
                       <span className="text-mist text-xs block mt-0.5">
                         ~{c.est_travel_minutes} دقيقة توصيل
-                        {myCoords && c.latitude != null && c.longitude != null &&
-                          ` · على بعد ${haversineKm(myCoords.lat, myCoords.lng, c.latitude, c.longitude).toFixed(1)} كم منك`}
                       </span>
                     </button>
                   ))}

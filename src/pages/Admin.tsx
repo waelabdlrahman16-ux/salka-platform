@@ -1001,6 +1001,10 @@ export default function Admin() {
               const mins = o.minutes_stalled % 60
               const since = hrs > 0 ? `${hrs} ساعة و${mins} دقيقة` : `${mins} دقيقة`
               const assignment = assignments.find(a => a.order_id === o.id && activeStatuses.includes(a.status))
+              // stalled_orders() returns a projection, not the row. The actions
+              // below need the real order (pricing_status, kitchen_status, the
+              // fields cancel_order and the assign modal read).
+              const full = orders.find(x => x.id === o.id)
               return (
                 <div key={o.id} className="bg-night border border-line rounded-xl p-3">
                   <div className="flex items-start justify-between gap-2">
@@ -1015,7 +1019,7 @@ export default function Admin() {
                       {orderStatusLabel(o.status)}
                     </span>
                   </div>
-                  {orders.find(x => x.id === o.id)?.pricing_status === 'pending_quote' && (
+                  {full?.pricing_status === 'pending_quote' && (
                     <p className="text-xs text-sandink font-semibold mt-1.5 bg-sand/10 rounded-lg px-2 py-1">
                       🧾 واقف عليك إنت — الطلب ده محتاج تسعير قبل ما أي مندوب يقدر ياخده
                     </p>
@@ -1024,8 +1028,40 @@ export default function Admin() {
                     واقف من {since} (الحد {o.threshold_minutes} دقيقة)
                     {o.payment_method === 'cod' ? ' · كاش' : o.payment_method === 'instapay' ? ' · إنستاباي' : ''}
                   </p>
+                  {/* This banner is the one screen an admin looks at when
+                      something is wrong, and it used to offer four actions --
+                      three of which needed a driver to already be attached.
+                      The most common stall by far is an order with NO driver,
+                      and for that the only option was "افتح الطلب", i.e. go and
+                      find it in another tab. Every reason an order can be stuck
+                      now has its own way out, right here. */}
                   <div className="flex gap-2 mt-2.5 flex-wrap">
                     <a className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem] text-center" href={`tel:${o.customer_phone}`}>اتصل بالعميل</a>
+
+                    {/* Stuck on YOU: it needs a price. */}
+                    {full?.pricing_status === 'pending_quote' && (
+                      <button className="btn-sea !py-1.5 text-xs flex-1 min-w-[7rem]"
+                        onClick={() => { setTab('orders'); setOrderStatusFilter('all'); setOrderQuery(`#${o.id}`) }}>
+                        🧾 سعّر الطلب
+                      </button>
+                    )}
+
+                    {/* Stuck on YOU: it needs the payment confirming. */}
+                    {full?.status === 'awaiting_payment' && (
+                      <button className="btn-sea !py-1.5 text-xs flex-1 min-w-[7rem]"
+                        disabled={accountBusy === `instapay-${o.id}`}
+                        onClick={() => full && confirmInstapayPayment(full)}>
+                        {accountBusy === `instapay-${o.id}` ? '…' : '💳 تأكيد الاستلام'}
+                      </button>
+                    )}
+
+                    {/* Stuck because nobody has taken it. This is the common one. */}
+                    {!assignment && full && full.status !== 'awaiting_payment' && full.pricing_status !== 'pending_quote' && (
+                      <button className="btn-sea !py-1.5 text-xs flex-1 min-w-[7rem]" onClick={() => setAssigning(full)}>
+                        🛵 عيّن مندوب
+                      </button>
+                    )}
+
                     {assignment && (
                       <>
                         <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem]" onClick={() => setReassigning(assignment)}>
@@ -1034,12 +1070,27 @@ export default function Admin() {
                         <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem]" onClick={() => unassignOrder(assignment)}>
                           اسحب الطلب
                         </button>
+                        {assignment.status === 'Out_for_Delivery' && (
+                          <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem]" onClick={() => forceDelivered(assignment)}>
+                            سجّله كمُسلَّم
+                          </button>
+                        )}
                       </>
                     )}
+
                     <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem]"
                       onClick={() => { setTab('orders'); setOrderStatusFilter('all'); setOrderQuery(`#${o.id}`) }}>
                       افتح الطلب
                     </button>
+
+                    {/* The exit. Every other button here tries to rescue the
+                        order; this is the one that ends it, so it is last and
+                        it is red. */}
+                    {full && (
+                      <button className="btn-danger !py-1.5 text-xs flex-1 min-w-[7rem]" onClick={() => cancelOrder(full)}>
+                        إلغاء الطلب
+                      </button>
+                    )}
                   </div>
                 </div>
               )

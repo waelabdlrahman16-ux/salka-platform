@@ -11,6 +11,7 @@ import Icon from '../components/Icon'
 import DriverActiveMap from '../components/DriverActiveMap'
 import DriverPoolMap from '../components/DriverPoolMap'
 import SwipeToConfirm from '../components/SwipeToConfirm'
+import { rpc } from '../lib/rpc'
 import { haversineKm } from '../lib/geo'
 import { assignmentStatusLabel, driverStatusLabel } from '../lib/statusLabels'
 
@@ -462,6 +463,24 @@ export default function DriverPage() {
     })
   }
 
+  // `available` was written only by the admin screen. A driver starting a shift
+  // had no way to say they were ready, and one ending a shift had no way to stop
+  // getting offers -- while the badge beside their name looked exactly like the
+  // admin's toggle and did nothing. The colour also came from `available` while
+  // the text came from `status`, so an unavailable driver on a delivery got a
+  // red badge reading "في توصيل".
+  async function toggleAvailable() {
+    const next = !driver?.available
+    await runAction('availability', async () => {
+      const res = await rpc('driver_set_available', { p_available: next }, {
+        finish_your_orders_first: 'خلّص الطلبات اللي معاك الأول',
+        driver_suspended: 'حسابك موقوف — كلّم الإدارة',
+      })
+      if (!res.ok) { alert(res.error); return }
+      await load(true)
+    })
+  }
+
   async function markCalledCustomer(a: Assignment) {
     await runAction(`called:${a.id}`, async () => {
       if (navigator.vibrate) navigator.vibrate(15)
@@ -578,7 +597,14 @@ export default function DriverPage() {
           <p className="text-sm text-mist">★ {driver.rating} · {driver.total_deliveries} توصيلة{streakDays >= 2 ? ` · 🔥 ${streakDays} أيام متتالية` : ''}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span className={driver.available ? 'badge-open' : 'badge-closed'}>{driverStatusLabel(driver.status)}</span>
+          <button className={driver.available ? 'badge-open' : 'badge-closed'}
+            aria-pressed={driver.available}
+            disabled={isBusy('availability')}
+            title={driver.available ? 'اضغط عشان توقف الطلبات' : 'اضغط عشان تستقبل طلبات'}
+            onClick={toggleAvailable}>
+            {isBusy('availability') ? '…'
+              : driver.available ? driverStatusLabel(driver.status) : 'مش متاح — اضغط'}
+          </button>
           {/* Kept even now that push works: a backgrounded tab still gets its
               timers throttled, and a driver who declined notifications has no
               other way to force a check. */}
@@ -843,7 +869,7 @@ export default function DriverPage() {
                 )}
                 {a.status === 'Accepted' && a.arrived_at_restaurant_at && (
                   <button className="btn-sea w-full" disabled={isBusy(`pickup:${a.id}`)} onClick={() => markPickedUp(a)}>
-                    {isBusy(`pickup:${a.id}`) ? 'لحظة…' : 'استلمت الطلب'}
+                    {isBusy(`pickup:${a.id}`) ? 'لحظة…' : 'استلمت الطلب من المطعم'}
                   </button>
                 )}
                 {a.status === 'Picked_Up' && (
@@ -883,7 +909,9 @@ export default function DriverPage() {
                         </button>
                       )}
                       <SwipeToConfirm
-                        label={isBusy(`deliver:${a.id}`) ? 'جاري التأكيد…' : "اسحب لتأكيد التسليم"}
+                        label={isBusy(`deliver:${a.id}`) ? 'جاري التأكيد…'
+                          : !confirmed ? 'أكد استلام الكاش الأول ☝️'
+                          : 'اسحب لتأكيد التسليم'}
                         disabled={!confirmed || isBusy(`deliver:${a.id}`)}
                         onConfirm={() => setStatus(a, 'Delivered')} />
                       {a.no_answer_reported_at ? (
@@ -974,9 +1002,11 @@ export default function DriverPage() {
                       <p className="text-sm text-mist mt-0.5">{o.total} ج.م</p>
                     </div>
                   </div>
-                  <button className="btn-sea w-full mt-3" disabled={claiming !== null || notReadyYet}
+                  <button className="btn-sea w-full mt-3" disabled={claiming === o.id || notReadyYet}
                     onClick={e => { e.stopPropagation(); claim(o.id) }}>
-                    {claiming === o.id ? 'جاري القبول…' : notReadyYet ? 'لسه معلش' : 'أستلم الطلب'}
+                    {claiming === o.id ? 'جاري القبول…'
+                      : notReadyYet ? (minsLeft > 0 ? `لسه مش جاهز — بعد ${minsLeft} د` : 'لسه مش جاهز')
+                      : 'خد الطلب ده'}
                   </button>
                 </div>
               )
