@@ -47,6 +47,50 @@ interface DriverStats {
 // may be stale. Two missed polls.
 // The daily bonus panel. Off until check_and_award_shift_bonus() is actually
 // called by something -- see the block it guards.
+// How long a finished-against-the-driver assignment (Cancelled / Failed) stays
+// on screen. These rows are in the query on purpose -- an order an admin pulls
+// must not silently vanish from under a driver who may be holding the food --
+// but "on purpose" was doing all the work and nothing was ageing them out.
+// Driver 1 finished today with SIX dead cards stacked above the live one.
+const TERMINAL_GRACE_MS = 30 * 60 * 1000
+
+/**
+ * Should this dead assignment still be shown, and how should it read?
+ *
+ * Returns null when the answer is "not at all", which is the common case and
+ * the one that was missing.
+ *
+ * Two distinctions that matter and were being collapsed into one red banner
+ * saying "الطلب اتلغى — متكملش توصيله":
+ *
+ *  - HELD: the driver arrived at the vendor or took the food. They are standing
+ *    somewhere holding something. Always tell them, however old the row is.
+ *  - MOVED: rejection_reason = 'admin_unassigned' means the job went to another
+ *    driver -- the order was NOT cancelled. Telling a driver who never touched
+ *    it that "the order was cancelled" is simply false, and it is what put a
+ *    full card for order #15 on أشرف's screen after it was reassigned.
+ *
+ * Note on the clock: delivery_assignments has no cancelled_at, and offered_at
+ * is set to the same value as responded_at by admin_assign_order (a direct
+ * assignment is not an offer anyone answered), so responded_at cannot be used
+ * to detect acceptance. offered_at is the only timestamp available and an
+ * assignment is short-lived, so it is a fair proxy for "recent".
+ */
+function terminalNotice(a: Assignment): { held: boolean; moved: boolean } | null {
+  if (a.status !== 'Cancelled' && a.status !== 'Failed') return null
+
+  const held = !!(a.picked_up_at || a.arrived_at_restaurant_at)
+  const moved = a.rejection_reason === 'admin_unassigned'
+
+  if (held) return { held, moved }
+  // Never touched it and it merely changed hands: nothing happened to them.
+  if (moved) return null
+
+  const at = a.offered_at ? new Date(a.offered_at).getTime() : 0
+  if (!at || Date.now() - at > TERMINAL_GRACE_MS) return null
+  return { held, moved }
+}
+
 const SHOW_BONUS = false
 
 const STALE_AFTER_MS = 25000
@@ -125,7 +169,13 @@ export default function DriverPage() {
   // Declared here, not further down, because the effect below reads
   // liveAssignments.length in its dependency array -- which is evaluated during
   // render, so a const defined later would still be in its temporal dead zone.
-  const liveAssignments = assignments.filter(a => a.status !== 'Delivered')
+  const liveAssignments = assignments.filter(a =>
+    a.status !== 'Delivered' &&
+    // Dead rows only survive here if terminalNotice() says they are still worth
+    // the driver's attention. Everything else drops off the screen on the next
+    // poll, which is what a driver expects of a job that is no longer theirs.
+    (a.status !== 'Cancelled' && a.status !== 'Failed' ? true : terminalNotice(a) !== null)
+  )
   const doneAssignments = assignments.filter(a => a.status === 'Delivered')
   // Never strand the driver on an empty history tab -- the tab bar hides itself
   // when there is nothing finished, and the selection has to follow it.
@@ -737,6 +787,34 @@ export default function DriverPage() {
             )
           }
 
+          // Same reasoning as the Delivered receipt above: a job that is no
+          // longer the driver's is not a task, so it must not wear a task card.
+          // It used to render the FULL card -- address, customer phone, live
+          // map, progress bar, action buttons -- with a red banner bolted on
+          // underneath. A driver scanning the screen sees card shapes, not
+          // banners.
+          const dead = terminalNotice(a)
+          if (dead) {
+            return (
+              <div key={a.id} className="card !rounded-2xl p-3.5 flex items-center gap-3 border-line">
+                <span className="w-9 h-9 rounded-full bg-shellup text-mist grid place-items-center shrink-0">✕</span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-sm truncate">#{o.id} — {o.restaurants?.name}</p>
+                  <p className="text-xs text-mist mt-0.5">
+                    {dead.moved ? 'الطلب اتنقل لمندوب تاني'
+                      : a.status === 'Failed' ? 'اتسجل كتوصيل فاشل'
+                      : 'الطلب اتلغى'}
+                  </p>
+                  {dead.held && (
+                    <p className="text-xs text-sandink font-semibold mt-1">
+                      الأكل معاك؟ كلّم الإدارة قبل ما تتحرك
+                    </p>
+                  )}
+                </div>
+              </div>
+            )
+          }
+
           const cashDue = o.payment_method === 'instapay' ? 0
             : o.cod_deposit_amount != null ? o.total - o.cod_deposit_amount
             : o.total
@@ -876,17 +954,12 @@ export default function DriverPage() {
 
               {/* An order the admin pulled or wrote off. Without this the card
                   silently disappeared mid-delivery. */}
-              {(a.status === 'Cancelled' || a.status === 'Failed') && (
-                <div className="mt-3 bg-red-500/10 rounded-2xl p-3.5 text-center">
-                  <p className="font-bold text-red-700 text-sm">
-                    {a.status === 'Cancelled' ? 'الطلب اتلغى — متكملش توصيله' : 'الطلب اتسجل كتوصيل فاشل'}
-                  </p>
-                  {a.rejection_reason && (
-                    <p className="text-xs text-mist mt-1">{a.rejection_reason}</p>
-                  )}
-                  <p className="text-xs text-mist mt-1">لو الأكل معاك، كلّم الإدارة.</p>
-                </div>
-              )}
+              {/* The Cancelled/Failed banner that used to sit here is gone: those
+                  assignments now return the compact dead-card above and never
+                  reach this point, so the block was unreachable. Its wording
+                  also leaked rejection_reason straight to the driver, which is
+                  an internal string ("admin_unassigned", or in one live row
+                  just "x"). */}
 
               <div className="mt-3">
                 {a.status === 'Offered' && (
