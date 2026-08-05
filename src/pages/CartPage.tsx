@@ -120,8 +120,14 @@ export default function CartPage() {
           const art = artFor(item.category)
           return (
             <div key={l.key} className="card p-3.5 flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl grid place-items-center text-xl shrink-0" style={{ background: art.tint }}>
-                {art.emoji}
+              {/* The menu shows a photograph and the cart showed a generic
+                  emoji tile for the same item, which reads as a loading failure
+                  right at the moment the customer is deciding to pay. */}
+              <div className="w-12 h-12 rounded-xl grid place-items-center text-xl shrink-0 overflow-hidden"
+                style={{ background: art.tint }}>
+                {item.image_url
+                  ? <img src={item.image_url} alt="" className="w-full h-full object-cover" />
+                  : art.emoji}
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm truncate">{item.name}</h3>

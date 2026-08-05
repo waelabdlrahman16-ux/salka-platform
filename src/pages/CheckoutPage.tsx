@@ -432,7 +432,13 @@ export default function CheckoutPage() {
           {paymentMethod === 'cod' && serviceFee !== null && deliveryFee !== null
             && codDepositThreshold !== null && finalTotal > codDepositThreshold && (
             <p className="text-xs text-sandink -mt-1 px-1">
-              الطلب ده أكبر من {codDepositThreshold} ج.م، فهيتطلب عربون 50% ({Math.round(finalTotal * 50) / 100} ج.م) عن طريق InstaPay قبل التجهيز، والباقي كاش عند الاستلام
+              {/* Must equal place_order's `ceil(v_net_total * 0.5)` exactly. It
+                  previously read Math.round(finalTotal * 50) / 100, which on a
+                  1361 ج.م order quoted 680.5 -- half a pound nobody can transfer
+                  or hand over in change. Server rounds the deposit UP to a whole
+                  pound; if that ever changes, change it in both places or the
+                  customer is quoted one figure and charged another. */}
+              الطلب ده أكبر من {codDepositThreshold} ج.م، فهيتطلب عربون 50% ({Math.ceil(finalTotal / 2)} ج.م) عن طريق InstaPay قبل التجهيز، والباقي كاش عند الاستلام
             </p>
           )}
           <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${paymentMethod === 'instapay' ? 'border-sea bg-sea/5' : 'border-line'}`}>
@@ -524,6 +530,28 @@ export default function CheckoutPage() {
       )}
 
       {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">{error}</p>}
+
+      {/* The reason a disabled button is disabled belongs next to the button.
+          CustomOrder already does this; checkout did not, and the gap is worse
+          here because the missing field is usually the chalet number, which
+          sits inside a card the customer may never have opened. Verified on the
+          live site: name + phone + compound filled, submit dead, page silent. */}
+      {!valid && !saving && (() => {
+        const missing =
+          !name.trim() ? 'اكتب اسمك'
+          : !isValidEgyptPhone(phone) ? 'اكتب رقم موبايل صحيح'
+          : !selectedCompound ? 'اختار مكانك'
+          : !unit.trim() ? 'اكتب رقم الشاليه / الفيلا'
+          : !optionsLoaded ? 'بنحمّل تفاصيل الأصناف…'
+          : deliveryFee === null ? 'بنحسب رسوم التوصيل…'
+          : serviceFee === null ? 'بنحسب رسوم الخدمة…'
+          : (scheduled && !slot) ? 'اختار فترة التوصيل'
+          : (paymentMethod === 'cod' && codThresholdFailed) ? 'مش قادرين نتأكد من شروط الدفع كاش — جرب تاني أو اختار InstaPay'
+          : null
+        return missing ? (
+          <p className="text-sm text-sandink bg-sand/10 rounded-xl p-3 mb-3 text-center">{missing}</p>
+        ) : null
+      })()}
 
       <button className="btn-sea w-full !py-3.5" disabled={!valid || saving} onClick={placeOrder}>
         {saving ? 'جاري التجهيز…'
