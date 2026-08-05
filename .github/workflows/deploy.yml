@@ -53,10 +53,23 @@ jobs:
       - name: Build
         run: npm run build
 
+      # wrangler is pinned in package.json and installed by `npm ci` above, so
+      # the deploy uses the same version that `wrangler deploy --dry-run`
+      # passes against locally.
+      #
+      # It was previously left to `npx --no-install wrangler`, which resolves
+      # whatever the GitHub runner image happens to have cached. That silently
+      # became 3.90.0, which predates assets-only Workers and fails with
+      # "Missing entry-point: ... or the `main` config field" -- this project
+      # has no `main`, it ships ./dist as static assets. Nothing in the repo
+      # changed; the runner did. A version this deploy depends on does not
+      # belong in someone else's cache.
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          packageManager: npm
+          wranglerVersion: '4.118.0'
           # No accountId here: wrangler reads wrangler.jsonc, which also names
           # the worker (appgosalka-platform) and points assets at ./dist with
           # single-page-application not-found handling.
