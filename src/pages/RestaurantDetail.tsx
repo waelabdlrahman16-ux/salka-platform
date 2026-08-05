@@ -10,6 +10,7 @@ import { isItemAvailableNow } from '../lib/itemAvailability'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { applyDiscount, effectiveDiscount } from '../lib/discounts'
 import type { Compound, Discount, MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemCombo, MenuItemSize, Restaurant } from '../lib/types'
+import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
 
 const ALL = '__all__'
 
@@ -120,10 +121,10 @@ export default function RestaurantDetail() {
   }, [items])
 
   const shown = (cat: string) => items.filter(it => it.category === cat && isItemAvailableNow(it.available_from, it.available_until))
-  const compoundId = sessionStorage.getItem('salka_compound_id')
-  const selectedCompound = compounds.find(c => String(c.id) === compoundId)
+  const compoundId = getCompoundId()
+  const selectedCompound = compounds.find(c => c.id === compoundId)
   const totalEta = restaurant && selectedCompound ? restaurant.prep_minutes + selectedCompound.est_travel_minutes : null
-  const { fee: deliveryFee } = useDeliveryQuote(compoundId ? Number(compoundId) : null)
+  const { fee: deliveryFee } = useDeliveryQuote(compoundId)
 
   if (loadFailed) return (
     <div className="card p-6 text-center max-w-sm mx-auto mt-6">

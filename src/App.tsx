@@ -29,6 +29,7 @@ const DriverPage = lazy(() => import('./pages/Driver'))
 const Vendor = lazy(() => import('./pages/Vendor'))
 const Catalog = lazy(() => import('./pages/Catalog'))
 import { useState } from 'react'
+import { getCompoundId } from './lib/place'
 
 // Every staff workspace, in one place. This list used to be inlined in three
 // separate components with two different contents, and /catalog was added to
@@ -181,7 +182,7 @@ function AppShell() {
   // without a compound, whereas signing in is optional. Re-read on navigation
   // rather than subscribing, so the prompt surfaces on the customer's next
   // move after picking instead of interrupting them the instant they choose.
-  const hasPlace = !!sessionStorage.getItem('salka_compound_id')
+  const hasPlace = getCompoundId() !== null
   const showOnboarding = !isStaff && !loading && !customer && !skipped && hasPlace
 
   return (

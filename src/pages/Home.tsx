@@ -8,6 +8,7 @@ import { BROWSE_KINDS, vendorKind, type VendorKind } from '../lib/categoryArt'
 import Icon from '../components/Icon'
 import BannerRail from '../components/BannerRail'
 import type { Compound, Discount, Restaurant } from '../lib/types'
+import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
 
 const STORAGE_KEY = 'salka_compound_id'
 
@@ -48,19 +49,19 @@ export default function Home() {
     supabase.from('compounds').select('*').eq('active', true)
       .order('distance_km')
       .then(({ data, error }) => {
-        const saved = sessionStorage.getItem(STORAGE_KEY)
+        const saved = getCompoundId()
         if (error) {
           setCompoundsFailed(true)
           // Restore the saved choice even on failure. Returning customers keep
           // a usable app (and their in-flight order page) instead of being
           // pinned behind a modal they cannot dismiss; only open the picker for
           // someone who has no place selected at all.
-          if (saved) { setCompoundId(Number(saved)); return }
+          if (saved) { setCompoundId(saved); return }
           setPicking(true)
           return
         }
         setCompounds(data ?? [])
-        if (saved) { setCompoundId(Number(saved)); return }
+        if (saved) { setCompoundId(saved); return }
         setPicking(true)
         // try detecting location automatically on first visit rather than
         // making everyone tap a button first -- useMyLocation already has its
@@ -93,7 +94,7 @@ export default function Home() {
 
   function choose(id: number) {
     setCompoundId(id)
-    sessionStorage.setItem(STORAGE_KEY, String(id))
+    setStoredCompoundId(id)
     setPicking(false)
   }
 

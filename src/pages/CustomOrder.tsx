@@ -6,6 +6,7 @@ import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { artFor } from '../lib/categoryArt'
 import { getSessionToken, useCustomerAuth } from '../lib/customerAuth'
 import type { Compound, MenuItem, Restaurant, Slot } from '../lib/types'
+import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
 
 export default function CustomOrder() {
   const fid = useId()
@@ -45,7 +46,7 @@ export default function CustomOrder() {
   const [unit, setUnit] = useState('')
   const [addrNotes, setAddrNotes] = useState('')
   const [compoundId, setCompoundId] = useState<number | null>(() => {
-    const saved = sessionStorage.getItem('salka_compound_id')
+    const saved = getCompoundId()
     return saved ? Number(saved) : null
   })
   const [saving, setSaving] = useState(false)

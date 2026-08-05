@@ -10,6 +10,7 @@ import { isItemAvailableNow } from '../lib/itemAvailability'
 import { applyDiscount, effectiveDiscount } from '../lib/discounts'
 import Icon from '../components/Icon'
 import type { Discount, MenuItem, MenuItemAddon, MenuItemCombo, MenuItemSize, Restaurant } from '../lib/types'
+import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
 
 export default function CartPage() {
   const nav = useNavigate()
@@ -52,7 +53,7 @@ export default function CartPage() {
   }, [cart.restaurantId])
 
   useEffect(() => {
-    const saved = sessionStorage.getItem('salka_compound_id')
+    const saved = getCompoundId()
     setCompoundId(saved ? Number(saved) : null)
   }, [])
 

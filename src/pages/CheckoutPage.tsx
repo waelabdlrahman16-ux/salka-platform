@@ -11,6 +11,7 @@ import { isItemAvailableNow } from '../lib/itemAvailability'
 import { applyDiscount, effectiveDiscount } from '../lib/discounts'
 import LocationPreviewMap from '../components/LocationPreviewMap'
 import type { Compound, Discount, MenuItem, MenuItemAddon, MenuItemCombo, MenuItemSize, Restaurant, Slot } from '../lib/types'
+import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
 
 export default function CheckoutPage() {
   const fid = useId()
@@ -53,7 +54,7 @@ export default function CheckoutPage() {
   const [notes, setNotes] = useState('')
   const [customerNote, setCustomerNote] = useState('')
   const [compoundId, setCompoundId] = useState<number | null>(() => {
-    const saved = sessionStorage.getItem('salka_compound_id')
+    const saved = getCompoundId()
     return saved ? Number(saved) : null
   })
   const [showLandmark, setShowLandmark] = useState(false)
@@ -221,7 +222,7 @@ export default function CheckoutPage() {
   // Changing the place here never wrote back, so the cart and home stayed priced
   // for the previous compound.
   useEffect(() => {
-    if (compoundId) sessionStorage.setItem('salka_compound_id', String(compoundId))
+    if (compoundId) setStoredCompoundId(compoundId)
   }, [compoundId])
 
   const isInstapay = paymentMethod === 'instapay'

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { artFor } from '../lib/categoryArt'
 import type { Discount, Restaurant } from '../lib/types'
+import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
 
 interface RestaurantOffer {
   restaurant: Restaurant
@@ -29,7 +30,7 @@ export default function Offers() {
       // address before being told at the final tap that the vendor does not
       // deliver to them. Apply the same coverage filter here.
       let visible = restaurants ?? []
-      const savedCompound = sessionStorage.getItem('salka_compound_id')
+      const savedCompound = getCompoundId()
       if (savedCompound) {
         const { data: covering, error: coverErr } = await supabase.rpc('restaurants_for_compound', {
           p_compound_id: Number(savedCompound)
