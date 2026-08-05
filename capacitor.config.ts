@@ -23,7 +23,15 @@ const config: CapacitorConfig = {
     // REMOVE THIS LINE before building a customer app for either store: Apple
     // rejects apps that merely remote-load a website, and a store build wants
     // the bundled `dist` this repo already produces.
-    url: 'https://app.gosalka.com',
+    // Note the PATH. Landing on the site root drops a driver on the customer
+    // home page, and a WebView has no address bar, so there is no way for him
+    // to reach the staff login at all -- the only sign-in he can see is the
+    // customer sheet with its Google button, which can never complete: Google
+    // refuses OAuth in an embedded WebView, so Capacitor hands it to Chrome,
+    // it succeeds there, and it comes back to a browser session the app cannot
+    // see. /login is the email+password screen, and Login.tsx redirects to
+    // homeFor(role) afterwards, so a driver lands on /driver by himself.
+    url: 'https://app.gosalka.com/login',
     cleartext: false
   }
 }

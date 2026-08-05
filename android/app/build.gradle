@@ -1,5 +1,19 @@
 apply plugin: 'com.android.application'
 
+// Signing credentials live in android/keystore.properties, which is gitignored
+// along with the .jks itself. Neither is ever committed: the keystore is the
+// one artifact that cannot be regenerated -- lose it and the app can never be
+// updated again, only uninstalled and reinstalled, which wipes the driver's
+// session. Back up the file AND both passwords somewhere permanent.
+//
+// The build still works without them: it falls back to an unsigned release,
+// which is what the CI typecheck-and-build job produces.
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.gosalka.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,6 +21,9 @@ android {
         applicationId "com.gosalka.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
+        // BUMP versionCode ON EVERY BUILD YOU HAND OUT. Android refuses to
+        // install an APK over one with the same or a higher code, and the
+        // error it shows says nothing about why.
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -16,8 +33,25 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                // rootProject.file, NOT file(): inside app/build.gradle a bare
+                // file() resolves against android/app/, so a keystore sitting
+                // next to keystore.properties in android/ was never found and
+                // validateSigningRelease failed.
+                storeFile rootProject.file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
+            if (keystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
