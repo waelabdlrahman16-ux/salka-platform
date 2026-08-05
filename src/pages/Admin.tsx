@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useDismissable } from '../lib/useDismissable'
-import type { Assignment, Compound, Complaint, Driver, DeliverySlotRow, Earning, MenuItem, Order, OrderRating, Reliability, Restaurant, Setting, SettlementRequest, Shift, VendorCoverage } from '../lib/types'
+import type { Assignment, Compound, Complaint, Driver, DeliverySlotRow, Earning, LiveDelivery, MenuItem, Order, OrderRating, Reliability, Restaurant, Setting, SettlementRequest, Shift, VendorCoverage } from '../lib/types'
 import { ping, askNotificationPermission } from '../lib/notify'
 import { registerPush } from '../lib/push'
 import { uploadVendorImage } from '../lib/upload'
@@ -17,6 +17,7 @@ import AddMenuItemModal from '../components/AddMenuItemModal'
 import DiscountManager from '../components/DiscountManager'
 import EnablePushButton from '../components/EnablePushButton'
 import CustomersTab from '../components/CustomersTab'
+import LiveDeliveryDetail from '../components/LiveDeliveryDetail'
 
 function StarRow({ n }: { n: number }) {
   return (
@@ -158,6 +159,13 @@ export default function Admin() {
   const [uploadingImage, setUploadingImage] = useState<string | null>(null)
   const [imageError, setImageError] = useState<string | null>(null)
   const [stalled, setStalled] = useState<StalledOrder[]>([])
+  // Keyed by assignment_id. This ENRICHES the "توصيلات جارية" tab rather than
+  // replacing its data source: `assignments` is still what the tab iterates, so
+  // the grouping, the actions and the reassign modal are untouched and the two
+  // lists cannot drift into disagreeing about which deliveries are in flight.
+  // The RPC supplies only what PostgREST could not -- items, destination, and a
+  // server-measured age for the driver's last fix.
+  const [liveById, setLiveById] = useState<Record<number, LiveDelivery>>({})
   const [orderQuery, setOrderQuery] = useState('')
   const [orderSearchResults, setOrderSearchResults] = useState<Order[] | null>(null)
   const [orderSearching, setOrderSearching] = useState(false)
@@ -214,7 +222,7 @@ export default function Admin() {
       // uncapped; the caps only ever apply to display-only history.
       const [
         openO, refundO, recentO, activeA, recentA, d, unpaidE, recentE, r, m, st, sh, esc, sl,
-        openComp, recentComp, sr, cpd, cov, lr, wt, stalled, refunds, rel,
+        openComp, recentComp, sr, cpd, cov, lr, wt, stalled, refunds, rel, liveD,
       ] = await Promise.all([
         // "Operationally live" is NOT the same as "not terminal in the order
         // lifecycle": Failed_Delivery is retryable and must stay loaded so it
@@ -258,6 +266,7 @@ export default function Admin() {
         // Was an N+1: restaurant_reliability() once per restaurant, sequentially
         // awaited, inside the same 15s cycle.
         withTimeout(supabase.rpc('restaurants_reliability_all')),
+        withTimeout(supabase.rpc('admin_live_deliveries')),
       ])
 
       const byId = <T extends { id: number }>(...lists: (T[] | null | undefined)[]): T[] => {
@@ -295,6 +304,15 @@ export default function Admin() {
       if (!stalled.error) setStalled((stalled.data as StalledOrder[]) ?? [])
       if (!refunds.error) setPendingRefunds((refunds.data as PendingRefund[]) ?? [])
       if (!rel.error) setReliability((rel.data as Record<number, Reliability>) ?? {})
+      // Deliberately NOT part of coreFailed. If this one query fails the board
+      // still lists every live delivery and every action still works -- only the
+      // items and the map go missing. Failing the whole load over it would take
+      // dispatch offline to protect a detail panel.
+      if (!liveD.error) {
+        const next: Record<number, LiveDelivery> = {}
+        for (const row of ((liveD.data as LiveDelivery[]) ?? [])) next[row.assignment_id] = row
+        setLiveById(next)
+      }
 
       const { data: accounts, error: accErr } = await supabase.rpc('admin_list_accounts')
       if (!accErr) {
@@ -1296,6 +1314,10 @@ export default function Admin() {
                         <span className="text-xs font-semibold bg-shellup rounded-full px-2.5 py-1">{assignmentStatusLabel(a.status)}</span>
                       </div>
                       {a.orders && customer(a.orders)}
+                      {/* What is in the bag, and where the rider is. An Offered
+                          assignment has no driver position by definition, so the
+                          panel only earns its space from Accepted onwards. */}
+                      <LiveDeliveryDetail live={liveById[a.id]} />
                       {/* This tab previously rendered a header, a driver name, a
                           status badge and a customer block -- and nothing else.
                           No reassign, no unassign, no cancel. */}

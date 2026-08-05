@@ -2,70 +2,95 @@ import { Capacitor } from '@capacitor/core'
 import { Geolocation } from '@capacitor/geolocation'
 import { supabase } from './supabase'
 
-const REPORT_INTERVAL_MS = 20000 // every 20s while actively delivering
+// How often the driver's position is pushed to the server while they are out
+// delivering. The cadence comes from this timer, NOT from the browser's
+// position callbacks: Android coalesces watchPosition and stops firing when the
+// rider is stationary, so a driver waiting at a gate for four minutes would
+// have gone "stale" on the dispatch board while sitting there perfectly fine.
+// Staleness has to mean "we have lost him", not "he stopped moving".
+const REPORT_INTERVAL_MS = 20000
 
-let intervalId: ReturnType<typeof setInterval> | null = null
-// Bumped by every stop() and every start(). An in-flight start compares its own
-// token against this after each await and bails if it has been superseded --
-// otherwise a start that is still waiting on a 15s GPS fix can install its
-// interval after a stop() has already run, leaving an orphan nobody can clear.
-let generation = 0
-let starting = false
+// This module no longer acquires its own fix.
+//
+// It used to call Geolocation.getCurrentPosition() on its own timer, behind a
+// Capacitor.isNativePlatform() gate -- which meant it did nothing at all,
+// because there is no native build yet, so every driver row on the server has
+// had a null position since the day the feature was written.
+//
+// Meanwhile Driver.tsx has been running navigator.geolocation.watchPosition()
+// the whole time to draw the 🛵 marker on the pool and active maps. The fix was
+// already in the app; it was simply never sent. So this is now a sink: the
+// existing watch pushes positions in through reportPosition(), and this module
+// decides what reaches the server and how often. That removes the second GPS
+// acquisition, the second permission prompt, and the generation/starting
+// concurrency guard that existed only because start() had to await a fix before
+// it could install its interval.
+let lastPos: { lat: number; lng: number } | null = null
+let timerId: ReturnType<typeof setInterval> | null = null
+let inFlight = false
 
-async function reportOnce() {
+async function send() {
+  // A single slow round trip on a bad mobile connection must not queue a second
+  // one behind it. Skipping a tick is free -- the next one is 20s away and
+  // carries a fresher position anyway.
+  if (!lastPos || inFlight) return
+  inFlight = true
+  const { lat, lng } = lastPos
   try {
-    const position = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 15000 })
-    await supabase.rpc('update_my_location', {
-      p_lat: position.coords.latitude,
-      p_lng: position.coords.longitude
-    })
+    // The server ignores this unless the caller has an assignment in Picked_Up
+    // or Out_for_Delivery, so a position arriving in the seconds after the last
+    // delivery completes is discarded rather than parked on the driver's row.
+    await supabase.rpc('update_my_location', { p_lat: lat, p_lng: lng })
   } catch (e) {
-    // GPS momentarily unavailable is normal (tunnel, indoors) -- just skip this tick
     console.error('location report failed', e)
+  } finally {
+    inFlight = false
   }
 }
 
-// Starts reporting the driver's live position every ~20s while they're
-// actively out delivering (Picked_Up/Out_for_Delivery). No-ops on web/PWA --
-// this is a native-only capability. Uses a fixed-interval poll rather than
-// watchPosition so the battery/data cost is predictable and capped, instead
-// of however often the OS decides to fire location-change events.
-export async function startLocationReporting() {
-  if (!Capacitor.isNativePlatform()) return
-  // `starting` must be checked and set synchronously. The old guard tested only
-  // intervalId, which is assigned *after* two awaits (permissions, then a
-  // reportOnce with a 15s timeout) -- so a second call arriving inside that
-  // window sailed past the guard and overwrote the handle, orphaning the first
-  // interval permanently. The driver page re-ran this effect every 10s poll.
-  if (intervalId || starting) return
-  starting = true
-  const myGeneration = ++generation
+// Called for every fix the page's watchPosition produces, whether or not we are
+// currently reporting -- cheap, and it means the first tick after start() has a
+// position to send instead of waiting a full interval for the next callback.
+export function reportPosition(lat: number, lng: number) {
+  const first = lastPos === null
+  lastPos = { lat, lng }
+  // Only when reporting is live AND this is the first fix we have held: get the
+  // pin on the dispatch board within a second of the driver setting off,
+  // instead of up to 20s later.
+  if (timerId && first) void send()
+}
 
-  try {
-    const perm = await Geolocation.checkPermissions()
-    let granted = perm.location === 'granted'
-    if (!granted) {
-      const req = await Geolocation.requestPermissions()
-      granted = req.location === 'granted'
-    }
-    if (!granted) return
-    if (myGeneration !== generation) return // stopped while we were awaiting
+// Idempotent, synchronous, and safe to call from an effect that may re-run.
+export function startLocationReporting() {
+  if (timerId) return
 
-    await reportOnce()
-    if (myGeneration !== generation) return
-
-    intervalId = setInterval(reportOnce, REPORT_INTERVAL_MS)
-  } catch (e) {
-    console.error('location reporting failed to start', e)
-  } finally {
-    starting = false
+  // On a native build the WebView's own navigator.geolocation still needs the
+  // OS-level runtime permission the app declares. Asking through the Capacitor
+  // plugin is the only way to raise that dialog; on web this whole branch is
+  // skipped and the browser prompts on its own when watchPosition starts.
+  // Deliberately not awaited: the timer must exist before this resolves, or a
+  // stop() arriving during the prompt has nothing to cancel.
+  if (Capacitor.isNativePlatform()) {
+    Geolocation.checkPermissions()
+      .then(p => (p.location === 'granted' ? null : Geolocation.requestPermissions()))
+      .catch(e => console.error('location permission request failed', e))
   }
+
+  timerId = setInterval(send, REPORT_INTERVAL_MS)
+  void send()
 }
 
 export function stopLocationReporting() {
-  generation++ // invalidate any start still waiting on a GPS fix
-  if (intervalId) {
-    clearInterval(intervalId)
-    intervalId = null
-  }
+  if (!timerId) return
+  clearInterval(timerId)
+  timerId = null
+  lastPos = null
+  // Without this the driver's last fix stays on his row forever, and dispatch
+  // watches a 🛵 parked at the previous customer's door for the rest of the
+  // night. The server drops the position outright rather than ageing it, so the
+  // board shows "no location" -- which is true -- instead of a confident pin in
+  // the wrong place.
+  void supabase.rpc('clear_my_location').then(({ error }) => {
+    if (error) console.error('clear location failed', error)
+  })
 }

@@ -5,7 +5,7 @@ import { useAuth } from '../lib/auth'
 import { pingIds, askNotificationPermission } from '../lib/notify'
 import { registerPush } from '../lib/push'
 import EnablePushButton from '../components/EnablePushButton'
-import { startLocationReporting, stopLocationReporting } from '../lib/geolocation'
+import { startLocationReporting, stopLocationReporting, reportPosition } from '../lib/geolocation'
 import type { Assignment, Driver, Shift, SwapRequest } from '../lib/types'
 import Icon from '../components/Icon'
 import DriverActiveMap from '../components/DriverActiveMap'
@@ -383,7 +383,15 @@ export default function DriverPage() {
   useEffect(() => {
     if (!navigator.geolocation || !needsPosition) return
     const watchId = navigator.geolocation.watchPosition(
-      pos => { setMyPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setGpsDenied(false) },
+      pos => {
+        setMyPos({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        setGpsDenied(false)
+        // The same fix that draws the 🛵 on this driver's own map is what
+        // dispatch sees. It is handed over unconditionally; geolocation.ts
+        // decides whether we are currently reporting, and the server ignores it
+        // unless there is a live Picked_Up / Out_for_Delivery assignment.
+        reportPosition(pos.coords.latitude, pos.coords.longitude)
+      },
       err => {
         // Permission denied is actionable by the driver and must be visible;
         // a momentary loss of fix is not. Previously all three were an empty
@@ -410,16 +418,13 @@ export default function DriverPage() {
   useEffect(() => {
     if (!isOutDelivering) { stopLocationReporting(); return }
     startLocationReporting()
-    // isOutDelivering stays true across a whole stack of orders, so the effect
-    // fires once. If that one attempt fails -- the driver dismisses the OS
-    // permission prompt while getting on the bike, or location is off at that
-    // moment -- nothing would ever try again, and dispatch's map would show them
-    // frozen for the rest of the block with no indication on their side.
-    // startLocationReporting() is idempotent, so retrying is cheap; this does
-    // not reintroduce the teardown churn that caused the orphaned intervals,
-    // because the effect itself no longer re-runs on every poll.
-    const retry = setInterval(startLocationReporting, 60000)
-    return () => { clearInterval(retry); stopLocationReporting() }
+    // The 60s retry that used to sit here existed because start() could fail
+    // silently -- it awaited a permission grant and then a 15s GPS fix before
+    // it could install its interval, so one dismissed prompt froze the driver
+    // on dispatch's map for the rest of the block. start() no longer waits for
+    // anything: it installs the timer immediately and reportPosition() feeds it
+    // from the watch that is already running. There is nothing left to retry.
+    return () => { stopLocationReporting() }
   }, [isOutDelivering])
 
   // Every stage button used to fire its RPC with no pending state. On a 3-5s

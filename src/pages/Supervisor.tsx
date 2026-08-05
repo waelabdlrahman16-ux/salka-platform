@@ -5,9 +5,10 @@ import { useAuth } from '../lib/auth'
 import { ping, askNotificationPermission } from '../lib/notify'
 import { registerPush } from '../lib/push'
 import { orderStatusLabel, assignmentStatusLabel } from '../lib/statusLabels'
-import type { Assignment, Driver, Order } from '../lib/types'
+import type { Assignment, Driver, LiveDelivery, Order } from '../lib/types'
 import Icon from '../components/Icon'
 import EnablePushButton from '../components/EnablePushButton'
+import LiveDeliveryDetail from '../components/LiveDeliveryDetail'
 
 // The driver supervisor.
 //
@@ -36,6 +37,12 @@ export default function Supervisor() {
   const [orders, setOrders] = useState<Order[]>([])
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [drivers, setDrivers] = useState<Driver[]>([])
+  // Keyed by assignment_id. admin_live_deliveries() already admits a supervisor
+  // -- they are the person actually watching dispatch at 1am, so they need the
+  // bag contents and the rider's pin more than the admin does. Enrichment, not
+  // a replacement: `assignments` still drives the list, so the escalation
+  // counter and the assign modal are untouched.
+  const [liveById, setLiveById] = useState<Record<number, LiveDelivery>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
@@ -45,13 +52,14 @@ export default function Supervisor() {
   const firstLoad = useRef(true)
 
   async function load() {
-    const [o, a, d] = await Promise.all([
+    const [o, a, d, live] = await Promise.all([
       supabase.from('orders').select('*, restaurants(name)')
         .not('status', 'in', '("Delivered","Cancelled")')
         .order('id', { ascending: false }),
       supabase.from('delivery_assignments').select('*, orders(*, restaurants(name)), drivers(*)')
         .in('status', ACTIVE_STATUSES).order('id', { ascending: false }),
       supabase.from('drivers').select('*').eq('active', true).order('name'),
+      supabase.rpc('admin_live_deliveries'),
     ])
     if (o.error || a.error || d.error) {
       setError('مش قادرين نحمّل الطلبات دلوقتي — اتأكد من النت')
@@ -72,6 +80,13 @@ export default function Supervisor() {
     setOrders(rows)
     setAssignments((a.data ?? []) as Assignment[])
     setDrivers((d.data ?? []) as Driver[])
+    // Left out of the error check above on purpose: losing this costs the items
+    // and the map, not the board. The supervisor keeps every action.
+    if (!live.error) {
+      const next: Record<number, LiveDelivery> = {}
+      for (const row of ((live.data as LiveDelivery[]) ?? [])) next[row.assignment_id] = row
+      setLiveById(next)
+    }
     setError('')
     setLoading(false)
   }
@@ -304,6 +319,7 @@ export default function Supervisor() {
                 {assignmentStatusLabel(a.status)}
               </span>
             </div>
+            <LiveDeliveryDetail live={liveById[a.id]} />
             <div className="flex gap-2 mt-3 flex-wrap">
               <a className="btn-ghost !py-1.5 text-xs flex-1 min-w-[6rem] text-center" href={`tel:${a.drivers?.phone}`}>
                 <span className="flex items-center justify-center gap-1"><Icon name="clock" className="w-3 h-3" />كلّم المندوب</span>

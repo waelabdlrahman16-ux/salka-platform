@@ -17,9 +17,15 @@ interface Props {
   driverLat: number; driverLng: number
   destLat: number; destLng: number
   driverUpdatedAt: string | null
+  // Age of the fix as the SERVER measured it. Preferred over driverUpdatedAt
+  // when available: the customer-facing Track page can only compare a timestamp
+  // against the device clock, and a phone whose clock is a few minutes out
+  // would either hide a genuinely stale pin or condemn a fresh one.
+  ageSeconds?: number | null
+  height?: number
 }
 
-export default function LiveMap({ driverLat, driverLng, destLat, destLng, driverUpdatedAt }: Props) {
+export default function LiveMap({ driverLat, driverLng, destLat, destLng, driverUpdatedAt, ageSeconds, height = 240 }: Props) {
   const mapRef = useRef<L.Map | null>(null)
   const driverMarkerRef = useRef<L.Marker | null>(null)
   const destMarkerRef = useRef<L.Marker | null>(null)
@@ -42,10 +48,12 @@ export default function LiveMap({ driverLat, driverLng, destLat, destLng, driver
     driverMarkerRef.current.setLatLng([driverLat, driverLng])
   }, [driverLat, driverLng])
 
-  const stale = driverUpdatedAt && (Date.now() - new Date(driverUpdatedAt).getTime()) > 3 * 60 * 1000
+  const stale = ageSeconds != null
+    ? ageSeconds > 180
+    : !!driverUpdatedAt && (Date.now() - new Date(driverUpdatedAt).getTime()) > 3 * 60 * 1000
 
   return (
-    <div className="rounded-2xl overflow-hidden border border-line relative" style={{ height: 240 }}>
+    <div className="rounded-2xl overflow-hidden border border-line relative" style={{ height }}>
       <div ref={containerRef} className="w-full h-full" />
       {stale && (
         <div className="absolute top-2 inset-x-2 bg-shellup/95 text-xs text-center py-1.5 rounded-xl">
