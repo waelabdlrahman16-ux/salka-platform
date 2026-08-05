@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { enablePush, pushPermission, pushSupport } from '../lib/push'
+import { enablePush, lastPushError, pushPermission, pushSupport } from '../lib/push'
 
 /**
  * Explicit opt-in control for notifications.
@@ -25,11 +25,32 @@ export default function EnablePushButton({
   const [permission, setPermission] = useState(() => pushPermission())
   const [busy, setBusy] = useState(false)
   const [failed, setFailed] = useState(false)
+  const [reason, setReason] = useState('')
 
   useEffect(() => {
     setSupport(pushSupport())
     setPermission(pushPermission())
   }, [])
+
+  // The failure message comes FIRST. Registration grants permission and then
+  // fails at getToken, which flipped permission to 'granted' and made this
+  // component return null -- so the button vanished mid-tap and the error it
+  // had just recorded was never rendered. Three attempts, no information.
+  if (failed) {
+    return (
+      <div className="mb-3 text-xs bg-red-500/10 rounded-xl p-3 space-y-2">
+        <p className="text-red-700 font-semibold">التنبيهات مافعّلتش</p>
+        <p className="text-mist break-all" dir="ltr">{reason || 'سبب غير معروف'}</p>
+        <button className="btn-ghost !py-1.5 !px-3 text-xs"
+          onClick={async () => {
+            setBusy(true); setFailed(false)
+            const ok = await enablePush(onToken)
+            setBusy(false); setPermission(pushPermission())
+            if (!ok) { setReason(lastPushError); setFailed(true) }
+          }}>جرب تاني</button>
+      </div>
+    )
+  }
 
   if (support === 'unsupported' || support === 'unconfigured') return null
   if (permission === 'granted') return null
@@ -55,7 +76,7 @@ export default function EnablePushButton({
           const ok = await enablePush(onToken)
           setBusy(false)
           setPermission(pushPermission())
-          if (!ok) setFailed(true)
+          if (!ok) { setReason(lastPushError); setFailed(true) }
         }}>
         {busy ? 'جاري التفعيل…' : `🔔 ${label}`}
       </button>
