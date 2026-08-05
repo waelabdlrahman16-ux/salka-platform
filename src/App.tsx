@@ -28,6 +28,7 @@ const Admin = lazy(() => import('./pages/Admin'))
 const DriverPage = lazy(() => import('./pages/Driver'))
 const Vendor = lazy(() => import('./pages/Vendor'))
 const Catalog = lazy(() => import('./pages/Catalog'))
+const Supervisor = lazy(() => import('./pages/Supervisor'))
 import { useState } from 'react'
 import { getCompoundId } from './lib/place'
 
@@ -38,7 +39,7 @@ import { getCompoundId } from './lib/place'
 // sheet, the customer bottom nav, and -- if they signed in with Google rather
 // than skipping -- an undismissable PhonePrompt covering the whole screen.
 // The route itself never mounted. Add new staff routes here and only here.
-const STAFF_PATHS = ['/admin', '/driver', '/vendor', '/catalog']
+const STAFF_PATHS = ['/admin', '/driver', '/vendor', '/catalog', '/supervisor']
 
 /** A staff workspace: shows the staff header, hides customer chrome. */
 function isStaffWorkspace(pathname: string): boolean {
@@ -160,7 +161,7 @@ function AppShell() {
     if (launchRedirectDone.current || staffLoading) return
     if (!profile) return
     launchRedirectDone.current = true
-    if (pathname === '/' && (profile.role === 'driver' || profile.role === 'vendor')) {
+    if (pathname === '/' && (profile.role === 'driver' || profile.role === 'vendor' || profile.role === 'supervisor')) {
       nav(homeFor(profile.role), { replace: true })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -231,6 +232,7 @@ function AppShell() {
             <Route path="/driver" element={<Protected role="driver"><DriverPage /></Protected>} />
             <Route path="/vendor" element={<Protected role="vendor"><Vendor /></Protected>} />
             <Route path="/catalog" element={<Protected role="catalog"><Catalog /></Protected>} />
+            <Route path="/supervisor" element={<Protected role="supervisor"><Supervisor /></Protected>} />
           </Routes>
         </Suspense>
       </main>

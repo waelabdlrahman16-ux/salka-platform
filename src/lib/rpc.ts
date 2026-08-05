@@ -84,7 +84,7 @@ export const ERROR_AR: Record<string, string> = {
   not_logged_in: 'لازم تسجل دخولك الأول',
   invalid_phone: 'رقم الموبايل مش مظبوط',
   phone_already_registered: 'الرقم ده مسجل على حساب تاني',
-  rate_limited: 'حاولت كتير، استنى شوية وجرب تاني',
+  rate_limited: 'حاولت كتير — البحث بالرقم مسموح 3 مرات كل 10 دقايق. سجّل دخولك بجوجل أو الإيميل وهتشوف طلباتك من غير أي حد.',
 }
 
 export function isOffline(): boolean {

@@ -4,7 +4,7 @@ import type { Session } from '@supabase/supabase-js'
 
 export interface Profile {
   id: string
-  role: 'admin' | 'driver' | 'vendor' | 'catalog'
+  role: 'admin' | 'driver' | 'vendor' | 'catalog' | 'supervisor'
   driver_id: number | null
   restaurant_id: number | null
   name: string
@@ -29,6 +29,7 @@ export const homeFor = (role: Profile['role']) =>
   role === 'admin' ? '/admin'
   : role === 'vendor' ? '/vendor'
   : role === 'catalog' ? '/catalog'
+  : role === 'supervisor' ? '/supervisor'
   : '/driver'
 
 export function AuthProvider({ children }: { children: ReactNode }) {

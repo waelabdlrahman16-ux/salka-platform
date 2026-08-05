@@ -29,9 +29,14 @@ async function assertTargetIsStaff(admin: any, profileId: string, callerId: stri
   if (profileId === callerId) return { error: "cannot_target_self", status: 400 }
   const { data: target } = await admin.from("profiles").select("role").eq("id", profileId).maybeSingle()
   if (!target) return { error: "profile_not_found", status: 404 }
-  // catalog is staff too -- otherwise an admin could create one and then never
-  // reset its password or remove it.
-  if (!["vendor", "driver", "catalog"].includes(target.role)) return { error: "target_not_staff", status: 403 }
+  // catalog and supervisor are staff too -- otherwise an admin could create one
+  // and then never reset its password or remove it. Every new role has to be
+  // added here as well as to the create action; forgetting produces an account
+  // that cannot be recovered or deleted, and nothing fails at creation time to
+  // warn you.
+  if (!["vendor", "driver", "catalog", "supervisor"].includes(target.role)) {
+    return { error: "target_not_staff", status: 403 }
+  }
   return null
 }
 
@@ -131,15 +136,18 @@ Deno.serve(async (req) => {
       return json({ email, password })
     }
 
-    // Catalogue staff have no restaurant_id and no driver_id -- they work across
-    // every vendor, and their scope comes from the role alone.
-    if (action === "create_catalog_login") {
+    // Catalogue staff and supervisors have no restaurant_id and no driver_id --
+    // they work across every vendor, and their scope comes from the role alone.
+    // One block for both: the two differ by a single string, and a copy-pasted
+    // twin is how the second one silently stops matching the first.
+    if (action === "create_catalog_login" || action === "create_supervisor_login") {
+      const role = action === "create_supervisor_login" ? "supervisor" : "catalog"
       const { name } = body
       if (!name || typeof name !== "string" || !name.trim()) return json({ error: "name_required" }, 400)
 
       // slugify() already falls back to random bytes for a fully non-ASCII name;
       // the extra suffix stops two people with the same name from colliding.
-      const email = `catalog.${slugify(name)}.${secureSlugFallback()}@salka.app`
+      const email = `${role}.${slugify(name)}.${secureSlugFallback()}@salka.app`
       const password = genPassword()
 
       const { data: created, error: createErr } = await admin.auth.admin.createUser({
@@ -148,7 +156,7 @@ Deno.serve(async (req) => {
       if (createErr || !created?.user) return fail("admin-accounts", "create_user_failed", 500, createErr)
 
       const { error: profErr } = await admin.from("profiles").insert({
-        id: created.user.id, role: "catalog", name: name.trim()
+        id: created.user.id, role, name: name.trim()
       })
       if (profErr) {
         await admin.auth.admin.deleteUser(created.user.id)

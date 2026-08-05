@@ -344,3 +344,116 @@ $$;
 --   Now selects cancel_reason, cancelled_at and refund_status. A cancelled order
 --   told the customer "تم إلغاء الطلب" and nothing else -- not why, and not that
 --   they were owed money, while an admin looked at the same row in a queue.
+
+-- ===========================================================================
+-- 7. Four new order statuses (applied 2026-08-05, fourth batch)
+-- ===========================================================================
+-- Driven by a photograph of a real pharmacy order: status='pending' rendered as
+-- "قيد التجهيز" with "الوصول المتوقع 7:15 ص" and an SLA of 7:20, for an order
+-- with no price, no vendor acceptance and no driver. Nothing was being
+-- prepared. The lifecycle had no way to say "waiting for a price", so it
+-- borrowed the label of the state next door.
+--
+-- The four are REFINEMENTS of the pre-dispatch window, not a new vocabulary:
+--
+--   awaiting_quote    custom_request created, admin has not phoned a price yet
+--   Scheduled         slot order, not due to move yet
+--   pending           dispatchable; just placed / kitchen working
+--   Driver_Searching  in the pool, nobody has taken it
+--   No_Driver_Found   in the pool past escalate_after_minutes; needs a human
+--
+-- is_predispatch_status(text) defines the set once. Everything that tested
+-- `status = 'pending'` as "in the dispatch window" now calls it:
+-- available_orders, claim_order, check_late_unclaimed_orders.
+--
+-- Transitions
+--   submit_custom_order        -> awaiting_quote  (was taking the column default)
+--   confirm_custom_order_price -> Scheduled if not due, else pending
+--   place_order                -> Scheduled when dispatch_at is in the future
+--   cron, every 30s            Scheduled -> pending -> Driver_Searching -> No_Driver_Found
+--   driver_reject_assignment   -> Driver_Searching, and only from a pre-dispatch
+--                                 status (it used to reset ANY status to pending)
+--   admin_unassign_order       -> Driver_Searching
+--
+-- All three clock-driven transitions were folded into the existing
+-- check_late_unclaimed_orders job rather than added as new pg_cron entries.
+-- Three jobs on the same clock would race each other over the same rows.
+--
+-- stalled_orders: Scheduled is excluded outright (not stalled, not due), which
+-- retires the dispatch_at special case that existed only to stop slot orders
+-- being reported as stuck. awaiting_quote gets the payment threshold, because
+-- the actor who unblocks it is us. Driver_Searching gets escalate_after_minutes.
+--
+-- Cancellation, restated. Decision from Wael, 2026-08-05: the customer may
+-- cancel until the VENDOR ACCEPTS; after that the vendor is spending money and
+-- it goes through admin. Previously the customer's button survived until a
+-- DRIVER appeared, so the Track page offered "إلغاء الطلب" directly beneath a
+-- heading saying the order was being cooked. cancel_order now checks
+-- is_customer_cancellable_status(status) AND kitchen_status = 'new' for a
+-- customer, a wider pre-dispatch set for a vendor declining their own order,
+-- and nothing for an admin. track_order exposes kitchen_status so the button
+-- and the server agree.
+
+-- ===========================================================================
+-- 8. The driver supervisor role (applied 2026-08-05, fifth batch)
+-- ===========================================================================
+-- Restaurants are not logging into the vendor screen, so a Salka staff member
+-- phones them and works the order on their behalf, and also runs dispatch.
+-- Decisions from Wael, 2026-08-05: they may accept + mark ready on the
+-- restaurant's behalf, assign/unassign/reassign drivers, cancel a restaurant
+-- order, and resolve driver escalations. They may NOT confirm payments, settle
+-- driver cash or earnings, issue refunds, quote a pharmacy order, or see the
+-- pharmacy and supermarket at all.
+--
+-- Built on the `catalog` template named in the handoff.
+--
+--   profiles_role_check           gains 'supervisor'
+--   is_supervisor()               true for supervisor OR admin
+--   supervisor_may_touch_order()  the remit limit, defined ONCE. True for an
+--                                 admin unconditionally; for a supervisor only
+--                                 when order_type='catalog' and the vendor is
+--                                 not a pharmacy or supermarket.
+--
+-- Every dispatch RPC had `if not is_admin() then raise exception 'admin_only'`.
+-- Each was rewritten -- by textual replacement, so no body was retyped -- to
+-- call supervisor_may_touch_order() instead: admin_assign_order,
+-- admin_unassign_order, admin_reassign_order, admin_resolve_no_answer,
+-- admin_force_delivered, mark_delivery_failed. cancel_order treats a supervisor
+-- as admin-equivalent for a catalog order. vendor_accept_order and vendor_ready
+-- accept EITHER the owning vendor or a supervisor -- one function per
+-- transition, not a supervisor_* twin that would drift.
+--
+-- RLS gives the role select on orders (catalog restaurant only), order_items,
+-- delivery_assignments, drivers, restaurants, compounds. Deliberately NOT
+-- granted: wallet_transactions, customer_wallets, driver_earnings,
+-- driver_settlements, settlement_requests, settings, profiles, order_ratings,
+-- complaints. A supervisor who can read driver_earnings can reconstruct the
+-- day's takings.
+--
+-- notify_admin() now fans out to role in ('admin','supervisor'). Every
+-- operational alert goes through it -- new order, unclaimed after 30s, driver
+-- escalation, new complaint -- and the supervisor is the person who acts on all
+-- four at 1am. A role that cannot be paged cannot do the job.
+--
+-- VERIFIED BY EXECUTION, in a rolled-back transaction, as a real supervisor
+-- (an existing driver profile temporarily promoted):
+--
+--   is_supervisor=true | is_admin=false
+--   catalog_order_1=true | pharmacy_order_4=false
+--   rls_visible_orders=6,7,1          <- the pharmacy orders 4 and 5 are gone
+--   instapay=blocked(admin_only)
+--   settle_cash=blocked(admin_only)
+--   pharmacy_quote=blocked(not_authorized)
+--   unassign_pharmacy=blocked(admin_only)
+--
+-- Account creation: admin-accounts gained a create_supervisor_login action in
+-- the repo, and assertTargetIsStaff() gained 'supervisor' -- without that
+-- second change you can create the account and then never reset its password
+-- or delete it, which is the trap the existing comment already warns about for
+-- catalog. That function has NOT been redeployed (doing so from the agent
+-- session would mean hand-copying 15KB of auth code into a tool call, and a
+-- transcription slip there changes production authentication silently). Until
+-- it is deployed, the supported path is: create a catalog login in the existing
+-- UI, then press «خلّيه مشرف تشغيل», which calls admin_convert_staff_role() --
+-- narrow by construction: it moves a profile between 'catalog' and
+-- 'supervisor' only, refuses any other role, and refuses the caller's own row.

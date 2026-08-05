@@ -102,8 +102,18 @@ export default function MyOrders() {
       )}
 
       <div className="space-y-3 mt-5">
-        {(rows ?? []).map(r => (
-          <Link key={r.id} to={`/track/${r.public_token}`} className="card p-4 block hover:border-sea/50">
+        {(rows ?? []).map(r => {
+          // my_orders() withholds public_token from an UNVERIFIED phone lookup --
+          // deliberately, since otherwise typing a stranger's number would hand
+          // over their live tracking link. But the card linked to
+          // `/track/${undefined}` regardless, so every result led to
+          // "الطلب غير موجود". A card with no token is not a link.
+          const Card: any = r.public_token ? Link : 'div'
+          const props = r.public_token
+            ? { to: `/track/${r.public_token}`, className: 'card p-4 block hover:border-sea/50' }
+            : { className: 'card p-4 block' }
+          return (
+          <Card key={r.id} {...props}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-semibold">#{r.id} — {r.restaurant_name}</p>
@@ -117,8 +127,14 @@ export default function MyOrders() {
                 {r.pricing_status === 'pending_quote' ? 'قيد التسعير' : `${r.total} ج.م`}
               </span>
             </div>
-          </Link>
-        ))}
+            {!r.public_token && (
+              <p className="text-xs text-mist mt-2">
+                🔒 سجّل دخولك بجوجل أو الإيميل عشان تفتح تتبع الطلب
+              </p>
+            )}
+          </Card>
+          )
+        })}
       </div>
     </div>
   )

@@ -7,10 +7,15 @@ import { INSTAPAY_QR_URL, INSTAPAY_LINK } from '../lib/instapay'
 import LiveMap from '../components/LiveMap'
 import Icon from '../components/Icon'
 
+// Found by driving it: a pharmacy order with no price, no vendor acceptance and
+// no driver rendered "قيد التجهيز" with "الوصول المتوقع 7:15 ص". Nothing was
+// being prepared and no one had committed to a time. The bar had three stages
+// and the first one absorbed everything that had not started yet.
 const STAGES = [
-  { key: 'placed', label: 'قيد التجهيز', statuses: ['pending', 'Accepted'] },
-  { key: 'onway', label: 'في الطريق إليك', statuses: ['Picked_Up', 'Out_for_Delivery'] },
-  { key: 'delivered', label: 'تم التوصيل', statuses: ['Delivered'] },
+  { key: 'received',  label: 'استلمنا طلبك',   statuses: ['awaiting_quote', 'Scheduled', 'Driver_Searching', 'No_Driver_Found'] },
+  { key: 'placed',    label: 'قيد التجهيز',    statuses: ['pending', 'Accepted'] },
+  { key: 'onway',     label: 'في الطريق إليك', statuses: ['Picked_Up', 'Out_for_Delivery'] },
+  { key: 'delivered', label: 'تم التوصيل',     statuses: ['Delivered'] },
 ]
 
 interface TrackData {
@@ -31,6 +36,7 @@ interface TrackData {
     cancel_reason: string | null
     cancelled_at: string | null
     refund_status: string | null
+    kitchen_status: 'new' | 'preparing' | 'ready' | null
     cod_deposit_amount: number | null
     instapay_claimed: boolean
   } | null
@@ -275,9 +281,24 @@ export default function Track() {
     )
   }
 
-  const current = data.assignment?.status && data.assignment.status !== 'Offered' ? data.assignment.status : 'pending'
+  // Before a driver exists there is no assignment, and this fell back to the
+  // literal string 'pending' -- which is how an unpriced order inherited the
+  // "قيد التجهيز" stage. Fall back to the order's own status instead, which now
+  // distinguishes awaiting_quote / Scheduled / Driver_Searching / No_Driver_Found.
+  const current = data.assignment?.status && data.assignment.status !== 'Offered'
+    ? data.assignment.status
+    : o.status
   const stageIdx = Math.max(0, STAGES.findIndex(s => s.statuses.includes(current)))
-  const canCancel = current === 'pending' && !cancelled && !isCancelled(o.status)
+
+  // The customer keeps the right to cancel until the vendor accepts. It used to
+  // survive until a driver appeared, so the page offered "إلغاء الطلب" directly
+  // underneath a heading saying the order was being cooked. The server enforces
+  // the same rule; this only decides whether to show a button that would fail.
+  const notStartedYet = (o.kitchen_status ?? 'new') === 'new'
+  const cancellableStatus = ['pending', 'awaiting_payment', 'awaiting_quote', 'Scheduled', 'Driver_Searching']
+    .includes(o.status)
+  const canCancel = cancellableStatus && notStartedYet && !data.assignment
+    && !cancelled && !isCancelled(o.status)
 
   return (
     <div className="max-w-lg mx-auto pb-6">
@@ -325,13 +346,24 @@ export default function Track() {
         <div className="card p-4 mb-4">
           <p className="text-xs text-mist mb-1">الحالة</p>
           <h1 className="font-bold text-xl mb-1">
-            {current === 'Delivered' ? '✅ تم التوصيل' : STAGES[stageIdx]?.label ?? 'قيد التجهيز'}
+            {current === 'Delivered' ? '✅ تم التوصيل' : STAGES[stageIdx]?.label ?? 'استلمنا طلبك'}
           </h1>
-          {o.ready_at && current === 'pending' && !o.scheduled_date && (
+          {o.status === 'awaiting_quote' && (
+            <p className="text-sm text-mist">لسه بنراجع الأصناف وهنتصل بيك بالسعر</p>
+          )}
+          {o.status === 'Driver_Searching' && (
+            <p className="text-sm text-mist">بندوّر على مندوب قريب منك</p>
+          )}
+          {o.status === 'No_Driver_Found' && (
+            <p className="text-sm text-sandink">الزحمة عالية دلوقتي — الإدارة بتظبط لك مندوب</p>
+          )}
+          {o.ready_at && current === 'pending' && !o.scheduled_date && o.pricing_status !== 'pending_quote' && (
             <p className="text-sm text-mist">الوصول المتوقع {fmtTime(o.ready_at)}</p>
           )}
           {o.scheduled_date && <p className="text-sm text-mist">التوصيل خلال الفترة اللي اخترتها</p>}
-          {o.sla_minutes && current !== 'Delivered' && !o.scheduled_date && (() => {
+          {o.sla_minutes && current !== 'Delivered' && !o.scheduled_date
+            && o.pricing_status !== 'pending_quote'
+            && !['awaiting_quote', 'Scheduled', 'No_Driver_Found'].includes(o.status) && (() => {
             const target = new Date(new Date(o.created_at).getTime() + o.sla_minutes * 60000)
             const isLate = Date.now() > target.getTime()
             return (
@@ -350,11 +382,10 @@ export default function Track() {
         </div>
       )}
 
-      {o.order_type === 'custom_request' && o.pricing_status === 'pending_quote' && (
-        <p className="text-sm text-sandink bg-sand/10 rounded-xl p-3 mb-4">
-          💬 هنتصل بيك قريب نأكد السعر النهائي قبل ما نجهز الطلب
-        </p>
-      )}
+      {/* "هنتصل بيك بالسعر" was on this screen three times at once: here, in the
+          status card, and again in the payment card with the delivery fee
+          attached. The payment card is the one that carries a number, so it is
+          the one that stays. */}
       {o.order_type === 'pickup_request' && (
         <p className="text-sm bg-shellup/60 rounded-xl p-3 mb-4">
           {o.payment_mode === 'driver_pays'

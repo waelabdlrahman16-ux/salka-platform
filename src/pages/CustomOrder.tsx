@@ -199,10 +199,21 @@ export default function CustomOrder() {
     }
     if (file.size > 5 * 1024 * 1024) { setError('الصورة أكبر من ٥ ميجا'); return }
     setRxUploading(true)
-    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
-    // Flat, unguessable, and matching the shape both the storage policy and
-    // submit_custom_order enforce. Nothing here is derived from the customer.
-    const path = `rx-${crypto.randomUUID().replace(/-/g, '').slice(0, 20)}.${ext === 'jpeg' ? 'jpg' : ext}`
+    // The extension comes from the MIME type, which was just validated against a
+    // four-item allowlist -- NOT from file.name.
+    //
+    // `file.name.split('.').pop()` looks like it extracts an extension, but on a
+    // name with no dot it returns the WHOLE filename. Android camera captures
+    // routinely arrive as "1000012345" with no extension, so the key became
+    // "rx-<uuid>.1000012345", which fails the storage policy's
+    //   ^rx-[A-Za-z0-9_-]{6,60}\.(jpg|jpeg|png|webp|avif)$
+    // and the upload was rejected with "مش قادرين نرفع الصورة، جرب تاني".
+    // Reported from a real phone, 2026-08-05.
+    const ext = file.type === 'image/png' ? 'png'
+      : file.type === 'image/webp' ? 'webp'
+      : file.type === 'image/avif' ? 'avif'
+      : 'jpg'
+    const path = `rx-${crypto.randomUUID().replace(/-/g, '').slice(0, 20)}.${ext}`
     const { error: upErr } = await supabase.storage.from('prescriptions').upload(path, file, { upsert: false })
     setRxUploading(false)
     if (upErr) { setError('مش قادرين نرفع الصورة، جرب تاني'); return }
@@ -426,7 +437,20 @@ export default function CustomOrder() {
           {intent && (
             <div className="mt-3">
               {(() => {
-                const inCat = knownItems.filter(it => it.category === intent)
+                // Only real products. For the pharmacy, all five menu_items rows
+                // are shelf LABELS whose name equals their category ("أدوية
+                // بروشتة", "أجهزة طبية"), and offering them as one-tap additions
+                // put "أدوية بروشتة" on a customer's order as a line item --
+                // a category, not a medicine, and nothing a pharmacist can
+                // fetch. Seen on a real order, 2026-08-05.
+                //
+                // This is the exact bug the category chips were changed to avoid
+                // in the first place; the comment above them says so. Adding
+                // quick-add reintroduced it through a different door. The
+                // name-vs-category test is what separates "أرز الملك بسمتي
+                // (1 كجم)" from "بقالة".
+                const inCat = knownItems.filter(it =>
+                  it.category === intent && it.name.trim() !== it.category.trim())
                 if (inCat.length === 0) {
                   return <p className="text-xs text-mist">اكتب اللي محتاجه تحت وإحنا نجيبه.</p>
                 }

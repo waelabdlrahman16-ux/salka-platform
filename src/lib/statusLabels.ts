@@ -8,9 +8,19 @@
 // Mixed casing is inherited from the database and deliberately preserved --
 // these are the literal values stored in orders.status.
 export const ORDER_STATUSES = [
-  'pending', 'awaiting_payment', 'Accepted', 'Picked_Up',
+  // Ordered as the customer meets them. The four in the middle used to be one
+  // undifferentiated 'pending', which is why a pharmacy order with no price and
+  // no vendor showed "قيد التجهيز" next to an ETA: the lifecycle had no way to
+  // say "waiting for a price", so it borrowed the label next door.
+  'awaiting_payment', 'awaiting_quote', 'Scheduled', 'pending',
+  'Driver_Searching', 'No_Driver_Found', 'Accepted', 'Picked_Up',
   'Out_for_Delivery', 'Delivered', 'Cancelled', 'Failed_Delivery',
 ] as const
+
+/** In the dispatch window: placed, not yet with a driver. Mirrors the server's
+ *  is_predispatch_status(). */
+export const PREDISPATCH_ORDER_STATUSES: OrderStatus[] =
+  ['pending', 'Scheduled', 'Driver_Searching', 'No_Driver_Found']
 export type OrderStatus = typeof ORDER_STATUSES[number]
 
 /**
@@ -29,6 +39,10 @@ export const UNPAID_ORDER_STATUSES: OrderStatus[] = ['awaiting_payment']
 const ORDER_STATUS_AR: Record<string, string> = {
   pending: 'قيد الانتظار',
   awaiting_payment: 'بانتظار الدفع',
+  awaiting_quote: 'بانتظار التسعير',
+  Scheduled: 'محجوز لفترة لاحقة',
+  Driver_Searching: 'بندوّر على مندوب',
+  No_Driver_Found: 'محدش استلم الطلب',
   Accepted: 'تم تعيين مندوب',
   Picked_Up: 'تم الاستلام من المطعم',
   Out_for_Delivery: 'في الطريق إليك',

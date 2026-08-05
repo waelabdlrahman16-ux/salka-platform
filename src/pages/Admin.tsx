@@ -146,7 +146,7 @@ export default function Admin() {
   const [openHistory, setOpenHistory] = useState<number | null>(null)
   const [vendorAccounts, setVendorAccounts] = useState<{ profile_id: string; restaurant_id: number; email: string }[]>([])
   const [driverAccounts, setDriverAccounts] = useState<{ profile_id: string; driver_id: number; email: string }[]>([])
-  const [catalogAccounts, setCatalogAccounts] = useState<{ profile_id: string; name: string; email: string }[]>([])
+  const [catalogAccounts, setCatalogAccounts] = useState<{ profile_id: string; name: string; email: string; role: 'catalog' | 'supervisor' }[]>([])
   const [newCatalogName, setNewCatalogName] = useState('')
   const [accountBusy, setAccountBusy] = useState<string | null>(null)
   const [newCreds, setNewCreds] = useState<{ email: string; password: string } | null>(null)
@@ -821,6 +821,21 @@ export default function Admin() {
     const res = await rpc('admin_force_delivered', {
       p_order_id: a.order_id, p_reason: reason.trim(), p_cash_collected: cash,
     })
+    if (!res.ok) { setActionError(res.error); return }
+    load(true)
+  }
+
+  // The supervisor login is created as catalog staff and converted here.
+  // admin-accounts (the edge function that mints the auth user) gained a
+  // create_supervisor_login action in the repo, but it has not been redeployed;
+  // until it is, this is the supported path and it produces an identical
+  // account. The conversion RPC only moves a profile between these two
+  // no-restaurant, no-driver roles -- it cannot mint an admin.
+  async function convertStaffRole(profileId: string, role: 'catalog' | 'supervisor') {
+    const label = role === 'supervisor' ? 'مشرف تشغيل' : 'موظف قوايم'
+    if (!confirm(`تحويل الحساب ده لـ "${label}"؟\n\nهيتغيّر اللي يقدر يشوفه ويعمله على طول.`)) return
+    setActionError('')
+    const res = await rpc('admin_convert_staff_role', { p_profile_id: profileId, p_role: role })
     if (!res.ok) { setActionError(res.error); return }
     load(true)
   }
@@ -1904,6 +1919,13 @@ export default function Admin() {
               حساب بيقدر يضيف ويعدّل الأصناف والأسعار والأحجام والإضافات لكل المطاعم — ومش بيشوف الطلبات
               ولا المندوبين ولا الأرباح ولا الإعدادات.
             </p>
+            <p className="text-xs text-mist mb-3 leading-relaxed">
+              <b>مشرف التشغيل</b> بيشتغل على طلبات المطاعم بس: بيكلّم المطعم ويسجّل
+              القبول والجاهزية، بيعيّن المندوبين ويسحبهم، وبيحل مشاكل التوصيل.
+              مش بيشوف الصيدلية ولا الماركت، ومش بيلمس أي فلوس — تأكيد التحويلات
+              وتسوية الكاش والاستردادات كلها عندك إنت. لإنشاء واحد: اعمل حساب
+              هنا وبعدين اضغط «خلّيه مشرف تشغيل».
+            </p>
 
             <div className="card p-3.5 mb-3">
               <div className="flex gap-2">
@@ -1922,7 +1944,13 @@ export default function Admin() {
                 <div key={acc.profile_id} className="card p-3.5">
                   <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="font-semibold truncate">{acc.name}</p>
+                      <p className="font-semibold truncate">
+                        {acc.name}
+                        <span className={`mr-2 text-[11px] font-bold rounded-full px-2 py-0.5 ${
+                          acc.role === 'supervisor' ? 'bg-sea/10 text-sea' : 'bg-shellup text-mist'}`}>
+                          {acc.role === 'supervisor' ? 'مشرف تشغيل' : 'قوايم'}
+                        </span>
+                      </p>
                       <p className="text-xs text-mist truncate" dir="ltr">{acc.email}</p>
                     </div>
                     <div className="flex gap-1.5 shrink-0">
@@ -1935,6 +1963,10 @@ export default function Admin() {
                       />
                     </div>
                   </div>
+                  <button className="btn-ghost w-full !py-1.5 text-xs mt-2.5"
+                    onClick={() => convertStaffRole(acc.profile_id, acc.role === 'supervisor' ? 'catalog' : 'supervisor')}>
+                    {acc.role === 'supervisor' ? 'رجّعه موظف قوايم' : 'خلّيه مشرف تشغيل'}
+                  </button>
                 </div>
               ))}
               {catalogAccounts.length === 0 && (
