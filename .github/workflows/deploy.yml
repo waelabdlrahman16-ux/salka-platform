@@ -50,8 +50,20 @@ jobs:
       # deploy here rather than shipping. This duplicates the CI workflow's
       # check on purpose: CI gates the PR, this gates the artifact that is
       # actually uploaded.
+      # VITE_FIREBASE_VAPID_KEY was never passed to any build, so
+      # VAPID_PUBLIC_KEY was undefined in every deployed bundle, pushSupport()
+      # returned 'unconfigured', and EnablePushButton rendered NOTHING. That is
+      # why push_tokens has stayed at 0 across every device and both platforms:
+      # not an iOS restriction, not a permission problem -- the button that
+      # registers a token has never existed in production.
+      #
+      # This key is the PUBLIC half of a VAPID pair and ships inside the client
+      # bundle by design; it is a secret here only so it is configured in one
+      # place rather than committed.
       - name: Build
         run: npm run build
+        env:
+          VITE_FIREBASE_VAPID_KEY: ${{ secrets.VITE_FIREBASE_VAPID_KEY }}
 
       # wrangler is pinned in package.json and installed by `npm ci` above, so
       # the deploy uses the same version that `wrangler deploy --dry-run`
