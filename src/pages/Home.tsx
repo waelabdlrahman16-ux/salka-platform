@@ -140,20 +140,7 @@ export default function Home() {
   const eta = (r: Restaurant) => selected ? r.prep_minutes + selected.est_travel_minutes : r.prep_minutes
   const catalogRestaurants = restaurants.filter(r =>
     r.order_mode !== 'custom_request' && r.vendor_type !== 'pharmacy' && r.vendor_type !== 'supermarket')
-  // Pharmacy and supermarket are excluded from the restaurant grid because they
-  // are errands, not menus. On 2026-08-04 they moved to the bottom nav and their
-  // cards were deleted from Home -- which removed the only thing that told a
-  // first-time visitor they exist. A nav icon is a destination for someone who
-  // already knows; it is not discovery. Two tiles here, one line each, and no
-  // third card offering a choice between the other two (that was the redundancy
-  // the deletion was right to remove).
-  const errandVendors = restaurants.filter(r =>
-    r.vendor_type === 'pharmacy' || r.vendor_type === 'supermarket')
-  const errandTiles = (['pharmacy', 'supermarket'] as const)
-    .map(t => ({ type: t, vendors: errandVendors.filter(v => v.vendor_type === t) }))
-    .filter(g => g.vendors.length > 0)
   // Only offer a kind that actually has a vendor delivering to this compound --
-  // a chip that leads to an empty list is worse than no chip.
   const availableKinds = BROWSE_KINDS.filter(({ kind: k }) =>
     catalogRestaurants.some(r => vendorKind(r.category) === k))
   const shownRestaurants = kind
@@ -177,22 +164,11 @@ export default function Home() {
           decides everything else on this screen, so it stays first. */}
       {!picking && <BannerRail />}
 
-      {/* The delivery fee used to appear for the first time in the cart. It is
-          set per compound and can be 350 ج.م, so someone adding a 90 ج.م burger
-          from a far compound met a total three times what they expected, at the
-          last step. The compound is chosen before anything else is visible, so
-          the fee is knowable this whole time -- state it up front and let people
-          decide before they build a basket. Same server quote the cart uses. */}
-      {!picking && !loading && compoundId && deliveryFee !== null && (
-        <p className="text-sm text-mist bg-shellup rounded-xl px-3.5 py-2.5 mb-4 flex items-center gap-2">
-          <Icon name="locationDot" className="w-3.5 h-3.5 shrink-0" />
-          <span>
-            التوصيل لـ{selected ? ` ${selected.name}` : ''}
-            <span className="text-foam font-semibold"> {deliveryFee} ج.م</span>
-          </span>
-        </p>
-      )}
-
+      {/* The delivery-fee strip that used to sit here has moved onto each
+          restaurant card. It still has to appear before the cart -- the reason
+          it existed is a customer meeting a 350 ج.م fee for the first time at
+          checkout -- but as one number in the card's meta line rather than a
+          boxed banner competing with the list. */}
 
       {!picking && loading && <p className="text-mist">جاري التحميل…</p>}
 
@@ -215,40 +191,18 @@ export default function Home() {
         </div>
       )}
 
-      {!picking && !loading && compoundId && errandTiles.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          {errandTiles.map(({ type, vendors: vs }) => {
-            const open = vs.some(v => v.is_open)
-            const isRx = type === 'pharmacy'
-            return (
-              <Link key={type} to={`/custom-order?type=${type}`}
-                className={`card p-3.5 flex items-center gap-3 hover:border-sea/50 transition-colors ${
-                  open ? '' : 'opacity-60'}`}>
-                <span className="w-11 h-11 rounded-xl bg-shellup grid place-items-center text-2xl shrink-0" aria-hidden="true">
-                  {isRx ? '💊' : '🛒'}
-                </span>
-                <span className="min-w-0">
-                  <span className="block font-bold text-sm truncate">{isRx ? 'صيدلية' : 'سوبر ماركت'}</span>
-                  <span className="block text-xs text-mist truncate">
-                    {open ? 'قول لنا اللي محتاجه' : 'مقفول دلوقتي'}
-                  </span>
-                </span>
-              </Link>
-            )
-          })}
-        </div>
-      )}
+      {/* The صيدلية / سوبر ماركت tiles that were here are gone at Wael's call,
+          2026-08-05. They are reachable from the bottom nav. */}
 
       {!picking && !loading && compoundId && (
         <div id="restaurants">
-          <div className="flex items-baseline justify-between gap-3 mb-3">
-            <h2 className="text-lg font-bold">المطاعم</h2>
-            {kind && (
+          {kind && (
+            <div className="flex justify-end mb-2">
               <button className="text-sm text-seadeep font-semibold" onClick={() => setKind(null)}>
                 إلغاء الفلتر
               </button>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Browse by kind. Until now the only way to find food was to already
               know which restaurant sold it -- there was no way to ask "who does
@@ -266,9 +220,9 @@ export default function Home() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="divide-y divide-line">
             {shownRestaurants.length === 0 && (
-              <p className="text-mist col-span-full">
+              <p className="text-mist py-6">
                 {kind ? `مفيش مطاعم ${kind} بتوصل لمكانك حاليًا` : 'لا يوجد مطاعم بتوصل لمكانك حاليًا'}
               </p>
             )}
@@ -277,6 +231,7 @@ export default function Home() {
                 key={r.id}
                 restaurant={r}
                 etaMinutes={selected ? eta(r) : null}
+                deliveryFee={deliveryFee}
                 hasDiscount={discountedRestaurantIds.has(r.id)}
               />
             ))}

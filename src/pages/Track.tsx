@@ -61,6 +61,7 @@ export default function Track() {
   const [notFound, setNotFound] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [cancelled, setCancelled] = useState(false)
+  const [timelineOpen, setTimelineOpen] = useState(false)
   const [driverRating, setDriverRating] = useState(0)
   const [restaurantRating, setRestaurantRating] = useState(0)
   const [ratingSent, setRatingSent] = useState(false)
@@ -344,10 +345,23 @@ export default function Track() {
         </div>
       ) : (
         <div className="card p-4 mb-4">
-          <p className="text-xs text-mist mb-1">الحالة</p>
-          <h1 className="font-bold text-xl mb-1">
-            {current === 'Delivered' ? '✅ تم التوصيل' : STAGES[stageIdx]?.label ?? 'استلمنا طلبك'}
-          </h1>
+          <div className="flex items-start justify-between gap-2 mb-1">
+            <h1 className="font-bold text-xl">
+              {current === 'Delivered' ? '✅ تم التوصيل' : STAGES[stageIdx]?.label ?? 'استلمنا طلبك'}
+            </h1>
+            {/* One word for the thing the customer actually wants to know. It
+                was buried in a sentence under the ETA. */}
+            {o.sla_minutes && current !== 'Delivered' && !o.scheduled_date
+              && o.pricing_status !== 'pending_quote' && (() => {
+              const late = Date.now() > new Date(o.created_at).getTime() + o.sla_minutes * 60000
+              return (
+                <span className={`shrink-0 text-[11px] font-bold rounded-full px-2.5 py-1 ${
+                  late ? 'bg-sand/20 text-sandink' : 'bg-emerald-500/12 text-emerald-700'}`}>
+                  {late ? 'متأخر شوية' : 'في الميعاد'}
+                </span>
+              )
+            })()}
+          </div>
           {o.status === 'awaiting_quote' && (
             <p className="text-sm text-mist">لسه بنراجع الأصناف وهنتصل بيك بالسعر</p>
           )}
@@ -374,11 +388,54 @@ export default function Track() {
             )
           })()}
 
-          <div className="flex gap-1.5 mt-4">
+          {/* Four flat bars said "you are somewhere in three thirds". An icon
+              per stage says which stage, and the icons are the ones the customer
+              already associates with the steps -- basket, scooter, door. */}
+          <div className="flex items-center gap-1 mt-4">
             {STAGES.map((s, i) => (
-              <div key={s.key} className={`h-1.5 flex-1 rounded-full ${i <= stageIdx ? 'bg-sea' : 'bg-line'}`} />
+              <div key={s.key} className="contents">
+                <span aria-hidden="true"
+                  className={`w-7 h-7 shrink-0 rounded-full grid place-items-center text-[13px] ${
+                    i <= stageIdx ? 'bg-sea text-white' : 'bg-line text-mist'}`}>
+                  {['✓', '🍳', '🛵', '📍'][i]}
+                </span>
+                {i < STAGES.length - 1 && (
+                  <span className={`h-1 flex-1 rounded-full ${i < stageIdx ? 'bg-sea' : 'bg-line'}`} />
+                )}
+              </div>
             ))}
           </div>
+
+          {/* The stage-by-stage story, in the order it actually happens. The
+              server now distinguishes awaiting_quote / Scheduled /
+              Driver_Searching / No_Driver_Found, so there is something real to
+              show at every step instead of one "قيد التجهيز" covering all of it. */}
+          <button className="text-xs text-sea font-semibold mt-3"
+            onClick={() => setTimelineOpen(v => !v)}>
+            {timelineOpen ? 'إخفاء التفاصيل ▲' : 'إزاي طلبك ماشي ▼'}
+          </button>
+          {timelineOpen && (
+            <ol className="mt-2.5 border-t border-line pt-3 space-y-0">
+              {[
+                { k: 'placed',    label: 'الطلب اتسجل',              done: true },
+                { k: 'confirmed', label: `${o.restaurant_name} أكّد الطلب`, done: stageIdx >= 1 },
+                { k: 'searching', label: 'بندوّر على مندوب',          done: !!data.assignment },
+                { k: 'picked',    label: 'المندوب استلم الطلب',       done: stageIdx >= 2 },
+                { k: 'arrived',   label: 'المندوب وصل عندك',          done: stageIdx >= 3 },
+              ].map((step, i, arr) => (
+                <li key={step.k} className="flex gap-3">
+                  <span className="flex flex-col items-center">
+                    <span className={`w-3.5 h-3.5 rounded-full shrink-0 mt-1 ${
+                      step.done ? 'bg-sea' : 'bg-line'}`} />
+                    {i < arr.length - 1 && <span className="w-px flex-1 bg-line" />}
+                  </span>
+                  <span className={`text-sm pb-3 ${step.done ? 'font-semibold' : 'text-mist'}`}>
+                    {step.label}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
         </div>
       )}
 

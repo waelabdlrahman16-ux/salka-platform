@@ -588,24 +588,31 @@ function KitchenVendor({ rid }: { rid: number }) {
     const late = waitedMin !== null && waitedMin >= 10
     return (
       <div key={o.id} className={`card !rounded-2xl p-4 ${big ? 'border-sand ring-2 ring-sand/50' : ''}`}>
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="font-bold text-lg">طلب #{o.id}</h2>
-              {waitedMin !== null && (
-                <span className={`text-xs font-bold rounded-full px-2.5 py-1 ${
-                  late ? 'bg-red-500/15 text-red-600' : 'bg-sand/20 text-sandink'}`}>
-                  {waitedMin < 1 ? 'دلوقتي حالًا' : `مستني ${waitedMin} دقيقة`}
-                </span>
-              )}
+        {/* Reference shape: the order number is the biggest thing on the card
+            and the clock sits opposite it, instead of a row of same-weight
+            chips. A kitchen identifies a ticket by its number. */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h2 className="font-bold text-2xl leading-none tracking-tight">
+              <span className="text-mist font-semibold text-lg">#</span>{o.id}
+            </h2>
+            <div className="flex items-center gap-2 flex-wrap mt-1.5">
             </div>
-            <p className="text-sm text-mist mt-0.5">{o.zone} — وحدة {o.unit_number}</p>
+            <p className="text-sm text-mist mt-1">{o.zone} — وحدة {o.unit_number}</p>
           </div>
           {/* No order total. The vendor prices what they cook, line by line --
               an order-level figure is a Salka number (it moved with delivery and
               service fees) and gave them a second total to argue with. */}
-          <div className="text-left">
-            <span className="text-xs text-mist">{completed ?? stage.label}</span>
+          <div className="shrink-0 text-left">
+            {waitedMin !== null && !completed ? (
+              <span className={`inline-flex items-center gap-1 text-sm font-bold rounded-xl px-3 py-1.5 border ${
+                late ? 'border-red-400/50 bg-red-500/10 text-red-600'
+                     : 'border-line bg-shell text-foam'}`}>
+                ⏰ {waitedMin < 1 ? 'دلوقتي' : `${waitedMin} د`}
+              </span>
+            ) : (
+              <span className="text-xs text-mist">{completed ?? stage.label}</span>
+            )}
           </div>
         </div>
 
@@ -643,11 +650,16 @@ function KitchenVendor({ rid }: { rid: number }) {
           </div>
         )}
 
-        <div className={`mt-3 bg-night border border-line !rounded-2xl p-3.5 text-sm space-y-1.5 ${
+        <div className={`mt-3 text-sm ${
           o.order_type === 'custom_request' && (items[o.id] ?? []).length === 0 ? 'hidden' : ''}`}>
+          {/* A labelled column, then one row per line with a rule between --
+              a kitchen reads down a list, it does not parse a paragraph. */}
+          <div className="flex justify-between text-xs text-mist pb-2 border-b border-line">
+            <span>الأصناف</span><span>السعر</span>
+          </div>
           {(items[o.id] ?? []).map(it => (
-            <div key={it.id} className="flex justify-between">
-              <span>
+            <div key={it.id} className="flex justify-between py-2.5 border-b border-line">
+              <span className="font-semibold">
                 {it.name} × {it.qty}{it.requires_prescription ? ' 💊' : ''}
                 {(it.size_name || it.combo_name || (it.addon_names && it.addon_names.length > 0)) && (
                   <span className="block text-xs text-mist mt-0.5">
@@ -657,7 +669,7 @@ function KitchenVendor({ rid }: { rid: number }) {
                   </span>
                 )}
               </span>
-              <span className="text-mist shrink-0 mr-2">{it.total} ج.م</span>
+              <span className="text-mist shrink-0 mr-2 font-normal">{it.total} ج.م</span>
             </div>
           ))}
         </div>
@@ -667,7 +679,10 @@ function KitchenVendor({ rid }: { rid: number }) {
         )}
 
         {o.customer_note && (
-          <p className="text-sandink text-sm mt-2 bg-sand/10 rounded-lg p-2.5">📝 {o.customer_note}</p>
+          <div className="mt-3 border border-line rounded-xl p-3">
+            <p className="text-xs text-mist">💬 ملاحظات إضافية</p>
+            <p className="text-sm bg-night rounded-lg p-2.5 mt-1.5 font-semibold">{o.customer_note}</p>
+          </div>
         )}
 
         {/* No money on this ticket beyond the per-item prices.
@@ -699,17 +714,21 @@ function KitchenVendor({ rid }: { rid: number }) {
                 {[15, 20, 30].map(m => (
                   <button key={m} className="btn-sea flex-1 !rounded-2xl !text-base !py-3.5"
                     disabled={busyOrder === o.id} onClick={() => advance(o, 'preparing', m)}>
-                    قبول · {m} د
+                    {busyOrder === o.id ? '…' : `قبول · ${m} د`}
                   </button>
                 ))}
               </div>
             ) : (
               <button className="btn-sea w-full !rounded-2xl !text-lg !py-4"
                 disabled={busyOrder === o.id} onClick={() => advance(o, stage.next!)}>
-                ✅ {stage.action}
+                {busyOrder === o.id ? 'لحظة…'
+                  : remaining(o) !== null && remaining(o)! > 0
+                    ? `${stage.action} (${remaining(o)} د)`
+                    : stage.action}
               </button>
             )}
-            <button className="w-full !text-sm !py-2.5 mt-2 text-red-600 font-semibold" onClick={() => setDeclining(o)}>رفض الطلب</button>
+            <button className="btn-ghost w-full !rounded-2xl !text-sm mt-2 !text-red-600 !border-red-400/40"
+              onClick={() => setDeclining(o)}>رفض الطلب</button>
           </div>
         ) : (
           <>
@@ -718,7 +737,7 @@ function KitchenVendor({ rid }: { rid: number }) {
                 {[15, 20, 30].map(m => (
                   <button key={m} className="btn-sea flex-1 !rounded-2xl !text-sm !py-2.5 active:scale-95 transition-transform"
                     disabled={busyOrder === o.id} onClick={() => advance(o, 'preparing', m)}>
-                    قبول · {m} د
+                    {busyOrder === o.id ? '…' : `قبول · ${m} د`}
                   </button>
                 ))}
               </div>

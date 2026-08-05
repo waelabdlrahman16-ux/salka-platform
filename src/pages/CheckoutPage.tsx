@@ -390,6 +390,22 @@ export default function CheckoutPage() {
           </>
         )}
 
+        {/* The one thing the reference puts front and centre and this screen
+            never said at all: when it arrives. sla_minutes is the server's own
+            promise, already stored on the order; it was only ever shown after
+            the fact on the tracking page. */}
+        {quote?.sla_minutes && (
+          <div className="card p-3.5 flex items-center gap-3 !rounded-2xl">
+            <span className="text-xl shrink-0" aria-hidden="true">🛵</span>
+            <div>
+              <p className="font-bold text-sm">التوصيل</p>
+              <p className="text-xs text-mist">
+                يوصلك خلال {quote.sla_minutes}–{quote.sla_minutes + 10} دقيقة
+              </p>
+            </div>
+          </div>
+        )}
+
         <div><label className="label" htmlFor={`${fid}-notes`}>ملاحظات على الطلب (اختياري)</label>
           <div className="flex flex-wrap gap-2 mb-2">
             {['من غير بصل', 'حار زيادة', 'اتصل قبل الوصول', 'اترك عند الباب'].map(preset => {
