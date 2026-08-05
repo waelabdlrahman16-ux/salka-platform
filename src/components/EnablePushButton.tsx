@@ -27,6 +27,12 @@ export default function EnablePushButton({
   const [busy, setBusy] = useState(false)
   const [failed, setFailed] = useState(false)
   const [reason, setReason] = useState('')
+  // Tracked separately from `permission`, which reads Notification.permission --
+  // an API that does not exist in an Android WebView, so on the native app it
+  // answers 'unavailable' forever and this component could never learn that
+  // registration had succeeded. The button stayed on screen after a successful
+  // tap, which is indistinguishable from the button not working.
+  const [granted, setGranted] = useState(false)
 
   useEffect(() => {
     const s = pushSupport()
@@ -45,10 +51,18 @@ export default function EnablePushButton({
     // So when permission is already granted, register here and hold the
     // result. Success hides the component, which is the same end state as
     // before. Failure shows the reason, which is new.
-    if (p !== 'granted') return
+    // On native, permission lives in the OS, not in Notification.permission --
+    // so gating this on 'granted' meant the app never refreshed its FCM token
+    // on load. registerPush() does not prompt on either platform.
+    if (s !== 'native' && p !== 'granted') return
     let cancelled = false
     registerPush(onToken).then(ok => {
-      if (cancelled || ok) return
+      if (cancelled) return
+      if (ok) { setGranted(true); return }
+      // On native this is the ordinary "has not opted in yet" path, and the
+      // whole point of the button. Only a browser that reported 'granted' and
+      // then failed has something to confess.
+      if (s === 'native') return
       setReason(lastPushError || 'التسجيل فشل من غير رسالة')
       setFailed(true)
     })
@@ -70,14 +84,15 @@ export default function EnablePushButton({
             setBusy(true); setFailed(false)
             const ok = await enablePush(onToken)
             setBusy(false); setPermission(pushPermission())
-            if (!ok) { setReason(lastPushError); setFailed(true) }
+            if (ok) setGranted(true)
+            else { setReason(lastPushError); setFailed(true) }
           }}>جرب تاني</button>
       </div>
     )
   }
 
   if (support === 'unsupported' || support === 'unconfigured') return null
-  if (permission === 'granted') return null
+  if (granted || permission === 'granted') return null
 
   // Denied is a dead end until the person changes it in browser settings, so
   // say that plainly instead of showing a button that can no longer do
@@ -100,7 +115,8 @@ export default function EnablePushButton({
           const ok = await enablePush(onToken)
           setBusy(false)
           setPermission(pushPermission())
-          if (!ok) { setReason(lastPushError); setFailed(true) }
+          if (ok) setGranted(true)
+          else { setReason(lastPushError); setFailed(true) }
         }}>
         {busy ? 'جاري التفعيل…' : `🔔 ${label}`}
       </button>

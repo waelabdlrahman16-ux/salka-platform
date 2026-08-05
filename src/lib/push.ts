@@ -118,14 +118,33 @@ async function webToken(): Promise<string | null> {
   }
 }
 
-async function nativeToken(onToken: PushTokenSink): Promise<void> {
+/**
+ * Native registration, and the reason this function returns a boolean.
+ *
+ * It used to be `async function nativeToken(): Promise<void>` and the callers
+ * did `await nativeToken(onToken); return true` -- reporting success before
+ * knowing whether a token had arrived, because on native the token comes back
+ * through a LISTENER, not from register(). So a denied permission, a
+ * registrationError from FCM, and a perfect registration were indistinguishable
+ * to the UI. Combined with pushPermission() reading Notification.permission --
+ * and `Notification` not existing in an Android WebView, so it always answered
+ * 'unavailable' -- the button could never hide and never report anything.
+ * Tapping it did nothing visible, by construction.
+ *
+ * Now it resolves only when FCM has actually answered, either way, and puts the
+ * reason in lastPushError so the failure card can name it.
+ */
+async function nativeToken(onToken: PushTokenSink, allowPrompt: boolean): Promise<boolean> {
   const current = await PushNotifications.checkPermissions()
   let granted = current.receive === 'granted'
   if (!granted) {
+    // registerPush() promises never to prompt. On native that promise was
+    // broken -- it called requestPermissions() like enablePush() did.
+    if (!allowPrompt) { lastPushError = 'لسه محدش سمح بالتنبيهات'; return false }
     const requested = await PushNotifications.requestPermissions()
     granted = requested.receive === 'granted'
   }
-  if (!granted) return
+  if (!granted) { lastPushError = 'الإذن اترفض من إعدادات الجهاز'; return false }
 
   // Android 8+ takes importance, sound and vibration from the CHANNEL, not from
   // the message. A high-priority message on a DEFAULT-importance channel is
@@ -153,9 +172,35 @@ async function nativeToken(onToken: PushTokenSink): Promise<void> {
   }
 
   await PushNotifications.removeAllListeners()
-  PushNotifications.addListener('registration', t => onToken(t.value, nativePlatform()))
-  PushNotifications.addListener('registrationError', err => console.error('push registration error', err))
-  await PushNotifications.register()
+
+  return await new Promise<boolean>(resolve => {
+    let settled = false
+    const finish = (ok: boolean) => { if (!settled) { settled = true; resolve(ok) } }
+
+    PushNotifications.addListener('registration', t => {
+      onToken(t.value, nativePlatform())
+      finish(true)
+    })
+    // This is the message that actually diagnoses a broken setup -- a wrong
+    // google-services.json, an API key restricted away from FCM, no Play
+    // Services. It used to go to console.error on a phone with no console.
+    PushNotifications.addListener('registrationError', err => {
+      lastPushError = `registrationError: ${(err as any)?.error ?? JSON.stringify(err)}`
+      finish(false)
+    })
+
+    PushNotifications.register().catch(e => {
+      lastPushError = `register: ${(e as Error)?.message ?? String(e)}`
+      finish(false)
+    })
+
+    // FCM can simply never answer -- no Play Services, no network. Without this
+    // the button would spin forever, which reads exactly like doing nothing.
+    setTimeout(() => {
+      if (!lastPushError) lastPushError = 'FCM مارجعش توكن خلال ١٥ ثانية'
+      finish(false)
+    }, 15000)
+  })
 }
 
 /**
@@ -166,7 +211,7 @@ async function nativeToken(onToken: PushTokenSink): Promise<void> {
 export async function registerPush(onToken: PushTokenSink): Promise<boolean> {
   try {
     const support = pushSupport()
-    if (support === 'native') { await nativeToken(onToken); return true }
+    if (support === 'native') return await nativeToken(onToken, false)
     if (support !== 'web') return false
     if (Notification.permission !== 'granted') return false
 
@@ -189,7 +234,7 @@ export async function registerPush(onToken: PushTokenSink): Promise<boolean> {
 export async function enablePush(onToken: PushTokenSink): Promise<boolean> {
   try {
     const support = pushSupport()
-    if (support === 'native') { await nativeToken(onToken); return true }
+    if (support === 'native') return await nativeToken(onToken, true)
     if (support !== 'web') return false
 
     const permission = Notification.permission === 'granted'
