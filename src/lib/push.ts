@@ -101,18 +101,22 @@ async function nativeToken(onToken: (token: string) => void): Promise<void> {
  * it is safe to call on mount. FCM tokens rotate, so re-registering on each
  * load is what keeps a driver reachable weeks later.
  */
-export async function registerPush(onToken: (token: string) => void) {
+export async function registerPush(onToken: (token: string) => void): Promise<boolean> {
   try {
     const support = pushSupport()
-    if (support === 'native') { await nativeToken(onToken); return }
-    if (support !== 'web') return
-    if (Notification.permission !== 'granted') return
+    if (support === 'native') { await nativeToken(onToken); return true }
+    if (support !== 'web') return false
+    if (Notification.permission !== 'granted') return false
 
     const token = await webToken()
-    if (token) onToken(token)
+    if (!token) return false
+    onToken(token)
+    return true
   } catch (e) {
     // Push is an enhancement. It must never break the page it sits on.
+    lastPushError = `registerPush: ${(e as Error)?.message ?? String(e)}`
     console.error('push refresh failed', e)
+    return false
   }
 }
 

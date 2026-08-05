@@ -11,35 +11,82 @@ interface Row {
   pricing_status?: 'n/a' | 'pending_quote' | 'confirmed'
 }
 
+/** Where an unverified result is parked so re-opening the tab costs nothing. */
+const CACHE_KEY = 'salka_my_orders_cache'
+
+function readCache(phone: string): Row[] | null {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as { phone: string; rows: Row[] }
+    return parsed.phone === phone ? parsed.rows : null
+  } catch { return null }
+}
+
+function writeCache(phone: string, rows: Row[]) {
+  try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ phone, rows })) } catch { /* quota */ }
+}
+
 export default function MyOrders() {
   const { customer, loading: authLoading, logout } = useCustomerAuth()
   const [phone, setPhone] = useState(() => customer?.phone ?? localStorage.getItem('salka_phone') ?? '')
   const [rows, setRows] = useState<Row[] | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [limited, setLimited] = useState(false)
   const [showLogin, setShowLogin] = useState(false)
 
   async function search(overridePhone?: string) {
     const target = (overridePhone ?? phone).trim()
     if (!target) return
-    setBusy(true); setError('')
+    setBusy(true); setError(''); setLimited(false)
     const res = await rpc<Row[]>('my_orders', { p_phone: target, p_session_token: getSessionToken() })
     setBusy(false)
-    if (!res.ok) { setError(res.error); return }
-    setRows(res.data ?? [])
+    if (!res.ok) {
+      setError(res.error)
+      setLimited(res.code === 'rate_limited')
+      return
+    }
+    const data = res.data ?? []
+    setRows(data)
+    writeCache(target.trim(), data)
   }
 
-  // `customer` is null on first render while auth resolves asynchronously, so a
-  // Google-signed-in user on a fresh device had no phone, this effect never
-  // ran, and the account branch below has no phone input and no retry -- the
-  // list stayed permanently empty with no way out. Re-run once auth settles.
+  // This effect used to auto-search on EVERY mount using whatever phone was in
+  // localStorage, and that is what produced the "حاولت كتير" wall in the
+  // screenshot -- reached without the customer typing anything or tapping
+  // anything.
+  //
+  // An unverified phone lookup is capped at 3 per number per 10 minutes,
+  // deliberately: my_orders() returns a stranger's order history (ids, totals,
+  // dates, which restaurants) to anyone who knows their number, and this is a
+  // small resort community where people know each other's numbers. The cap is
+  // right. Spending it on page views was not. Opening the tab three times --
+  // home, back, cart, back -- exhausted a real customer's quota before they had
+  // asked a single question, and the "جرب تاني" button underneath could then
+  // only burn the next attempt and fail identically. That is the loop.
+  //
+  // So now:
+  //   verified session  -> auto-search freely; check_rate_limit is skipped
+  //                        entirely for a session token, so it costs nothing.
+  //   remembered phone  -> prefill the box, show the cached result if we have
+  //                        one for that number, and wait for a deliberate tap.
+  //
+  // The cache is sessionStorage, not localStorage: an order list should not
+  // outlive the browsing session on a shared phone.
   useEffect(() => {
     if (authLoading) return
-    const known = customer?.phone ?? phone
-    if (known?.trim()) {
-      if (!phone.trim() && customer?.phone) setPhone(customer.phone)
-      search(known)
+
+    if (customer?.phone) {
+      if (!phone.trim()) setPhone(customer.phone)
+      search(customer.phone)
+      return
     }
+
+    const remembered = phone.trim()
+    if (!remembered) return
+    const cached = readCache(remembered)
+    if (cached) setRows(cached)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, customer?.phone])
 
@@ -90,10 +137,28 @@ export default function MyOrders() {
         </div>
       )}
 
+      {/* A "جرب تاني" button under a rate-limit message is a trap: the limit is
+          still in force, so the only thing the button can do is spend the next
+          attempt and reprint the same red text. When we know that is the cause,
+          offer the way OUT of the limit -- signing in skips the check entirely
+          because the session token proves the phone is theirs -- and say plainly
+          that waiting is the alternative. Every other error keeps the retry,
+          because for those retrying is genuinely the right move. */}
       {error && (
         <div className="card p-4 mt-5 text-center">
           <p className="text-sm text-red-600">{error}</p>
-          <button className="btn-ghost mt-3 text-sm" disabled={busy} onClick={() => search()}>جرب تاني</button>
+          {limited ? (
+            <>
+              <button className="btn-sea w-full mt-3 text-sm" onClick={() => setShowLogin(true)}>
+                سجّل دخولك وشوف طلباتك على طول
+              </button>
+              <p className="text-xs text-mist mt-2">
+                أو استنى 10 دقايق. لما تسجل دخولك مافيش أي حد على البحث.
+              </p>
+            </>
+          ) : (
+            <button className="btn-ghost mt-3 text-sm" disabled={busy} onClick={() => search()}>جرب تاني</button>
+          )}
         </div>
       )}
 

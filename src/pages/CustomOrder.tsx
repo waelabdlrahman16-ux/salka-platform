@@ -287,8 +287,19 @@ export default function CustomOrder() {
             const art = artFor(v.vendor_type === 'pharmacy' ? 'أدوية' : 'خضار وفاكهة')
             return (
               <button key={v.id} className="card p-4 text-right" onClick={() => setVendor(v)}>
-                <div className="w-full aspect-square rounded-xl grid place-items-center text-4xl mb-3" style={{ background: art.tint }}>
-                  {v.vendor_type === 'pharmacy' ? '💊' : '🛒'}
+                {/* Show the uploaded logo. This tile hardcoded 💊 / 🛒 and
+                    never looked at logo_url at all, so the logos Wael set for
+                    the pharmacy and the supermarket in the dashboard changed
+                    nothing anywhere a customer could see -- and these are the
+                    two vendors with no restaurant card to appear on either.
+                    The emoji stays as the fallback for a vendor with no logo. */}
+                <div className="w-full aspect-square rounded-xl overflow-hidden grid place-items-center text-4xl mb-3"
+                  style={{ background: art.tint }}>
+                  {v.logo_url
+                    ? <img src={v.logo_url} alt="" loading="eager"
+                        className="w-full h-full object-cover"
+                        onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
+                    : (v.vendor_type === 'pharmacy' ? '💊' : '🛒')}
                 </div>
                 <h3 className="font-bold">{v.name}</h3>
                 <p className="text-xs text-mist mt-0.5">{v.vendor_type === 'pharmacy' ? 'صيدلية' : 'سوبر ماركت'}</p>

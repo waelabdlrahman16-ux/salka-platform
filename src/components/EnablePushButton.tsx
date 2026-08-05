@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { enablePush, lastPushError, pushPermission, pushSupport } from '../lib/push'
+import { enablePush, lastPushError, pushPermission, pushSupport, registerPush } from '../lib/push'
 
 /**
  * Explicit opt-in control for notifications.
@@ -28,8 +28,31 @@ export default function EnablePushButton({
   const [reason, setReason] = useState('')
 
   useEffect(() => {
-    setSupport(pushSupport())
-    setPermission(pushPermission())
+    const s = pushSupport()
+    const p = pushPermission()
+    setSupport(s)
+    setPermission(p)
+
+    // Granted permission is NOT the same as a working registration, and
+    // treating them as the same is why push_tokens sat at zero rows while
+    // every page reported "notifications on". askNotificationPermission()
+    // runs on mount and flips permission to 'granted' immediately; this
+    // component then hid itself, and the separate registerPush() call that
+    // actually mints the token failed silently into console.error. Nothing on
+    // screen ever said the phone was unreachable.
+    //
+    // So when permission is already granted, register here and hold the
+    // result. Success hides the component, which is the same end state as
+    // before. Failure shows the reason, which is new.
+    if (p !== 'granted') return
+    let cancelled = false
+    registerPush(onToken).then(ok => {
+      if (cancelled || ok) return
+      setReason(lastPushError || 'التسجيل فشل من غير رسالة')
+      setFailed(true)
+    })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // The failure message comes FIRST. Registration grants permission and then

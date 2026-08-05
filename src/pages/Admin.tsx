@@ -15,6 +15,8 @@ import PrescriptionLink from '../components/PrescriptionLink'
 import MenuItemEditor from '../components/MenuItemEditor'
 import AddMenuItemModal from '../components/AddMenuItemModal'
 import DiscountManager from '../components/DiscountManager'
+import EnablePushButton from '../components/EnablePushButton'
+import CustomersTab from '../components/CustomersTab'
 
 function StarRow({ n }: { n: number }) {
   return (
@@ -65,7 +67,7 @@ function AccountActionsMenu({ busy, onChangeEmail, onResetPassword, onCustomPass
   )
 }
 
-type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet' | 'banners' | 'refunds'
+type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet' | 'banners' | 'refunds' | 'customers'
 
 // What is actually owed back, decided by the server. A COD order only ever took
 // the 50% deposit, so refunding `total` would be a gift -- and that is exactly
@@ -83,6 +85,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'drivers', label: 'إدارة المندوبين' },
   { key: 'menu', label: 'المطاعم والمنيو' },
   { key: 'orders', label: 'كل الطلبات' },
+  { key: 'customers', label: 'العملاء' },
   { key: 'earnings', label: 'الأرباح' },
   { key: 'settings', label: 'الإعدادات' },
   { key: 'shifts', label: 'الورديات' },
@@ -1161,6 +1164,15 @@ export default function Admin() {
         </div>
       )}
 
+      {/* Admin called registerPush() on mount but never rendered this, so a
+          failed registration had no retry and no message -- the page just
+          quietly stopped being reachable once closed. Renders nothing once a
+          token is actually in hand. */}
+      <EnablePushButton
+        onToken={pushToken => { supabase.rpc('save_my_push_token', { p_push_token: pushToken }) }}
+        label="فعّل تنبيهات الإدارة"
+      />
+
       <div className="flex gap-1.5 overflow-x-auto pb-2 mb-4 -mx-4 px-4">
         {TABS.map(t => (
           <button key={t.key} className={`tab ${tab === t.key ? 'tab-active' : ''}`} onClick={() => { if (t.key !== 'wallet') setWalletOrderId(null); setTab(t.key) }}>
@@ -1613,6 +1625,8 @@ export default function Admin() {
           })}
         </div>
       )}
+
+      {tab === 'customers' && <CustomersTab />}
 
       {tab === 'banners' && <BannersAdmin />}
 

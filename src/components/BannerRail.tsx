@@ -19,17 +19,37 @@ export interface Banner {
  * reserved space. An ad rail is the one piece of furniture that should never
  * push the actual product down the page to advertise its own absence.
  *
- * RLS decides what is visible: the public policy filters on active and the
- * starts_at/ends_at window, so a scheduled or switched-off banner never reaches
- * the client to be filtered here. Ordering and visibility are the server's job.
+ * Visibility is filtered HERE as well as by RLS, and it has to be.
+ *
+ * The original version leaned entirely on the `banners_public_read` policy,
+ * which does check `active` and the starts_at/ends_at window. That is correct
+ * for a customer. It is wrong for an admin, because Postgres RLS policies are
+ * PERMISSIVE and therefore OR'd together: `banners_admin_read` grants
+ * `is_admin()` with no conditions at all, so a logged-in admin on the home
+ * screen sees every banner in the table -- switched off, expired, not started
+ * yet, all of them.
+ *
+ * That is the whole of the "I stopped the banner and it still shows" bug.
+ * Banner #5 really was `active = false`, and RLS really was doing what it was
+ * told. Wael was simply the one person on the platform allowed to see it, and
+ * he is also the only person who ever checks.
+ *
+ * A dashboard toggle that visibly does nothing is worse than no toggle at all,
+ * so the query now states the conditions itself and an admin sees what a
+ * customer sees. Nothing is lost: previewing banners happens in the banners
+ * tab, not on the customer home screen.
  */
 export default function BannerRail() {
   const nav = useNavigate()
   const [banners, setBanners] = useState<Banner[]>([])
 
   useEffect(() => {
+    const now = new Date().toISOString()
     supabase.from('banners')
       .select('id,title,subtitle,image_url,bg_color,link_url,sort')
+      .eq('active', true)
+      .or(`starts_at.is.null,starts_at.lte.${now}`)
+      .or(`ends_at.is.null,ends_at.gt.${now}`)
       .order('sort').order('id')
       .then(({ data, error }) => { if (!error) setBanners(data ?? []) })
   }, [])
