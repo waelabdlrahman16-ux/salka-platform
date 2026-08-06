@@ -145,6 +145,33 @@ const ORDERS_LIMIT = 500
 const LOAD_TIMEOUT_MS = 20000
 const ACTIVE_ASSIGNMENT_STATUSES = ['Offered', 'Accepted', 'Picked_Up', 'Out_for_Delivery']
 
+/**
+ * Which CAIRO day a timestamp belongs to, as YYYY-MM-DD.
+ *
+ * 'en-CA' is the trick: it is the one common locale whose short date format is
+ * already ISO order, so this needs no padding or reassembly. The timeZone is
+ * the whole point -- an order placed at 01:30 Cairo is 22:30 UTC the previous
+ * day, so keying on the raw date would file it under yesterday, and «النهاردة»
+ * would quietly drop the small hours.
+ */
+const cairoDayKey = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' })
+
+/**
+ * Move a YYYY-MM-DD key by whole days, in date space rather than by adding
+ * 86400000ms. Egypt observes DST, so a 24-hour subtraction lands on the same
+ * calendar day twice a year -- which would make «إمبارح» show today's orders on
+ * exactly the day someone is most likely to be reconciling them.
+ */
+function shiftDayKey(key: string, delta: number): string {
+  const [y, m, d] = key.split('-').map(Number)
+  const dt = new Date(Date.UTC(y, m - 1, d))
+  dt.setUTCDate(dt.getUTCDate() + delta)
+  return dt.toISOString().slice(0, 10)
+}
+
+type OrderDateFilter = 'today' | 'yesterday' | 'older' | 'all'
+
 export default function Admin() {
   const [tab, setTab] = useState<Tab>('unassigned')
   const [openGroup, setOpenGroup] = useState<TabGroup>('now')
@@ -228,6 +255,21 @@ export default function Admin() {
   const [orderSearchResults, setOrderSearchResults] = useState<Order[] | null>(null)
   const [orderSearching, setOrderSearching] = useState(false)
   const [orderStatusFilter, setOrderStatusFilter] = useState<'all' | OrderStatus>('all')
+  // Opens on today, because that is what the board is for on any given shift.
+  const [orderDateFilter, setOrderDateFilter] = useState<OrderDateFilter>('today')
+  const [orderDateFrom, setOrderDateFrom] = useState('')
+  const [orderDateTo, setOrderDateTo] = useState('')
+  // «أقدم» goes to the SERVER rather than filtering the loaded window. The
+  // window is ORDERS_LIMIT = 500 rows; today that is the entire history, so
+  // filtering locally would look correct and stay correct right up until the
+  // 501st order -- at which point a real day would report «مفيش طلبات» and say
+  // nothing about only having looked at part of the history. That is the exact
+  // false negative the search box was rewritten to eliminate; see the comment
+  // on the search effect below. Today and yesterday stay local: they are always
+  // inside the newest 500.
+  const [orderRangeResults, setOrderRangeResults] = useState<Order[] | null>(null)
+  const [orderRangeLoading, setOrderRangeLoading] = useState(false)
+  const [orderRangeFailed, setOrderRangeFailed] = useState(false)
   const [reassigning, setReassigning] = useState<Assignment | null>(null)
   const reassigningRef = useDismissable(() => setReassigning(null), !!reassigning)
   const [reassignBusy, setReassignBusy] = useState(false)
@@ -418,6 +460,34 @@ export default function Admin() {
     }, 400)
     return () => { cancelled = true; clearTimeout(t) }
   }, [orderQuery])
+
+  // The «أقدم» range, fetched from the server for the reason above.
+  //
+  // The query bounds are deliberately loose -- one day either side, in plain
+  // UTC -- and the exact day matching is done below with cairoDayKey. Computing
+  // a true Cairo midnight as an instant means knowing whether DST was in effect
+  // on that date, and getting that subtly wrong would silently shift a day's
+  // orders by an hour. Over-fetching two days and filtering precisely is both
+  // simpler and correct.
+  useEffect(() => {
+    if (orderDateFilter !== 'older' || !orderDateFrom) { setOrderRangeLoading(false); return }
+    const to = orderDateTo || orderDateFrom
+    let cancelled = false
+    setOrderRangeLoading(true); setOrderRangeFailed(false)
+    const t = setTimeout(async () => {
+      const { data, error } = await supabase.from('orders').select('*, restaurants(name)')
+        .gte('created_at', `${shiftDayKey(orderDateFrom, -1)}T00:00:00Z`)
+        .lt('created_at', `${shiftDayKey(to, 2)}T00:00:00Z`)
+        .order('id', { ascending: false }).limit(ORDERS_LIMIT)
+      if (cancelled) return
+      setOrderRangeLoading(false)
+      // Say it failed. Falling back to the loaded window here would reproduce
+      // the false negative this whole path exists to avoid.
+      if (error) { setOrderRangeFailed(true); setOrderRangeResults(null); return }
+      setOrderRangeResults((data as Order[]) ?? [])
+    }, 300)
+    return () => { cancelled = true; clearTimeout(t) }
+  }, [orderDateFilter, orderDateFrom, orderDateTo])
 
   useEffect(() => {
     askNotificationPermission()
@@ -1578,6 +1648,60 @@ export default function Admin() {
 
       {tab === 'orders' && (
         <div className="space-y-6">
+          {/* The date is the first question asked of this screen -- almost every
+              visit is "what happened today" or "find yesterday's order" -- and
+              it used to be answered by scrolling past everything newer. It sits
+              ABOVE search and status because it narrows what those then search
+              within, rather than competing with them. */}
+          {(() => {
+            const todayKey = cairoDayKey(new Date().toISOString())
+            const yKey = shiftDayKey(todayKey, -1)
+            const todayCount = orders.filter(o => cairoDayKey(o.created_at) === todayKey).length
+            const yCount = orders.filter(o => cairoDayKey(o.created_at) === yKey).length
+            const chip = (key: OrderDateFilter, label: string, count?: number) => (
+              <button key={key} onClick={() => setOrderDateFilter(key)}
+                className={`rounded-full border px-3.5 min-h-[36px] text-sm font-semibold transition-colors ${
+                  orderDateFilter === key
+                    ? 'bg-sea border-sea text-white'
+                    : 'bg-shell border-line text-foam'}`}>
+                {label}
+                {count != null && (
+                  <span className={`text-xs font-normal ${orderDateFilter === key ? 'text-white/70' : 'text-mist'}`}> {count}</span>
+                )}
+              </button>
+            )
+            return (
+              <div className="flex flex-wrap gap-2">
+                {chip('today', 'النهاردة', todayCount)}
+                {chip('yesterday', 'إمبارح', yCount)}
+                {chip('older', 'أقدم')}
+                {chip('all', 'الكل', orders.length)}
+              </div>
+            )
+          })()}
+
+          {orderDateFilter === 'older' && (
+            <div className="card p-3 flex flex-wrap items-center gap-2">
+              <span className="text-sm text-mist">من يوم</span>
+              <input type="date" className="field !w-auto" value={orderDateFrom}
+                max={shiftDayKey(cairoDayKey(new Date().toISOString()), -2)}
+                onChange={e => setOrderDateFrom(e.target.value)} />
+              <span className="text-sm text-mist">لـ</span>
+              <input type="date" className="field !w-auto" value={orderDateTo}
+                min={orderDateFrom || undefined}
+                max={shiftDayKey(cairoDayKey(new Date().toISOString()), -2)}
+                onChange={e => setOrderDateTo(e.target.value)} />
+              {!orderDateFrom && <span className="text-xs text-mist">اختار يوم عشان نجيب طلباته</span>}
+              {orderDateFrom && !orderDateTo && <span className="text-xs text-mist">يوم واحد بس</span>}
+            </div>
+          )}
+          {orderRangeFailed && (
+            <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-2.5" role="alert">
+              مش قادرين نجيب طلبات الأيام دي — جرب تاني. (مابنعرضش اللي محمّل عندنا عشان
+              ما نقولش «مفيش طلبات» وإحنا مادوّرناش فعلاً.)
+            </p>
+          )}
+
           {/* Finding an order by number or a customer by phone previously meant
               scrolling the entire order history. */}
           <div className="card p-3 flex flex-col sm:flex-row gap-2">
@@ -1597,9 +1721,23 @@ export default function Admin() {
 
           {(() => {
             const q = orderQuery.trim().toLowerCase()
-            // Server results when we have them; the local window otherwise.
-            const source = orderSearchResults ?? orders
+            const todayKey = cairoDayKey(new Date().toISOString())
+            const yKey = shiftDayKey(todayKey, -1)
+            // Precedence matters. A search already spans the whole history, so
+            // when one is running its results are the source even for «أقدم» --
+            // otherwise typing a name while on a range would search only that
+            // range and call the rest of history absent.
+            const source = orderSearchResults
+              ?? (orderDateFilter === 'older' ? (orderRangeResults ?? []) : orders)
             const filteredOrders = source.filter(o => {
+              const day = cairoDayKey(o.created_at)
+              if (orderDateFilter === 'today' && day !== todayKey) return false
+              if (orderDateFilter === 'yesterday' && day !== yKey) return false
+              if (orderDateFilter === 'older') {
+                if (day >= yKey) return false
+                if (orderDateFrom && day < orderDateFrom) return false
+                if (orderDateFrom && day > (orderDateTo || orderDateFrom)) return false
+              }
               if (orderStatusFilter !== 'all' && o.status !== orderStatusFilter) return false
               if (!q) return true
               if (q.startsWith('#')) return String(o.id) === q.slice(1)
@@ -1610,8 +1748,20 @@ export default function Admin() {
                 || (o.zone ?? '').toLowerCase().includes(q)
             })
             if (orderSearching) return <p className="text-mist text-center py-8">بندوّر…</p>
+            if (orderRangeLoading) return <p className="text-mist text-center py-8">بنجيب طلبات الأيام دي…</p>
+            if (orderDateFilter === 'older' && !orderDateFrom && !orderSearchResults) return (
+              <p className="text-mist text-center py-8">اختار يوم من فوق</p>
+            )
+            // An empty day is a real answer and reads differently from an empty
+            // search. Saying «مفيش طلبات بالبحث ده» on a date with no search
+            // running sends someone hunting for a filter they never set.
             if (filteredOrders.length === 0) return (
-              <p className="text-mist text-center py-8">مفيش طلبات بالبحث ده</p>
+              <p className="text-mist text-center py-8">
+                {q ? 'مفيش طلبات بالبحث ده'
+                   : orderDateFilter === 'today' ? 'مفيش طلبات النهاردة لسه'
+                   : orderDateFilter === 'yesterday' ? 'مفيش طلبات إمبارح'
+                   : 'مفيش طلبات في الأيام دي'}
+              </p>
             )
             const groups: { label: string; items: typeof orders }[] = []
             for (const o of filteredOrders) {
