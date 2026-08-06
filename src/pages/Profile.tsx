@@ -6,6 +6,7 @@ import { homeFor, useAuth } from '../lib/auth'
 import { orderStatusLabel } from '../lib/statusLabels'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { describeError, rpc } from '../lib/rpc'
+import { SUPPORT_WHATSAPP_URL } from '../lib/support'
 import type { Compound } from '../lib/types'
 
 interface Address {
@@ -241,7 +242,7 @@ export default function Profile() {
         </div>
       </div>
 
-      <a href="https://wa.me/201040444477" target="_blank" rel="noreferrer"
+      <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noreferrer"
         className="card p-4 flex items-center gap-3 hover:border-sea/50 transition-colors">
         <span className="w-11 h-11 rounded-xl grid place-items-center text-xl shrink-0 bg-emerald-500/10">💬</span>
         <div>
