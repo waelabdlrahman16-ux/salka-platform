@@ -148,7 +148,7 @@ function RideHistoryPanel({ restaurantId }: { restaurantId: number }) {
           </div>
           <p className="text-mist text-xs mt-0.5">{o.zone} — وحدة {o.unit_number}</p>
           <p className="text-xs text-mist mt-1">
-            {new Date(o.created_at).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short' })}
+            {new Date(o.created_at).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'short' })}
             {o.payment_mode === 'driver_pays' ? ` · المندوب دفع ${o.collect_amount} ج.م` : ' · مدفوع مقدمًا'}
           </p>
         </div>

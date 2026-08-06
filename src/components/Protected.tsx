@@ -6,10 +6,21 @@ export default function Protected({ role, children }: {
   role: 'admin' | 'driver' | 'vendor' | 'catalog' | 'supervisor'
   children: ReactNode
 }) {
-  const { session, profile, loading } = useAuth()
+  const { session, profile, loading, profileError, retryProfile } = useAuth()
 
   if (loading) return <p className="text-mist text-center py-10">جاري التحقق…</p>
   if (!session) return <Navigate to="/login" replace />
+  // Checked BEFORE !profile, because a failed read also leaves profile null.
+  // Telling a driver standing at a compound gate that his account is
+  // deactivated -- when the real problem is one bar of signal -- sends him home
+  // and loses the delivery. Say what actually happened, and let him retry.
+  if (profileError) return (
+    <div className="card p-6 text-center max-w-sm mx-auto">
+      <p className="font-semibold">مش قادرين نتأكد من حسابك</p>
+      <p className="text-sm text-mist mt-2">النت ضعيف على ما يبدو. حسابك زي ما هو — جرب تاني.</p>
+      <button className="btn-sea w-full mt-4" onClick={retryProfile}>جرب تاني</button>
+    </div>
+  )
   if (!profile) return (
     <div className="card p-6 text-center max-w-sm mx-auto">
       <p className="font-semibold">الحساب غير مفعّل</p>

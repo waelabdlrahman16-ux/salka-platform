@@ -682,7 +682,7 @@ export default function DriverPage() {
   if (!id) return <p className="text-mist text-center py-10">حسابك غير مرتبط بمندوب. تواصل مع الإدارة.</p>
   if (!driver) return <p className="text-mist">جاري التحميل…</p>
 
-  const fmt = (t: string | null) => t ? new Date(t).toLocaleTimeString('ar-EG-u-nu-latn', { hour: '2-digit', minute: '2-digit' }) : ''
+  const fmt = (t: string | null) => t ? new Date(t).toLocaleTimeString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit' }) : ''
 
   // The assignment query is not filtered by date -- it is the last 20 rows. So
   // تم التوصيل can hold yesterday's runs alongside today's, and a bare 21:40
@@ -695,7 +695,7 @@ export default function DriverPage() {
     const yday = new Date(Date.now() - 86400000).toDateString()
     const day = d.toDateString() === today ? '' 
       : d.toDateString() === yday ? 'امبارح '
-      : `${d.toLocaleDateString('ar-EG-u-nu-latn', { day: '2-digit', month: '2-digit' })} `
+      : `${d.toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', day: '2-digit', month: '2-digit' })} `
     return day + fmt(t)
   }
 
@@ -1321,7 +1321,7 @@ export default function DriverPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-semibold">
-                        {new Date(sh.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'numeric' })}
+                        {new Date(sh.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', weekday: 'long', day: 'numeric', month: 'numeric' })}
                       </p>
                       <p className="text-sm text-mist mt-0.5">{sh.start_time.slice(0,5)} — {sh.end_time.slice(0,5)}</p>
                     </div>
@@ -1364,7 +1364,7 @@ export default function DriverPage() {
             {swaps.filter(s => !myOpenRequests.has(s.shift_id)).map(sw => (
               <div key={sw.request_id} className="card p-4 border-sand/40">
                 <p className="font-semibold">
-                  {new Date(sw.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'numeric' })}
+                  {new Date(sw.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', weekday: 'long', day: 'numeric', month: 'numeric' })}
                   {' '}· {sw.start_time.slice(0,5)}–{sw.end_time.slice(0,5)}
                 </p>
                 <p className="text-sm text-mist mt-1">مطلوبة من {sw.requested_by_name}</p>

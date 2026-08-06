@@ -216,7 +216,7 @@ export default function MyOrders() {
               <div>
                 <p className="font-semibold">#{r.id} — {r.restaurant_name}</p>
                 <p className="text-xs text-mist mt-0.5">
-                  {new Date(r.created_at).toLocaleDateString('ar-EG-u-nu-latn')} · {orderStatusLabel(r.status)}
+                  {new Date(r.created_at).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo' })} · {orderStatusLabel(r.status)}
                 </p>
               </div>
               {/* An unquoted pharmacy order has total = the delivery fee, so

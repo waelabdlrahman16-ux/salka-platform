@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { rpc } from '../lib/rpc'
+import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
 
 /**
  * An order a vendor phoned in.
@@ -42,10 +43,34 @@ export default function PhoneOrderForm({ onCreated }: { onCreated: () => void })
 
   const fee = compounds.find(c => String(c.id) === f.compound_id)?.delivery_fee ?? null
   const collect = Number(f.collect) || 0
+  // Server-owned, never a hardcoded 0.08 -- same rule and the same hook as
+  // CheckoutPage and CartPage. staff_create_pickup_order charges this now; it
+  // used to charge nothing, so two real orders went out earning the delivery
+  // fee alone.
+  const { pct: serviceFeePct } = useServiceFeePct()
+  const serviceFee = serviceFeeFor(collect, serviceFeePct)
   // Shown before submitting, because the number the driver will ask for at the
   // door is the whole point of the call and getting it wrong is a doorstep
-  // argument, not a bug report.
-  const total = fee != null ? fee + collect : null
+  // argument, not a bug report. null while any component is unknown -- quoting
+  // a number over the phone that the server will not honour is the one failure
+  // this box exists to prevent.
+  const total = fee != null && serviceFee != null ? fee + collect + serviceFee : null
+
+  // Advisory only. staff_create_pickup_order deliberately does NOT force a
+  // phoned-in order into awaiting_payment -- the vendor is on the line and
+  // cannot wait for an InstaPay transfer. But a driver carrying 2500 ج.م of
+  // someone else's stock with nothing secured is worth one sentence on screen.
+  // Never guessed: null until settings answers, same as CheckoutPage.
+  const [depositThreshold, setDepositThreshold] = useState<number | null>(null)
+  useEffect(() => {
+    if (!open) return
+    supabase.from('settings').select('value').eq('key', 'cod_deposit_threshold_egp').maybeSingle()
+      .then(({ data, error }) => {
+        if (error || data?.value == null) return
+        setDepositThreshold(Number(data.value))
+      })
+  }, [open])
+  const needsDeposit = total != null && depositThreshold != null && total > depositThreshold
   const valid = f.restaurant_id && f.compound_id && f.name.trim() && f.phone.trim() && f.unit.trim()
 
   async function submit() {
@@ -163,12 +188,29 @@ export default function PhoneOrderForm({ onCreated }: { onCreated: () => void })
             <>
               <p className="flex justify-between"><span className="text-mist">فلوس المطعم</span><span>{collect} ج.م</span></p>
               <p className="flex justify-between"><span className="text-mist">التوصيل</span><span>{fee} ج.م</span></p>
+              <p className="flex justify-between">
+                <span className="text-mist">رسوم الخدمة</span>
+                <span>{serviceFee != null ? `${serviceFee} ج.م` : <span className="text-mist">…</span>}</span>
+              </p>
               <p className="flex justify-between font-bold mt-1 pt-1 border-t border-line">
-                <span>المندوب هيحصّل</span><span>{total} ج.م</span>
+                <span>المندوب هيحصّل</span>
+                <span>{total != null ? `${total} ج.م` : <span className="text-mist">…</span>}</span>
               </p>
             </>
           )}
         </div>
+
+        {needsDeposit && (
+          <div className="bg-sand/15 border border-sand rounded-xl p-3 text-sm" role="alert">
+            <p className="font-semibold text-sandink">
+              ده فوق {depositThreshold} ج.م — اطلب عربون قبل ما تبعت المندوب
+            </p>
+            <p className="text-xs text-mist mt-1">
+              المندوب هيشيل بضاعة بـ {collect} ج.م. لو الباب مافتحش، الخسارة عليك.
+              الطلب هيتعمل عادي — ده تنبيه بس.
+            </p>
+          </div>
+        )}
 
         <button className="btn-sea w-full text-sm" disabled={busy || !valid} onClick={submit}>
           {busy ? 'لحظة…' : 'اعمل الطلب ودوّر على مندوب'}

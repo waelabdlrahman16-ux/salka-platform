@@ -1131,7 +1131,7 @@ export default function Admin() {
   }
 
   const vehicleLabel = (v: string) => v === 'van' ? '🚐 فان' : '🏍️ موتوسيكل'
-  const fmtTime = (iso: string | null) => iso ? new Date(iso).toLocaleString('ar-EG-u-nu-latn', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : null
+  const fmtTime = (iso: string | null) => iso ? new Date(iso).toLocaleString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : null
 
   // Only orders where the CUSTOMER has said they transferred.
   //
@@ -1370,7 +1370,7 @@ export default function Admin() {
                       they said it instead -- that is the number that decides
                       whether this is fresh or has been sitting. */}
                   <p className="text-xs mt-0.5 text-emerald-700">
-                    ✓ قال إنه حوّل{o.instapay_claimed_at ? ` · ${new Date(o.instapay_claimed_at).toLocaleTimeString('ar-EG', { hour: 'numeric', minute: '2-digit' })}` : ''}
+                    ✓ قال إنه حوّل{o.instapay_claimed_at ? ` · ${new Date(o.instapay_claimed_at).toLocaleTimeString('ar-EG', { timeZone: 'Africa/Cairo', hour: 'numeric', minute: '2-digit' })}` : ''}
                   </p>
                 </div>
                 <button className="btn-sea !py-1.5 !px-3.5 text-sm shrink-0" disabled={accountBusy === `instapay-${o.id}`}
@@ -1615,7 +1615,7 @@ export default function Admin() {
             )
             const groups: { label: string; items: typeof orders }[] = []
             for (const o of filteredOrders) {
-              const label = new Date(o.created_at).toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'long' })
+              const label = new Date(o.created_at).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', weekday: 'long', day: 'numeric', month: 'long' })
               const last = groups[groups.length - 1]
               if (last && last.label === label) last.items.push(o)
               else groups.push({ label, items: [o] })
@@ -2093,7 +2093,7 @@ export default function Admin() {
                   <div key={e.id} className="card p-4 border-red-400/60">
                     <p className="font-semibold">{e.requester?.name}</p>
                     <p className="text-sm text-mist mt-0.5">
-                      {e.shifts && new Date(e.shifts.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'long', day: 'numeric', month: 'numeric' })}
+                      {e.shifts && new Date(e.shifts.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', weekday: 'long', day: 'numeric', month: 'numeric' })}
                       {' '}· {e.shifts?.start_time?.slice(0,5)}–{e.shifts?.end_time?.slice(0,5)}
                     </p>
                     {e.reason && <p className="text-sm text-mist mt-1">"{e.reason}"</p>}
@@ -2146,7 +2146,7 @@ export default function Admin() {
                 <div key={sh.id} className="card p-3.5 flex items-center justify-between text-sm">
                   <div>
                     <span className="font-semibold">{d?.name}</span>
-                    <span className="text-mist"> — {new Date(sh.shift_date).toLocaleDateString('ar-EG-u-nu-latn')} · {sh.start_time.slice(0,5)}–{sh.end_time.slice(0,5)}</span>
+                    <span className="text-mist"> — {new Date(sh.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo' })} · {sh.start_time.slice(0,5)}–{sh.end_time.slice(0,5)}</span>
                   </div>
                   {sh.status === 'swapped' && <span className="badge-closed">اتبدلت</span>}
                 </div>

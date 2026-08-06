@@ -14,12 +14,21 @@ interface AuthCtx {
   session: Session | null
   profile: Profile | null
   loading: boolean
+  /**
+   * True when we could not READ the profile, as distinct from having read it
+   * and found nothing. Without this the two are indistinguishable downstream --
+   * both are `profile === null` -- and Protected told a driver on bad signal
+   * that his account had been deactivated.
+   */
+  profileError: boolean
+  retryProfile: () => void
   signIn: (email: string, password: string) => Promise<string | null>
   signOut: () => Promise<void>
 }
 
 const Ctx = createContext<AuthCtx>({
   session: null, profile: null, loading: true,
+  profileError: false, retryProfile: () => {},
   signIn: async () => null, signOut: async () => {}
 })
 
@@ -36,6 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [profileError, setProfileError] = useState(false)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -61,14 +72,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!session) return
     let cancelled = false
     setLoading(true)
+    setProfileError(false)
     supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle()
       .then(({ data, error }) => {
         if (cancelled) return
-        // The error was discarded and profile set to null, which Protected
-        // renders as «الحساب غير مفعّل — تواصل مع الإدارة». One dropped request
-        // at a compound gate told a driver his account was deactivated. A
-        // failed read is not an answer about the account: keep loading and let
-        // the next attempt decide.
         // A failed READ is not an answer about the account. Discarding the
         // error and setting profile to null made Protected render
         // «الحساب غير مفعّل — تواصل مع الإدارة», so one dropped request at a
@@ -81,9 +88,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               .then(({ data: retry, error: retryErr }) => {
                 if (cancelled) return
                 // Two consecutive failures is what a bad link at a compound gate
-                // looks like. Dropping this error would render «الحساب غير مفعّل»
-                // two seconds later -- the original bug, delayed.
-                if (retryErr) { setLoading(false); return }
+                // looks like. The retry alone was not enough: falling through
+                // with profile still null rendered «الحساب غير مفعّل» two
+                // seconds later -- the original bug, delayed. Say we could not
+                // check, and offer to try again.
+                if (retryErr) { setProfileError(true); setLoading(false); return }
                 setProfile((retry as Profile) ?? null)
                 setLoading(false)
               })
@@ -95,8 +104,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
     return () => { cancelled = true }
     // Re-fetch only when the logged-in user actually changes, not on every
-    // TOKEN_REFRESHED event (which produces a new session object for the same user).
-  }, [session?.user.id])
+    // TOKEN_REFRESHED event (which produces a new session object for the same
+    // user) -- plus `attempt`, which the retry button bumps.
+  }, [session?.user.id, attempt])
 
   async function signIn(email: string, password: string) {
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
@@ -108,5 +118,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null)
   }
 
-  return <Ctx.Provider value={{ session, profile, loading, signIn, signOut }}>{children}</Ctx.Provider>
+  return <Ctx.Provider value={{
+    session, profile, loading, profileError,
+    retryProfile: () => setAttempt(a => a + 1),
+    signIn, signOut
+  }}>{children}</Ctx.Provider>
 }

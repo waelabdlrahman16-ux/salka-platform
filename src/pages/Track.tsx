@@ -60,7 +60,7 @@ interface TrackData {
 }
 
 function fmtTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('ar-EG-u-nu-latn', { hour: 'numeric', minute: '2-digit' })
+  return new Date(iso).toLocaleTimeString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', hour: 'numeric', minute: '2-digit' })
 }
 
 export default function Track() {
@@ -482,8 +482,14 @@ export default function Track() {
           {o.status === 'No_Driver_Found' && (
             <p className="text-sm text-sandink">الزحمة عالية دلوقتي — الإدارة بتظبط لك مندوب</p>
           )}
+          {/* This said «الوصول المتوقع» -- expected ARRIVAL -- while ready_at is
+              when the food is ready and the DRIVER COLLECTS it. It was missing
+              the whole delivery leg, and it contradicted the «الهدف: يوصلك قبل»
+              line right below it, which is the real arrival promise. Order #53
+              showed «الوصول المتوقع 15:49» at the moment the driver was still
+              picking up. Two times on one screen and the louder one was wrong. */}
           {o.ready_at && current === 'pending' && !o.scheduled_date && o.pricing_status !== 'pending_quote' && (
-            <p className="text-sm text-mist">الوصول المتوقع {fmtTime(o.ready_at)}</p>
+            <p className="text-sm text-mist">الطلب هيبقى جاهز حوالي {fmtTime(o.ready_at)}</p>
           )}
           {o.scheduled_date && <p className="text-sm text-mist">التوصيل خلال الفترة اللي اخترتها</p>}
           {o.sla_minutes && current !== 'Delivered' && !o.scheduled_date
