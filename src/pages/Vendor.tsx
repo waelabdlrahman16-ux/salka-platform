@@ -5,6 +5,7 @@ import { useAuth } from '../lib/auth'
 import { startRinging, stopRinging } from '../lib/ring'
 import { ping, askNotificationPermission } from '../lib/notify'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
+import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { registerPush, persistPushToken } from '../lib/push'
 import { orderStatusLabel } from '../lib/statusLabels'
@@ -200,6 +201,9 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
   const { fee: deliveryFee, quote, loading: feeLoading, failed: feeFailed, retry: retryFee } =
     useDeliveryQuote(compoundId)
   const amount = Number(collectAmount) || 0
+  // Server-owned percentage, same hook as every other screen that shows money.
+  const { pct: serviceFeePct } = useServiceFeePct()
+  const pickupServiceFee = paymentMode === 'driver_pays' ? serviceFeeFor(amount, serviceFeePct) : 0
   const valid = name.trim() && isValidEgyptPhone(phone) && compoundId && unit.trim()
     && deliveryFee !== null && (paymentMode === 'prepaid' || amount > 0)
 
@@ -315,6 +319,28 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
           </div>
           {paymentMode === 'driver_pays' && (
             <div className="flex justify-between text-sm"><span>قيمة الأوردر (كاش للمندوب)</span><span>{amount || 0} ج.م</span></div>
+          )}
+          {/* request_pickup charges the same 8% service fee as every other order
+              path now. Without these two lines the vendor tells the customer a
+              number 8% below what the driver asks for at the door -- which is a
+              doorstep argument, and the vendor is the one standing in it. Only
+              on driver_pays: a prepaid order is paid at the shop and the driver
+              collects the delivery fee alone. */}
+          {paymentMode === 'driver_pays' && (
+            <div className="flex justify-between text-sm">
+              <span>رسوم الخدمة</span>
+              <span>{pickupServiceFee != null ? `${pickupServiceFee} ج.م` : '…'}</span>
+            </div>
+          )}
+          {paymentMode === 'driver_pays' && (
+            <div className="flex justify-between text-sm font-bold border-t border-line pt-2">
+              <span>المندوب هيحصّل</span>
+              <span>
+                {deliveryFee != null && pickupServiceFee != null
+                  ? `${deliveryFee + (Number(amount) || 0) + pickupServiceFee} ج.م`
+                  : '…'}
+              </span>
+            </div>
           )}
         </div>
       )}
