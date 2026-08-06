@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useId } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
+import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { artFor } from '../lib/categoryArt'
 import Icon from '../components/Icon'
@@ -305,6 +306,20 @@ export default function CustomOrder() {
     return p === null ? sum : sum + p * l.qty
   }, 0)
   const unpricedCount = lines.filter(l => priceOf(l.name) === null).length
+
+  // confirm_custom_order_price charges the same 8% as place_order, on the same
+  // base (subtotal only) with the same rounding. Until that migration, custom
+  // orders were the one path that never charged it, so this card was allowed to
+  // stop at items + delivery. It is not any more: without this line a 205 ج.م
+  // basket shows «تقريبًا 270» and is billed 286.
+  //
+  // The percentage comes from the server, never a hardcoded 0.08 -- same rule
+  // as CartPage and CheckoutPage. serviceFeeFor returns null while it is
+  // unknown, and null is rendered as «…» rather than folded into the total as
+  // a zero, which would understate it exactly as before.
+  const { pct: serviceFeePct } = useServiceFeePct()
+  const serviceFee = serviceFeeFor(knownSubtotal, serviceFeePct)
+
   // selectedCompound, not compoundId. CheckoutPage already learned this: a
   // stored id whose compound has since been deactivated passes a truthiness
   // check, renders a blank المكان select, and submits p_zone: ''.
@@ -753,6 +768,14 @@ export default function CustomOrder() {
                 <span className="text-mist">التوصيل</span><span>{deliveryFee} ج.م</span>
               </div>
             )}
+            <div className="flex justify-between text-sm py-0.5">
+              <span className="text-mist">رسوم الخدمة</span>
+              <span>
+                {serviceFee !== null
+                  ? `${serviceFee} ج.م${unpricedCount > 0 ? ' +' : ''}`
+                  : <span className="text-mist">…</span>}
+              </span>
+            </div>
             {unpricedCount > 0 && (
               <div className="flex justify-between text-sm py-0.5 text-sandink">
                 <span>{unpricedCount === 1 ? 'صنف واحد لسه بالمكالمة' : `${unpricedCount} أصناف لسه بالمكالمة`}</span>
@@ -761,7 +784,13 @@ export default function CustomOrder() {
             )}
             <div className="flex justify-between text-sm font-bold border-t border-line mt-1.5 pt-2">
               <span>تقريبًا</span>
-              <span>{Math.round((knownSubtotal + (deliveryFee ?? 0)) * 100) / 100} ج.م{unpricedCount > 0 ? ' +' : ''}</span>
+              {/* The '+' now also fires when the service fee is still unknown --
+                  the total is genuinely incomplete then, and a bare number would
+                  read as final. */}
+              <span>
+                {Math.round((knownSubtotal + (deliveryFee ?? 0) + (serviceFee ?? 0)) * 100) / 100} ج.م
+                {unpricedCount > 0 || serviceFee === null ? ' +' : ''}
+              </span>
             </div>
           </div>
         )}
