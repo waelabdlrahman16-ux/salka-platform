@@ -43,16 +43,28 @@ export default function ProductCard({
   const art = artFor(item.category)
 
   return (
-    <div className="card p-2.5 flex flex-col h-full">
+    <div className="card p-2 flex flex-col h-full">
       <button className="text-right flex flex-col" onClick={onOpenDetail}>
         {/* 4:3 rather than square. Food is photographed landscape, and the
             quarter of the height this returns is what pays for the description
             below without making the card taller. */}
-        <div className="relative rounded-xl aspect-[4/3] grid place-items-center text-3xl mb-2 overflow-hidden"
-          style={{ background: art.tint }}>
+        {/* Concentric radii would give 12px card - 10px padding = 2px, which
+            reads as square. 6px keeps the corners visibly soft while still
+            being tighter than the card that contains them, which is the part
+            that was actually wrong before. `rounded` (4px) if this is still a
+            touch too round. */}
+        {/* The tint is the backdrop for the EMOJI placeholder. Painting it
+            behind a real photo put a coloured band around any image whose own
+            background differs -- a cola can shot on pale blue sitting on a peach
+            tile. A photo brings its own background; ours only competes with it. */}
+        <div className="relative rounded-md aspect-[4/3] grid place-items-center text-3xl mb-1.5 overflow-hidden"
+          style={{ background: item.image_url ? '#fff' : art.tint }}>
           {item.image_url
+            // contain, not cover: half this catalogue is packaged goods shot
+            // upright on white, and cover crops the top off a can. A food photo
+            // loses a little edge; a product loses its lid.
             ? <img src={item.image_url} alt={item.name} loading="lazy" decoding="async"
-                className="w-full h-full object-cover" />
+                className="w-full h-full object-contain" />
             : art.emoji}
           {item.requires_prescription && (
             <span className="absolute top-1.5 right-1.5 bg-white/90 rounded-full px-2 py-0.5 text-[10px] font-bold text-seadeep">
@@ -66,7 +78,12 @@ export default function ProductCard({
           )}
         </div>
 
-        <h3 className="font-semibold text-sm leading-snug line-clamp-2">{item.name}</h3>
+        {/* One line, truncated. Two lines made the cards uneven -- a long name
+            pushed its price and button down while a short one left a gap -- and
+            the second line was carrying nothing a customer decides on. Names
+            are curated, so the fix is short names plus this guard, not a
+            taller card. */}
+        <h3 className="font-semibold text-sm leading-snug truncate" title={item.name}>{item.name}</h3>
 
         {/* Two lines, always reserved, always clamped -- this is what keeps the
             grid even. Every item in this catalogue has a written description and
@@ -74,11 +91,11 @@ export default function ProductCard({
             differ by 250 ج.م and the cards said nothing about why, while the
             answer ("٩ قطع + بطاطس فاميلي..." vs "٦ قطع + ٢ بطاطس...") sat in the
             database on both rows. */}
-        <p className="text-[11px] text-mist leading-snug mt-0.5 line-clamp-2 min-h-[2.2em]">
+        <p className="text-[11px] text-mist leading-snug line-clamp-2 min-h-[2.2em]">
           {item.description || ' '}
         </p>
 
-        <p className="mt-1.5 flex items-center gap-2 flex-wrap">
+        <p className="mt-1 flex items-center gap-2 flex-wrap">
           {originalPrice != null && <span className="text-mist text-xs line-through">{originalPrice}</span>}
           <span className="text-sea font-bold">
             {/* "من" whenever the final figure is decided in the options sheet.
@@ -100,7 +117,7 @@ export default function ProductCard({
 
       {/* mt-auto: whatever the name and description did above, every action in
           the row starts at the same height. */}
-      <div className="mt-auto pt-2">
+      <div className="mt-auto pt-1.5">
         {hasOptions ? (
           // Deliberately the quiet variant. "إضافة" adds immediately and
           // "اختيار" opens a sheet -- two different outcomes that were wearing
