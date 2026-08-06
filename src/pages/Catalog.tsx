@@ -172,7 +172,16 @@ export default function Catalog() {
         <AddMenuItemModal
           restaurant={adding}
           onClose={() => setAdding(null)}
-          onSaved={load}
+          // The button says «حفظ وكمّل الخيارات», and AddMenuItemModal hands the
+          // created row back so it can be honoured -- Admin does exactly this.
+          // `onSaved={load}` dropped that argument, so on the catalog role's ONLY
+          // screen the button saved, refetched, and went nowhere: back to
+          // scrolling forty-six rows to find the item you just made and add its
+          // sizes, which is the complaint the modal was rebuilt to answer.
+          onSaved={(created) => {
+            load()
+            if (created) { setAdding(null); setEditing(created) }
+          }}
         />
       )}
     </div>
