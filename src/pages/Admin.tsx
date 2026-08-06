@@ -17,6 +17,7 @@ import AddMenuItemModal from '../components/AddMenuItemModal'
 import DiscountManager from '../components/DiscountManager'
 import EnablePushButton from '../components/EnablePushButton'
 import CustomersTab from '../components/CustomersTab'
+import PhoneOrderForm from '../components/PhoneOrderForm'
 import LiveDeliveryDetail from '../components/LiveDeliveryDetail'
 
 function StarRow({ n }: { n: number }) {
@@ -741,12 +742,38 @@ export default function Admin() {
     load(true)
   }
 
+  // Moved off the admin-accounts edge function onto admin_delete_staff().
+  // That function's assertTargetIsStaff permits vendor, driver and catalog only,
+  // so a supervisor account could be created from this very screen and then
+  // never removed -- and redeploying 15KB of live authentication code to add one
+  // string is a worse risk than the bug. The RPC also refuses to delete an admin
+  // or the caller themself, and refuses a driver still holding cash or mid-
+  // delivery, none of which the edge function checked.
   async function removeLogin(profileId: string) {
-    if (!confirm('تأكيد إلغاء الحساب؟ مش هيقدر يدخل تاني.')) return
+    if (!confirm('تأكيد إلغاء الحساب؟ مش هيقدر يدخل تاني.\n\nسجل الطلبات والأرباح هيفضل زي ما هو.')) return
     setAccountBusy(profileId)
-    const result = await callAccountsFn({ action: 'remove_login', profile_id: profileId })
+    const res = await rpc('admin_delete_staff', { p_profile_id: profileId }, {
+      cannot_delete_self: 'مينفعش تلغي حسابك انت',
+      cannot_delete_admin: 'مينفعش تلغي حساب إدارة من هنا',
+      driver_has_live_delivery: 'المندوب ده معاه طلب شغال دلوقتي — سيبه يخلّصه أو اسحب الطلب منه الأول',
+      profile_not_found: 'الحساب ده مش موجود — حدّث الصفحة',
+      admin_only: 'مش من صلاحياتك',
+    })
     setAccountBusy(null)
-    if (result.error) { alert('حصل خطأ: ' + result.error); return }
+    if (!res.ok) {
+      // driver_holds_cash carries the amount, so it cannot live in the map above.
+      if (res.code === 'driver_holds_cash') {
+        if (!confirm('المندوب ده لسه ماسك كاش على عهدته.\n\nلو ألغيت الحساب مش هتقدر تسوّي الكاش من الشاشة دي بعد كده. متأكد؟')) return
+        setAccountBusy(profileId)
+        const forced = await rpc('admin_delete_staff', { p_profile_id: profileId, p_force: true })
+        setAccountBusy(null)
+        if (!forced.ok) { setActionError(forced.error); return }
+        setActionError(''); load(true)
+        return
+      }
+      setActionError(res.error); return
+    }
+    setActionError('')
     load(true)
   }
 
@@ -1383,6 +1410,10 @@ export default function Admin() {
           </button>
         ))}
       </div>
+
+      {tab === 'unassigned' && (
+        <PhoneOrderForm onCreated={() => load(true)} />
+      )}
 
       {tab === 'unassigned' && (
         <div className="space-y-3">

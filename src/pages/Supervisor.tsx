@@ -9,6 +9,7 @@ import type { Assignment, Driver, LiveDelivery, Order } from '../lib/types'
 import Icon from '../components/Icon'
 import EnablePushButton from '../components/EnablePushButton'
 import LiveDeliveryDetail from '../components/LiveDeliveryDetail'
+import PhoneOrderForm from '../components/PhoneOrderForm'
 
 // The driver supervisor.
 //
@@ -300,6 +301,8 @@ export default function Supervisor() {
           </div>
         ))}
       </div>
+
+      <PhoneOrderForm onCreated={load} />
 
       {/* 3. In flight */}
       <h2 className="font-bold mb-2.5">🚚 توصيلات جارية ({assignments.length})</h2>
