@@ -307,6 +307,31 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
   // defeated by simply not logging in, which is the default path. The server
   // enforces it inside place_order() and submit_custom_order(), so it holds
   // even if someone reloads past the UI.
+  async function removeAccount() {
+    if (!confirm(`مسح حساب ${c.name || c.phone} نهائيًا؟\n\nمش هينفع يتراجع. الطلبات القديمة هتفضل موجودة.`)) return
+    setBanBusy(true); setBanError('')
+    const res = await rpc('admin_delete_customer_by_phone', { p_phone: c.phone }, {
+      no_account_for_phone: 'الرقم ده مالوش حساب دخول أصلًا — ده سجل طلبات بس، ومفيش حاجة تتمسح',
+      customer_has_live_order: 'عنده طلب شغال دلوقتي — استنى لما يخلص',
+      admin_only: 'مش من صلاحياتك',
+    })
+    if (!res.ok) {
+      if (res.code === 'customer_has_wallet_balance') {
+        setBanBusy(false)
+        if (!confirm('العميل ده لسه معاه رصيد في المحفظة.\n\nالمسح هيلغي الرصيد ده خالص. متأكد؟')) return
+        setBanBusy(true)
+        const forced = await rpc('admin_delete_customer_by_phone', { p_phone: c.phone, p_force: true })
+        setBanBusy(false)
+        if (!forced.ok) { setBanError(forced.error); return }
+        onClose(); onChanged()
+        return
+      }
+      setBanBusy(false); setBanError(res.error); return
+    }
+    setBanBusy(false)
+    onClose(); onChanged()
+  }
+
   async function toggleBan() {
     if (c.banned) {
       if (!confirm(`ترجّع ${c.name || c.phone} يقدر يطلب تاني؟`)) return
@@ -403,6 +428,18 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
               disabled={banBusy} onClick={toggleBan}>
               {banBusy ? 'لحظة…' : c.banned ? 'رجّعه يقدر يطلب' : 'أوقف الحساب ده عن الطلب'}
             </button>
+
+            {/* Deleting is below banning on purpose, and worded so the
+                difference is obvious: a ban is reversible from this same
+                button, a delete is not. The orders stay either way. */}
+            <button className="w-full text-xs !py-2 mt-2 text-red-600 underline"
+              disabled={banBusy} onClick={removeAccount}>
+              امسح حساب العميل ده نهائيًا
+            </button>
+            <p className="text-[11px] text-mist mt-1.5 leading-5">
+              بيمسح تسجيل الدخول والعناوين المحفوظة. الطلبات القديمة بتفضل بأسمائها
+              وأرقامها عشان الحسابات تفضل مظبوطة.
+            </p>
           </div>
 
           <div>

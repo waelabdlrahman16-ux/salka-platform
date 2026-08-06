@@ -40,6 +40,10 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
   // screen the catalog role has, and place_order charges exactly what these
   // tables say, so a silently-dropped price edit bills the old price forever.
   const [writeError, setWriteError] = useState('')
+  // Which optional section is open. Six cards used to render at once whether the
+  // item needed them or not, so an item with no sizes still read a paragraph
+  // about sizes and the save button sat below all of it.
+  const [openSection, setOpenSection] = useState<'sizes' | 'combo' | 'addons' | 'discount' | null>(null)
 
   async function write(q: PromiseLike<{ error: { message?: string } | null }>, what: string): Promise<boolean> {
     const { error } = await q
@@ -64,7 +68,37 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
     return () => { document.body.style.overflow = '' }
   }, [])
 
+  /**
+   * Other items on this vendor's menu, offered as ready-made options.
+   *
+   * Asked for directly: "sometimes i have many sandwiches with some related
+   * items wanna choose or select to add them as options". Typing بطاطس وسط and
+   * 35 and uploading its photo again -- for the fifth sandwich -- is work the
+   * menu already did.
+   *
+   * The price is COPIED at the moment you tick it, not linked. That matches the
+   * add-on library beside it, and it means fries can be 35 with one sandwich and
+   * 40 with another; a link would make every sandwich move when the menu moves.
+   */
+  const [menuOptions, setMenuOptions] = useState<{ id: number; name: string; price: number; image_url: string | null }[]>([])
+
+  async function addAddonFromMenuItem(groupId: number, mi: { name: string; price: number; image_url: string | null }) {
+    if (addons.some(a => a.group_id === groupId && a.name === mi.name)) return
+    if (!await write(supabase.from('menu_item_addons').insert({
+      group_id: groupId, name: mi.name, price: mi.price, image_url: mi.image_url,
+      display_order: addons.filter(a => a.group_id === groupId).length
+    }), 'إضافة من المنيو')) return
+    loadOptions()
+  }
+
   async function loadOptions() {
+    supabase.from('menu_items')
+      .select('id, name, price, image_url')
+      .eq('restaurant_id', item.restaurant_id)
+      .eq('available', true)
+      .neq('id', item.id)                       // an item cannot be its own add-on
+      .order('name')
+      .then(({ data }) => setMenuOptions((data ?? []).filter(m => Number(m.price) > 0) as typeof menuOptions))
     supabase.from('vendor_addon_library').select('*').eq('restaurant_id', item.restaurant_id).order('name')
       .then(({ data }) => setLibrary((data as VendorAddonLibraryItem[]) ?? []))
     const { data: sz } = await supabase.from('menu_item_sizes').select('*').eq('menu_item_id', item.id).order('display_order').order('id')
@@ -316,7 +350,34 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
           availUntil={availUntil} setAvailUntil={setAvailUntil}
         />
 
-        {canManageDiscounts && (
+        {/* One row instead of four cards. Each chip carries the count of what is
+            already configured, so "does this item have sizes" is answerable
+            without opening anything -- and an item that needs none of them shows
+            four dashed outlines and nothing else. */}
+        <p className="text-xs text-mist mb-1.5 px-1">زوّد على الصنف</p>
+        <div className="flex gap-1.5 flex-wrap mb-3">
+          {([
+            { key: 'sizes' as const, label: 'الأحجام', n: sizes.length },
+            { key: 'combo' as const, label: 'الكومبو', n: combos.length },
+            { key: 'addons' as const, label: 'الإضافات', n: groups.length },
+            ...(canManageDiscounts ? [{ key: 'discount' as const, label: 'خصم', n: 0 }] : []),
+          ]).map(c => {
+            const on = openSection === c.key
+            return (
+              <button key={c.key}
+                className={`rounded-xl px-3 py-2 text-xs font-bold border-2 transition-colors ${
+                  on ? 'border-sea bg-sea/10 text-sea'
+                    : c.n > 0 ? 'border-line bg-shell text-foam'
+                    : 'border-dashed border-line bg-shell text-mist'}`}
+                onClick={() => setOpenSection(on ? null : c.key)}>
+                {c.n > 0 ? c.label : `+ ${c.label}`}
+                {c.n > 0 && <span className="mr-1.5 bg-sea text-white rounded-full px-1.5 text-[10px]">{c.n}</span>}
+              </button>
+            )
+          })}
+        </div>
+
+        {openSection === 'discount' && canManageDiscounts && (
           <div className="card p-4 mb-3">
             <p className="font-semibold text-sm mb-2">الخصم على الصنف ده</p>
             <DiscountManager restaurantId={item.restaurant_id} scope="item" menuItemId={item.id} />
@@ -326,7 +387,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
         {/* Sizes first, then the combo underneath it -- the same order the
             customer meets them. A combo is an upgrade on top of the sandwich
             you have already chosen, so it reads second in both places. */}
-        <OptionRowsCard
+        {openSection === 'sizes' && <OptionRowsCard
           title="الأحجام"
           hint="السعر هنا بدل سعر الصنف، مش زيادة عليه."
           rows={sizes.map(s => ({ id: s.id, name: s.name, price: Number(s.price), note: s.is_default ? '(افتراضي)' : undefined }))}
@@ -343,9 +404,9 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
           addPlaceholder="حجم تاني"
           onApplyPreset={applySizePreset} onAdd={addSizeNamed}
           onRemove={removeSize} onPriceChange={updateSizePrice} onNameChange={updateSizeName}
-        />
+        />}
 
-        <OptionRowsCard
+        {openSection === 'combo' && <OptionRowsCard
           title="الكومبو"
           hint="سعر الكومبو كامل (شامل البطاطس والمشروب). العميل يختار ساندوتش لوحده أو كومبو — مش الاتنين."
           rows={combos.map(c => ({ id: c.id, name: c.name, price: Number(c.price) }))}
@@ -362,9 +423,9 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
           addPlaceholder="حجم تاني"
           onApplyPreset={applyComboPreset} onAdd={addCombo}
           onRemove={removeCombo} onPriceChange={updateComboPrice} onNameChange={updateComboName}
-        />
+        />}
 
-        <AddonsCard
+        {openSection === 'addons' && <AddonsCard
           groups={groups} addons={addons}
           newGroup={newGroup} setNewGroup={setNewGroup}
           newAddon={newAddon} setNewAddon={setNewAddon}
@@ -373,7 +434,8 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
           onApplyPreset={applyGroupPreset} onRenameGroup={renameGroup}
           onAddonPriceChange={updateAddonPrice}
           library={library} onAddFromLibrary={addAddonFromLibrary}
-        />
+          menuOptions={menuOptions} onAddFromMenu={addAddonFromMenuItem}
+        />}
 
         <button className="btn-sea w-full !py-3 mb-3" disabled={saving || !name.trim() || !category.trim() || !price} onClick={save}>
           {saving ? 'جاري الحفظ…' : 'حفظ'}

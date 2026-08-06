@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { uploadVendorImage } from '../lib/upload'
 import { useDismissable } from '../lib/useDismissable'
-import type { Restaurant } from '../lib/types'
+import type { MenuItem, Restaurant } from '../lib/types'
 
 const EMPTY = {
   name: '', description: '', category: '', price: '', requiresRx: false,
@@ -13,7 +13,16 @@ const EMPTY = {
 export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
   restaurant: Restaurant
   onClose: () => void
-  onSaved: () => void
+  /**
+   * Called after a successful insert. `created` is the row that was just made,
+   * so the caller can drop straight into its options.
+   *
+   * The complaint this answers: "sizes are not in adding a new item, i have to
+   * scroll down to get the item and edit it". Adding a sandwich with three sizes
+   * meant save, close, find it among forty-six, reopen, scroll. The item now
+   * hands itself to the editor.
+   */
+  onSaved: (created?: MenuItem) => void
 }) {
   const overlayRef = useDismissable(onClose)
   const [form, setForm] = useState(EMPTY)
@@ -41,16 +50,16 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
   async function save(addAnother: boolean) {
     if (!valid) return
     setSaving(true); setFormError('')
-    const { error } = await supabase.from('menu_items').insert({
+    const { data: created, error } = await supabase.from('menu_items').insert({
       restaurant_id: restaurant.id, name: form.name.trim(), description: form.description.trim(),
       category: form.category.trim(), price: Number(form.price), requires_prescription: form.requiresRx,
       available: form.available, image_url: form.imageUrl,
       available_from: form.hasWindow ? form.availFrom : null,
       available_until: form.hasWindow ? form.availUntil : null
-    })
+    }).select('*').single()
     setSaving(false)
     if (error) { setFormError(`الحفظ فشل — ${error.message}`); return }
-    onSaved()
+    onSaved(addAnother ? undefined : (created as MenuItem))
     if (addAnother) {
       setJustSaved(form.name.trim())
       setForm(f => ({ ...EMPTY, category: f.category })) // keep the section, clear the rest
@@ -131,8 +140,12 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
           <button className="btn-ghost flex-1 !py-2.5 text-sm" disabled={saving || !valid} onClick={() => save(true)}>
             حفظ وإضافة صنف تاني
           </button>
+          {/* Renamed from a bare حفظ: the sheet no longer just closes, it opens
+              the item's options. Saying so on the button is the difference
+              between a surprise and a flow. */}
           <button className="btn-sea flex-1 !py-2.5 text-sm" disabled={saving || !valid} onClick={() => save(false)}>
-            {saving ? 'جاري الحفظ…' : 'حفظ'}
+            
+            {saving ? 'جاري الحفظ…' : 'حفظ وكمّل الخيارات'}
           </button>
         </div>
       </div>

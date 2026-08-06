@@ -2602,7 +2602,12 @@ export default function Admin() {
         <AddMenuItemModal
           restaurant={addingItemFor}
           onClose={() => setAddingItemFor(null)}
-          onSaved={() => load(true)}
+          // Straight from "added" into its sizes and options, instead of
+          // closing and making someone hunt for the row they just created.
+          onSaved={(created) => {
+            load(true)
+            if (created) { setAddingItemFor(null); setEditingItem(created) }
+          }}
         />
       )}
 

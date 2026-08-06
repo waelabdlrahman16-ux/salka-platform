@@ -7,7 +7,7 @@ type NewAddonDraft = { name: string; price: string; imageUrl: string | null; upl
 export default function AddonsCard({
   groups, addons, newGroup, setNewGroup, newAddon, setNewAddon,
   onAddGroup, onRemoveGroup, onAddAddon, onRemoveAddon,
-  onApplyPreset, onRenameGroup, onAddonPriceChange,
+  onApplyPreset, onRenameGroup, onAddonPriceChange, menuOptions, onAddFromMenu,
   library, onAddFromLibrary
 }: {
   /** The vendor's saved add-ons, offered as one-tap chips. */
@@ -18,6 +18,9 @@ export default function AddonsCard({
   onApplyPreset: (kind: 'required-one' | 'extras') => void
   onRenameGroup: (id: number, name: string) => void
   onAddonPriceChange: (id: number, price: string) => void
+  /** Other available items on this vendor's menu, offered as ready-made options. */
+  menuOptions: { id: number; name: string; price: number; image_url: string | null }[]
+  onAddFromMenu: (groupId: number, item: { name: string; price: number; image_url: string | null }) => void
   newGroup: { name: string; kind: 'multi' | 'swap'; required: boolean; maxSelect: string }
   setNewGroup: (v: { name: string; kind: 'multi' | 'swap'; required: boolean; maxSelect: string }) => void
   newAddon: Record<number, NewAddonDraft>
@@ -130,6 +133,34 @@ export default function AddonsCard({
                     </button>
                   ))}
               </div>
+            )}
+
+            {/* The menu itself as a source of options.
+                Typing "بطاطس وسط", then 35, then uploading its photo again for
+                the fifth sandwich is work this vendor already did once. The
+                price is COPIED on tap, not linked -- same as the library above,
+                so fries can be 35 here and 40 on the next sandwich. */}
+            {menuOptions.filter(m => !addons.some(a => a.group_id === g.id && a.name === m.name)).length > 0 && (
+              <details className="mb-2">
+                <summary className="text-xs text-sea cursor-pointer select-none">
+                  🍔 اختار من المنيو ({menuOptions.filter(m => !addons.some(a => a.group_id === g.id && a.name === m.name)).length})
+                </summary>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {menuOptions
+                    .filter(m => !addons.some(a => a.group_id === g.id && a.name === m.name))
+                    .map(m => (
+                      <button key={m.id}
+                        className="flex items-center gap-1.5 text-xs py-1 pr-1 pl-2.5 rounded-full border-2 border-line hover:border-sea"
+                        onClick={() => onAddFromMenu(g.id, m)}>
+                        {m.image_url
+                          ? <img src={m.image_url} alt="" className="w-5 h-5 rounded-full object-cover" />
+                          : <span className="w-5 h-5 rounded-full bg-shellup grid place-items-center text-[10px]">+</span>}
+                        <span>{m.name}</span>
+                        <span className="text-mist">{m.price}</span>
+                      </button>
+                    ))}
+                </div>
+              </details>
             )}
 
             <div className="bg-shellup/60 rounded-lg p-2.5">
