@@ -28,7 +28,14 @@ const REPORT_INTERVAL_MS = 20000
 /** Last rejection from update_my_location, so a caller can surface it. */
 export let lastReportError = ''
 
-let lastPos: { lat: number; lng: number } | null = null
+// A fix older than this is not worth sending. The timer re-sends whatever it
+// holds and the SERVER stamps location_updated_at = now(), so a driver who
+// loses GPS would keep publishing his last coordinate forever and the board
+// would render «موقعه دلوقتي» over a pin that has not moved in an hour -- the
+// confident-wrong-pin failure this module exists to avoid.
+const MAX_FIX_AGE_MS = 90_000
+
+let lastPos: { lat: number; lng: number; at: number } | null = null
 let timerId: ReturnType<typeof setInterval> | null = null
 let inFlight = false
 
@@ -37,6 +44,7 @@ async function send() {
   // one behind it. Skipping a tick is free -- the next one is 20s away and
   // carries a fresher position anyway.
   if (!lastPos || inFlight) return
+  if (Date.now() - lastPos.at > MAX_FIX_AGE_MS) return   // let it age honestly
   inFlight = true
   const { lat, lng } = lastPos
   try {
@@ -67,7 +75,7 @@ async function send() {
 // position to send instead of waiting a full interval for the next callback.
 export function reportPosition(lat: number, lng: number) {
   const first = lastPos === null
-  lastPos = { lat, lng }
+  lastPos = { lat, lng, at: Date.now() }
   // Only when reporting is live AND this is the first fix we have held: get the
   // pin on the dispatch board within a second of the driver setting off,
   // instead of up to 20s later.
@@ -98,7 +106,10 @@ export function stopLocationReporting() {
   if (!timerId) return
   clearInterval(timerId)
   timerId = null
-  lastPos = null
+  // lastPos is deliberately KEPT. Android stops firing watchPosition when the
+  // rider is stationary, so clearing it meant a driver who collected his next
+  // order while standing at the same restaurant had no pin until he physically
+  // rode off. The age check in send() is what stops it going stale.
   // Without this the driver's last fix stays on his row forever, and dispatch
   // watches a 🛵 parked at the previous customer's door for the rest of the
   // night. The server drops the position outright rather than ageing it, so the

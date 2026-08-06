@@ -33,8 +33,8 @@ export default function LiveDeliveryDetail({ live }: { live?: LiveDelivery }) {
   // one leaves half the vendors showing an empty card -- which is exactly what
   // the vendor ticket used to do.
   const lines: { label: string; qty: number; extra?: string }[] =
-    live.items.length > 0
-      ? live.items.map(it => ({
+    (live.items ?? []).length > 0
+      ? (live.items ?? []).map(it => ({
           label: it.name,
           qty: it.qty,
           extra: [it.size_name, it.combo_name, ...(it.addon_names ?? [])].filter(Boolean).join(' · ') || undefined,

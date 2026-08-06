@@ -173,7 +173,22 @@ async function webToken(): Promise<string | null> {
  * Now it resolves only when FCM has actually answered, either way, and puts the
  * reason in lastPushError so the failure card can name it.
  */
-async function nativeToken(onToken: PushTokenSink, allowPrompt: boolean): Promise<boolean> {
+// Every staff page calls registerPush() on mount AND renders EnablePushButton,
+// which calls it again. Both entered nativeToken(), and each one calls
+// removeAllListeners() before adding its own -- child effects run first, so the
+// page's call deleted the button's listeners. The button then only ever settled
+// via the 20s timeout, so it reported failure on a registration that had in fact
+// succeeded and never hid itself. That is the bug we spent the night chasing.
+let nativeInFlight: Promise<boolean> | null = null
+
+function nativeToken(onToken: PushTokenSink, allowPrompt: boolean): Promise<boolean> {
+  // Second caller joins the first rather than racing it.
+  if (nativeInFlight) return nativeInFlight
+  nativeInFlight = nativeTokenOnce(onToken, allowPrompt).finally(() => { nativeInFlight = null })
+  return nativeInFlight
+}
+
+async function nativeTokenOnce(onToken: PushTokenSink, allowPrompt: boolean): Promise<boolean> {
   diag(`platform=${Capacitor.getPlatform()} native=${Capacitor.isNativePlatform()}`)
 
   // If the plugin is not in the APK, or the bridge did not attach to the remote

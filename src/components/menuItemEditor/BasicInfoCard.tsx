@@ -53,7 +53,10 @@ export default function BasicInfoCard({
         </div>
         <div>
           <label className="label !mb-0.5" htmlFor={`${fid}-2`}>الوصف (اختياري)</label>
-          <input id={`${fid}-2`} className="field !h-8 !py-1 text-sm" value={description} onChange={e => setDescription(e.target.value)} />
+          {/* textarea, not input: a browser strips newlines from an input value,
+              so opening an item with a multi-line description and pressing حفظ
+              would have written the flattened string back. */}
+          <textarea id={`${fid}-2`} className="field !py-1 text-sm" rows={1} value={description} onChange={e => setDescription(e.target.value)} />
         </div>
       </div>
 

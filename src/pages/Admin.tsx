@@ -18,6 +18,8 @@ import DiscountManager from '../components/DiscountManager'
 import EnablePushButton from '../components/EnablePushButton'
 import CustomersTab from '../components/CustomersTab'
 import PhoneOrderForm from '../components/PhoneOrderForm'
+import CompoundsTab from '../components/CompoundsTab'
+import DriverForm, { driverToForm } from '../components/DriverForm'
 import LiveDeliveryDetail from '../components/LiveDeliveryDetail'
 
 function StarRow({ n }: { n: number }) {
@@ -69,7 +71,7 @@ function AccountActionsMenu({ busy, onChangeEmail, onResetPassword, onCustomPass
   )
 }
 
-type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet' | 'banners' | 'refunds' | 'customers'
+type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet' | 'banners' | 'refunds' | 'customers' | 'compounds'
 
 // What is actually owed back, decided by the server. A COD order only ever took
 // the 50% deposit, so refunding `total` would be a gift -- and that is exactly
@@ -92,12 +94,17 @@ type PendingRefund = {
  * its GROUP chip. A refund waiting is still visible from anywhere; you just do
  * not have to read fifteen other labels to notice it.
  */
-type TabGroup = 'now' | 'money' | 'catalog' | 'people' | 'setup'
+// 'places' is separate from 'catalog' deliberately. A compound is a PLACE we
+// deliver to; a restaurant is a business we deliver for. They were living under
+// one heading only because the fee editor happened to be bolted onto the
+// restaurants screen.
+type TabGroup = 'now' | 'money' | 'catalog' | 'places' | 'people' | 'setup'
 
 const GROUPS: { key: TabGroup; label: string }[] = [
   { key: 'now',     label: '🚦 التشغيل' },
   { key: 'money',   label: '💰 الفلوس' },
   { key: 'catalog', label: '🍽️ المطاعم' },
+  { key: 'places',  label: '📍 الأماكن' },
   { key: 'people',  label: '👥 الناس' },
   { key: 'setup',   label: '⚙️ الإعدادات' },
 ]
@@ -114,8 +121,10 @@ const TABS: { key: Tab; label: string; group: TabGroup }[] = [
   { key: 'wallet', label: 'محفظة العميل', group: 'money' },
 
   { key: 'menu', label: 'المطاعم والمنيو', group: 'catalog' },
-  { key: 'coverage', label: 'تغطية المطاعم', group: 'catalog' },
   { key: 'banners', label: '📣 الإعلانات', group: 'catalog' },
+
+  { key: 'compounds', label: 'الكومباوندات والتوصيل', group: 'places' },
+  { key: 'coverage', label: 'مين بيوصّل لفين', group: 'places' },
 
   { key: 'drivers', label: 'إدارة المندوبين', group: 'people' },
   { key: 'shifts', label: 'الورديات', group: 'people' },
@@ -139,12 +148,18 @@ const ACTIVE_ASSIGNMENT_STATUSES = ['Offered', 'Accepted', 'Picked_Up', 'Out_for
 export default function Admin() {
   const [tab, setTab] = useState<Tab>('unassigned')
   const [openGroup, setOpenGroup] = useState<TabGroup>('now')
+  // null = closed, undefined-id form = adding, populated = editing.
+  const [driverForm, setDriverForm] = useState<ReturnType<typeof driverToForm> | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [drivers, setDrivers] = useState<Driver[]>([])
   const [earnings, setEarnings] = useState<Earning[]>([])
   const [assigning, setAssigning] = useState<Order | null>(null)
-  const assigningRef = useDismissable(() => setAssigning(null), !!assigning)
+  // Closing must clear the refusal too. Only the backdrop did, so Escape, the
+  // Android Back handler and the إلغاء button all left #41's «الطلب ده مع مندوب
+  // بالفعل» sitting inside a freshly-opened dialog headed «طلب #58».
+  const closeAssign = () => { setAssigning(null); setModalError('') }
+  const assigningRef = useDismissable(closeAssign, !!assigning)
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [menu, setMenu] = useState<MenuItem[]>([])
   const [openRest, setOpenRest] = useState<number | null>(null)
@@ -183,8 +198,12 @@ export default function Admin() {
     const next = openHistory === id ? null : id
     setOpenHistory(next)
     if (next === null || orderItems[id]) return
-    const { data } = await supabase.from('order_items')
+    const { data, error } = await supabase.from('order_items')
       .select('name, qty, total, size_name, combo_name, addon_names').eq('order_id', id).order('id')
+    // Caching [] on a failed read told the operator the order was empty -- in
+    // the exact situation the panel exists for ("the customer says an item was
+    // missing") -- and never retried, because the key was then present.
+    if (error) { setActionError('مش قادرين نحمّل أصناف الطلب دلوقتي، اقفل وافتح تاني'); return }
     setOrderItems(prev => ({ ...prev, [id]: data ?? [] }))
   }
   const [vendorAccounts, setVendorAccounts] = useState<{ profile_id: string; restaurant_id: number; email: string }[]>([])
@@ -761,7 +780,10 @@ export default function Admin() {
     })
     setAccountBusy(null)
     if (!res.ok) {
-      // driver_holds_cash carries the amount, so it cannot live in the map above.
+      // actionError renders at the very top of the page, above both tab rows,
+      // while the accounts list is hundreds of pixels down -- so a refusal here
+      // was invisible and the operator just tapped again. This one keeps the
+      // blocking dialog on purpose.
       if (res.code === 'driver_holds_cash') {
         if (!confirm('المندوب ده لسه ماسك كاش على عهدته.\n\nلو ألغيت الحساب مش هتقدر تسوّي الكاش من الشاشة دي بعد كده. متأكد؟')) return
         setAccountBusy(profileId)
@@ -771,7 +793,7 @@ export default function Admin() {
         setActionError(''); load(true)
         return
       }
-      setActionError(res.error); return
+      setActionError(res.error); alert(res.error); return
     }
     setActionError('')
     load(true)
@@ -1501,6 +1523,14 @@ export default function Admin() {
 
       {tab === 'drivers' && (
         <div className="space-y-3">
+          {driverForm
+            ? <DriverForm initial={driverForm}
+                onDone={() => { setDriverForm(null); load(true) }}
+                onCancel={() => setDriverForm(null)} />
+            : <button className="btn-sea w-full text-sm" onClick={() => setDriverForm({
+                id: null, name: '', phone: '', vehicle_type: 'motorcycle',
+                vehicle_plate: '', instapay_number: '', payout_schedule: 'daily', active: true,
+              })}>➕ إضافة مندوب</button>}
           <div className="card p-4">
             <p className="font-semibold mb-1">إضافة مندوبين بالجملة</p>
             <p className="text-xs text-mist mb-2">سطر لكل مندوب: الاسم, رقم الموبايل, النوع (اكتب فان لو فان، سيبها فاضية أو اكتب موتوسيكل)</p>
@@ -1536,7 +1566,7 @@ export default function Admin() {
               <div className="flex flex-wrap gap-2.5 mt-3">
                 <button className="btn-ghost text-sm flex-1" onClick={() => toggleDriver(d, 'available')}>{d.available ? 'إيقاف مؤقت' : 'إتاحة'}</button>
                 <button className={`text-sm flex-1 ${d.active ? 'btn-danger' : 'btn-sea'}`} onClick={() => toggleDriver(d, 'active')}>{d.active ? 'إيقاف الحساب' : 'تفعيل الحساب'}</button>
-                <button className="btn-ghost text-sm flex-1" onClick={() => editDriverDetails(d)}>تعديل الاسم والرقم</button>
+                <button className="btn-ghost text-sm flex-1" onClick={() => setDriverForm(driverToForm(d))}>تعديل البيانات</button>
                 <button className="btn-ghost text-sm flex-1" onClick={() => editInstapay(d)}>تعديل إنستاباي</button>
                 <button className="btn-ghost text-sm flex-1" onClick={() => resetDriverDevice(d)}>فك ربط الجهاز</button>
               </div>
@@ -1649,7 +1679,12 @@ export default function Admin() {
                   This is the answer to "what happened with #41", on the card. */}
               {(() => {
                 if (!CLOSED_ORDER_STATUSES.includes(o.status as OrderStatus)) return null
+                // assignments is capped at 400 while orders reaches 500 and
+                // search is unbounded, so an older order simply is not in this
+                // list. Saying «محدش» there would claim nobody delivered an
+                // order that was delivered.
                 const done = assignments.find(a => a.order_id === o.id && a.delivered_at)
+                const known = assignments.some(a => a.order_id === o.id)
                 const mins = done?.delivered_at
                   ? Math.round((new Date(done.delivered_at).getTime() - new Date(o.created_at).getTime()) / 60000)
                   : null
@@ -1661,9 +1696,11 @@ export default function Admin() {
                   : o.payment_method === 'instapay' ? 'InstaPay' : 'أونلاين'
                 return (
                   <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
-                    <span className="bg-night border border-line rounded-lg px-2 py-1">
-                      🛵 {done?.drivers?.name ?? 'محدش'}
-                    </span>
+                    {known && (
+                      <span className="bg-night border border-line rounded-lg px-2 py-1">
+                        🛵 {done?.drivers?.name ?? 'محدش'}
+                      </span>
+                    )}
                     {mins != null && (
                       <span className={`rounded-lg px-2 py-1 border ${late ? 'bg-red-500/10 border-red-500/30 text-red-700' : 'bg-night border-line'}`}>
                         ⏱ {mins} دقيقة{o.sla_minutes ? ` / ${o.sla_minutes}` : ''}{late ? ' — متأخر' : ''}
@@ -1966,6 +2003,8 @@ export default function Admin() {
           })}
         </div>
       )}
+
+      {tab === 'compounds' && <CompoundsTab />}
 
       {tab === 'customers' && <CustomersTab />}
 
@@ -2521,7 +2560,7 @@ export default function Admin() {
       )}
 
       {assigning && (
-        <div ref={assigningRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true" onClick={() => { setAssigning(null); setModalError('') }}>
+        <div ref={assigningRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true" onClick={closeAssign}>
           <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold mb-4">اختيار مندوب متاح — طلب #{assigning.id}</h3>
             {assigningNeedsVan && (

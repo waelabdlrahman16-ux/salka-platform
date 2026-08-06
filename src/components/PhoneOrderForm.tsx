@@ -68,7 +68,12 @@ export default function PhoneOrderForm({ onCreated }: { onCreated: () => void })
     })
     setBusy(false)
     if (!res.ok) { setError(res.error); return }
-    setDone({ id: res.data!.id, total: res.data!.total })
+    // staff_create_pickup_order returns json (verified against the catalogue),
+    // so this is an object -- but a caller should never render #undefined
+    // because a function signature changed under it.
+    const row: any = Array.isArray(res.data) ? res.data[0] : res.data
+    if (!row?.id) { setError('اتعمل الطلب بس مارجعش رقمه — شوفه في الطلبات غير المعيّنة'); onCreated(); return }
+    setDone({ id: row.id, total: row.total })
     setF({ restaurant_id: f.restaurant_id, compound_id: '', name: '', phone: '', unit: '', notes: '', collect: '' })
     onCreated()
   }

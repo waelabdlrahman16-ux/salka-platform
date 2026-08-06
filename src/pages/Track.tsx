@@ -386,7 +386,10 @@ export default function Track() {
   const asg = data.assignment?.status && data.assignment.status !== 'Offered' ? data.assignment.status : null
   const stageIdx =
     o.status === 'Delivered' || asg === 'Delivered' ? 3
-    : asg === 'Picked_Up' || asg === 'Out_for_Delivery' ? 2
+    // 'Failed' means it WAS picked up and the delivery did not complete. Falling
+    // through to the kitchen check sent the bar backwards to «قيد التجهيز» --
+    // telling a customer their already-cooked food is being prepared.
+    : asg === 'Picked_Up' || asg === 'Out_for_Delivery' || asg === 'Failed' ? 2
     : kitchen === 'preparing' || kitchen === 'ready' ? 1
     : 0
 

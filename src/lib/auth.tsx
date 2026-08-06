@@ -78,9 +78,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setTimeout(() => {
             if (cancelled) return
             supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle()
-              .then(({ data: retry }) => {
+              .then(({ data: retry, error: retryErr }) => {
                 if (cancelled) return
-                if (retry) setProfile(retry as Profile)
+                // Two consecutive failures is what a bad link at a compound gate
+                // looks like. Dropping this error would render «الحساب غير مفعّل»
+                // two seconds later -- the original bug, delayed.
+                if (retryErr) { setLoading(false); return }
+                setProfile((retry as Profile) ?? null)
                 setLoading(false)
               })
           }, 2000)
