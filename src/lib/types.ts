@@ -70,11 +70,6 @@ export interface Order {
   zone: string; unit_number: string; address_notes: string; customer_note: string | null
   status: string; kitchen_status: string
   subtotal: number; delivery_fee: number; total: number
-  // Present on every row in the database and used all over Admin, but never
-  // declared -- so every read of them was a type error waiting to be written.
-  service_fee: number | null; wallet_used: number | null
-  sla_minutes: number | null
-  cancel_reason: string | null; cancelled_at: string | null
   payment_method: string; created_at: string
   ready_at: string | null; dispatch_at: string | null
   slot_id: number | null; scheduled_date: string | null
@@ -128,36 +123,6 @@ export interface Assignment {
   delivery_problem_reason: string | null
   orders?: Order
   drivers?: Driver
-}
-// One row of admin_live_deliveries(). The RPC exists because the dispatch board
-// needs three things PostgREST cannot give it in one shot: the order's line
-// items (which live in order_items for a catalogue order but on the order row
-// itself for a pharmacy or market basket), the destination coordinates (on the
-// compound, two joins away), and the age of the driver's last fix computed
-// against the SERVER's clock rather than the operator's laptop clock.
-export interface LiveDeliveryItem {
-  name: string; qty: number; total: number
-  size_name: string | null; combo_name: string | null; addon_names: string[] | null
-}
-export interface LiveDelivery {
-  assignment_id: number; assignment_status: string; attempt_number: number
-  picked_up_at: string | null; out_for_delivery_at: string | null
-  arrived_at_customer_at: string | null
-  order_id: number; order_status: string; kitchen_status: string
-  customer_name: string; customer_phone: string
-  zone: string; unit_number: string; address_notes: string | null
-  total: number; payment_method: string | null; cod_deposit_amount: number | null
-  order_type: Order['order_type']
-  request_items: RequestItem[] | null; request_notes: string | null
-  created_at: string
-  vendor_name: string | null
-  driver_id: number | null; driver_name: string | null; driver_phone: string | null
-  driver_lat: number | null; driver_lng: number | null
-  driver_seen_at: string | null
-  // Null when the driver has never reported, which is not the same as zero.
-  driver_seen_seconds_ago: number | null
-  dest_lat: number | null; dest_lng: number | null
-  items: LiveDeliveryItem[]
 }
 export interface Earning {
   id: number; driver_id: number; order_id: number; assignment_id: number

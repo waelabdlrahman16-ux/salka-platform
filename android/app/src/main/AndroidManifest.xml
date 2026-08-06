@@ -38,7 +38,7 @@
     <!-- Required from Android 13 (API 33) onward for ANY notification, push or
          local. Without it PushNotifications.requestPermissions() is auto-denied
          by the system with no dialog shown, register() never fires the
-         'registration' listener, and no token is ever obtained: a native
+         'registration' listener, and no token is ever obtained -- a native
          build would look identical to a working one that nobody can reach.
          @capacitor/push-notifications does not declare it in its own manifest,
          so the manifest merge does not supply it. Not in play right now

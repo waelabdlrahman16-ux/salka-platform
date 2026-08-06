@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useDismissable } from '../lib/useDismissable'
-import type { Assignment, Compound, Complaint, Driver, DeliverySlotRow, Earning, LiveDelivery, MenuItem, Order, OrderRating, Reliability, Restaurant, Setting, SettlementRequest, Shift, VendorCoverage } from '../lib/types'
+import type { Assignment, Compound, Complaint, Driver, DeliverySlotRow, Earning, MenuItem, Order, OrderRating, Reliability, Restaurant, Setting, SettlementRequest, Shift, VendorCoverage } from '../lib/types'
 import { ping, askNotificationPermission } from '../lib/notify'
-import { registerPush, persistPushToken } from '../lib/push'
+import { registerPush } from '../lib/push'
 import { uploadVendorImage } from '../lib/upload'
 import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel,
          ORDER_STATUSES, CLOSED_ORDER_STATUSES, UNPAID_ORDER_STATUSES, type OrderStatus } from '../lib/statusLabels'
@@ -17,10 +17,6 @@ import AddMenuItemModal from '../components/AddMenuItemModal'
 import DiscountManager from '../components/DiscountManager'
 import EnablePushButton from '../components/EnablePushButton'
 import CustomersTab from '../components/CustomersTab'
-import PhoneOrderForm from '../components/PhoneOrderForm'
-import CompoundsTab from '../components/CompoundsTab'
-import DriverForm, { driverToForm } from '../components/DriverForm'
-import LiveDeliveryDetail from '../components/LiveDeliveryDetail'
 
 function StarRow({ n }: { n: number }) {
   return (
@@ -71,7 +67,7 @@ function AccountActionsMenu({ busy, onChangeEmail, onResetPassword, onCustomPass
   )
 }
 
-type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet' | 'banners' | 'refunds' | 'customers' | 'compounds'
+type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet' | 'banners' | 'refunds' | 'customers'
 
 // What is actually owed back, decided by the server. A COD order only ever took
 // the 50% deposit, so refunding `total` would be a gift -- and that is exactly
@@ -83,55 +79,23 @@ type PendingRefund = {
   instapay_claimed_at: string | null; vendor_name: string | null
   refund_amount: number
 }
-/**
- * Sixteen tabs in one horizontally-scrolling row meant the answer to "where is
- * that?" was always "scroll and read all sixteen". They are not sixteen equal
- * things: four are what you do minute to minute, four are money, and the rest
- * are setup you touch once a week.
- *
- * Grouping hides things, and hiding an alert is worse than a long row -- so
- * every count that used to demand attention from the flat row is summed onto
- * its GROUP chip. A refund waiting is still visible from anywhere; you just do
- * not have to read fifteen other labels to notice it.
- */
-// 'places' is separate from 'catalog' deliberately. A compound is a PLACE we
-// deliver to; a restaurant is a business we deliver for. They were living under
-// one heading only because the fee editor happened to be bolted onto the
-// restaurants screen.
-type TabGroup = 'now' | 'money' | 'catalog' | 'places' | 'people' | 'setup'
-
-const GROUPS: { key: TabGroup; label: string }[] = [
-  { key: 'now',     label: '🚦 التشغيل' },
-  { key: 'money',   label: '💰 الفلوس' },
-  { key: 'catalog', label: '🍽️ المطاعم' },
-  { key: 'places',  label: '📍 الأماكن' },
-  { key: 'people',  label: '👥 الناس' },
-  { key: 'setup',   label: '⚙️ الإعدادات' },
-]
-
-const TABS: { key: Tab; label: string; group: TabGroup }[] = [
-  { key: 'unassigned', label: 'طلبات غير معيّنة', group: 'now' },
-  { key: 'active', label: 'توصيلات جارية', group: 'now' },
-  { key: 'orders', label: 'كل الطلبات', group: 'now' },
-  { key: 'complaints', label: 'الشكاوى', group: 'now' },
-
-  { key: 'earnings', label: 'الأرباح', group: 'money' },
-  { key: 'payouts', label: 'مدفوعات المندوبين', group: 'money' },
-  { key: 'refunds', label: 'الاستردادات', group: 'money' },
-  { key: 'wallet', label: 'محفظة العميل', group: 'money' },
-
-  { key: 'menu', label: 'المطاعم والمنيو', group: 'catalog' },
-  { key: 'banners', label: '📣 الإعلانات', group: 'catalog' },
-
-  { key: 'compounds', label: 'الكومباوندات والتوصيل', group: 'places' },
-  { key: 'coverage', label: 'مين بيوصّل لفين', group: 'places' },
-
-  { key: 'drivers', label: 'إدارة المندوبين', group: 'people' },
-  { key: 'shifts', label: 'الورديات', group: 'people' },
-  { key: 'customers', label: 'العملاء', group: 'people' },
-  { key: 'accounts', label: 'حسابات الدخول', group: 'people' },
-
-  { key: 'settings', label: 'الإعدادات', group: 'setup' },
+const TABS: { key: Tab; label: string }[] = [
+  { key: 'unassigned', label: 'طلبات غير معيّنة' },
+  { key: 'active', label: 'توصيلات جارية' },
+  { key: 'drivers', label: 'إدارة المندوبين' },
+  { key: 'menu', label: 'المطاعم والمنيو' },
+  { key: 'orders', label: 'كل الطلبات' },
+  { key: 'customers', label: 'العملاء' },
+  { key: 'earnings', label: 'الأرباح' },
+  { key: 'settings', label: 'الإعدادات' },
+  { key: 'shifts', label: 'الورديات' },
+  { key: 'payouts', label: 'مدفوعات المندوبين' },
+  { key: 'wallet', label: 'محفظة العميل' },
+  { key: 'refunds', label: 'الاستردادات' },
+  { key: 'complaints', label: 'الشكاوى' },
+  { key: 'coverage', label: 'تغطية المطاعم' },
+  { key: 'accounts', label: 'حسابات الدخول' },
+  { key: 'banners', label: '📣 الإعلانات' },
 ]
 
 interface StalledOrder {
@@ -147,19 +111,12 @@ const ACTIVE_ASSIGNMENT_STATUSES = ['Offered', 'Accepted', 'Picked_Up', 'Out_for
 
 export default function Admin() {
   const [tab, setTab] = useState<Tab>('unassigned')
-  const [openGroup, setOpenGroup] = useState<TabGroup>('now')
-  // null = closed, undefined-id form = adding, populated = editing.
-  const [driverForm, setDriverForm] = useState<ReturnType<typeof driverToForm> | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [drivers, setDrivers] = useState<Driver[]>([])
   const [earnings, setEarnings] = useState<Earning[]>([])
   const [assigning, setAssigning] = useState<Order | null>(null)
-  // Closing must clear the refusal too. Only the backdrop did, so Escape, the
-  // Android Back handler and the إلغاء button all left #41's «الطلب ده مع مندوب
-  // بالفعل» sitting inside a freshly-opened dialog headed «طلب #58».
-  const closeAssign = () => { setAssigning(null); setModalError('') }
-  const assigningRef = useDismissable(closeAssign, !!assigning)
+  const assigningRef = useDismissable(() => setAssigning(null), !!assigning)
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [menu, setMenu] = useState<MenuItem[]>([])
   const [openRest, setOpenRest] = useState<number | null>(null)
@@ -190,22 +147,6 @@ export default function Admin() {
   const [compensatedOrderIds, setCompensatedOrderIds] = useState<Set<number>>(new Set())
   const [showResolvedComplaints, setShowResolvedComplaints] = useState(false)
   const [openHistory, setOpenHistory] = useState<number | null>(null)
-  // Items are NOT loaded with the 500-order window -- that would be thousands of
-  // rows nobody reads. They are fetched once, on expand, and kept.
-  const [orderItems, setOrderItems] = useState<Record<number, { name: string; qty: number; total: number; size_name: string | null; combo_name: string | null; addon_names: string[] | null }[]>>({})
-
-  async function toggleOrderDetail(id: number) {
-    const next = openHistory === id ? null : id
-    setOpenHistory(next)
-    if (next === null || orderItems[id]) return
-    const { data, error } = await supabase.from('order_items')
-      .select('name, qty, total, size_name, combo_name, addon_names').eq('order_id', id).order('id')
-    // Caching [] on a failed read told the operator the order was empty -- in
-    // the exact situation the panel exists for ("the customer says an item was
-    // missing") -- and never retried, because the key was then present.
-    if (error) { setActionError('مش قادرين نحمّل أصناف الطلب دلوقتي، اقفل وافتح تاني'); return }
-    setOrderItems(prev => ({ ...prev, [id]: data ?? [] }))
-  }
   const [vendorAccounts, setVendorAccounts] = useState<{ profile_id: string; restaurant_id: number; email: string }[]>([])
   const [driverAccounts, setDriverAccounts] = useState<{ profile_id: string; driver_id: number; email: string }[]>([])
   const [catalogAccounts, setCatalogAccounts] = useState<{ profile_id: string; name: string; email: string; role: 'catalog' | 'supervisor' }[]>([])
@@ -217,13 +158,6 @@ export default function Admin() {
   const [uploadingImage, setUploadingImage] = useState<string | null>(null)
   const [imageError, setImageError] = useState<string | null>(null)
   const [stalled, setStalled] = useState<StalledOrder[]>([])
-  // Keyed by assignment_id. This ENRICHES the "توصيلات جارية" tab rather than
-  // replacing its data source: `assignments` is still what the tab iterates, so
-  // the grouping, the actions and the reassign modal are untouched and the two
-  // lists cannot drift into disagreeing about which deliveries are in flight.
-  // The RPC supplies only what PostgREST could not -- items, destination, and a
-  // server-measured age for the driver's last fix.
-  const [liveById, setLiveById] = useState<Record<number, LiveDelivery>>({})
   const [orderQuery, setOrderQuery] = useState('')
   const [orderSearchResults, setOrderSearchResults] = useState<Order[] | null>(null)
   const [orderSearching, setOrderSearching] = useState(false)
@@ -280,7 +214,7 @@ export default function Admin() {
       // uncapped; the caps only ever apply to display-only history.
       const [
         openO, refundO, recentO, activeA, recentA, d, unpaidE, recentE, r, m, st, sh, esc, sl,
-        openComp, recentComp, sr, cpd, cov, lr, wt, stalled, refunds, rel, liveD,
+        openComp, recentComp, sr, cpd, cov, lr, wt, stalled, refunds, rel,
       ] = await Promise.all([
         // "Operationally live" is NOT the same as "not terminal in the order
         // lifecycle": Failed_Delivery is retryable and must stay loaded so it
@@ -324,7 +258,6 @@ export default function Admin() {
         // Was an N+1: restaurant_reliability() once per restaurant, sequentially
         // awaited, inside the same 15s cycle.
         withTimeout(supabase.rpc('restaurants_reliability_all')),
-        withTimeout(supabase.rpc('admin_live_deliveries')),
       ])
 
       const byId = <T extends { id: number }>(...lists: (T[] | null | undefined)[]): T[] => {
@@ -362,15 +295,6 @@ export default function Admin() {
       if (!stalled.error) setStalled((stalled.data as StalledOrder[]) ?? [])
       if (!refunds.error) setPendingRefunds((refunds.data as PendingRefund[]) ?? [])
       if (!rel.error) setReliability((rel.data as Record<number, Reliability>) ?? {})
-      // Deliberately NOT part of coreFailed. If this one query fails the board
-      // still lists every live delivery and every action still works -- only the
-      // items and the map go missing. Failing the whole load over it would take
-      // dispatch offline to protect a detail panel.
-      if (!liveD.error) {
-        const next: Record<number, LiveDelivery> = {}
-        for (const row of ((liveD.data as LiveDelivery[]) ?? [])) next[row.assignment_id] = row
-        setLiveById(next)
-      }
 
       const { data: accounts, error: accErr } = await supabase.rpc('admin_list_accounts')
       if (!accErr) {
@@ -421,7 +345,7 @@ export default function Admin() {
 
   useEffect(() => {
     askNotificationPermission()
-    registerPush(persistPushToken)
+    registerPush(pushToken => { supabase.rpc('save_my_push_token', { p_push_token: pushToken }) })
     load()
     const t = setInterval(load, 15000)
     return () => clearInterval(t)
@@ -473,54 +397,20 @@ export default function Admin() {
   const reassignCandidates = (reassignNeedsVan
     ? availableDrivers.filter(d => d.vehicle_type === 'van')
     : availableDrivers).filter(d => d.id !== reassigning?.driver_id)
-  // Anything can call setTab -- the wallet button on an order row, a banner
-  // action -- and that tab may live under a group that is not open, which would
-  // render a body with no matching chip. The group follows the tab, never the
-  // other way round.
-  useEffect(() => {
-    const g = TABS.find(t => t.key === tab)?.group
-    if (g) setOpenGroup(g)
-  }, [tab])
-
-  // What each tab is asking for. One place, so the group chip and the tab agree
-  // by construction rather than by two people remembering to update both.
-  const tabBadges: Partial<Record<Tab, number>> = {
-    unassigned: unassigned.length,
-    active: noAnswerReports.length,
-    refunds: pendingRefunds.length,
-    complaints: complaints.filter(c => c.status !== 'resolved').length,
-    payouts: settlementRequests.length,
-    shifts: escalations.length,
-  }
-
   useEffect(() => { ping('unassigned_late', unassigned.filter(isLate).length, 'طلب متأخر', 'في طلب محدش استلمه من زمان') },
     [unassigned.filter(isLate).length])
   useEffect(() => { ping('no_answer', noAnswerReports.length, 'عميل ما ردش', 'مندوب اتصل بعميل ومردش، محتاج قرارك') },
     [noAnswerReports.length])
 
-  // admin_assign_order can refuse for TEN distinct reasons. This handled one of
-  // them and answered «حصل خطأ، جرب تاني» to the other nine -- so an order that
-  // had been round the houses five times, or a driver who had already declined
-  // that exact order, both read as a broken button. The system was working and
-  // refusing to say so, which is worse than a bug: it sends you back to tap
-  // again, which is how order #41 reached attempt number 8.
   async function assign(order: Order, driver: Driver) {
-    setModalError('')
-    const res = await rpc('admin_assign_order', { p_order_id: order.id, p_driver_id: driver.id }, {
-      dispatch_rule_blocked: 'المندوب ده وصل للحد الأقصى (٣ طلبات) أو شغال في اتجاه مختلف',
-      driver_already_declined: `${driver.name} رفض الطلب ده قبل كده — اختار مندوب تاني`,
-      too_many_attempts: 'الطلب ده اتعرض على مندوبين ٥ مرات. ده مشكلة توزيع مش مشكلة إعادة محاولة — كلّم مندوب بنفسك أو الغِ الطلب',
-      already_assigned: 'الطلب ده مع مندوب بالفعل — حدّث الصفحة',
-      order_closed: 'الطلب ده اتقفل خلاص (اتسلّم أو اتلغى)',
-      order_not_paid: 'الطلب لسه مادفعش — أكّد الدفع الأول',
-      order_not_priced: 'الطلب لسه مسعّرش — حط السعر الأول',
-      driver_suspended: 'حساب المندوب ده موقوف',
-      driver_not_found: 'المندوب ده مش موجود — حدّث الصفحة',
-      order_not_found: 'الطلب ده مش موجود — حدّث الصفحة',
-      admin_only: 'مش من صلاحياتك تعيّن مندوب للطلب ده',
-    })
-    if (!res.ok) { setModalError(res.error); return }
-    setAssigning(null); setModalError(''); load(true)
+    const { error } = await supabase.rpc('admin_assign_order', { p_order_id: order.id, p_driver_id: driver.id })
+    if (error) {
+      alert(error.message.includes('dispatch_rule_blocked')
+        ? 'المندوب ده وصل للحد الأقصى (٣ طلبات) أو شغال في اتجاه مختلف'
+        : 'حصل خطأ، جرب تاني')
+      return
+    }
+    setAssigning(null); load(true)
   }
 
   // Bulk import is the only way a driver record is created, and it parses
@@ -621,14 +511,10 @@ export default function Admin() {
   }
 
   async function addSlot(restaurantId: number) {
-    const { error } = await supabase.from('delivery_slots').insert({
+    await supabase.from('delivery_slots').insert({
       restaurant_id: restaurantId, start_time: newSlot.start_time,
       end_time: newSlot.end_time, capacity: Number(newSlot.capacity)
     })
-    // Cleared the form and reloaded whether or not the row existed, so a failed
-    // insert was indistinguishable from a stale list.
-    if (error) { setActionError(`إضافة الفترة فشلت — ${error.message}`); return }
-    setActionError('')
     setNewSlot({ start_time: '', end_time: '', capacity: '6' })
     load(true)
   }
@@ -657,12 +543,10 @@ export default function Admin() {
   }
 
   async function addShift() {
-    const { error } = await supabase.from('shifts').insert({
+    await supabase.from('shifts').insert({
       driver_id: Number(newShift.driver_id), shift_date: newShift.shift_date,
       start_time: newShift.start_time, end_time: newShift.end_time
     })
-    if (error) { setActionError(`إضافة الوردية فشلت — ${error.message}`); return }
-    setActionError('')
     setNewShift({ driver_id: '', shift_date: '', start_time: '', end_time: '' })
     load(true)
   }
@@ -761,41 +645,12 @@ export default function Admin() {
     load(true)
   }
 
-  // Moved off the admin-accounts edge function onto admin_delete_staff().
-  // That function's assertTargetIsStaff permits vendor, driver and catalog only,
-  // so a supervisor account could be created from this very screen and then
-  // never removed -- and redeploying 15KB of live authentication code to add one
-  // string is a worse risk than the bug. The RPC also refuses to delete an admin
-  // or the caller themself, and refuses a driver still holding cash or mid-
-  // delivery, none of which the edge function checked.
   async function removeLogin(profileId: string) {
-    if (!confirm('تأكيد إلغاء الحساب؟ مش هيقدر يدخل تاني.\n\nسجل الطلبات والأرباح هيفضل زي ما هو.')) return
+    if (!confirm('تأكيد إلغاء الحساب؟ مش هيقدر يدخل تاني.')) return
     setAccountBusy(profileId)
-    const res = await rpc('admin_delete_staff', { p_profile_id: profileId }, {
-      cannot_delete_self: 'مينفعش تلغي حسابك انت',
-      cannot_delete_admin: 'مينفعش تلغي حساب إدارة من هنا',
-      driver_has_live_delivery: 'المندوب ده معاه طلب شغال دلوقتي — سيبه يخلّصه أو اسحب الطلب منه الأول',
-      profile_not_found: 'الحساب ده مش موجود — حدّث الصفحة',
-      admin_only: 'مش من صلاحياتك',
-    })
+    const result = await callAccountsFn({ action: 'remove_login', profile_id: profileId })
     setAccountBusy(null)
-    if (!res.ok) {
-      // actionError renders at the very top of the page, above both tab rows,
-      // while the accounts list is hundreds of pixels down -- so a refusal here
-      // was invisible and the operator just tapped again. This one keeps the
-      // blocking dialog on purpose.
-      if (res.code === 'driver_holds_cash') {
-        if (!confirm('المندوب ده لسه ماسك كاش على عهدته.\n\nلو ألغيت الحساب مش هتقدر تسوّي الكاش من الشاشة دي بعد كده. متأكد؟')) return
-        setAccountBusy(profileId)
-        const forced = await rpc('admin_delete_staff', { p_profile_id: profileId, p_force: true })
-        setAccountBusy(null)
-        if (!forced.ok) { setActionError(forced.error); return }
-        setActionError(''); load(true)
-        return
-      }
-      setActionError(res.error); alert(res.error); return
-    }
-    setActionError('')
+    if (result.error) { alert('حصل خطأ: ' + result.error); return }
     load(true)
   }
 
@@ -884,7 +739,7 @@ export default function Admin() {
 
   async function addRestaurant() {
     if (!newRestaurant.name.trim()) return
-    const { error } = await supabase.from('restaurants').insert({
+    await supabase.from('restaurants').insert({
       name: newRestaurant.name.trim(),
       description: newRestaurant.description.trim(),
       category: newRestaurant.category.trim() || 'أصناف',
@@ -892,8 +747,6 @@ export default function Admin() {
       prep_minutes: Number(newRestaurant.prep_minutes) || 20,
       rating: 5, is_open: true, order_mode: 'catalog'
     })
-    if (error) { setActionError(`إضافة المطعم فشلت — ${error.message}`); return }
-    setActionError('')
     setNewRestaurant({ name: '', description: '', category: '', vendor_type: 'restaurant', prep_minutes: '20' })
     load(true)
   }
@@ -906,18 +759,9 @@ export default function Admin() {
     load(true)
   }
 
-  // The result was discarded. You agree 400 ج.م on the phone and hang up; the
-  // RPC fails; the order sits unpriced and un-dispatchable while the customer
-  // waits for a driver who can never be assigned.
   async function confirmCustomOrderPrice(orderId: number, subtotal: number) {
-    if (!subtotal || subtotal <= 0) { setActionError('اكتب سعر صحيح'); return }
-    const res = await rpc('confirm_custom_order_price', { p_order_id: orderId, p_subtotal: subtotal }, {
-      not_authorized: 'التسعير للإدارة بس',
-      order_not_found: 'الطلب ده مش طلب خاص أو مش موجود',
-      invalid_amount: 'السعر لازم يكون رقم أكبر من صفر',
-    })
-    if (!res.ok) { setActionError(res.error); return }
-    setActionError('')
+    if (!subtotal || subtotal <= 0) return
+    await supabase.rpc('confirm_custom_order_price', { p_order_id: orderId, p_subtotal: subtotal })
     load(true)
   }
 
@@ -949,16 +793,7 @@ export default function Admin() {
 
   async function settleEarnings(driverId: number) {
     const d = drivers.find(x => x.id === driverId)
-    // Re-read before quoting, exactly as settleCash does. The client array is up
-    // to one 15s poll stale and settle_driver_earnings settles whatever is
-    // unpaid NOW -- so two deliveries landing in the gap had the dialog say 120
-    // while the ledger recorded 140 paid, and the driver had no unpaid rows left
-    // to claim the missing 20 against.
-    const { data: fresh, error: freshErr } = await supabase
-      .from('driver_earnings').select('driver_earning').eq('driver_id', driverId).eq('paid', false)
-    if (freshErr) { setActionError('مش قادرين نتأكد من الأرباح دلوقتي، جرب تاني'); return }
-    const unpaid = (fresh ?? []).reduce((s, e) => s + Number(e.driver_earning), 0)
-    if (unpaid <= 0) { setActionError('مفيش أرباح مستحقة للمندوب ده'); return }
+    const unpaid = earnings.filter(e => e.driver_id === d?.id && !e.paid).reduce((s, e) => s + Number(e.driver_earning), 0)
     if (!confirm(`تأكيد دفع ${unpaid} ج.م أرباح لـ ${d?.name ?? 'المندوب'}؟\n\nمش هينفع يتراجع.`)) return
     setActionError('')
     const res = await rpc('settle_driver_earnings', { p_driver_id: driverId })
@@ -1388,54 +1223,20 @@ export default function Admin() {
           quietly stopped being reachable once closed. Renders nothing once a
           token is actually in hand. */}
       <EnablePushButton
-        onToken={persistPushToken}
+        onToken={pushToken => { supabase.rpc('save_my_push_token', { p_push_token: pushToken }) }}
         label="فعّل تنبيهات الإدارة"
       />
 
-      {/* Two rows instead of one row of sixteen. The group carries the alert
-          count of everything inside it, so nothing that needed you becomes
-          invisible by being one level down. */}
-      <div className="flex gap-1.5 overflow-x-auto pb-1.5 -mx-4 px-4">
-        {GROUPS.map(g => {
-          const n = TABS.filter(t => t.group === g.key).reduce((sum, t) => sum + (tabBadges[t.key] ?? 0), 0)
-          const on = openGroup === g.key
-          return (
-            <button key={g.key}
-              className={`shrink-0 rounded-xl px-3.5 py-2 text-sm font-semibold border-2 transition-colors
-                ${on ? 'bg-sea text-white border-sea' : 'bg-shell border-line text-mist hover:border-sea/40'}`}
-              onClick={() => {
-                setOpenGroup(g.key)
-                // Land on the first tab that is asking for something, otherwise
-                // the first tab in the group.
-                const inGroup = TABS.filter(t => t.group === g.key)
-                const urgent = inGroup.find(t => (tabBadges[t.key] ?? 0) > 0)
-                const next = (urgent ?? inGroup[0]).key
-                if (next !== 'wallet') setWalletOrderId(null)
-                setTab(next)
-              }}>
-              {g.label}
-              {n > 0 && (
-                <span className={`mr-1.5 rounded-full px-1.5 text-[11px] font-bold ${on ? 'bg-white text-sea' : 'bg-red-600 text-white'}`}>{n}</span>
-              )}
-            </button>
-          )
-        })}
-      </div>
-
       <div className="flex gap-1.5 overflow-x-auto pb-2 mb-4 -mx-4 px-4">
-        {TABS.filter(t => t.group === openGroup).map(t => (
+        {TABS.map(t => (
           <button key={t.key} className={`tab ${tab === t.key ? 'tab-active' : ''}`} onClick={() => { if (t.key !== 'wallet') setWalletOrderId(null); setTab(t.key) }}>
             {t.label}
-            {(tabBadges[t.key] ?? 0) > 0 && (
-              <span className="mr-1.5 bg-red-600 text-white rounded-full px-1.5 text-[11px] font-bold">{tabBadges[t.key]}</span>
+            {t.key === 'refunds' && pendingRefunds.length > 0 && (
+              <span className="mr-1.5 bg-red-600 text-white rounded-full px-1.5 text-[11px] font-bold">{pendingRefunds.length}</span>
             )}
           </button>
         ))}
       </div>
-
-      {tab === 'unassigned' && (
-        <PhoneOrderForm onCreated={() => load(true)} />
-      )}
 
       {tab === 'unassigned' && (
         <div className="space-y-3">
@@ -1495,10 +1296,6 @@ export default function Admin() {
                         <span className="text-xs font-semibold bg-shellup rounded-full px-2.5 py-1">{assignmentStatusLabel(a.status)}</span>
                       </div>
                       {a.orders && customer(a.orders)}
-                      {/* What is in the bag, and where the rider is. An Offered
-                          assignment has no driver position by definition, so the
-                          panel only earns its space from Accepted onwards. */}
-                      <LiveDeliveryDetail live={liveById[a.id]} />
                       {/* This tab previously rendered a header, a driver name, a
                           status badge and a customer block -- and nothing else.
                           No reassign, no unassign, no cancel. */}
@@ -1523,14 +1320,6 @@ export default function Admin() {
 
       {tab === 'drivers' && (
         <div className="space-y-3">
-          {driverForm
-            ? <DriverForm initial={driverForm}
-                onDone={() => { setDriverForm(null); load(true) }}
-                onCancel={() => setDriverForm(null)} />
-            : <button className="btn-sea w-full text-sm" onClick={() => setDriverForm({
-                id: null, name: '', phone: '', vehicle_type: 'motorcycle',
-                vehicle_plate: '', instapay_number: '', payout_schedule: 'daily', active: true,
-              })}>➕ إضافة مندوب</button>}
           <div className="card p-4">
             <p className="font-semibold mb-1">إضافة مندوبين بالجملة</p>
             <p className="text-xs text-mist mb-2">سطر لكل مندوب: الاسم, رقم الموبايل, النوع (اكتب فان لو فان، سيبها فاضية أو اكتب موتوسيكل)</p>
@@ -1566,7 +1355,7 @@ export default function Admin() {
               <div className="flex flex-wrap gap-2.5 mt-3">
                 <button className="btn-ghost text-sm flex-1" onClick={() => toggleDriver(d, 'available')}>{d.available ? 'إيقاف مؤقت' : 'إتاحة'}</button>
                 <button className={`text-sm flex-1 ${d.active ? 'btn-danger' : 'btn-sea'}`} onClick={() => toggleDriver(d, 'active')}>{d.active ? 'إيقاف الحساب' : 'تفعيل الحساب'}</button>
-                <button className="btn-ghost text-sm flex-1" onClick={() => setDriverForm(driverToForm(d))}>تعديل البيانات</button>
+                <button className="btn-ghost text-sm flex-1" onClick={() => editDriverDetails(d)}>تعديل الاسم والرقم</button>
                 <button className="btn-ghost text-sm flex-1" onClick={() => editInstapay(d)}>تعديل إنستاباي</button>
                 <button className="btn-ghost text-sm flex-1" onClick={() => resetDriverDevice(d)}>فك ربط الجهاز</button>
               </div>
@@ -1672,88 +1461,11 @@ export default function Admin() {
                 </div>
               )}
 
-              {/* A delivered order used to end at a total and a status word.
-                  Everything you actually reach for afterwards -- who drove it,
-                  how long it took against the SLA it promised, whether the cash
-                  came back -- was either inside a collapsed timeline or nowhere.
-                  This is the answer to "what happened with #41", on the card. */}
-              {(() => {
-                if (!CLOSED_ORDER_STATUSES.includes(o.status as OrderStatus)) return null
-                // assignments is capped at 400 while orders reaches 500 and
-                // search is unbounded, so an older order simply is not in this
-                // list. Saying «محدش» there would claim nobody delivered an
-                // order that was delivered.
-                const done = assignments.find(a => a.order_id === o.id && a.delivered_at)
-                const known = assignments.some(a => a.order_id === o.id)
-                const mins = done?.delivered_at
-                  ? Math.round((new Date(done.delivered_at).getTime() - new Date(o.created_at).getTime()) / 60000)
-                  : null
-                const late = mins != null && o.sla_minutes != null && mins > o.sla_minutes
-                const cash = o.payment_method === 'cod'
-                  ? (o.cod_deposit_amount != null
-                      ? `كاش ${Math.round((o.total - o.cod_deposit_amount) * 100) / 100} + عربون ${o.cod_deposit_amount}`
-                      : `كاش ${o.total}`)
-                  : o.payment_method === 'instapay' ? 'InstaPay' : 'أونلاين'
-                return (
-                  <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
-                    {known && (
-                      <span className="bg-night border border-line rounded-lg px-2 py-1">
-                        🛵 {done?.drivers?.name ?? 'محدش'}
-                      </span>
-                    )}
-                    {mins != null && (
-                      <span className={`rounded-lg px-2 py-1 border ${late ? 'bg-red-500/10 border-red-500/30 text-red-700' : 'bg-night border-line'}`}>
-                        ⏱ {mins} دقيقة{o.sla_minutes ? ` / ${o.sla_minutes}` : ''}{late ? ' — متأخر' : ''}
-                      </span>
-                    )}
-                    <span className="bg-night border border-line rounded-lg px-2 py-1">💵 {cash}</span>
-                    {o.status === 'Cancelled' && o.cancel_reason && (
-                      <span className="bg-red-500/10 border border-red-500/30 text-red-700 rounded-lg px-2 py-1">
-                        ✕ {o.cancel_reason}
-                      </span>
-                    )}
-                  </div>
-                )
-              })()}
-
-              <button className="text-xs text-sea font-semibold mt-3" onClick={() => toggleOrderDetail(o.id)}>
-                {openHistory === o.id ? 'إخفاء التفاصيل ▲' : 'عرض التفاصيل الكاملة ▼'}
+              <button className="text-xs text-sea font-semibold mt-3" onClick={() => setOpenHistory(openHistory === o.id ? null : o.id)}>
+                {openHistory === o.id ? 'إخفاء السجل الزمني ▲' : 'عرض السجل الزمني ▼'}
               </button>
               {openHistory === o.id && (
                 <div className="mt-2 bg-night border border-line rounded-xl p-3 text-xs space-y-1.5">
-                  {/* What was actually in the bag. Never shown anywhere in Admin
-                      for a catalogue order before now -- so "the customer says
-                      an item was missing" had no answer on this screen. */}
-                  {o.order_type === 'catalog' && (
-                    <div className="pb-2 mb-2 border-b border-line">
-                      <p className="font-semibold mb-1">🧾 الأصناف</p>
-                      {orderItems[o.id] === undefined ? (
-                        <p className="text-mist">بنحمّل…</p>
-                      ) : orderItems[o.id].length === 0 ? (
-                        <p className="text-mist">مفيش أصناف مسجلة</p>
-                      ) : orderItems[o.id].map((it, i) => (
-                        <p key={i}>
-                          <span className="font-semibold">{it.qty}×</span> {it.name}
-                          {[it.size_name, it.combo_name, ...(it.addon_names ?? [])].filter(Boolean).length > 0 && (
-                            <span className="text-mist"> — {[it.size_name, it.combo_name, ...(it.addon_names ?? [])].filter(Boolean).join(' · ')}</span>
-                          )}
-                          <span className="text-mist"> · {it.total} ج.م</span>
-                        </p>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* The money, itemised. The card shows one number; a customer
-                      querying their bill is asking about these four. */}
-                  <div className="pb-2 mb-2 border-b border-line">
-                    <p className="font-semibold mb-1">💰 الحساب</p>
-                    <p>المنتجات: {o.subtotal} ج.م</p>
-                    <p>التوصيل: {o.delivery_fee} ج.م</p>
-                    {Number(o.service_fee ?? 0) > 0 && <p>رسوم الخدمة: {o.service_fee} ج.م</p>}
-                    {Number(o.wallet_used ?? 0) > 0 && <p className="text-sea">من المحفظة: −{o.wallet_used} ج.م</p>}
-                    <p className="font-semibold">الإجمالي: {o.total} ج.م</p>
-                  </div>
-
                   <p>🕐 الطلب اتعمل: {fmtTime(o.created_at)}</p>
                   {assignments.filter(a => a.order_id === o.id).map(a => (
                     <div key={a.id} className="border-t border-line pt-1.5 mt-1.5 first:border-t-0 first:pt-0 first:mt-0">
@@ -2003,8 +1715,6 @@ export default function Admin() {
           })}
         </div>
       )}
-
-      {tab === 'compounds' && <CompoundsTab />}
 
       {tab === 'customers' && <CustomersTab />}
 
@@ -2560,18 +2270,11 @@ export default function Admin() {
       )}
 
       {assigning && (
-        <div ref={assigningRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true" onClick={closeAssign}>
+        <div ref={assigningRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true" onClick={() => setAssigning(null)}>
           <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold mb-4">اختيار مندوب متاح — طلب #{assigning.id}</h3>
             {assigningNeedsVan && (
               <p className="text-sandink text-sm mb-3">🚐 الطلب محتاج فان — لسه السعر متأكدش أو الطلب كبير</p>
-            )}
-            {/* The refusal has to be readable HERE. The page-level banner sits
-                behind a fixed inset-0 overlay, so a failed assign produced no
-                visible message at all -- which is how ten distinct reasons
-                became one alert() saying nothing. */}
-            {modalError && (
-              <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3" role="alert">{modalError}</p>
             )}
             {assignableDrivers.length === 0 && (
               <p className="text-mist text-sm">
@@ -2641,12 +2344,7 @@ export default function Admin() {
         <AddMenuItemModal
           restaurant={addingItemFor}
           onClose={() => setAddingItemFor(null)}
-          // Straight from "added" into its sizes and options, instead of
-          // closing and making someone hunt for the row they just created.
-          onSaved={(created) => {
-            load(true)
-            if (created) { setAddingItemFor(null); setEditingItem(created) }
-          }}
+          onSaved={() => load(true)}
         />
       )}
 

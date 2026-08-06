@@ -62,15 +62,6 @@ export const ERROR_AR: Record<string, string> = {
   too_early: 'لسه بدري، استنى 5 دقايق من وقت خروجك للتوصيل',
   not_your_assignment: 'الطلب ده مش متعيّن ليك',
   already_assigned: 'الطلب ده معروض على مندوب بالفعل — اسحبه الأول لو عايز تغيّره',
-  // These two carry a value after a colon (driver_holds_cash:270.00). Registered
-  // by their bare prefix so extractCode's substring match still resolves them --
-  // without an entry here they fall through to 'unknown' and the call site's
-  // override never fires, which is exactly how payment_already_claimed was
-  // silently generic before.
-  driver_holds_cash: 'المندوب ده لسه ماسك كاش — سوّي الكاش الأول',
-  customer_has_wallet_balance: 'العميل ده لسه معاه رصيد في المحفظة',
-  customer_has_live_order: 'العميل ده عنده طلب شغال دلوقتي',
-  no_account_for_phone: 'الرقم ده مالوش حساب مسجّل — ده سجل طلبات بس',
   driver_already_declined: 'المندوب ده رفض الطلب ده قبل كده',
   too_many_attempts: 'الطلب ده اتعرض 5 مرات — راجع السبب قبل ما تعرضه تاني',
   no_active_assignment: 'الطلب ده مش مع مندوب دلوقتي',

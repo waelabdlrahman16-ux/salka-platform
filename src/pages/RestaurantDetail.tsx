@@ -229,12 +229,6 @@ export default function RestaurantDetail() {
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
               <Icon name="chevronLeft" className="w-3 h-3 rotate-90" />
             </button>
-            {/* The full header carries the logo; the sticky bar that replaces it
-                on scroll dropped it, so the one strip that stays on screen was
-                the only place the vendor was not identifiable at a glance. */}
-            {restaurant.logo_url
-              ? <img src={restaurant.logo_url} alt="" className="w-6 h-6 rounded-md object-cover shrink-0 border border-line" />
-              : <span className="w-6 h-6 rounded-md bg-shellup grid place-items-center shrink-0 text-[11px] font-bold text-mist">{restaurant.name.charAt(0)}</span>}
             <span className="font-bold text-sm truncate">{restaurant.name}</span>
             {visibleCat && !menuQuery && (
               <>
@@ -264,11 +258,7 @@ export default function RestaurantDetail() {
           under the name. */}
       <div className="flex items-center gap-2 mb-2.5">
         <Link to="/" className="text-sm text-mist hover:text-foam flex items-center">
-          {/* The page is RTL, so "back" is to the RIGHT. chevronLeft was
-              rendering a left-pointing arrow next to رجوع, which reads as
-              "forward". Icon.tsx only ships chevronLeft, so it is mirrored
-              rather than adding a near-duplicate glyph. */}
-          <Icon name="chevronLeft" className="w-3 h-3 ml-1 rotate-180" />رجوع
+          <Icon name="chevronLeft" className="w-3 h-3 ml-1" />رجوع
         </Link>
         <span className="flex-1" />
         <span className={restaurant.is_open ? 'badge-open' : 'badge-closed'}>

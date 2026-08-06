@@ -6,7 +6,7 @@ import { startRinging, stopRinging } from '../lib/ring'
 import { ping, askNotificationPermission } from '../lib/notify'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
-import { registerPush, persistPushToken } from '../lib/push'
+import { registerPush } from '../lib/push'
 import { orderStatusLabel } from '../lib/statusLabels'
 import { rpc } from '../lib/rpc'
 import PrescriptionLink from '../components/PrescriptionLink'
@@ -44,7 +44,7 @@ export default function Vendor() {
 
   useEffect(() => {
     if (!rid) return
-    registerPush(persistPushToken)
+    registerPush(pushToken => { supabase.rpc('save_my_push_token', { p_push_token: pushToken }) })
   }, [rid])
 
   // Ring for new orders regardless of which screen the vendor is currently
@@ -491,18 +491,8 @@ function KitchenVendor({ rid }: { rid: number }) {
 
   async function delay(o: Order) {
     if (navigator.vibrate) navigator.vibrate(15)
-    // Only delay_limit_reached was handled; not_your_order, wrong_stage and a
-    // dropped connection all fell through to a repaint. The phone vibrates
-    // regardless, so the vendor reads an unchanged ticket as a missed tap and
-    // presses again -- while the customer's ETA has not moved and the SLA badge
-    // is about to flip to متأخر.
-    const res = await rpc('vendor_delay', { p_order_id: o.id, p_minutes: 5 }, {
-      delay_limit_reached: 'وصلت لأقصى عدد تأجيلات مسموح (3) للطلب ده',
-      wrong_stage: 'الطلب اتحرك خلاص — مش هينفع تأجله دلوقتي',
-      not_your_order: 'الطلب ده مش بتاع مطعمك',
-    })
-    if (!res.ok) { setBoardError(res.error); return }
-    setBoardError('')
+    const { error } = await supabase.rpc('vendor_delay', { p_order_id: o.id, p_minutes: 5 })
+    if (error?.message.includes('delay_limit_reached')) { alert('وصلت لأقصى عدد تأجيلات مسموح (3) للطلب ده'); return }
     load()
   }
 
