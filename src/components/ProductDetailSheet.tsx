@@ -55,9 +55,14 @@ export default function ProductDetailSheet({
   return (
     <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 grid place-items-end sm:place-items-center p-0 sm:p-4" onClick={onClose}>
       <div className="w-full sm:max-w-md max-h-[90vh] overflow-y-auto bg-shell rounded-t-2xl sm:rounded-2xl" onClick={e => e.stopPropagation()}>
-        <div className="relative aspect-square grid place-items-center text-6xl" style={{ background: art.tint }}>
+        {/* aspect-square on a phone is a full-width square, so the name, the
+            price and the add button all started below the fold -- the customer
+            had to scroll past a picture of a can to find out what it costs.
+            Capped against the viewport instead. */}
+        <div className="relative aspect-square max-h-[38vh] grid place-items-center text-6xl"
+          style={{ background: active.image_url ? '#fff' : art.tint }}>
           {active.image_url
-            ? <img src={active.image_url} alt={active.name} className="w-full h-full object-cover" />
+            ? <img src={active.image_url} alt={active.name} className="w-full h-full object-contain" />
             : art.emoji}
           <button className="absolute top-3 left-3 bg-white/80 rounded-full w-7 h-7 grid place-items-center text-mist text-sm" onClick={onClose}>✗</button>
           {active.requires_prescription && (
@@ -109,8 +114,9 @@ export default function ProductDetailSheet({
                   const rPrice = applyDiscount(rBasePrice, rDiscount)
                   return (
                     <button key={r.id} className="shrink-0 w-28 text-right" onClick={() => setActiveId(r.id)}>
-                      <div className="rounded-xl aspect-square grid place-items-center text-2xl mb-1.5 overflow-hidden" style={{ background: rArt.tint }}>
-                        {r.image_url ? <img src={r.image_url} alt={r.name} className="w-full h-full object-cover" /> : rArt.emoji}
+                      <div className="rounded-xl aspect-square grid place-items-center text-2xl mb-1.5 overflow-hidden"
+                        style={{ background: r.image_url ? '#fff' : rArt.tint }}>
+                        {r.image_url ? <img src={r.image_url} alt={r.name} className="w-full h-full object-contain" /> : rArt.emoji}
                       </div>
                       <p className="text-xs font-semibold line-clamp-2 leading-snug">{r.name}</p>
                       <p className="text-xs mt-0.5">
