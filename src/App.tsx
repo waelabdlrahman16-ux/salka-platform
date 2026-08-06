@@ -20,6 +20,7 @@ import CustomerLogin from './components/CustomerLogin'
 import PhonePrompt from './components/PhonePrompt'
 import { CustomerAuthProvider, useCustomerAuth } from './lib/customerAuth'
 import { useScrollRestoration } from './lib/useScrollRestoration'
+import { isInAppBrowser } from './lib/inAppBrowser'
 
 // Staff-only pages: not needed in the customer bundle, so they're loaded
 // on demand instead of shipping ~1500 lines of admin/vendor/driver code to
@@ -231,8 +232,22 @@ function AppShell() {
   // without a compound, whereas signing in is optional. Re-read on navigation
   // rather than subscribing, so the prompt surfaces on the customer's next
   // move after picking instead of interrupting them the instant they choose.
+  //
+  // And not inside a Facebook/Instagram in-app browser. That is where every ad
+  // click lands, and this card's first and largest button is «المتابعة بجوجل» --
+  // which Google hard-blocks in an embedded WebView with a full-page
+  // `403: disallowed_useragent`. So the traffic we pay the most for was the
+  // traffic guaranteed to hit a dead end, and the other two doors do not save
+  // it: phone OTP is hidden until SMS Misr approves the sender, and the email
+  // link opens in Safari and orphans the WebView session.
+  //
+  // Ordering has never required an account, so not showing the card here costs
+  // nothing it was actually delivering. The ask moves to <InAppLoginPrompt> on
+  // the tracking screen, after an order exists -- at which point the customer
+  // has a real reason to want one.
   const hasPlace = getCompoundId() !== null
   const showOnboarding = !isStaff && !loading && !customer && !skipped && hasPlace
+    && !isInAppBrowser()
 
   return (
     <div className="min-h-screen font-arabic">

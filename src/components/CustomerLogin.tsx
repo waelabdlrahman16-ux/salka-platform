@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { Link } from 'react-router-dom'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { useCustomerAuth } from '../lib/customerAuth'
+import { googleSignInBlocked } from '../lib/inAppBrowser'
 
 export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; onSkip?: () => void }) {
   const fid = useId()
@@ -162,16 +163,32 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
             <h1 className="text-xl font-bold mb-1">أهلاً بيك في سالكة</h1>
             <p className="text-mist text-sm mb-5">سجّل دخولك عشان تتابع طلباتك</p>
 
-            <button className="w-full !py-3 mb-2.5 rounded-xl border-2 border-line font-semibold flex items-center justify-center gap-2.5 hover:bg-shellup/60 transition-colors"
-              onClick={signInWithGoogle}>
-              <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.9 6 29.7 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.6 18.9 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.9 6 29.7 4 24 4c-7.8 0-14.5 4.5-17.7 10.7z"/><path fill="#4CAF50" d="M24 44c5.6 0 10.7-2.1 14.5-5.7l-6.7-5.7C29.8 34.4 27 35.4 24 35.4c-5.2 0-9.6-3.3-11.3-8l-6.6 5.1C9.4 39.5 16.1 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.2 4.3-4.1 5.7l6.7 5.7C39.9 37.4 44 31.5 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>
-              المتابعة بجوجل
-            </button>
+            {/* App.tsx no longer opens this card on arrival inside a Facebook or
+                Instagram in-app browser, but the card is still reachable there
+                by hand from «طلباتي» and Profile -- so the Google button has to
+                go on this screen too, or the dead end just moves one tap deeper.
+                Google answers `403: disallowed_useragent` in an embedded
+                WebView; a button that cannot work is worse than no button. */}
+            {!googleSignInBlocked() && (
+              <button className="w-full !py-3 mb-2.5 rounded-xl border-2 border-line font-semibold flex items-center justify-center gap-2.5 hover:bg-shellup/60 transition-colors"
+                onClick={signInWithGoogle}>
+                <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.9 6 29.7 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.6 18.9 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.9 6 29.7 4 24 4c-7.8 0-14.5 4.5-17.7 10.7z"/><path fill="#4CAF50" d="M24 44c5.6 0 10.7-2.1 14.5-5.7l-6.7-5.7C29.8 34.4 27 35.4 24 35.4c-5.2 0-9.6-3.3-11.3-8l-6.6 5.1C9.4 39.5 16.1 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-.8 2.3-2.2 4.3-4.1 5.7l6.7 5.7C39.9 37.4 44 31.5 44 24c0-1.3-.1-2.6-.4-3.9z"/></svg>
+                المتابعة بجوجل
+              </button>
+            )}
 
             <button className="w-full !py-3 mb-4 rounded-xl border-2 border-line font-semibold hover:bg-shellup/60 transition-colors"
               onClick={() => goTo('email')}>
               📧 المتابعة بالإيميل
             </button>
+
+            {/* Only shown where Google was removed, so it explains the gap
+                rather than appearing as unexplained advice. */}
+            {googleSignInBlocked() && (
+              <p className="text-[11px] text-mist -mt-2 mb-4 leading-relaxed">
+                الدخول بجوجل مش شغّال جوه فيسبوك — اضغط على ••• فوق واختار «فتح في المتصفح» لو عايزه
+              </p>
+            )}
 
             {smsEnabled && (
               <button className="text-xs text-mist hover:text-foam mb-1" onClick={() => goTo('phone')}>الدخول برقم الموبايل</button>

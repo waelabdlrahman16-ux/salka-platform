@@ -7,6 +7,7 @@ import { vendorNoun } from '../lib/vendorWords'
 import { INSTAPAY_QR_URL, INSTAPAY_LINK } from '../lib/instapay'
 import LiveMap from '../components/LiveMap'
 import Icon from '../components/Icon'
+import InAppLoginPrompt from '../components/InAppLoginPrompt'
 
 // Found by driving it: a pharmacy order with no price, no vendor acceptance and
 // no driver rendered "قيد التجهيز" with "الوصول المتوقع 7:15 ص". Nothing was
@@ -816,6 +817,14 @@ export default function Track() {
         </>
       )}
       {canCancel && <p className="text-center text-xs text-mist mb-4">تقدر تلغي الطلب طول ما لسه قيد الانتظار</p>}
+
+      {/* The login ask for in-app-browser traffic, moved here from the arrival
+          card in App.tsx -- see lib/inAppBrowser.ts for why it cannot live
+          there. Renders nothing for signed-in customers, for anyone who has
+          dismissed it once, and for every normal browser. Placed after the
+          order state and before the complaint link on purpose: it is an offer,
+          so it must not sit above the thing the customer opened this page for. */}
+      <InAppLoginPrompt className="mb-4" />
 
       {complaintSent ? (
         <p className="text-sandink text-sm text-center mb-4">✅ تم إرسال الشكوى — هنراجعها قريب</p>
