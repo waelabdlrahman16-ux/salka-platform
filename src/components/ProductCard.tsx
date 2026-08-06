@@ -48,7 +48,12 @@ export default function ProductCard({
         {/* 4:3 rather than square. Food is photographed landscape, and the
             quarter of the height this returns is what pays for the description
             below without making the card taller. */}
-        <div className="relative rounded-xl aspect-[4/3] grid place-items-center text-3xl mb-2 overflow-hidden"
+        {/* Concentric radii: the card is rounded-xl (12px) and the padding is
+            p-2.5 (10px), so the image's radius is 12 - 10 = 2px. Matching the
+            card's own 12px made the image's corners look tighter than the
+            card's, because they were being cut at a smaller effective radius by
+            the padding between them. */}
+        <div className="relative rounded-sm aspect-[4/3] grid place-items-center text-3xl mb-2 overflow-hidden"
           style={{ background: art.tint }}>
           {item.image_url
             ? <img src={item.image_url} alt={item.name} loading="lazy" decoding="async"

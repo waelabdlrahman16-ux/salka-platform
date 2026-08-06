@@ -139,7 +139,11 @@ export default function AddonsCard({
                   : <div className="w-9 h-9 rounded-lg bg-shell border border-line shrink-0" />}
                 <label className="text-xs text-sea cursor-pointer">
                   <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
-                    onChange={e => e.target.files?.[0] && uploadOptionImage(g.id, e.target.files[0])} />
+                    onChange={e => {
+                      const f = e.target.files?.[0]
+                      e.target.value = ''   // so the same photo can be picked again
+                      if (f) uploadOptionImage(g.id, f)
+                    }} />
                   {draft.uploading ? 'جاري الرفع…' : (draft.imageUrl ? 'تغيير الصورة' : '🖼️ صورة (اختياري)')}
                 </label>
               </div>

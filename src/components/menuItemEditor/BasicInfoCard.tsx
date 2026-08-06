@@ -25,7 +25,11 @@ export default function BasicInfoCard({
           : <div className="w-16 h-16 rounded-xl bg-shellup grid place-items-center text-mist text-xs">لا صورة</div>}
         <label className="text-sm text-sea cursor-pointer">
           <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
-            onChange={e => e.target.files?.[0] && onUpload(e.target.files[0])} />
+            onChange={e => {
+              const f = e.target.files?.[0]
+              e.target.value = ''   // so the same photo can be picked again
+              if (f) onUpload(f)
+            }} />
           {uploading ? 'جاري الرفع…' : (imageUrl ? '🖼️ تغيير الصورة' : '🖼️ إضافة صورة')}
         </label>
       </div>

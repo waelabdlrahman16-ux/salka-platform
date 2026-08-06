@@ -182,7 +182,7 @@ export default function BannersAdmin() {
             <label className="label">الصورة</label>
             <div className="flex gap-2 items-center">
               <input type="file" accept={OK_TYPES.join(',')} disabled={uploading}
-                onChange={e => { const f = e.target.files?.[0]; if (f) upload(f) }}
+                onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) upload(f) }}
                 className="text-sm flex-1" />
               {form.image_url && (
                 <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0"

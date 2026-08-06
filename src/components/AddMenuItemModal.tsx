@@ -20,20 +20,28 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [justSaved, setJustSaved] = useState('')
+  // upload() discarded uploadVendorImage's error and save() discarded the
+  // insert's, so a rejected photo produced a spinner that stopped and nothing
+  // else, and a failed insert showed the "added ✓" toast. MenuItemEditor
+  // surfaces both correctly; this modal simply never did.
+  const [formError, setFormError] = useState('')
 
   const valid = form.name.trim() && form.category.trim() && form.price
 
   async function upload(file: File) {
-    setUploading(true)
-    const { url } = await uploadVendorImage(file, `menu-items/new/${restaurant.id}/${Date.now()}`)
+    setUploading(true); setFormError('')
+    const { url, error } = await uploadVendorImage(file, `menu-items/new/${restaurant.id}/${Date.now()}`)
     setUploading(false)
+    // uploadVendorImage already returns Arabic copy for the two things that
+    // actually go wrong -- wrong file type and over 5MB -- and it was thrown away.
+    if (error) { setFormError(error); return }
     if (url) setForm(f => ({ ...f, imageUrl: url }))
   }
 
   async function save(addAnother: boolean) {
     if (!valid) return
-    setSaving(true)
-    await supabase.from('menu_items').insert({
+    setSaving(true); setFormError('')
+    const { error } = await supabase.from('menu_items').insert({
       restaurant_id: restaurant.id, name: form.name.trim(), description: form.description.trim(),
       category: form.category.trim(), price: Number(form.price), requires_prescription: form.requiresRx,
       available: form.available, image_url: form.imageUrl,
@@ -41,6 +49,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
       available_until: form.hasWindow ? form.availUntil : null
     })
     setSaving(false)
+    if (error) { setFormError(`الحفظ فشل — ${error.message}`); return }
     onSaved()
     if (addAnother) {
       setJustSaved(form.name.trim())
@@ -61,6 +70,9 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
           <button className="text-mist text-sm bg-shell rounded-full px-3 py-1" onClick={onClose}>✗ إغلاق</button>
         </div>
 
+        {formError && (
+          <p className="text-sm text-red-600 bg-red-500/10 rounded-lg p-2.5 mb-3" role="alert">{formError}</p>
+        )}
         {justSaved && (
           <p className="text-xs text-emerald-700 bg-emerald-500/10 rounded-lg p-2 mb-3">✓ اتضاف "{justSaved}" — كمّل اللي بعده</p>
         )}
@@ -72,7 +84,14 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
               : <div className="w-12 h-12 rounded-lg bg-night grid place-items-center text-mist text-[10px]">لا صورة</div>}
             <label className="text-xs text-sea cursor-pointer">
               <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
-                onChange={e => e.target.files?.[0] && upload(e.target.files[0])} />
+                onChange={e => {
+                  const f = e.target.files?.[0]
+                  // Reset the input BEFORE the await. A file input does not fire
+                  // change when the chosen file is identical to the last one, so
+                  // reusing the same photo on a second item silently did nothing.
+                  e.target.value = ''
+                  if (f) upload(f)
+                }} />
               {uploading ? 'جاري الرفع…' : (form.imageUrl ? 'تغيير الصورة' : '🖼️ صورة (اختياري)')}
             </label>
           </div>
