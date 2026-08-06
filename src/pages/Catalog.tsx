@@ -4,7 +4,9 @@ import { useAuth } from '../lib/auth'
 import MenuItemEditor from '../components/MenuItemEditor'
 import AddMenuItemModal from '../components/AddMenuItemModal'
 import AddonLibrary from '../components/AddonLibrary'
+import MenuItemsPanel from '../components/MenuItemsPanel'
 import Icon from '../components/Icon'
+import { uploadVendorImage } from '../lib/upload'
 import type { MenuItem, Restaurant } from '../lib/types'
 
 // Catalogue-only workspace for the `catalog` staff role.
@@ -21,7 +23,6 @@ export default function Catalog() {
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [editing, setEditing] = useState<MenuItem | null>(null)
   const [adding, setAdding] = useState<Restaurant | null>(null)
-  const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -41,25 +42,47 @@ export default function Catalog() {
 
   useEffect(() => { load() }, [])
 
+  const [uploadingImage, setUploadingImage] = useState<string | null>(null)
+
+  // Every one of these checks its error and surfaces it. The catalog role's
+  // whole job is these numbers, and a save that fails silently means the price
+  // on screen is not the price place_order will charge.
+  async function updatePrice(it: MenuItem, price: number) {
+    if (!Number.isFinite(price) || price < 0) return
+    const { error } = await supabase.from('menu_items').update({ price }).eq('id', it.id)
+    if (error) { setError(`تعديل سعر «${it.name}» فشل — ${error.message}`); return }
+    setError('')
+    load()
+  }
+  async function toggleItem(it: MenuItem) {
+    const { error } = await supabase.from('menu_items').update({ available: !it.available }).eq('id', it.id)
+    if (error) { setError(`تغيير إتاحة «${it.name}» فشل — ${error.message}`); return }
+    setError('')
+    load()
+  }
+  async function toggleRx(it: MenuItem) {
+    const { error } = await supabase.from('menu_items')
+      .update({ requires_prescription: !it.requires_prescription }).eq('id', it.id)
+    if (error) { setError(`تغيير الروشتة فشل — ${error.message}`); return }
+    setError('')
+    load()
+  }
+  async function uploadItemImage(it: MenuItem, file: File) {
+    setUploadingImage(`i${it.id}`); setError('')
+    const { url, error } = await uploadVendorImage(file, `menu-items/${it.restaurant_id}/${it.id}`)
+    setUploadingImage(null)
+    if (error) { setError(error); return }
+    if (!url) return
+    const { error: upErr } = await supabase.from('menu_items').update({ image_url: url }).eq('id', it.id)
+    if (upErr) { setError(`حفظ الصورة فشل — ${upErr.message}`); return }
+    load()
+  }
+
   const selected = restaurants.find(r => r.id === selectedId) ?? null
   const items = useMemo(
     () => menu.filter(i => i.restaurant_id === selectedId),
     [menu, selectedId]
   )
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return items
-    return items.filter(i =>
-      i.name.toLowerCase().includes(q) || (i.category ?? '').toLowerCase().includes(q))
-  }, [items, search])
-
-  const categories = useMemo(() => {
-    const seen = new Set<string>()
-    const out: string[] = []
-    for (const i of filtered) if (!seen.has(i.category)) { seen.add(i.category); out.push(i.category) }
-    return out
-  }, [filtered])
-
   const countFor = (rid: number) => menu.filter(i => i.restaurant_id === rid).length
 
   if (loading) return <p className="text-mist text-center py-10">جاري التحميل…</p>
@@ -88,7 +111,7 @@ export default function Catalog() {
             {restaurants.map(r => (
               <button key={r.id}
                 className="w-full card p-4 text-right hover:border-sea/50 transition-colors flex items-center justify-between gap-3"
-                onClick={() => { setSelectedId(r.id); setSearch('') }}>
+                onClick={() => setSelectedId(r.id)}>
                 <div className="min-w-0">
                   <p className="font-bold truncate">{r.name}</p>
                   <p className="text-xs text-mist mt-0.5">
@@ -123,38 +146,19 @@ export default function Catalog() {
               one item's editor -- the whole point is that it is not per item. */}
           <AddonLibrary restaurantId={selected.id} items={items} />
 
-          <input className="field mb-4" value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="دوّر باسم الصنف أو القسم…" />
+          <MenuItemsPanel
+            restaurant={selected}
+            items={items}
+            uploadingImage={uploadingImage}
+            onEdit={setEditing}
+            onTogglePrice={updatePrice}
+            onToggleAvailable={toggleItem}
+            onToggleRx={toggleRx}
+            onUploadImage={uploadItemImage}
+            onAddItem={() => setAdding(selected)}
+            onChanged={load}
+          />
 
-          {filtered.length === 0 && (
-            <div className="card p-6 text-center text-mist">
-              {items.length === 0 ? 'القايمة فاضية — ابدأ بإضافة صنف' : 'مفيش أصناف بالبحث ده'}
-            </div>
-          )}
-
-          {categories.map(cat => (
-            <div key={cat} className="mb-5">
-              <h3 className="font-bold text-mist text-sm mb-2">{cat}</h3>
-              <div className="card divide-y divide-line">
-                {filtered.filter(i => i.category === cat).map(i => (
-                  <button key={i.id}
-                    className="w-full flex items-center justify-between gap-3 px-4 py-3 text-right hover:bg-shellup/40 transition-colors"
-                    onClick={() => setEditing(i)}>
-                    <div className="min-w-0 flex items-center gap-3">
-                      {i.image_url
-                        ? <img src={i.image_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0 border border-line" />
-                        : <div className="w-10 h-10 rounded-lg bg-shellup grid place-items-center shrink-0 text-mist text-xs">—</div>}
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold truncate">{i.name}</p>
-                        {!i.available && <p className="text-xs text-sandink mt-0.5">مش متاح دلوقتي</p>}
-                      </div>
-                    </div>
-                    <span className="text-sm text-mist shrink-0">{i.price} ج.م</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
         </>
       )}
 

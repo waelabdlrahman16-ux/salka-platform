@@ -66,6 +66,13 @@ export interface Discount {
 export interface RequestItem { name: string; qty: number }
 export interface Order {
   id: number; restaurant_id: number
+  /**
+   * Written by a database trigger from the vendor's own is_test flag, so every
+   * order on the test restaurant carries it and no order-creating path can
+   * forget to set it. A test order never touches driver cash, earnings or the
+   * lifetime delivery counter.
+   */
+  is_test?: boolean
   customer_name: string; customer_phone: string
   zone: string; unit_number: string; address_notes: string; customer_note: string | null
   status: string; kitchen_status: string

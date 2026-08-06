@@ -14,7 +14,7 @@ import BannersAdmin from '../components/BannersAdmin'
 import PrescriptionLink from '../components/PrescriptionLink'
 import MenuItemEditor from '../components/MenuItemEditor'
 import AddMenuItemModal from '../components/AddMenuItemModal'
-import DiscountManager from '../components/DiscountManager'
+import MenuItemsPanel from '../components/MenuItemsPanel'
 import EnablePushButton from '../components/EnablePushButton'
 import CustomersTab from '../components/CustomersTab'
 import PhoneOrderForm from '../components/PhoneOrderForm'
@@ -267,6 +267,10 @@ export default function Admin() {
   // false negative the search box was rewritten to eliminate; see the comment
   // on the search effect below. Today and yesterday stay local: they are always
   // inside the newest 500.
+  // Test orders are hidden from every count and list by default. The chip still
+  // shows how many exist -- hiding them silently would make a test that went
+  // wrong look like an order that vanished.
+  const [showTestOrders, setShowTestOrders] = useState(false)
   const [orderRangeResults, setOrderRangeResults] = useState<Order[] | null>(null)
   const [orderRangeLoading, setOrderRangeLoading] = useState(false)
   const [orderRangeFailed, setOrderRangeFailed] = useState(false)
@@ -1656,8 +1660,10 @@ export default function Admin() {
           {(() => {
             const todayKey = cairoDayKey(new Date().toISOString())
             const yKey = shiftDayKey(todayKey, -1)
-            const todayCount = orders.filter(o => cairoDayKey(o.created_at) === todayKey).length
-            const yCount = orders.filter(o => cairoDayKey(o.created_at) === yKey).length
+            const real = orders.filter(o => !o.is_test)
+            const testCount = orders.filter(o => o.is_test).length
+            const todayCount = real.filter(o => cairoDayKey(o.created_at) === todayKey).length
+            const yCount = real.filter(o => cairoDayKey(o.created_at) === yKey).length
             const chip = (key: OrderDateFilter, label: string, count?: number) => (
               <button key={key} onClick={() => setOrderDateFilter(key)}
                 className={`rounded-full border px-3.5 min-h-[36px] text-sm font-semibold transition-colors ${
@@ -1675,7 +1681,17 @@ export default function Admin() {
                 {chip('today', 'النهاردة', todayCount)}
                 {chip('yesterday', 'إمبارح', yCount)}
                 {chip('older', 'أقدم')}
-                {chip('all', 'الكل', orders.length)}
+                {chip('all', 'الكل', real.length)}
+                {testCount > 0 && (
+                  <button onClick={() => setShowTestOrders(v => !v)}
+                    className={`rounded-full border px-3.5 min-h-[36px] text-sm font-semibold transition-colors ${
+                      showTestOrders
+                        ? 'bg-sandink border-sandink text-white'
+                        : 'bg-shell border-dashed border-linestrong text-sandink'}`}>
+                    🧪 التجارب
+                    <span className={`text-xs font-normal ${showTestOrders ? 'text-white/70' : 'text-mist'}`}> {testCount}</span>
+                  </button>
+                )}
               </div>
             )
           })()}
@@ -1730,13 +1746,21 @@ export default function Admin() {
             const source = orderSearchResults
               ?? (orderDateFilter === 'older' ? (orderRangeResults ?? []) : orders)
             const filteredOrders = source.filter(o => {
+              // Test orders are their own view, not an addition to the real one:
+              // mixing them is what made #38 look like revenue.
+              if (!!o.is_test !== showTestOrders) return false
               const day = cairoDayKey(o.created_at)
-              if (orderDateFilter === 'today' && day !== todayKey) return false
-              if (orderDateFilter === 'yesterday' && day !== yKey) return false
-              if (orderDateFilter === 'older') {
-                if (day >= yKey) return false
-                if (orderDateFrom && day < orderDateFrom) return false
-                if (orderDateFrom && day > (orderDateTo || orderDateFrom)) return false
+              // While showing tests the date chips are ignored: you want the test
+              // you just ran, and hunting for it behind a date filter is the
+              // opposite of useful. Status and search still apply.
+              if (!showTestOrders) {
+                if (orderDateFilter === 'today' && day !== todayKey) return false
+                if (orderDateFilter === 'yesterday' && day !== yKey) return false
+                if (orderDateFilter === 'older') {
+                  if (day >= yKey) return false
+                  if (orderDateFrom && day < orderDateFrom) return false
+                  if (orderDateFrom && day > (orderDateTo || orderDateFrom)) return false
+                }
               }
               if (orderStatusFilter !== 'all' && o.status !== orderStatusFilter) return false
               if (!q) return true
@@ -1774,12 +1798,24 @@ export default function Admin() {
               <div key={group.label}>
                 <h3 className="font-bold text-mist text-sm mb-2.5">{group.label} ({group.items.length})</h3>
                 <div className="space-y-3">
+                  {/* A test order looks different at a glance -- dashed edge,
+                      gold wash, explicit badge -- so it can never be mistaken
+                      for revenue by someone glancing at the screen. */}
                   {group.items.map(o => (
-            <div key={o.id} className="card p-4">
+            <div key={o.id} className={o.is_test
+              ? 'card p-4 border-dashed border-linestrong bg-sand/10'
+              : 'card p-4'}>
               <div className="flex items-start justify-between">
-                <h2 className="font-bold">#{o.id} — {o.restaurants?.name}</h2>
+                <h2 className="font-bold">
+                  #{o.id} — {o.restaurants?.name}
+                  {o.is_test && (
+                    <span className="mr-2 align-middle text-[10px] font-bold bg-sandink text-white rounded-full px-2 py-0.5">
+                      🧪 تجربة
+                    </span>
+                  )}
+                </h2>
                 <div className="text-left">
-                  <span className="font-bold text-sea block">
+                  <span className={`font-bold block ${o.is_test ? 'text-sandink' : 'text-sea'}`}>
                     {o.pricing_status === 'pending_quote' ? 'قيد التسعير' : `${o.total} ج.م`}
                   </span>
                   <span className="text-xs text-mist">{orderStatusLabel(o.status)}</span>
@@ -2054,19 +2090,10 @@ export default function Admin() {
                   </div>
                 )}
 
-                {expanded && its.length > 0 && (
-                  <div className="mt-4 border-t border-line pt-3">
-                    <p className="text-sm text-mist mb-2">خصومات على أقسام كاملة</p>
-                    <div className="space-y-2">
-                      {[...new Set(its.map(it => it.category))].map(cat => (
-                        <div key={cat}>
-                          <p className="text-xs font-semibold text-mist mb-1">{cat}</p>
-                          <DiscountManager restaurantId={r.id} scope="category" category={cat} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {/* The category-discount block used to live here: every category
+                    listed with an empty «+ إضافة خصم» beneath it, seven of them
+                    for McDonald's, all above the first item. It now sits beside
+                    the category it belongs to, inside MenuItemsPanel. */}
 
                 {expanded && r.vendor_type === 'supermarket' && (
                   <div className="mt-4 border-t border-line pt-3">
@@ -2102,51 +2129,18 @@ export default function Admin() {
                 )}
 
                 {expanded && (
-                  <div className="mt-4 space-y-2.5">
-                    {its.map(it => (
-                      <div key={it.id} className="bg-night border border-line rounded-xl p-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <button className="flex items-center gap-2.5 min-w-0 text-right" onClick={() => setEditingItem(it)}>
-                            {it.image_url
-                              ? <img src={it.image_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0 border border-line" />
-                              : <div className="w-10 h-10 rounded-lg bg-shellup shrink-0" />}
-                            <div className="min-w-0">
-                              <p className="font-semibold truncate">{it.name}</p>
-                              <p className="text-xs text-mist">{it.category}</p>
-                            </div>
-                          </button>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <button className="text-xs text-sea font-semibold" onClick={() => setEditingItem(it)}>✏️ تعديل</button>
-                            <input type="number" defaultValue={it.price} className="field !w-24 !py-1.5 text-center"
-                              onBlur={e => updatePrice(it, Number(e.target.value))} />
-                            <span className="text-mist text-sm">ج.م</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 mt-2 flex-wrap">
-                          <button className={`text-sm ${it.available ? 'text-mist' : 'text-sandink'}`}
-                            onClick={() => toggleItem(it)}>
-                            {it.available ? '✓ متاح' : '✗ غير متاح'}
-                          </button>
-                          {it.available_from && it.available_until && (
-                            <span className="text-xs text-mist bg-shellup/60 rounded-full px-2 py-0.5">
-                              ⏰ {it.available_from.slice(0, 5)}–{it.available_until.slice(0, 5)}
-                            </span>
-                          )}
-                          {r.vendor_type === 'pharmacy' && (
-                            <button className={`text-sm ${it.requires_prescription ? 'text-sandink' : 'text-mist'}`}
-                              onClick={() => toggleRx(it)}>
-                              {it.requires_prescription ? '💊 يحتاج روشتة' : 'بدون روشتة'}
-                            </button>
-                          )}
-                          <label className="text-sm text-sea cursor-pointer">
-                            <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
-                              onChange={e => e.target.files?.[0] && uploadItemImage(it, e.target.files[0])} />
-                            {uploadingImage === `i${it.id}` ? 'جاري الرفع…' : (it.image_url ? '🖼️ تغيير الصورة' : '🖼️ إضافة صورة')}
-                          </label>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <MenuItemsPanel
+                    restaurant={r}
+                    items={its}
+                    uploadingImage={uploadingImage}
+                    onEdit={setEditingItem}
+                    onTogglePrice={updatePrice}
+                    onToggleAvailable={toggleItem}
+                    onToggleRx={toggleRx}
+                    onUploadImage={uploadItemImage}
+                    onAddItem={() => setAddingItemFor(r)}
+                    onChanged={() => load(true)}
+                  />
                 )}
               </div>
             )
