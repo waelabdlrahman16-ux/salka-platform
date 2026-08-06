@@ -16,7 +16,11 @@ const SIZE_PRESETS = [
   { label: 'وسط / كبير', names: ['وسط', 'كبير'] },
   { label: 'صغير / وسط / كبير', names: ['صغير', 'وسط', 'كبير'] },
 ]
-const COMBO_PRESETS = [{ label: 'كومبو وسط / كبير', names: ['كومبو وسط', 'كومبو كبير'] }]
+// The names must NOT carry the word «كومبو». CustomizeSheet renders the row as
+// «كومبو {name}», so seeding «كومبو وسط» here shows the customer
+// «كومبو كومبو وسط» -- and the same doubled string lands on the cart line and
+// the order item. Matches MenuItemEditor's preset exactly.
+const COMBO_PRESETS = [{ label: 'ابدأ بـ وسط / كبير', names: ['وسط', 'كبير'] }]
 
 /**
  * Sizes and combos are held here as drafts and written after the item exists --

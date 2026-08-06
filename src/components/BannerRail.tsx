@@ -81,7 +81,14 @@ export default function BannerRail() {
   function open(b: Banner) {
     const href = b.link_url
     if (!href) return
-    if (href.startsWith('/')) { nav(href); return }
+    // `//evil.com` is protocol-relative, not an in-app path -- and it satisfies
+    // both the old `startsWith('/')` test AND the database CHECK, whose
+    // character class contains `/` and `.`. react-router's pushState throws
+    // SecurityError on a cross-origin URL and its own catch falls back to
+    // window.location.assign(), so this became a full off-origin navigation
+    // from the home screen, with none of the noopener/noreferrer below. Require
+    // a single leading slash not followed by another.
+    if (/^\/(?!\/)/.test(href)) { nav(href); return }
     if (/^https?:\/\//i.test(href)) window.open(href, '_blank', 'noopener,noreferrer')
   }
 
