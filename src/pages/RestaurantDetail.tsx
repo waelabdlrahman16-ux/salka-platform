@@ -235,7 +235,12 @@ export default function RestaurantDetail() {
   if (restaurant.order_mode === 'custom_request') return null // redirect runs in the effect above
 
   return (
-    <div>
+    // The cart bar is `fixed`, so it floats OVER the last row of the grid --
+    // in the 2026-08-07 screenshot it was covering the prices of the bottom two
+    // items outright. Reserve its height plus the tab bar underneath it, but
+    // only while it is actually on screen, so an empty cart does not leave a
+    // band of dead space at the end of the menu.
+    <div className={cart.count > 0 && restaurant.is_open ? 'pb-24' : undefined}>
       {/* WHERE AM I, and how do I search, after 76 items have scrolled past.
           Deliberately NOT the whole header stuck to the top -- just the name,
           the section currently on screen, and a way back to the search box.

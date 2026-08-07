@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useDismissable } from '../lib/useDismissable'
 import type { Assignment, Compound, Complaint, Driver, DeliverySlotRow, Earning, LiveDelivery, MenuItem, Order, OrderRating, Reliability, Restaurant, Setting, SettlementRequest, Shift, VendorCoverage } from '../lib/types'
 import { ping, askNotificationPermission } from '../lib/notify'
+import { audioBlocked, unlockAudio } from '../lib/audioUnlock'
 import { registerPush, persistPushToken } from '../lib/push'
 import { uploadVendorImage } from '../lib/upload'
 import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel,
@@ -75,7 +76,7 @@ function AccountActionsMenu({ busy, onChangeEmail, onResetPassword, onCustomPass
   )
 }
 
-type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet' | 'banners' | 'refunds' | 'customers' | 'compounds'
+type Tab = 'daily' | 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet' | 'banners' | 'refunds' | 'customers' | 'compounds'
 
 // What is actually owed back, decided by the server. A COD order only ever took
 // the 50% deposit, so refunding `total` would be a gift -- and that is exactly
@@ -119,6 +120,7 @@ const TABS: { key: Tab; label: string; group: TabGroup }[] = [
   { key: 'orders', label: 'كل الطلبات', group: 'now' },
   { key: 'complaints', label: 'الشكاوى', group: 'now' },
 
+  { key: 'daily', label: '📊 تقرير اليوم', group: 'money' },
   { key: 'earnings', label: 'الأرباح', group: 'money' },
   { key: 'payouts', label: 'مدفوعات المندوبين', group: 'money' },
   { key: 'refunds', label: 'الاستردادات', group: 'money' },
@@ -502,6 +504,21 @@ export default function Admin() {
     registerPush(persistPushToken)
     load()
     const t = setInterval(load, 15000)
+    return () => clearInterval(t)
+  }, [])
+
+  // WHY THIS EXISTS. Every alert on this page fires from a polling timer, and a
+  // browser will not play a sound until the page has received a real user
+  // gesture. An admin tab is opened and then watched, not clicked -- so the
+  // AudioContext stays suspended all day, showNotification still draws the
+  // banner, and the beep is silently skipped. On 2026-08-07 a stalled-order
+  // alert appeared at 18:10 with no sound and read as a broken notification.
+  // There is no way to unlock audio without a tap, so ask for the tap.
+  const [soundBlocked, setSoundBlocked] = useState(false)
+  useEffect(() => {
+    const check = () => setSoundBlocked(audioBlocked())
+    check()
+    const t = setInterval(check, 4000)
     return () => clearInterval(t)
   }, [])
 
@@ -1509,6 +1526,17 @@ export default function Admin() {
         label="فعّل تنبيهات الإدارة"
       />
 
+      {/* One tap, then the alerts on this page can actually make a noise.
+          Sits next to the push button because they are the two halves of the
+          same promise and each fails on its own. */}
+      {soundBlocked && (
+        <button
+          className="w-full mb-3 rounded-xl border border-sand/50 bg-sand/15 px-3.5 py-3 text-right text-sm font-semibold text-sandink"
+          onClick={() => { unlockAudio(); setSoundBlocked(audioBlocked()) }}>
+          🔇 الصوت مقفول في التاب ده — اضغط هنا عشان التنبيهات تسمّع
+        </button>
+      )}
+
       {/* Two rows instead of one row of sixteen. The group carries the alert
           count of everything inside it, so nothing that needed you becomes
           invisible by being one level down. */}
@@ -2039,6 +2067,8 @@ export default function Admin() {
         </div>
       )}
 
+
+      {tab === 'daily' && <DailyReportTab />}
 
       {tab === 'earnings' && (
         <div>
@@ -2883,6 +2913,165 @@ export default function Admin() {
           onDeleted={() => { setEditingItem(null); load(true) }}
         />
       )}
+    </div>
+  )
+}
+
+
+/**
+ * The end-of-day audit, live.
+ *
+ * Written after doing it by hand on 2026-08-07 and watching the answer change
+ * within the hour. Three things it deliberately does that a naive dashboard
+ * does not:
+ *
+ *  - It reports what SALKA KEPT, not GMV. On 6 August the app moved 8,167 ج.م
+ *    of food and Salka's share of it was 737. A dashboard leading with the
+ *    bigger number tells you a loss-making day was a triumph.
+ *  - It counts the funnel by DEVICE, not by event. 408 arrivals from 267 phones
+ *    is a denominator that flatters every rate underneath it.
+ *  - It names its own assumption. Rider salary is paid outside the system --
+ *    nothing in the database reads driver_daily_salary_egp -- so the figure is
+ *    labelled as an assumption rather than presented as fact.
+ */
+function DailyReportTab() {
+  const [day, setDay] = useState(() =>
+    new Date(Date.now() + 3 * 3600_000).toISOString().slice(0, 10)) // Cairo = UTC+3
+  const [r, setR] = useState<any>(null)
+  const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    setBusy(true); setErr('')
+    supabase.rpc('admin_daily_report', { p_date: day }).then(({ data, error }) => {
+      if (cancelled) return
+      setBusy(false)
+      if (error) { setErr(error.message); return }
+      setR(data)
+    })
+    return () => { cancelled = true }
+  }, [day])
+
+  const n = (v: any) => Number(v ?? 0).toLocaleString('ar-EG-u-nu-latn',
+    { maximumFractionDigits: 0 })
+
+  const shift = (days: number) => {
+    const d = new Date(day + 'T12:00:00Z')
+    d.setDate(d.getDate() + days)
+    setDay(d.toISOString().slice(0, 10))
+  }
+
+  const f = r?.funnel ?? {}
+  const steps: [string, number][] = [
+    ['دخلوا التطبيق', f.arrived ?? 0],
+    ['اختاروا مكانهم', f.chose_place ?? 0],
+    ['فتحوا مطعم', f.opened_vendor ?? 0],
+    ['ضافوا صنف', f.added_item ?? 0],
+    ['بدأوا الدفع', f.checkout ?? 0],
+    ['طلبوا', f.ordered ?? 0],
+  ]
+  const top = steps[0][1] || 1
+  const inApp = (r?.by_browser ?? []).find((b: any) => b.segment === 'in_app')
+  const normal = (r?.by_browser ?? []).find((b: any) => b.segment === 'browser')
+  const losing = Number(r?.result ?? 0) < 0
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <button className="btn-ghost text-sm" onClick={() => shift(-1)}>اليوم اللي قبله ←</button>
+        <span className="font-bold text-sm">{day}</span>
+        <button className="btn-ghost text-sm" onClick={() => shift(1)}>→ اليوم اللي بعده</button>
+      </div>
+
+      {busy && <div className="card p-6 text-center text-mist">بنحسب…</div>}
+      {err && <div className="card p-4 text-red-600 text-sm">{err}</div>}
+
+      {r && !busy && (
+        <>
+          <div className={`card p-5 ${losing ? 'bg-red-500/5 border-red-500/25' : 'bg-emerald-500/5 border-emerald-500/25'}`}>
+            <p className="text-sm font-semibold mb-1">
+              {losing ? '▼ نتيجة اليوم' : '▲ نتيجة اليوم'}
+            </p>
+            <p className={`text-4xl font-bold ${losing ? 'text-red-600' : 'text-emerald-700'}`}>
+              <bdi dir="ltr">{n(r.result)}</bdi> <span className="text-lg">ج.م</span>
+            </p>
+            <p className="text-sm text-mist mt-2">
+              دخل سالكة {n(r.revenue)} ج.م − أجور {r.riders_active} مندوبين {n(r.assumed_rider_cost)} ج.م
+            </p>
+            {/* Said out loud, because nothing in the database actually pays this. */}
+            <p className="text-[11px] text-mist mt-1">
+              الأجور مفترضة من إعداد «المرتب اليومي» ({n(r.rider_daily_salary)} ج.م) — النظام نفسه مش بيصرفها
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Stat k="طلبات اتوصّلت" v={n(r.delivered)} sub={`من ${n(r.orders_created)} اتعملوا`} />
+            <Stat k="نسبة الإلغاء" v={`${r.cancel_pct}٪`} sub={`${n(r.cancelled)} طلب`} warn={Number(r.cancel_pct) > 15} />
+            <Stat k="دخل سالكة للطلب" v={n(r.revenue_per_delivered)} sub="توصيل + خدمة" />
+            <Stat k="تكلفة المندوب للطلب" v={n(r.cost_per_delivered)} sub="أجور ÷ طلبات" warn />
+            <Stat k="من نقطة التعادل" v={`${r.pct_of_breakeven ?? 0}٪`} sub={`محتاج ${r.breakeven_orders} طلب`} warn={Number(r.pct_of_breakeven ?? 0) < 100} />
+            <Stat k="قيمة الطلبات كلها" v={n(r.gmv)} sub="أغلبها بضاعة للتجار" />
+          </div>
+
+          {(Number(r.unpriced_left_open) > 0 || Number(r.unpaid_left_open) > 0) && (
+            <div className="card p-4 bg-sand/10 border-sand/40 text-sm">
+              <b>سايبين معلّق:</b>{' '}
+              {Number(r.unpriced_left_open) > 0 && <>{n(r.unpriced_left_open)} طلب مستني تسعير. </>}
+              {Number(r.unpaid_left_open) > 0 && <>{n(r.unpaid_left_open)} طلب مستني دفع.</>}
+            </div>
+          )}
+
+          <div className="card p-4">
+            <h3 className="font-bold text-sm mb-3">من دخل التطبيق لحد ما طلب</h3>
+            {steps.map(([label, val], i) => (
+              <div key={label} className="mb-2">
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className={i === 0 ? 'font-semibold' : 'text-mist'}>{label}</span>
+                  <span className="font-bold num">
+                    {n(val)}{i > 0 && <span className="text-mist font-normal"> · {Math.round(val / top * 100)}٪</span>}
+                  </span>
+                </div>
+                <div className="h-2 rounded-full bg-shellup overflow-hidden">
+                  <div className="h-full bg-sea rounded-full"
+                    style={{ width: `${Math.max(val / top * 100, val > 0 ? 1.5 : 0)}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {inApp && Number(inApp.devices) > 0 && (
+            <div className="card p-4">
+              <h3 className="font-bold text-sm mb-1">متصفح فيسبوك الداخلي</h3>
+              <p className="text-xs text-mist mb-3">
+                إعلانات فيسبوك بتفتح جوه التطبيق نفسه. لو الرقم ده فضل صفر، فلوس الإعلانات بتضيع.
+              </p>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-xl bg-shellup p-3">
+                  <p className="text-xs text-mist">جوه فيسبوك</p>
+                  <p className="font-bold">{n(inApp.devices)} جهاز</p>
+                  <p className="text-xs text-mist">{n(inApp.chose_place)} اختاروا مكانهم · {n(inApp.ordered)} طلبوا</p>
+                </div>
+                <div className="rounded-xl bg-shellup p-3">
+                  <p className="text-xs text-mist">متصفح عادي</p>
+                  <p className="font-bold">{n(normal?.devices)} جهاز</p>
+                  <p className="text-xs text-mist">{n(normal?.chose_place)} اختاروا مكانهم · {n(normal?.ordered)} طلبوا</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+function Stat({ k, v, sub, warn }: { k: string; v: string; sub?: string; warn?: boolean }) {
+  return (
+    <div className="card p-3.5">
+      <p className="text-[11px] text-mist mb-1 min-h-[2.4em] leading-snug">{k}</p>
+      <p className={`text-xl font-bold ${warn ? 'text-red-600' : ''}`}>{v}</p>
+      {sub && <p className="text-[11px] text-mist mt-0.5">{sub}</p>}
     </div>
   )
 }
