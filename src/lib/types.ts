@@ -9,6 +9,14 @@ export interface Restaurant {
   is_open: boolean
   /** Temporary close set by the vendor; expires on its own. */
   closed_until?: string | null
+  /** Explicit position in the customer list, set by the admin. NULL = unranked.
+   *  Lower shows first. A closed vendor still sinks below every open one. */
+  display_order?: number | null
+  /** Lifted above unranked vendors without a specific position. ORDERING ONLY —
+   *  nothing is shown to the customer. A «مميز» chip was rendered both ways and
+   *  deliberately not shipped: a badge that only says "we chose this" reads as a
+   *  paid advert and makes the rest of the list read as "not chosen". */
+  featured?: boolean
   /** When it opens next, from vendor_next_open_at(). Null when already open. */
   next_open_at?: string | null
   vendor_type: string; prep_minutes: number

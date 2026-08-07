@@ -990,6 +990,21 @@ export default function Admin() {
     load(true)
   }
 
+  /**
+   * Goes through an RPC rather than a direct table update, unlike the image
+   * fields beside it. Placement is a commercial lever -- it decides which vendor
+   * gets the top of the home screen -- so it gets an is_admin() gate in the
+   * database rather than relying on the RLS policy that happens to allow the
+   * update today.
+   */
+  async function setRank(r: Restaurant, order: number | null, featured: boolean | null) {
+    const res = await rpc('admin_set_restaurant_rank', {
+      p_restaurant_id: r.id, p_display_order: order, p_featured: featured,
+    }, { rank_must_be_positive: 'المركز لازم يكون ١ أو أكبر' })
+    if (!res.ok) { setActionError(res.error); return }
+    load(true)
+  }
+
   async function removeCover(r: Restaurant) {
     if (!confirm('إزالة صورة الواجهة؟ هنرجع نختار صورة تلقائيًا من القايمة.')) return
     const { error } = await supabase.from('restaurants').update({ cover_image_url: null }).eq('id', r.id)
@@ -2136,6 +2151,49 @@ export default function Admin() {
                         <button className="text-red-500 font-semibold mt-1" onClick={() => removeLogo(r)}>✗ إزالة الشعار</button>
                       )}
                     </div>
+                  </div>
+                )}
+
+                {/* WHO APPEARS FIRST.
+                    Before this existed the sort fell through to the vendor's
+                    NAME -- order_ratings is empty, so the review and rating
+                    tiebreakers both collapse, and the customer list for الحجاز ٣
+                    read أرابياتا · ديڤادو · ستوديو مصر · سينابون · ماكدونالدز ·
+                    هارت أتاك. That is the Arabic alphabet, not a decision.
+
+                    No badge is shown to the customer for either control. */}
+                {expanded && (
+                  <div className="mt-3 rounded-xl bg-shellup p-3">
+                    <p className="text-xs font-semibold mb-2">ترتيب الظهور للعميل</p>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="number" min={1} inputMode="numeric"
+                        className="field !w-20 text-center"
+                        placeholder="—"
+                        defaultValue={r.display_order ?? ''}
+                        onBlur={e => {
+                          const raw = e.target.value.trim()
+                          const next = raw === '' ? null : Number(raw)
+                          if (next !== null && (!Number.isFinite(next) || next < 1)) {
+                            e.target.value = String(r.display_order ?? ''); return
+                          }
+                          if ((r.display_order ?? null) === next) return
+                          setRank(r, next, null)
+                        }} />
+                      <button
+                        type="button"
+                        aria-pressed={!!r.featured}
+                        className={`shrink-0 rounded-full px-4 min-h-[44px] text-sm font-semibold transition-colors ${
+                          r.featured ? 'bg-sea text-white' : 'bg-shell text-mist border border-line'}`}
+                        onClick={() => setRank(r, r.display_order ?? null, !r.featured)}>
+                        {r.featured ? 'مميز ✓' : 'مميز'}
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-mist mt-2 leading-relaxed">
+                      الرقم = المركز (١ يعني الأول). سيبه فاضي يعني مش مرتّب.
+                      «مميز» بيرفعه فوق غير المرتّبين من غير ما تحدد له مركز.
+                      <b className="text-sandink"> المطعم المقفول بينزل تحت في كل الأحوال.</b>
+                    </p>
                   </div>
                 )}
 
