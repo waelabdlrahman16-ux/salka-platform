@@ -3,7 +3,7 @@
 Everything pending is in this zip. Nothing is being held back.
 Unzip and drop the folders into the repo root on GitHub; the paths already match.
 
-## 23 files, in 4 groups
+## 24 files, in 5 groups
 
 ### A. The revenue fix — upload this first if you upload nothing else
 | file | why |
@@ -46,6 +46,17 @@ Includes the fix for the second screenshot you sent: a cancelled order now shows
 Group D changes nothing in production — it is already deployed. It matters
 because `supabase/` is the only place a future session can read what the
 database actually does, and it had drifted.
+
+### E. Building the driver APK without a laptop
+| file | why |
+|---|---|
+| `.github/workflows/android.yml` | **new** — GitHub → Actions → "Build driver APK" → Run workflow |
+
+You almost certainly do not need a new APK: the one you have loads the live
+site, so everything in groups A–C reaches it when a driver reopens the app.
+This is for the day something *native* changes. Unlike the rest of this zip it
+has **not** been run end to end — gradle cannot run in my sandbox, so the first
+run is the real test. Read the header comment before pressing the button.
 
 ## Verified before packaging
 
