@@ -2,12 +2,15 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { rpc } from '../lib/rpc'
+import InstallPrompt from '../components/InstallPrompt'
+import { markOrderDelivered } from '../lib/firstOrder'
 import { registerPush } from '../lib/push'
 import { vendorNoun } from '../lib/vendorWords'
 import { INSTAPAY_QR_URL, INSTAPAY_LINK } from '../lib/instapay'
 import LiveMap from '../components/LiveMap'
 import Icon from '../components/Icon'
 import InAppLoginPrompt from '../components/InAppLoginPrompt'
+import { isCancelled } from '../lib/statusLabels'
 
 // Found by driving it: a pharmacy order with no price, no vendor acceptance and
 // no driver rendered "قيد التجهيز" with "الوصول المتوقع 7:15 ص". Nothing was
@@ -59,6 +62,9 @@ interface TrackData {
     status: string; driver_name: string | null; driver_phone: string | null
     driver_instapay: string | null
     driver_lat: number | null; driver_lng: number | null; driver_location_updated_at: string | null
+    /** Set the moment the rider marks himself at the door. Added to track_order
+     *  on 2026-08-07 — the server always knew, and never said. */
+    arrived_at_customer_at: string | null
   } | null
 }
 
@@ -98,6 +104,14 @@ export default function Track() {
   const [addingItem, setAddingItem] = useState(false)
   const [extraItem, setExtraItem] = useState('')
   const [extraSaving, setExtraSaving] = useState(false)
+
+  // Remember, on this device, that an order has actually landed. It is what
+  // gates the install prompt: the app asks for a home-screen slot once, from the
+  // screen where the food just arrived, instead of on every route from the first
+  // second of the first visit.
+  useEffect(() => {
+    if (data?.order?.status === 'Delivered') markOrderDelivered()
+  }, [data?.order?.status])
 
   // Changing your mind about HOW you pay should not mean cancelling WHAT you
   // ordered. An InstaPay order is created at awaiting_payment, so by the time
@@ -396,6 +410,12 @@ export default function Track() {
     : kitchen === 'preparing' || kitchen === 'ready' ? 1
     : 0
 
+  // Named where we have one, «المندوب» where we do not. Used everywhere the
+  // rider is referred to, so the screen never calls أشرف "the courier" in one
+  // line and أشرف in the next.
+  const driverName = data.assignment?.driver_name || 'المندوب'
+  const hasArrived = !!data.assignment?.arrived_at_customer_at
+
   // The customer keeps the right to cancel until the vendor accepts. It used to
   // survive until a driver appeared, so the page offered "إلغاء الطلب" directly
   // underneath a heading saying the order was being cooked. The server enforces
@@ -459,6 +479,21 @@ export default function Track() {
         </div>
       ) : (
         <div className="card p-4 mb-4">
+          {/* THE moment. The rider is downstairs — this is what the customer has
+              been refreshing for, and until now it read exactly like every other
+              status line. The cash figure is the SERVER's `total`, never
+              recomputed here: five different client-side copies of that sum
+              already disagree across Track, Driver and Admin, and this is not
+              becoming the sixth. */}
+          {hasArrived && current !== 'Delivered' && (
+            <div className="-m-4 mb-4 rounded-t-xl bg-gradient-to-b from-emerald-600 to-emerald-700 text-white p-4 text-center">
+              <p className="text-2xl mb-1">🎉</p>
+              <p className="font-bold text-lg">{driverName} وصل تحت</p>
+              {o.payment_method === 'cod' && (
+                <p className="text-sm opacity-90 mt-0.5">معاه طلبك · جهّز {o.total} ج.م كاش</p>
+              )}
+            </div>
+          )}
           <div className="flex items-start justify-between gap-2 mb-1">
             <h1 className="font-bold text-xl">
               {current === 'Delivered' ? '✅ تم التوصيل' : STAGES[stageIdx]?.label ?? 'استلمنا طلبك'}
@@ -537,11 +572,17 @@ export default function Track() {
           {timelineOpen && (
             <ol className="mt-2.5 border-t border-line pt-3 space-y-0">
               {[
+                // The rider has a name. «المندوب» is what you call a stranger;
+                // once we know he is أشرف, saying so costs nothing and is the
+                // warmest thing on the screen.
                 { k: 'placed',    label: 'الطلب اتسجل',              done: true },
                 { k: 'confirmed', label: `${o.restaurant_name} أكّد الطلب`, done: stageIdx >= 1 },
                 { k: 'searching', label: 'بندوّر على مندوب',          done: !!data.assignment },
-                { k: 'picked',    label: 'المندوب استلم الطلب',       done: stageIdx >= 2 },
-                { k: 'arrived',   label: 'المندوب وصل عندك',          done: stageIdx >= 3 },
+                { k: 'picked',    label: `${driverName} استلم الطلب`, done: stageIdx >= 2 },
+                // Was `stageIdx >= 3`, i.e. Delivered -- so "arrived" lit up only
+                // after the handover was already finished. track_order now
+                // returns arrived_at_customer_at, which is the real moment.
+                { k: 'arrived',   label: `${driverName} وصل عندك`,    done: hasArrived || stageIdx >= 3 },
               ].map((step, i, arr) => (
                 <li key={step.k} className="flex gap-3">
                   <span className="flex flex-col items-center">
@@ -753,6 +794,13 @@ export default function Track() {
         </div>
       </div>
 
+      {/* The one moment the app has earned the right to ask for a home-screen
+          slot: the food just arrived. It used to ask on every route from the
+          first second of the first visit, including checkout. */}
+      {current === 'Delivered' && (
+        <div className="mb-4"><InstallPrompt /></div>
+      )}
+
       {current === 'Delivered' && !ratingSent && (
         <div className="card p-4 mb-4">
           <p className="text-sm font-semibold mb-3">قيّم تجربتك (اختياري)</p>
@@ -875,9 +923,6 @@ export default function Track() {
   )
 }
 
-function isCancelled(status: string) {
-  return status === 'Cancelled'
-}
 
 /**
  * Admin price adjustments, shown on EVERY order type.

@@ -6,7 +6,7 @@ import { ping, askNotificationPermission } from '../lib/notify'
 import { registerPush, persistPushToken } from '../lib/push'
 import { uploadVendorImage } from '../lib/upload'
 import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel,
-         ORDER_STATUSES, CLOSED_ORDER_STATUSES, UNPAID_ORDER_STATUSES, type OrderStatus } from '../lib/statusLabels'
+         ORDER_STATUSES, CLOSED_ORDER_STATUSES, UNPAID_ORDER_STATUSES, type OrderStatus, isCancelled, cancelReasonLabel } from '../lib/statusLabels'
 import { rpc } from '../lib/rpc'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import Icon from '../components/Icon'
@@ -1858,10 +1858,20 @@ export default function Admin() {
                   )}
                 </h2>
                 <div className="text-left">
-                  <span className={`font-bold block ${o.is_test ? 'text-sandink' : 'text-sea'}`}>
-                    {o.pricing_status === 'pending_quote' ? 'قيد التسعير' : `${o.total} ج.م`}
+                  {/* «قيد التسعير» belongs only to an order still waiting for a
+                      price. A cancelled one is not waiting for anything, and
+                      showing it in the biggest text on the card — with «ملغي»
+                      small underneath — buried the one fact that matters. */}
+                  <span className={`font-bold block ${
+                    isCancelled(o.status) ? 'text-red-600'
+                    : o.is_test ? 'text-sandink' : 'text-sea'}`}>
+                    {isCancelled(o.status) ? 'ملغي'
+                      : o.pricing_status === 'pending_quote' ? 'قيد التسعير'
+                      : `${o.total} ج.م`}
                   </span>
-                  <span className="text-xs text-mist">{orderStatusLabel(o.status)}</span>
+                  <span className="text-xs text-mist">
+                    {isCancelled(o.status) ? `${o.total} ج.م` : orderStatusLabel(o.status)}
+                  </span>
                 </div>
               </div>
 
@@ -1889,7 +1899,15 @@ export default function Admin() {
 
               {customer(o)}
 
-              {o.order_type === 'custom_request' && o.pricing_status === 'pending_quote' && (
+              {/* `pricing_status` does NOT clear when an order is cancelled, so a
+                  cancelled custom order still reads pending_quote forever. This
+                  block was therefore offering a live price box on a dead order —
+                  and confirm_custom_order_price had no status check either, so
+                  typing a number would have rewritten the total of an order the
+                  customer had already walked away from. Order #86 was exactly
+                  this: cancelled at 14:07 and still asking to be priced. */}
+              {o.order_type === 'custom_request' && o.pricing_status === 'pending_quote'
+                && !isCancelled(o.status) && (
                 <div className="flex items-center gap-2 mt-3">
                   <input type="number" inputMode="decimal" placeholder="السعر بعد المكالمة"
                     className="field !py-1.5 text-sm" id={`quote-${o.id}`} />
@@ -1941,9 +1959,17 @@ export default function Admin() {
                       </span>
                     )}
                     <span className="bg-night border border-line rounded-lg px-2 py-1">💵 {cash}</span>
-                    {o.status === 'Cancelled' && o.cancel_reason && (
+                    {/* WHEN, not just why. The reason chip said
+                        «customer_cancelled» and nothing else, so the one
+                        question you actually ask — how long did we sit on it
+                        before they gave up — had no answer on this card. */}
+                    {o.status === 'Cancelled' && (o.cancel_reason || o.cancelled_at) && (
                       <span className="bg-red-500/10 border border-red-500/30 text-red-700 rounded-lg px-2 py-1">
-                        ✕ {o.cancel_reason}
+                        ✕ {cancelReasonLabel(o.cancel_reason)}
+                        {o.cancelled_at && ` · اتلغى ${fmtTime(o.cancelled_at)}`}
+                        {o.cancelled_at && o.created_at &&
+                          ` · بعد ${Math.max(0, Math.round(
+                            (new Date(o.cancelled_at).getTime() - new Date(o.created_at).getTime()) / 60000))} دقيقة`}
                       </span>
                     )}
                   </div>

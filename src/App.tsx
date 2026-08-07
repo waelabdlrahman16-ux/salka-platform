@@ -260,7 +260,11 @@ function AppShell() {
   return (
     <div className="min-h-screen font-arabic">
       {isStaff && <Header />}
-      {!isStaff && <InstallPrompt />}
+      {/* The install prompt no longer lives here. It rendered on EVERY route
+          from the first second of the first visit -- including /checkout, where
+          it took 15% of the viewport above a customer who had already decided to
+          buy. It now renders once, from Track's delivered state, when the food
+          has actually arrived. See components/InstallPrompt.tsx. */}
       {showOnboarding && (
         <CustomerLogin
           onDone={() => { localStorage.setItem('salka_onboarded', '1'); setSkipped(true) }}

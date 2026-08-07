@@ -49,6 +49,9 @@ export default function CheckoutPage() {
   // The effect below is what actually delivers them.
   const [name, setName] = useState(() => customer?.name ?? '')
   const [phone, setPhone] = useState(() => customer?.phone ?? localStorage.getItem('salka_phone') ?? '')
+  // Which fields the customer has actually left, so an error appears when they
+  // move on rather than scolding an empty form on first paint.
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
 
   // Fill from the account once it lands, but never overwrite something the
   // customer has already typed -- they may be ordering for someone else.
@@ -421,9 +424,17 @@ export default function CheckoutPage() {
           </div>
         ) : (
           <>
-            <div><label className="label" htmlFor={`${fid}-1`}>الاسم *</label>
-              <input id={`${fid}-1`} className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
-            <div><label className="label" htmlFor={`${fid}-2`}>رقم الموبايل *</label>
+            {/* «(مطلوب)» rather than a bare `*` — the asterisk is a Western
+                form convention that announces as nothing and sits where an
+                Arabic reader does not look for it. */}
+            <div><label className="label" htmlFor={`${fid}-1`}>الاسم <span className="text-mist font-normal">(مطلوب)</span></label>
+              <input id={`${fid}-1`} className={`field ${touched.name && !name.trim() ? '!border-red-400' : ''}`}
+                value={name} onChange={e => setName(e.target.value)}
+                onBlur={() => setTouched(t => ({ ...t, name: true }))} placeholder="الاسم بالكامل" />
+              {touched.name && !name.trim() && (
+                <p className="text-xs text-red-600 mt-1">اكتب اسمك عشان المندوب يعرف يسأل عليك</p>
+              )}</div>
+            <div><label className="label" htmlFor={`${fid}-2`}>رقم الموبايل <span className="text-mist font-normal">(مطلوب)</span></label>
               <input id={`${fid}-2`} className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-red-400' : ''}`}
                 dir="ltr" value={phone} onChange={e => setPhone(e.target.value)}
                 placeholder="01xxxxxxxxx" maxLength={13} />
@@ -455,8 +466,13 @@ export default function CheckoutPage() {
                 <option value="">اختر مكانك…</option>
                 {compounds.map(c => <option key={c.id} value={c.id}>{c.name} (~{c.est_travel_minutes} د)</option>)}
               </select></div>
-            <div><label className="label" htmlFor={`${fid}-4`}>رقم الشاليه / الفيلا *</label>
-              <input id={`${fid}-4`} className="field" value={unit} onChange={e => setUnit(e.target.value)} placeholder="مثال: B4 - 204" /></div>
+            <div><label className="label" htmlFor={`${fid}-4`}>رقم الشاليه / الفيلا <span className="text-mist font-normal">(مطلوب)</span></label>
+              <input id={`${fid}-4`} className={`field ${touched.unit && !unit.trim() ? '!border-red-400' : ''}`}
+                value={unit} onChange={e => setUnit(e.target.value)}
+                onBlur={() => setTouched(t => ({ ...t, unit: true }))} placeholder="مثال: B4 - 204" />
+              {touched.unit && !unit.trim() && (
+                <p className="text-xs text-red-600 mt-1">من غير رقم الوحدة المندوب مش هيعرف يوصلك</p>
+              )}</div>
             {showLandmark || notes.trim() ? (
               <div><label className="label" htmlFor={`${fid}-5`}>علامة مميزة (اختياري)</label>
                 <input id={`${fid}-5`} className="field" value={notes} onChange={e => setNotes(e.target.value)} placeholder="مثال: بجوار حمام السباحة" autoFocus /></div>
@@ -645,20 +661,31 @@ export default function CheckoutPage() {
           sits inside a card the customer may never have opened. Verified on the
           live site: name + phone + compound filled, submit dead, page silent. */}
       {!valid && !saving && (() => {
-        const missing =
-          !name.trim() ? 'اكتب اسمك'
-          : !isValidEgyptPhone(phone) ? 'اكتب رقم موبايل صحيح'
-          : !selectedCompound ? 'اختار مكانك'
-          : !unit.trim() ? 'اكتب رقم الشاليه / الفيلا'
-          : !optionsLoaded ? 'بنحمّل تفاصيل الأصناف…'
-          : deliveryFee === null ? 'بنحسب رسوم التوصيل…'
-          : serviceFee === null ? 'بنحسب رسوم الخدمة…'
-          : (scheduled && !slot) ? 'اختار فترة التوصيل'
-          : (paymentMethod === 'cod' && codThresholdFailed) ? 'مش قادرين نتأكد من شروط الدفع كاش — جرب تاني أو اختار InstaPay'
+        // Each reason now knows WHICH control it is about, so the message is a
+        // way back to the field rather than a sentence the customer has to map
+        // onto a form they may have scrolled past.
+        const m: { text: string; field?: string; touch?: string } | null =
+          !name.trim() ? { text: 'اكتب اسمك', field: `${fid}-1`, touch: 'name' }
+          : !isValidEgyptPhone(phone) ? { text: 'اكتب رقم موبايل صحيح', field: `${fid}-2` }
+          : !selectedCompound ? { text: 'اختار مكانك', field: `${fid}-3` }
+          : !unit.trim() ? { text: 'اكتب رقم الشاليه / الفيلا', field: `${fid}-4`, touch: 'unit' }
+          : !optionsLoaded ? { text: 'بنحمّل تفاصيل الأصناف…' }
+          : deliveryFee === null ? { text: 'بنحسب رسوم التوصيل…' }
+          : serviceFee === null ? { text: 'بنحسب رسوم الخدمة…' }
+          : (scheduled && !slot) ? { text: 'اختار فترة التوصيل' }
+          : (paymentMethod === 'cod' && codThresholdFailed)
+            ? { text: 'مش قادرين نتأكد من شروط الدفع كاش — جرب تاني أو اختار InstaPay' }
           : null
-        return missing ? (
-          <p className="text-sm text-sandink bg-sand/10 rounded-xl p-3 mb-3 text-center">{missing}</p>
-        ) : null
+        if (!m) return null
+        const cls = 'w-full text-sm text-sandink bg-sand/10 rounded-xl p-3 mb-3 text-center'
+        return m.field ? (
+          <button className={cls} onClick={() => {
+            if (m.touch) setTouched(t => ({ ...t, [m.touch!]: true }))
+            const el = document.getElementById(m.field!)
+            el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            ;(el as HTMLInputElement | null)?.focus({ preventScroll: true })
+          }}>{m.text} ←</button>
+        ) : <p className={cls}>{m.text}</p>
       })()}
 
       <button className="btn-sea w-full !py-3.5" disabled={!valid || saving} onClick={placeOrder}>

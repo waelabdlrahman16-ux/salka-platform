@@ -21,7 +21,7 @@ import type { MenuItem } from '../lib/types'
  */
 export default function ProductCard({
   item, qty, disabled, onAdd, onRemove, hasOptions, onCustomize, onOpenDetail,
-  displayPrice, originalPrice, isFromPrice, optionLabel,
+  displayPrice, originalPrice, isFromPrice, optionLabel, optionCount,
 }: {
   item: MenuItem
   qty: number
@@ -39,12 +39,22 @@ export default function ProductCard({
    * group -- "بيف أو تشيكن", "الحجم". Null falls back to a generic label.
    */
   optionLabel?: string | null
+  /**
+   * How many choices that group actually offers, so the pill can say «3 أحجام»
+   * instead of a bare «اختار». The customer then knows why they are being sent
+   * to a sheet before they tap it.
+   */
+  optionCount?: number
 }) {
   const art = artFor(item.category)
 
   return (
     <div className="card p-2 flex flex-col h-full">
-      <button className="text-right flex flex-col" onClick={onOpenDetail}>
+      {/* The photo is its own clickable region rather than part of the text
+          button, because the add control now sits ON it and a <button> inside a
+          <button> is invalid and unreachable by keyboard. */}
+      <div className="relative mb-1.5">
+      <button className="text-right flex flex-col w-full" onClick={onOpenDetail} aria-label={item.name}>
         {/* 4:3 rather than square. Food is photographed landscape, and the
             quarter of the height this returns is what pays for the description
             below without making the card taller. */}
@@ -57,7 +67,7 @@ export default function ProductCard({
             behind a real photo put a coloured band around any image whose own
             background differs -- a cola can shot on pale blue sitting on a peach
             tile. A photo brings its own background; ours only competes with it. */}
-        <div className="relative rounded-md aspect-[4/3] grid place-items-center text-3xl mb-1.5 overflow-hidden"
+        <div className="relative rounded-md aspect-[4/3] grid place-items-center text-3xl overflow-hidden"
           style={{ background: item.image_url ? '#fff' : art.tint }}>
           {item.image_url
             // contain, not cover: half this catalogue is packaged goods shot
@@ -72,12 +82,51 @@ export default function ProductCard({
             </span>
           )}
           {originalPrice != null && (
-            <span className="absolute top-1.5 left-1.5 bg-sand text-white rounded-full px-2 py-0.5 text-[10px] font-bold">
-              خصم
+            // bg-sand carried white text at 2.87:1, against the palette file's
+            // own rule that sand "must never carry text". sandink is the same
+            // hue at 6.4:1. And since we are here: say how much, not just that
+            // there is one -- «خصم» tells the customer nothing they can weigh.
+            <span className="absolute top-1.5 left-1.5 bg-sandink text-white rounded-full px-2 py-0.5 text-[10px] font-bold">
+              خصم <bdi dir="ltr">{Math.round((1 - displayPrice / originalPrice) * 100)}%</bdi>
             </span>
           )}
         </div>
+      </button>
 
+      {/* The action lives on the photograph. Below the card it was a full-width
+          solid bar on every tile, so a grid of twelve items was twelve identical
+          shouts and the food -- the thing that actually sells -- competed with a
+          button on every card. Up here it also buys back ~40px of height per
+          card, which is another row of food on screen. */}
+      <div className="absolute bottom-1.5 left-1.5">
+        {hasOptions ? (
+          // Same visual weight as the plain add now. It used to be the quiet
+          // variant, which meant the item with sizes -- usually the pricier one
+          // -- wore the button that reads as switched off.
+          <button
+            className="h-11 px-3.5 rounded-full bg-shell text-sea border-2 border-sea font-bold text-[11px] shadow-md hover:bg-shellup transition-colors disabled:opacity-40 disabled:pointer-events-none"
+            disabled={disabled} onClick={onCustomize}>
+            {optionCount && optionCount > 1 && optionLabel ? `${optionCount} ${optionLabel}` : 'اختار'}
+          </button>
+        ) : qty === 0 ? (
+          <button
+            className="w-11 h-11 rounded-full bg-sea text-white shadow-md grid place-items-center hover:bg-seadeep transition-colors disabled:opacity-40 disabled:pointer-events-none"
+            disabled={disabled} onClick={onAdd} aria-label={`إضافة ${item.name}`}>
+            <Icon name="plus" className="w-4 h-4" />
+          </button>
+        ) : (
+          <div className="h-11 rounded-full bg-sea text-white shadow-md flex items-center gap-0.5 px-0.5">
+            <button className="w-10 h-10 rounded-full grid place-items-center hover:bg-white/15 transition-colors"
+              onClick={onRemove} aria-label={`تقليل ${item.name}`}><Icon name="minus" className="w-3.5 h-3.5" /></button>
+            <span className="font-bold text-sm min-w-[1.1rem] text-center">{qty}</span>
+            <button className="w-10 h-10 rounded-full grid place-items-center hover:bg-white/15 transition-colors"
+              onClick={onAdd} aria-label={`زيادة ${item.name}`}><Icon name="plus" className="w-3.5 h-3.5" /></button>
+          </div>
+        )}
+      </div>
+      </div>
+
+      <button className="text-right flex flex-col w-full" onClick={onOpenDetail}>
         {/* One line, truncated. Two lines made the cards uneven -- a long name
             pushed its price and button down while a short one left a gap -- and
             the second line was carrying nothing a customer decides on. Names
@@ -97,7 +146,10 @@ export default function ProductCard({
 
         <p className="mt-1 flex items-center gap-2 flex-wrap">
           {originalPrice != null && <span className="text-mist text-xs line-through">{originalPrice}</span>}
-          <span className="text-sea font-bold">
+          {/* foam, not sea. Teal is the app's "do something" colour; when the
+              price wore it too, the price competed with the control beside it
+              and neither read as the primary thing. */}
+          <span className="text-foam font-bold">
             {/* "من" whenever the final figure is decided in the options sheet.
                 Without it, an item sold only in sizes quotes a price it cannot
                 be bought at -- 6 وينجز reads 190 on the column and costs 300. */}
@@ -107,44 +159,16 @@ export default function ProductCard({
           {/* Beside the price, not over the photo, and identical for an options
               item and a plain one -- the same fact should not appear in two
               different places in two different shapes. */}
-          {qty > 0 && (
+          {/* Only for options items. A plain item's stepper already shows the
+              quantity on the photo, and the same fact twice on one card is
+              noise. */}
+          {qty > 0 && hasOptions && (
             <span className="bg-sea/10 text-sea text-[10px] font-bold rounded-full px-2 py-0.5">
               {qty} في العربة
             </span>
           )}
         </p>
       </button>
-
-      {/* mt-auto: whatever the name and description did above, every action in
-          the row starts at the same height. */}
-      <div className="mt-auto pt-1.5">
-        {hasOptions ? (
-          // Deliberately the quiet variant. "إضافة" adds immediately and
-          // "اختيار" opens a sheet -- two different outcomes that were wearing
-          // the same solid button, so nothing on the card said which was which.
-          // The label now states the actual question, taken from the item's own
-          // option group: "اختار: بيف أو تشيكن", "اختار الحجم".
-          <button
-            className="w-full h-10 rounded-lg bg-shellup text-foam font-bold text-sm grid place-items-center hover:bg-line transition-colors disabled:opacity-40 disabled:pointer-events-none px-2"
-            disabled={disabled}
-            onClick={onCustomize}>
-            <span className="truncate">{optionLabel ? `اختار: ${optionLabel}` : 'اختار'}</span>
-          </button>
-        ) : qty === 0 ? (
-          <button
-            className="w-full h-10 rounded-lg bg-sea text-white font-bold text-sm grid place-items-center hover:bg-seadeep transition-colors disabled:opacity-40 disabled:pointer-events-none"
-            disabled={disabled}
-            onClick={onAdd}><span className="flex items-center gap-1.5"><Icon name="plus" className="w-3 h-3" /> إضافة</span></button>
-        ) : (
-          <div className="w-full h-10 rounded-lg bg-shellup flex items-center justify-between px-1">
-            <button className="w-9 h-9 rounded-md grid place-items-center text-foam hover:bg-white transition-colors"
-              onClick={onRemove} aria-label="تقليل"><Icon name="minus" className="w-3.5 h-3.5" /></button>
-            <span className="font-bold text-sm">{qty}</span>
-            <button className="w-9 h-9 rounded-md grid place-items-center text-white bg-sea hover:bg-seadeep transition-colors"
-              onClick={onAdd} aria-label="زيادة"><Icon name="plus" className="w-3.5 h-3.5" /></button>
-          </div>
-        )}
-      </div>
     </div>
   )
 }

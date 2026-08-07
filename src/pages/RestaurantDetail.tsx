@@ -283,7 +283,9 @@ export default function RestaurantDetail() {
           and now share the back row; the category folded into the meta line
           under the name. */}
       <div className="flex items-center gap-2 mb-2.5">
-        <Link to="/" className="text-sm text-mist hover:text-foam flex items-center">
+        {/* -mr-2 keeps the text where it was while the tappable box grows to the
+            44px minimum. It measured 47x20. */}
+        <Link to="/" className="text-sm text-mist hover:text-foam flex items-center h-11 pl-2 pr-2 -mr-2">
           {/* The page is RTL, so "back" is to the RIGHT. chevronLeft was
               rendering a left-pointing arrow next to رجوع, which reads as
               "forward". Icon.tsx only ships chevronLeft, so it is mirrored
@@ -392,6 +394,7 @@ export default function RestaurantDetail() {
           {items.length > 8 && (
             <div className="relative mb-3">
               <input id="menu-search" className="field !pr-10" value={menuQ} onChange={e => setMenuQ(e.target.value)}
+                aria-label={`دوّر في قايمة ${restaurant.name}`}
                 placeholder={`دوّر في قايمة ${restaurant.name}…`} />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mist pointer-events-none">
                 <Icon name="magnifyingGlass" className="w-4 h-4" />
@@ -463,10 +466,21 @@ export default function RestaurantDetail() {
                       // Say what the sheet will actually ask. Taken from the
                       // item's own option group, so "اتاك كومبو" reads
                       // "اختار: بيف أو تشيكن" rather than a bare "اختيار".
+                      // «5 أحجام» would be a lie when two of the five are combo
+                      // upgrades rather than sizes. Only claim "sizes" when that
+                      // is all they are.
                       optionLabel={
+                        itemCombos.length > 0 ? 'اختيارات'
+                        : itemSizes.length > 0 ? 'أحجام'
+                        : itemGroups[0]?.name ?? null
+                      }
+                      // How many choices there are, so the pill reads «3 أحجام»
+                      // rather than a bare «اختار» -- the customer can tell
+                      // whether the sheet is worth the tap before taking it.
+                      optionCount={
                         itemSizes.length > 0 || itemCombos.length > 0
-                          ? 'الحجم'
-                          : itemGroups[0]?.name ?? null
+                          ? itemSizes.length + itemCombos.length
+                          : addonGroups.filter(g => g.menu_item_id === it.id).length
                       }
                       onAdd={() => cart.add(it, 1)}
                       onRemove={() => cart.add(it, -1)}

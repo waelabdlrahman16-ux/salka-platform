@@ -1,24 +1,13 @@
 import { useEffect, useState } from 'react'
+import { isIOS, isStandalone } from '../lib/platform'
 
 const DISMISS_KEY = 'salka_install_dismissed'
-
-function isStandalone() {
-  return window.matchMedia('(display-mode: standalone)').matches
-    || (navigator as any).standalone === true // iOS Safari
-}
-
-function isIOS() {
-  const ua = navigator.userAgent
-  const classic = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream
-  // iPadOS 13+ reports as a Mac in the user agent, but has touch support
-  const modernIpad = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1
-  return classic || modernIpad
-}
 
 export default function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
   const [showIOSHelp, setShowIOSHelp] = useState(false)
   const [dismissed, setDismissed] = useState(false)
+  const [stepsOpen, setStepsOpen] = useState(false)
 
   useEffect(() => {
     if (localStorage.getItem(DISMISS_KEY) === '1') { setDismissed(true); return }
@@ -52,27 +41,40 @@ export default function InstallPrompt() {
   if (dismissed || isStandalone()) return null
   if (!deferredPrompt && !showIOSHelp) return null
 
+  // A CARD, not a page-wide banner, and rendered by the caller at the moment it
+  // has earned -- see Track's delivered state. It no longer opens with an iOS
+  // instruction manual: the headline is what the customer gets, and the steps
+  // are behind «إزاي؟» for the one person in ten who wants them.
   return (
-    <div className="bg-sea/10 border-b border-sea/20">
-      <div className="max-w-5xl mx-auto px-4 py-2.5 flex items-center gap-3">
-        <img src="/icon-192.png" alt="" className="w-8 h-8 rounded-lg shrink-0" />
-        <div className="flex-1 min-w-0 text-xs sm:text-sm">
-          {showIOSHelp ? (
-            <p>
-              ثبّت سالكة على شاشتك الرئيسية: اضغط <span className="font-bold">زر المشاركة</span> ⬆️،
-              بعدين <span className="font-bold">"إضافة إلى الشاشة الرئيسية"</span>
-            </p>
-          ) : (
-            <p className="font-semibold">ثبّت تطبيق سالكة على موبايلك لسهولة الوصول</p>
+    <div className="card p-3 flex items-start gap-3">
+      <img src="/icon-192.png" alt="" className="w-10 h-10 rounded-xl shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="font-bold text-sm">اطلب المرة الجاية في ثانية</p>
+        <p className="text-xs text-mist mt-0.5">
+          حطّ سالكة على شاشتك الرئيسية
+          {showIOSHelp && (
+            <>
+              {' · '}
+              <button className="text-sea font-bold underline" onClick={() => setStepsOpen(o => !o)}>
+                {stepsOpen ? 'إخفاء' : 'إزاي؟'}
+              </button>
+            </>
           )}
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {!showIOSHelp && (
-            <button className="btn-sea !py-1 !px-3 text-xs sm:text-sm" onClick={install}>تثبيت</button>
-          )}
-          <button className="text-mist text-lg leading-none px-1" onClick={dismiss} aria-label="إغلاق">×</button>
-        </div>
+        </p>
+        {showIOSHelp && stepsOpen && (
+          <p className="text-xs text-mist mt-2 bg-shellup rounded-lg p-2.5 leading-relaxed">
+            اضغط <span className="font-bold">زر المشاركة</span> ⬆️ تحت،
+            وبعدين <span className="font-bold">"إضافة إلى الشاشة الرئيسية"</span>
+          </p>
+        )}
+        {!showIOSHelp && (
+          <button className="btn-sea !py-1.5 !px-4 text-xs mt-2.5" onClick={install}>تثبيت</button>
+        )}
       </div>
+      {/* 44x44. It was 23x18 -- under half the minimum, on a banner the customer
+          most wanted to get rid of. */}
+      <button className="w-11 h-11 -m-1 shrink-0 grid place-items-center text-mist text-xl leading-none rounded-lg hover:bg-shellup"
+        onClick={dismiss} aria-label="إغلاق">×</button>
     </div>
   )
 }

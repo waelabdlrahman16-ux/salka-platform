@@ -29,15 +29,28 @@ export default function Offers() {
       if (live.length === 0) { setOffers([]); return }
 
       const restaurantIds = [...new Set(live.map(d => d.restaurant_id))]
+      // NOT `.eq('is_open', true)`.
+      //
+      // `restaurants.is_open` stopped being the authority when opening hours
+      // landed: vendor_is_open_now() reads closed_until and vendor_hours, and
+      // never looks at this column. vendor_set_open(false) writes it, the
+      // self-expiry only clears closed_until, and nothing ever sets it back to
+      // true -- so every live vendor sits at false permanently. Measured on
+      // 2026-08-07: this filter returned 0 rows while 4 vendors were open.
+      // vendor_open_states() is the same computed value the home screen uses.
       const { data: restaurants, error: restErr } = await supabase.from('restaurants').select('*')
-        .in('id', restaurantIds).eq('is_open', true).eq('archived', false)
+        .in('id', restaurantIds).eq('archived', false)
       if (restErr) { setFailed(true); setOffers([]); return }
+      const { data: openStates, error: openErr } = await supabase.rpc('vendor_open_states')
+      if (openErr) { setFailed(true); setOffers([]); return }
+      const openNow = new Set(
+        ((openStates ?? []) as { id: number; is_open: boolean }[]).filter(v => v.is_open).map(v => v.id))
 
       // Home filters vendors through restaurants_for_compound(); this page did
       // not, so a customer could browse an offer, fill a cart and enter their
       // address before being told at the final tap that the vendor does not
       // deliver to them. Apply the same coverage filter here.
-      let visible = restaurants ?? []
+      let visible = (restaurants ?? []).filter(r => openNow.has(r.id))
       const savedCompound = getCompoundId()
       if (savedCompound) {
         const { data: covering, error: coverErr } = await supabase.rpc('restaurants_for_compound', {

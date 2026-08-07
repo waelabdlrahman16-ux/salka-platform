@@ -268,7 +268,9 @@ export default function Home() {
           stated once, because it is a property of the compound and is identical
           on every card, so printing it nine times implied it varied. */}
       <div className="flex items-start justify-between mb-3 gap-3">
-        <button className="text-right min-w-0 flex-1" onClick={() => setPicking(true)}>
+        {/* min-h-11: it measured 42px, two short of the 44px minimum, and this
+            is the control that decides which vendors the customer sees at all. */}
+        <button className="text-right min-w-0 flex-1 min-h-11" onClick={() => setPicking(true)}>
           <span className="block text-[11px] text-mist">التوصيل لـ</span>
           <span className="flex items-center gap-1 min-w-0">
             <Icon name="locationDot" className="w-4 h-4 shrink-0 text-sea" />
@@ -288,6 +290,7 @@ export default function Home() {
       {compoundId && !picking && (
         <div className="relative mb-3">
           <input className="field !pr-10" value={foodQ} onChange={e => setFoodQ(e.target.value)}
+            aria-label="دوّر على مطعم أو أكلة"
             placeholder="دوّر على مطعم أو أكلة…" />
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mist pointer-events-none">
             <Icon name="magnifyingGlass" className="w-4 h-4" />
@@ -515,7 +518,8 @@ export default function Home() {
                 <Icon name="magnifyingGlass" className="w-4 h-4 shrink-0 text-mist" />
                 <input className="flex-1 min-w-0 bg-transparent focus:outline-none placeholder:text-mist/60" value={search}
                   onChange={e => { setSearch(e.target.value); if (e.target.value.trim()) setNearby(null) }}
-                  placeholder="دوّر على اسم المكان…" />
+                  aria-label="دوّر على اسم المكان"
+            placeholder="دوّر على اسم المكان…" />
               </div>
               <button className="w-12 h-12 rounded-xl border border-line bg-night grid place-items-center shrink-0 disabled:opacity-60"
                 disabled={locating} onClick={() => useMyLocation()}

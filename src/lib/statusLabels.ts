@@ -72,3 +72,25 @@ const DRIVER_STATUS_AR: Record<string, string> = {
 export const orderStatusLabel = (status: string) => ORDER_STATUS_AR[status] ?? status
 export const assignmentStatusLabel = (status: string) => ASSIGNMENT_STATUS_AR[status] ?? status
 export const driverStatusLabel = (status: string) => DRIVER_STATUS_AR[status] ?? status
+
+/** Cancelled is the one status that changes what every screen should show, and
+ *  it was being re-tested inline in Track and Admin. One home. */
+export const isCancelled = (status: string) => status === 'Cancelled'
+
+/**
+ * cancel_reason is stored as a raw code — `customer_cancelled`,
+ * `supervisor_unassigned` — and was rendered straight onto the admin card, in
+ * English, inside an Arabic RTL interface. Falls back to the raw value so a new
+ * code shows something rather than nothing.
+ */
+const CANCEL_REASON_AR: Record<string, string> = {
+  customer_cancelled: 'العميل لغى الطلب',
+  vendor_rejected: 'المطعم رفض',
+  no_driver_found: 'مالقيناش مندوب',
+  driver_failed: 'توصيل فاشل',
+  admin_cancelled: 'الإدارة لغت الطلب',
+  supervisor_cancelled: 'المشرف لغى الطلب',
+  out_of_stock: 'الصنف مش متوفر',
+}
+export const cancelReasonLabel = (reason: string | null) =>
+  !reason ? 'اتلغى' : (CANCEL_REASON_AR[reason] ?? reason)

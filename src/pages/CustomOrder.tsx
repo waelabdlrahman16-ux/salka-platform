@@ -132,8 +132,24 @@ export default function CustomOrder() {
   }, [phone])
 
   useEffect(() => {
-    supabase.from('restaurants').select('*').eq('order_mode', 'custom_request').eq('is_open', true).eq('archived', false)
-      .then(({ data }) => setVendors((data as Restaurant[]) ?? []))
+    // NOT `.eq('is_open', true)`. That column stopped being the authority when
+    // opening hours landed -- vendor_is_open_now() never reads it, and nothing
+    // resets it to true, so every live vendor sits at false permanently. This
+    // filter returned ZERO vendors while صيدلية and سوبرماركت were both open and
+    // submit_custom_order would have accepted the order: the whole custom-order
+    // revenue line, invisible. Measured 2026-08-07. The server's computed value
+    // comes back on `is_open` from vendor_open_states(), same as the home screen.
+    Promise.all([
+      supabase.from('restaurants').select('*').eq('order_mode', 'custom_request').eq('archived', false),
+      supabase.rpc('vendor_open_states'),
+    ]).then(([r, s]) => {
+      if (r.error || s.error) { setVendors([]); return }
+      const states = new Map(
+        ((s.data ?? []) as { id: number; is_open: boolean; next_open_at: string | null }[]).map(v => [v.id, v]))
+      setVendors(((r.data ?? []) as Restaurant[])
+        .filter(v => states.get(v.id)?.is_open)
+        .map(v => ({ ...v, is_open: true, next_open_at: states.get(v.id)?.next_open_at ?? null })))
+    })
     supabase.from('compounds').select('*').eq('active', true).order('direction').order('distance_km')
       .then(({ data }) => setCompounds(data ?? []))
   }, [])

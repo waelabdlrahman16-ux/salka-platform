@@ -58,13 +58,29 @@ function nativePlatform(): PushPlatform {
  * silently register an APK as a browser -- and a token filed as 'web' gets a
  * data-only message the killed app will never display.
  */
+/**
+ * Set when the server recognised the token we just sent as one FCM has already
+ * rejected. See the comment on registerPush for why that happens and what the
+ * caller does about it.
+ */
+export let lastSaveWasStale = false
+
 export async function persistPushToken(token: string, platform: PushPlatform): Promise<boolean> {
-  const { error } = await supabase.rpc('save_my_push_token', { p_push_token: token, p_platform: platform })
+  lastSaveWasStale = false
+  const { data, error } = await supabase.rpc('save_my_push_token', { p_push_token: token, p_platform: platform })
   if (error) {
     // Reported, not swallowed. Every call site used to drop this promise, so a
     // rejected write produced a hidden button and a silent phone.
     lastPushError = `save_my_push_token: ${error.message}`
     console.error('saving push token failed', error)
+    return false
+  }
+  // The server keeps every token FCM has answered UNREGISTERED for. If this is
+  // one of them, it refused to store it -- storing it again is the loop that
+  // kept the admin unreachable for a whole day.
+  if (data && typeof data === 'object' && (data as any).stale) {
+    lastSaveWasStale = true
+    lastPushError = 'التوكن ده اتلغى من فايربيز — بنجيب واحد جديد'
     return false
   }
   return true
@@ -124,10 +140,27 @@ function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
   ])
 }
 
-async function webToken(): Promise<string | null> {
+/**
+ * @param force  Throw away the browser's cached registration and mint a new one.
+ *
+ * THE CACHE IS THE BUG. getToken() returns whatever is in IndexedDB for this
+ * service worker + VAPID key; it does NOT ask FCM whether that token is still
+ * registered. So once FCM unregisters a token -- storage cleared, PWA
+ * reinstalled, subscription revoked, a long idle -- the browser keeps handing
+ * back the same dead string, registerPush() re-saves it on every mount, and
+ * updated_at keeps refreshing. The row looks healthy and nothing is delivered.
+ *
+ * Measured on 2026-08-07: the admin's token was re-saved at 13:06 and was still
+ * UNREGISTERED at 13:34. Turning notifications off and on again could not fix
+ * it, because the same cached string came back every time.
+ *
+ * deleteToken() is the only way out: it drops the local registration so the
+ * next getToken() has to mint a fresh one.
+ */
+async function webToken(force = false): Promise<string | null> {
   // Loaded on demand: firebase/messaging is ~90KB and the main bundle is
   // already over Vite's size warning, so it must not ship to every customer.
-  const [{ initializeApp, getApps, getApp }, { getMessaging, getToken, isSupported }] =
+  const [{ initializeApp, getApps, getApp }, { getMessaging, getToken, deleteToken, isSupported }] =
     await Promise.all([import('firebase/app'), import('firebase/messaging')])
 
   if (!(await isSupported())) { lastPushError = 'المتصفح ده مش بيدعم التنبيهات'; return null }
@@ -141,7 +174,13 @@ async function webToken(): Promise<string | null> {
     return null
   }
   try {
-    const token = await getToken(getMessaging(app), {
+    const messaging = getMessaging(app)
+    if (force) {
+      // Best effort. If there is nothing to delete, or the delete fails, the
+      // getToken below is still worth attempting.
+      try { await deleteToken(messaging) } catch (e) { console.warn('deleteToken failed', e) }
+    }
+    const token = await getToken(messaging, {
       vapidKey: VAPID_PUBLIC_KEY,
       serviceWorkerRegistration: registration,
     })
@@ -316,15 +355,40 @@ export async function registerPush(onToken: PushTokenSink): Promise<boolean> {
     if (support !== 'web') return false
     if (Notification.permission !== 'granted') return false
 
-    const token = await webToken()
-    if (!token) return false
-    return (await onToken(token, 'web')) !== false
+    return await saveWebTokenHealing(onToken)
   } catch (e) {
     // Push is an enhancement. It must never break the page it sits on.
     lastPushError = `registerPush: ${(e as Error)?.message ?? String(e)}`
     console.error('push refresh failed', e)
     return false
   }
+}
+
+/**
+ * Mint a web token, store it, and if the server says that token is one FCM has
+ * already rejected, throw away the browser's cached registration and mint a
+ * genuinely new one -- once.
+ *
+ * This is the half of the fix that lives on the device. The server can delete a
+ * dead row, but only the browser can produce a live token, and it will not do so
+ * while it believes its cached one is fine.
+ */
+async function saveWebTokenHealing(onToken: PushTokenSink): Promise<boolean> {
+  const token = await webToken()
+  if (!token) return false
+
+  const stored = await onToken(token, 'web')
+  if (stored !== false) return true
+  if (!lastSaveWasStale) return false
+
+  const fresh = await webToken(true)
+  // A brand new registration that produces the identical string means the
+  // delete did not take effect -- retrying would just loop.
+  if (!fresh || fresh === token) {
+    lastPushError = 'مش قادرين نجدد التوكن — امسح بيانات الموقع وجرب تاني'
+    return false
+  }
+  return (await onToken(fresh, 'web')) !== false
 }
 
 /**
@@ -342,9 +406,7 @@ export async function enablePush(onToken: PushTokenSink): Promise<boolean> {
       : await Notification.requestPermission()
     if (permission !== 'granted') { lastPushError = 'الإذن اترفض'; return false }
 
-    const token = await webToken()
-    if (!token) return false
-    return (await onToken(token, 'web')) !== false
+    return await saveWebTokenHealing(onToken)
   } catch (e) {
     lastPushError = `enablePush: ${(e as Error)?.message ?? String(e)}`
     console.error('push enable failed', e)

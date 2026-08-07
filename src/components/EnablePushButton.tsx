@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { enablePush, lastPushError, pushDiag, pushPermission, pushSupport, registerPush, resetPushDiag } from '../lib/push'
 import type { PushTokenSink } from '../lib/push'
+import { iosPushBlocker } from '../lib/platform'
 
 /**
  * Explicit opt-in control for notifications.
@@ -112,6 +113,29 @@ export default function EnablePushButton({
             else { setReason(lastPushError); setFailed(true) }
           }}>جرب تاني</button>
       </div>
+    )
+  }
+
+  // iOS SAYS SOMETHING NOW INSTEAD OF NOTHING.
+  //
+  // This used to `return null` for every browser without the Push API, which on
+  // an iPhone is most of them — so the answer to "why don't notifications work
+  // on my iPhone?" was a blank space. iOS 16.4+ can do web push, but ONLY for a
+  // site added to the Home Screen, and only in Safari: Chrome/Firefox/Edge on
+  // iOS are WebKit underneath and the Push API is simply not exposed to them.
+  // Neither fact is discoverable by pressing anything, so the app has to say it.
+  const iosBlock = iosPushBlocker()
+  if (support !== 'native' && iosBlock) {
+    return (
+      <p className="text-xs text-sandink bg-sand/10 rounded-xl p-3 mb-3 leading-relaxed">
+        {iosBlock === 'not-safari'
+          ? <>التنبيهات على الآيفون بتشتغل من <b>سفاري</b> بس. افتح سالكة في سفاري، وبعدين
+              اضغط <b>زر المشاركة ⬆️</b> واختار <b>«إضافة إلى الشاشة الرئيسية»</b> — وافتحها
+              من الأيقونة دي بعد كده.</>
+          : <>عشان التنبيهات تشتغل على الآيفون، لازم تضيف سالكة على الشاشة الرئيسية:
+              اضغط <b>زر المشاركة ⬆️</b> تحت، وبعدين <b>«إضافة إلى الشاشة الرئيسية»</b>،
+              وافتحها من الأيقونة.</>}
+      </p>
     )
   }
 

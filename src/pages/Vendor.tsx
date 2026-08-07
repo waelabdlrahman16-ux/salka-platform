@@ -432,8 +432,18 @@ function KitchenVendor({ rid }: { rid: number }) {
   // unconditionally.
   async function load() {
     if (!rid) return
-    const { data: r, error: rErr } = await supabase.from('restaurants').select('name, is_open').eq('id', rid).single()
-    if (r) { setIsOpen(r.is_open); setName(r.name) }
+    // `restaurants.is_open` is a stale column: vendor_is_open_now() decides who
+    // is open, never reads it, and nothing resets it to true after a temporary
+    // close expires. Reading it raw showed every vendor «مقفول» on their own
+    // dashboard while they were open and taking orders. vendor_open_states()
+    // returns the computed value. (rErr was destructured and never used
+    // anywhere in this file -- noUnusedLocals is off, so it compiled clean.)
+    const { data: r, error: rErr } = await supabase.from('restaurants').select('name').eq('id', rid).single()
+    if (rErr) setLoadError('مش قادرين نحمّل بيانات المطعم — اتأكد من النت')
+    if (r) setName(r.name)
+    const { data: states } = await supabase.rpc('vendor_open_states')
+    const mine = ((states ?? []) as { id: number; is_open: boolean }[]).find(v => v.id === rid)
+    if (mine) setIsOpen(mine.is_open)
     const { data: rel } = await supabase.rpc('restaurant_reliability', { p_restaurant_id: rid })
     setReliability(rel)
     const { data: m, error: mErr } = await supabase.from('menu_items').select('*').eq('restaurant_id', rid).order('category').order('name')

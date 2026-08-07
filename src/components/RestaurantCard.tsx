@@ -100,7 +100,12 @@ export default function RestaurantCard({
       aria-label={`${r.name}${closed ? ' — مغلق' : ''}`}
       className={`block card overflow-hidden !rounded-2xl transition-opacity ${closed ? 'opacity-60' : ''}`}
     >
-      <div className="relative aspect-[16/9] bg-shellup">
+      {/* 2:1 rather than 16:9. On a 390px screen that is 179px of cover instead
+          of 201px -- about a fifth of a card back per vendor, so a scroll that
+          showed three shows four. Deliberately a trim and not a crop to a strip:
+          the card is photo-led on purpose and a 21:9 letterbox stops reading as
+          food. */}
+      <div className="relative aspect-[2/1] bg-shellup">
         {/* loading="lazy" here, unlike the ad banner: that one is a single
             image above the fold and lazy actively broke it, while this is a
             list that can run to nine cards. */}
@@ -112,7 +117,11 @@ export default function RestaurantCard({
           onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
 
         {hasDiscount && (
-          <span className="absolute top-2 right-2 bg-sand text-white text-[11px] font-bold rounded-md px-2 py-0.5 shadow-sm">
+          // Was bg-sand carrying white text: 2.87:1, and tailwind.config.js says
+          // in as many words that sand "must never carry text". This badge is
+          // the one element whose whole job is to be legible at a glance, in
+          // sunlight, on a coast, in August. sandink is the same hue at 6.4:1.
+          <span className="absolute top-2 right-2 bg-sandink text-white text-[11px] font-bold rounded-md px-2 py-0.5 shadow-sm">
             عروض
           </span>
         )}

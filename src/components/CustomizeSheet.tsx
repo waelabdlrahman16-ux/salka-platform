@@ -97,7 +97,11 @@ export default function CustomizeSheet({
         {(sizes.length > 0 || availableCombos.length > 0) && (
           <div className="mb-4">
             <p className="font-semibold text-sm mb-2">
-              {availableCombos.length > 0 ? 'ساندوتش لوحده ولا كومبو؟' : 'الحجم'} <span className="text-sandink">*</span>
+              {/* «(مطلوب)» rather than a bare `*`. The asterisk is a Western form
+                  convention, it announces as nothing useful, and in an RTL line it
+                  lands where a reader does not look for it. */}
+              {availableCombos.length > 0 ? 'ساندوتش لوحده ولا كومبو؟' : 'الحجم'}{' '}
+              <span className="text-sandink font-normal text-xs">(مطلوب)</span>
             </p>
             <div className="space-y-2">
               {/* Plain rows. With sizes, each size is its own row; without, one
@@ -106,27 +110,27 @@ export default function CustomizeSheet({
                   can actually pick. */}
               {sizes.length > 0 ? sizes.map(s => (
                 <label key={`s${s.id}`} className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-2.5 cursor-pointer ${!comboOn && sizeId === s.id ? 'border-sea bg-sea/5' : 'border-line'}`}>
+                  <input type="radio" name="what" checked={!comboOn && sizeId === s.id}
+                    onChange={() => { setComboId(null); setSizeId(s.id) }} className="accent-sea w-4 h-4 shrink-0" />
                   <span className="flex-1 text-sm font-medium">{s.name}</span>
                   <span className="text-sm text-mist">{applyDiscount(s.price, discount)} ج.م</span>
-                  <input type="radio" name="what" checked={!comboOn && sizeId === s.id}
-                    onChange={() => { setComboId(null); setSizeId(s.id) }} className="accent-sea w-4 h-4" />
                 </label>
               )) : availableCombos.length > 0 && (
                 <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-2.5 cursor-pointer ${!comboOn ? 'border-sea bg-sea/5' : 'border-line'}`}>
+                  <input type="radio" name="what" checked={!comboOn}
+                    onChange={() => setComboId(null)} className="accent-sea w-4 h-4 shrink-0" />
                   <span className="flex-1 text-sm font-medium">ساندوتش لوحده</span>
                   <span className="text-sm text-mist">{applyDiscount(item.price, discount)} ج.م</span>
-                  <input type="radio" name="what" checked={!comboOn}
-                    onChange={() => setComboId(null)} className="accent-sea w-4 h-4" />
                 </label>
               )}
 
               {availableCombos.map(c => (
                 <label key={`c${c.id}`} className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-2.5 cursor-pointer ${comboId === c.id ? 'border-sea bg-sea/5' : 'border-line'}`}>
+                  <input type="radio" name="what" checked={comboId === c.id}
+                    onChange={() => setComboId(c.id)} className="accent-sea w-4 h-4 shrink-0" />
                   <span className="text-lg leading-none">🍟</span>
                   <span className="flex-1 text-sm font-medium">كومبو {c.name}</span>
                   <span className="text-sm text-mist">{applyDiscount(c.price, discount)} ج.م</span>
-                  <input type="radio" name="what" checked={comboId === c.id}
-                    onChange={() => setComboId(c.id)} className="accent-sea w-4 h-4" />
                 </label>
               ))}
             </div>
@@ -139,20 +143,30 @@ export default function CustomizeSheet({
         {addonGroups.map(g => (
           <div key={g.id} className="mb-4">
             <p className="font-semibold text-sm mb-2">
-              {g.name} {g.min_select > 0 && <span className="text-sandink">*</span>}
+              {g.name} {g.min_select > 0 && <span className="text-sandink font-normal text-xs">(مطلوب)</span>}
               {g.max_select === 1
                 ? <span className="text-mist font-normal"> (اختار واحد)</span>
                 : g.max_select != null && <span className="text-mist font-normal"> (حد أقصى {g.max_select})</span>}
             </p>
             <div className="space-y-2">
               {addons.filter(a => a.group_id === g.id && a.available).map(a => (
+                // The control comes FIRST in source order, so in RTL it sits on
+                // the right — the leading edge. It used to be last, which put it
+                // at the far left while the label it belongs to was right
+                // aligned, making the eye cross the whole row to find the thing
+                // it has to tap.
                 <label key={a.id} className="flex items-center gap-3 rounded-xl border-2 border-line px-3.5 py-2.5 cursor-pointer">
+                  {g.max_select === 1
+                    ? <input type="radio" name={`group-${g.id}`} checked={addonIds.includes(a.id)} onChange={() => toggleAddon(a, g)} className="accent-sea w-4 h-4 shrink-0" />
+                    : <input type="checkbox" checked={addonIds.includes(a.id)} onChange={() => toggleAddon(a, g)} className="accent-sea w-4 h-4 shrink-0" />}
                   {a.image_url && <img src={a.image_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />}
                   <span className="flex-1 text-sm font-medium">{a.name}</span>
-                  <span className="text-sm text-mist">{a.price > 0 ? `+${a.price} ج.م` : 'مجانًا'}</span>
-                  {g.max_select === 1
-                    ? <input type="radio" name={`group-${g.id}`} checked={addonIds.includes(a.id)} onChange={() => toggleAddon(a, g)} className="accent-sea w-4 h-4" />
-                    : <input type="checkbox" checked={addonIds.includes(a.id)} onChange={() => toggleAddon(a, g)} className="accent-sea w-4 h-4" />}
+                  {/* `+20 ج.م` rendered as «20+ ج.م»: the leading + is bidi-neutral,
+                      so at the start of an RTL run it reflows to the other end.
+                      <bdi dir="ltr"> isolates the signed number. */}
+                  <span className="text-sm text-mist">
+                    {a.price > 0 ? <><bdi dir="ltr">+{a.price}</bdi> ج.م</> : 'مجانًا'}
+                  </span>
                 </label>
               ))}
             </div>

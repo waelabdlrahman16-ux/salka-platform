@@ -77,6 +77,18 @@ firebase.messaging().onBackgroundMessage(payload => {
     // them on a driver's lock screen.
     tag: d.order_id ? `order-${d.order_id}` : 'salka',
     renotify: true,
+    // STAFF BANNERS STICK. A vendor or a rider must not be able to lose an
+    // order by glancing away: requireInteraction keeps the banner on screen
+    // until they actually act on it, and the server re-sends every minute until
+    // the order is accepted (push_nudge_sweep).
+    //
+    // A CUSTOMER'S DOES NOT, deliberately. A notification they cannot dismiss,
+    // about an order they cannot speed up, is a reason to uninstall the app.
+    // `persist` is set by send-push from whether the token is a staff token --
+    // derived from the database rather than passed by each caller, because the
+    // failure mode of a flag is the one function nobody remembered to update.
+    requireInteraction: d.persist === '1',
+    vibrate: d.persist === '1' ? [300, 150, 300, 150, 300] : [200],
     data: d,
   })
 })
