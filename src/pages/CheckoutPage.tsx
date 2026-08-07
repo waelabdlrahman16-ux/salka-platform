@@ -3,8 +3,10 @@ import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { useCart } from '../lib/cart'
+import { loadMenuOptions } from '../lib/menuOptions'
 import { lineIsStale, priceLine } from '../lib/linePricing'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
+import { track, trackOnce } from '../lib/analytics'
 import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
 import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
 import { isItemAvailableNow } from '../lib/itemAvailability'
@@ -27,6 +29,11 @@ export default function CheckoutPage() {
   // is the number on the checkout button. Nothing that depends on a total is
   // trusted before this flips.
   const [optionsLoaded, setOptionsLoaded] = useState(false)
+  // optionsLoaded stays FALSE on failure, which keeps the confirm button and
+  // the displayed total locked. This flag is what turns that lock into an
+  // explanation and a retry instead of a spinner that never resolves.
+  const [optionsFailed, setOptionsFailed] = useState(false)
+  const [optionsAttempt, setOptionsAttempt] = useState(0)
   const [addons, setAddons] = useState<MenuItemAddon[]>([])
   const [discounts, setDiscounts] = useState<Discount[]>([])
   const [compounds, setCompounds] = useState<Compound[]>([])
@@ -100,6 +107,14 @@ export default function CheckoutPage() {
     })
   }, [customer?.id])
 
+  // Funnel step 5. Once per session, not per mount -- this screen remounts on
+  // every field-driven navigation and under StrictMode, and an inflated step 5
+  // would make the checkout->order drop look worse than it is, which is exactly
+  // the number this instrumentation exists to get right.
+  useEffect(() => {
+    if (cart.restaurantId) trackOnce('checkout_started', { restaurantId: cart.restaurantId })
+  }, [cart.restaurantId, optionsAttempt])
+
   useEffect(() => {
     if (!isValidEgyptPhone(phone)) { setWalletBalance(0); setWalletFailed(false); return }
     // A failed lookup used to be indistinguishable from an empty wallet, so the
@@ -172,19 +187,16 @@ export default function CheckoutPage() {
         if (error || data?.value == null) { setCodThresholdFailed(true); return }
         setCodDepositThreshold(Number(data.value)); setCodThresholdFailed(false)
       })
+    // One shared loader -- see lib/menuOptions.ts. This block used to exist
+    // identically in both this screen and the other one, and both swallowed
+    // every error while still declaring the options loaded.
     ;(async () => {
-      const ids = (await supabase.from('menu_items').select('id').eq('restaurant_id', cart.restaurantId)).data?.map(x => x.id) ?? []
-      if (!ids.length) { setOptionsLoaded(true); return }
-      const { data: sz } = await supabase.from('menu_item_sizes').select('*').in('menu_item_id', ids).eq('available', true)
-      setSizes(sz ?? [])
-      const { data: cb } = await supabase.from('menu_item_combos').select('*').in('menu_item_id', ids).eq('available', true)
-      setCombos((cb as MenuItemCombo[]) ?? [])
-      const { data: gr } = await supabase.from('menu_item_addon_groups').select('id').in('menu_item_id', ids)
-      const groupIds = (gr ?? []).map(g => g.id)
-      if (groupIds.length) {
-        const { data: ad } = await supabase.from('menu_item_addons').select('*').in('group_id', groupIds).eq('available', true)
-        setAddons(ad ?? [])
-      }
+      const opts = await loadMenuOptions(cart.restaurantId)
+      if (!opts.ok) { setOptionsFailed(true); return }
+      setOptionsFailed(false)
+      setSizes(opts.sizes)
+      setCombos(opts.combos)
+      setAddons(opts.addons)
       setOptionsLoaded(true)
     })()
   }, [cart.restaurantId])
@@ -215,8 +227,11 @@ export default function CheckoutPage() {
   // Authoritative fee from the server. null while loading or on failure -- we
   // never substitute 0 or a local estimate, because every number below it
   // (wallet applied, COD deposit threshold, the confirm button) would be wrong.
+  // The vendor is passed because the SLA is prep + travel and prep is per
+  // vendor. Without it the server falls back to a default prep time and quotes
+  // a 45-minute supermarket shop like a 10-minute burger.
   const { fee: deliveryFee, quote, loading: feeLoading, failed: feeFailed, retry: retryFee } =
-    useDeliveryQuote(compoundId)
+    useDeliveryQuote(compoundId, cart.restaurantId)
   // Same rule as the delivery fee: settings.service_fee_percent is what
   // place_order actually charges, so it is fetched, not assumed. The old
   // hardcoded 0.02 quoted the customer one number and billed them another for
@@ -285,6 +300,17 @@ export default function CheckoutPage() {
     }
 
     localStorage.setItem('salka_phone', phone.trim())
+
+    // Funnel step 6, the only one that is money. Fired AFTER the server has
+    // returned a token -- i.e. on a row that exists. Firing it beside the RPC
+    // call would count every failed attempt as an order and make the funnel
+    // report a conversion rate the bank account disagrees with.
+    track('order_placed', {
+      restaurantId: restaurant.id,
+      compoundId: compoundId,
+      orderId: typeof data.id === 'number' ? data.id : null,
+      props: { payment: isInstapay ? 'instapay' : 'cod' },
+    })
 
     cart.clear()
     nav(`/track/${data.token}`)
@@ -442,17 +468,29 @@ export default function CheckoutPage() {
           </>
         )}
 
+        {optionsFailed && (
+          <div className="card p-3 border-red-400/50 bg-red-500/5 flex items-center justify-between gap-3">
+            <p className="text-sm text-red-700 font-semibold">مش قادرين نجيب تفاصيل الأصناف — مش هينفع نأكد الطلب دلوقتي</p>
+            <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0"
+              onClick={() => setOptionsAttempt(a => a + 1)}>جرب تاني</button>
+          </div>
+        )}
+
         {/* The one thing the reference puts front and centre and this screen
             never said at all: when it arrives. sla_minutes is the server's own
             promise, already stored on the order; it was only ever shown after
             the fact on the tracking page. */}
+        {/* The upper bound comes from the server now. It used to be `+ 10`
+            here, which was as wide for a 1 km hop as for a 30 km run, and sat
+            on top of an SLA that ignored the kitchen entirely -- سوبرماركت
+            takes 45 minutes to shop and this line promised 20. */}
         {quote?.sla_minutes && (
           <div className="card p-3.5 flex items-center gap-3 !rounded-2xl">
             <span className="text-xl shrink-0" aria-hidden="true">🛵</span>
             <div>
               <p className="font-bold text-sm">التوصيل</p>
               <p className="text-xs text-mist">
-                يوصلك خلال {quote.sla_minutes}–{quote.sla_minutes + 10} دقيقة
+                يوصلك خلال {quote.sla_minutes}–{quote.sla_max_minutes ?? quote.sla_minutes + 10} دقيقة
               </p>
             </div>
           </div>

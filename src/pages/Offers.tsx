@@ -12,18 +12,26 @@ interface RestaurantOffer {
 
 export default function Offers() {
   const [offers, setOffers] = useState<RestaurantOffer[] | null>(null)
+  // Distinguishes "no offers today" from "we could not read the offers".
+  // Both used to render the same empty state, and the empty state says
+  // «مفيش عروض دلوقتي» -- a confident factual claim made on a failed fetch.
+  const [failed, setFailed] = useState(false)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     (async () => {
-      const { data: discounts } = await supabase.from('discounts').select('*').eq('active', true)
+      setFailed(false)
+      const { data: discounts, error: discErr } = await supabase.from('discounts').select('*').eq('active', true)
+      if (discErr) { setFailed(true); setOffers([]); return }
       const now = new Date()
       const inEffect = (d: Discount) => (!d.starts_at || new Date(d.starts_at) <= now) && (!d.ends_at || new Date(d.ends_at) >= now)
       const live = (discounts ?? []).filter(inEffect)
       if (live.length === 0) { setOffers([]); return }
 
       const restaurantIds = [...new Set(live.map(d => d.restaurant_id))]
-      const { data: restaurants } = await supabase.from('restaurants').select('*')
+      const { data: restaurants, error: restErr } = await supabase.from('restaurants').select('*')
         .in('id', restaurantIds).eq('is_open', true).eq('archived', false)
+      if (restErr) { setFailed(true); setOffers([]); return }
 
       // Home filters vendors through restaurants_for_compound(); this page did
       // not, so a customer could browse an offer, fill a cart and enter their
@@ -52,7 +60,7 @@ export default function Offers() {
 
       setOffers(grouped)
     })()
-  }, [])
+  }, [attempt])
 
   function describe(d: Discount): string {
     const amount = d.discount_type === 'percent' ? `${d.value}%` : `${d.value} ج.م`
@@ -65,7 +73,19 @@ export default function Offers() {
 
       {offers === null && <p className="text-mist">جاري التحميل…</p>}
 
-      {offers?.length === 0 && (
+      {/* Order matters: the failure state has to win. Both branches are reached
+          with offers === [], and telling someone there are no offers when we
+          merely could not read them is a false statement, not an empty state. */}
+      {failed && (
+        <div className="card p-4 text-center">
+          <p className="font-semibold">مش قادرين نجيب العروض دلوقتي</p>
+          <p className="text-sm text-mist mt-1 mb-3">اتأكد من الاتصال بالنت</p>
+          <button className="btn-sea !py-2 !px-6 text-sm"
+            onClick={() => { setOffers(null); setAttempt(a => a + 1) }}>جرب تاني</button>
+        </div>
+      )}
+
+      {!failed && offers?.length === 0 && (
         <p className="text-mist text-center py-10">مفيش عروض شغالة دلوقتي — تابعنا هيكون في عروض قريب</p>
       )}
 

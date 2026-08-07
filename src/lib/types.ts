@@ -1,6 +1,16 @@
 export interface Restaurant {
   id: number; name: string; description: string; category: string
-  rating: number; delivery_time: string; is_open: boolean
+  // `delivery_time` was dropped: a hand-typed string («١٠-١٥ دقيقة») that
+  // disagreed with the SLA the server actually computes and stores. Use the
+  // quote's sla_minutes / sla_max_minutes, never a second copy.
+  rating: number
+  /** Computed by vendor_is_open_now() when the row came from an RPC; the raw
+   *  column otherwise. Never write to it -- the toggle is vendor_set_open(). */
+  is_open: boolean
+  /** Temporary close set by the vendor; expires on its own. */
+  closed_until?: string | null
+  /** When it opens next, from vendor_next_open_at(). Null when already open. */
+  next_open_at?: string | null
   vendor_type: string; prep_minutes: number
   order_mode: 'catalog' | 'custom_request' | 'pickup_request'
   archived: boolean; logo_url: string | null; max_delivery_km: number | null

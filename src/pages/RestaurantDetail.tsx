@@ -12,6 +12,7 @@ import { applyDiscount, effectiveDiscount } from '../lib/discounts'
 import { priceLine } from '../lib/linePricing'
 import type { Compound, Discount, MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemCombo, MenuItemSize, Restaurant } from '../lib/types'
 import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
+import { track } from '../lib/analytics'
 
 const ALL = '__all__'
 
@@ -94,7 +95,13 @@ export default function RestaurantDetail() {
         setAddonGroups(gr ?? [])
         const groupIds = (gr ?? []).map(g => g.id)
         if (groupIds.length) {
-          const { data: ad } = await supabase.from('menu_item_addons').select('*').eq('available', true).in('group_id', groupIds).order('display_order').order('id')
+          const { data: ad, error: adErr } = await supabase.from('menu_item_addons').select('*').eq('available', true).in('group_id', groupIds).order('display_order').order('id')
+          // A required add-on group with no add-ons in it is unanswerable:
+          // CustomizeSheet shows the group, the customer cannot pick anything,
+          // and place_order rejects the order with addon_group_min_not_met at
+          // the final tap. Leaving optionsLoaded false keeps the sheet closed
+          // instead, which is the honest failure.
+          if (adErr) return
           setAddons(ad ?? [])
         }
         setOptionsLoaded(true)
@@ -108,6 +115,14 @@ export default function RestaurantDetail() {
 
   useEffect(() => {
     if (restaurant && restaurant.order_mode === 'catalog') cart.setForRestaurant(restaurant)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restaurant?.id])
+
+  // Funnel step 3. Keyed on the LOADED restaurant rather than the URL param, so
+  // a vendor that failed to load is not counted as one the customer opened --
+  // that would make a broken page look like interest.
+  useEffect(() => {
+    if (restaurant) track('vendor_opened', { restaurantId: restaurant.id, compoundId: getCompoundId() })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurant?.id])
 
@@ -200,8 +215,13 @@ export default function RestaurantDetail() {
 
   const compoundId = getCompoundId()
   const selectedCompound = compounds.find(c => c.id === compoundId)
+  // This line was right all along, and was the only place in the product that
+  // was. The server wrote orders.sla_minutes from distance alone and ignored
+  // prep entirely; sla_minutes_for() in the database now does exactly what this
+  // does. Kept as the local render so the card still shows something while the
+  // quote is in flight -- but it is no longer the only correct copy.
   const totalEta = restaurant && selectedCompound ? restaurant.prep_minutes + selectedCompound.est_travel_minutes : null
-  const { fee: deliveryFee } = useDeliveryQuote(compoundId)
+  const { fee: deliveryFee } = useDeliveryQuote(compoundId, restaurant?.id)
 
   if (loadFailed) return (
     <div className="card p-6 text-center max-w-sm mx-auto mt-6">

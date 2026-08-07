@@ -40,6 +40,9 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
   // screen the catalog role has, and place_order charges exactly what these
   // tables say, so a silently-dropped price edit bills the old price forever.
   const [writeError, setWriteError] = useState('')
+  // A failed READ, distinct from a failed write. An empty editor after a failed
+  // fetch invites re-adding options that already exist -- see load().
+  const [loadError, setLoadError] = useState('')
   // Which optional section is open. Six cards used to render at once whether the
   // item needed them or not, so an item with no sizes still read a paragraph
   // about sizes and the save button sat below all of it.
@@ -101,19 +104,29 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
       .then(({ data }) => setMenuOptions((data ?? []).filter(m => Number(m.price) > 0) as typeof menuOptions))
     supabase.from('vendor_addon_library').select('*').eq('restaurant_id', item.restaurant_id).order('name')
       .then(({ data }) => setLibrary((data as VendorAddonLibraryItem[]) ?? []))
-    const { data: sz } = await supabase.from('menu_item_sizes').select('*').eq('menu_item_id', item.id).order('display_order').order('id')
+    // These four reads decide what the editor SHOWS as already configured. A
+    // failed read used to render as "this item has no sizes / no combos / no
+    // add-ons", which is the same screen you get for an item that genuinely has
+    // none -- so the natural next action is to add them again. That writes
+    // duplicates against rows that were there all along, on the live menu, and
+    // then place_order has two «وسط» to choose between.
+    const { data: sz, error: szErr } = await supabase.from('menu_item_sizes').select('*').eq('menu_item_id', item.id).order('display_order').order('id')
+    const { data: cb, error: cbErr } = await supabase.from('menu_item_combos').select('*').eq('menu_item_id', item.id).order('display_order').order('id')
+    const { data: gr, error: grErr } = await supabase.from('menu_item_addon_groups').select('*').eq('menu_item_id', item.id).order('display_order').order('id')
+    if (szErr || cbErr || grErr) { setLoadError('مش قادرين نجيب الأحجام والإضافات — ماتضيفش حاجة قبل ما تحدّث، عشان ما تتكررش'); return }
+
     setSizes(sz ?? [])
-    const { data: cb } = await supabase.from('menu_item_combos').select('*').eq('menu_item_id', item.id).order('display_order').order('id')
     setCombos((cb as MenuItemCombo[]) ?? [])
-    const { data: gr } = await supabase.from('menu_item_addon_groups').select('*').eq('menu_item_id', item.id).order('display_order').order('id')
     setGroups(gr ?? [])
     const groupIds = (gr ?? []).map(g => g.id)
     if (groupIds.length) {
-      const { data: ad } = await supabase.from('menu_item_addons').select('*').in('group_id', groupIds).order('display_order').order('id')
+      const { data: ad, error: adErr } = await supabase.from('menu_item_addons').select('*').in('group_id', groupIds).order('display_order').order('id')
+      if (adErr) { setLoadError('مش قادرين نجيب الإضافات — ماتضيفش حاجة قبل ما تحدّث، عشان ما تتكررش'); return }
       setAddons(ad ?? [])
     } else {
       setAddons([])
     }
+    setLoadError('')
   }
 
   async function upload(file: File) {
@@ -332,6 +345,12 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
           <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3" role="alert">
             ما اتحفظش: {writeError}
           </p>
+        )}
+        {loadError && (
+          <div className="border border-sand/60 bg-sand/10 rounded-xl p-3 mb-3 flex items-center justify-between gap-3" role="alert">
+            <p className="text-sm text-sandink font-semibold">📡 {loadError}</p>
+            <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0" onClick={loadOptions}>حدّث</button>
+          </div>
         )}
         <div className="flex items-center justify-between mb-3 px-1">
           <h2 className="font-bold text-lg text-foam">تعديل الصنف</h2>

@@ -21,6 +21,7 @@ import PhonePrompt from './components/PhonePrompt'
 import { CustomerAuthProvider, useCustomerAuth } from './lib/customerAuth'
 import { useScrollRestoration } from './lib/useScrollRestoration'
 import { isInAppBrowser } from './lib/inAppBrowser'
+import { trackOnce } from './lib/analytics'
 
 // Staff-only pages: not needed in the customer bundle, so they're loaded
 // on demand instead of shipping ~1500 lines of admin/vendor/driver code to
@@ -216,6 +217,13 @@ function AppShell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [staffLoading, profile?.role])
   useScrollRestoration()
+
+  // Funnel step 1, and the denominator for every rate below it. Fired once per
+  // browser session, not per mount: StrictMode double-mounts effects in dev,
+  // and a remount here would inflate arrivals and understate every conversion.
+  // The fbclid and in-app-browser flags ride along inside track().
+  useEffect(() => { trackOnce('arrival') }, [])
+
   const [skipped, setSkipped] = useState(() => !!localStorage.getItem('salka_onboarded'))
 
   // Wait for the initial auth check to resolve before deciding whether to

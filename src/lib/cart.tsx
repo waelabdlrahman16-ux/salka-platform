@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { MenuItem, Restaurant } from './types'
+import { track } from './analytics'
 
 // v3: CartLine gained comboId, which changes the shape of every line key. A
 // cart persisted under v2 would carry keys that no longer match what lineKey
@@ -70,6 +71,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   function add(item: MenuItem, delta: number) {
     const key = lineKey(item.id, null, null, [])
+    // Funnel step 4. Only on a genuine addition -- `delta` is negative when the
+    // customer taps minus, and counting a removal as an "item added" would make
+    // an emptying cart look like engagement.
+    if (delta > 0) track('item_added', { restaurantId: item.restaurant_id, props: { path: 'quick' } })
     setState(s => {
       const existing = s.lines.find(l => l.key === key)
       const q = Math.max(0, (existing?.qty ?? 0) + delta)
@@ -85,6 +90,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   function addCustomLine(menuItemId: number, sizeId: number | null, comboId: number | null, addonIds: number[], qty: number) {
     const key = lineKey(menuItemId, sizeId, comboId, addonIds)
+    // The OTHER way an item enters the basket -- CustomizeSheet, i.e. anything
+    // with a size, a combo or add-ons. Instrumenting add() alone would have
+    // silently omitted every sized item, which for pizza or a McDonald's combo
+    // is most of the catalogue.
+    if (qty > 0) track('item_added', { props: { path: 'customize' } })
     setState(s => {
       const existing = s.lines.find(l => l.key === key)
       const rest = s.lines.filter(l => l.key !== key)

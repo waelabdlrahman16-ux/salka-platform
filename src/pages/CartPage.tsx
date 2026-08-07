@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useCart } from '../lib/cart'
+import { loadMenuOptions } from '../lib/menuOptions'
 import { lineIsStale, priceLine } from '../lib/linePricing'
 import { artFor } from '../lib/categoryArt'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
@@ -23,6 +24,11 @@ export default function CartPage() {
   // is the number on the checkout button. Nothing that depends on a total is
   // trusted before this flips.
   const [optionsLoaded, setOptionsLoaded] = useState(false)
+  // optionsLoaded stays FALSE on failure, which keeps the confirm button and
+  // the displayed total locked. This flag is what turns that lock into an
+  // explanation and a retry instead of a spinner that never resolves.
+  const [optionsFailed, setOptionsFailed] = useState(false)
+  const [optionsAttempt, setOptionsAttempt] = useState(0)
   const [addons, setAddons] = useState<MenuItemAddon[]>([])
   const [discounts, setDiscounts] = useState<Discount[]>([])
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
@@ -35,22 +41,19 @@ export default function CartPage() {
     supabase.from('restaurants').select('*').eq('id', cart.restaurantId).single().then(({ data }) => setRestaurant(data))
     supabase.from('discounts').select('*').eq('restaurant_id', cart.restaurantId).eq('active', true)
       .then(({ data }) => setDiscounts(data ?? []))
+    // One shared loader -- see lib/menuOptions.ts. This block used to exist
+    // identically in both this screen and the other one, and both swallowed
+    // every error while still declaring the options loaded.
     ;(async () => {
-      const ids = (await supabase.from('menu_items').select('id').eq('restaurant_id', cart.restaurantId)).data?.map(x => x.id) ?? []
-      if (!ids.length) { setOptionsLoaded(true); return }
-      const { data: sz } = await supabase.from('menu_item_sizes').select('*').in('menu_item_id', ids).eq('available', true)
-      setSizes(sz ?? [])
-      const { data: cb } = await supabase.from('menu_item_combos').select('*').in('menu_item_id', ids).eq('available', true)
-      setCombos((cb as MenuItemCombo[]) ?? [])
-      const { data: gr } = await supabase.from('menu_item_addon_groups').select('id').in('menu_item_id', ids)
-      const groupIds = (gr ?? []).map(g => g.id)
-      if (groupIds.length) {
-        const { data: ad } = await supabase.from('menu_item_addons').select('*').in('group_id', groupIds).eq('available', true)
-        setAddons(ad ?? [])
-      }
+      const opts = await loadMenuOptions(cart.restaurantId)
+      if (!opts.ok) { setOptionsFailed(true); return }
+      setOptionsFailed(false)
+      setSizes(opts.sizes)
+      setCombos(opts.combos)
+      setAddons(opts.addons)
       setOptionsLoaded(true)
     })()
-  }, [cart.restaurantId])
+  }, [cart.restaurantId, optionsAttempt])
 
   useEffect(() => {
     const saved = getCompoundId()
@@ -78,7 +81,10 @@ export default function CartPage() {
 
   const validLines = cart.lines.filter(l => items.some(i => i.id === l.menuItemId))
   const subtotal = validLines.reduce((s, l) => s + priceFor(l).unit * l.qty, 0)
-  const { fee: deliveryFee, quote, loading: feeLoading } = useDeliveryQuote(compoundId)
+  // Vendor passed so the cached quote is keyed per vendor -- the SLA is
+  // prep + travel, and the two differ by 35 minutes between a burger and a
+  // supermarket shop to the same address.
+  const { fee: deliveryFee, quote, loading: feeLoading } = useDeliveryQuote(compoundId, cart.restaurantId)
   // The rate lives in settings.service_fee_percent and place_order applies it.
   // This used to be a hardcoded 0.02 that silently understated the total by
   // whatever the admin had since changed the setting to.
@@ -112,6 +118,16 @@ export default function CartPage() {
       </div>
       {restaurant && <p className="text-mist text-sm mb-4">من {restaurant.name}</p>}
       {removedNotice && <p className="text-sandink text-sm mb-4 bg-sand/10 rounded-xl p-3">{removedNotice}</p>}
+
+      {/* Without this the failure showed as «لحظة…» on a permanently disabled
+          button, with no reason and no way forward. */}
+      {optionsFailed && (
+        <div className="card p-3 mb-4 border-red-400/50 bg-red-500/5 flex items-center justify-between gap-3">
+          <p className="text-sm text-red-700 font-semibold">مش قادرين نجيب تفاصيل الأصناف — السعر ممكن يكون ناقص</p>
+          <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0"
+            onClick={() => setOptionsAttempt(a => a + 1)}>جرب تاني</button>
+        </div>
+      )}
 
       <div className="space-y-3 mb-5">
         {validLines.map(l => {

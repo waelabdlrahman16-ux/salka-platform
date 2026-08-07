@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { artFor } from '../lib/categoryArt'
+import { openLabel } from '../lib/vendorHours'
 import Icon from './Icon'
 import type { Restaurant } from '../lib/types'
 
@@ -35,6 +36,13 @@ export default function RestaurantCard({
   const art = artFor(r.category)
   const rated = (r.review_count ?? 0) > 0
   const closed = !r.is_open
+  // «مقفول دلوقتي» on its own gives the customer nothing to act on -- there is
+  // no reason to come back if you do not know whether it is an hour or tomorrow.
+  // openLabel prefers the server's computed next_open_at and falls back to the
+  // raw columns. See lib/vendorHours.ts.
+  const status = openLabel({
+    is_open: r.is_open, next_open_at: r.next_open_at, closed_until: r.closed_until,
+  })
   // Server-chosen: the vendor's own cover_image_url when set, otherwise the
   // best-ranked photographed item (most ordered, then priciest, then id). The
   // old rule was "lowest id", i.e. whatever was typed in first, which gave
@@ -77,7 +85,7 @@ export default function RestaurantCard({
           <div className="flex items-center gap-2">
             <h2 className="font-bold text-[15px] truncate leading-tight">{r.name}</h2>
             {closed && (
-              <span className="shrink-0 text-[10px] font-bold text-mist bg-shellup rounded px-1.5 py-0.5">مغلق</span>
+              <span className="shrink-0 text-[10px] font-bold text-mist bg-shellup rounded px-1.5 py-0.5">{status.text}</span>
             )}
           </div>
           <div className="mt-1">{meta}</div>
@@ -113,7 +121,7 @@ export default function RestaurantCard({
           // grey chip next to the title is easy to scroll past, and "closed" is
           // the one fact that changes what the customer does next.
           <span className="absolute inset-0 bg-foam/45 grid place-items-center">
-            <span className="bg-shell/95 text-foam text-xs font-bold rounded-lg px-3 py-1.5">مقفول دلوقتي</span>
+            <span className="bg-shell/95 text-foam text-xs font-bold rounded-lg px-3 py-1.5">{status.text}</span>
           </span>
         )}
       </div>

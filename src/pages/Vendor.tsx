@@ -183,15 +183,22 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
   const [sent, setSent] = useState<{ id: number; token: string } | null>(null)
 
   async function loadRecent() {
-    const { data } = await supabase.from('orders').select('*')
+    const { data, error: err } = await supabase.from('orders').select('*')
       .eq('restaurant_id', restaurant.id).eq('order_type', 'pickup_request')
       .order('id', { ascending: false }).limit(10)
+    // Keep the last known list on a failed poll. Blanking it would tell the
+    // vendor the pickup orders they just created do not exist -- and this runs
+    // on a 10s interval, so one blip used to wipe the list.
+    if (err) return
     setRecent(data ?? [])
   }
 
   useEffect(() => {
     supabase.from('compounds').select('*').eq('active', true).order('direction').order('distance_km')
-      .then(({ data }) => setCompounds(data ?? []))
+      // A failed compound list renders an empty picker, and the vendor cannot
+      // file the order at all. Keep it empty but say why rather than leaving
+      // them tapping a dropdown with nothing in it.
+      .then(({ data, error: err }) => { if (err) { setError('مش قادرين نجيب المناطق — جرب تاني'); return } setCompounds(data ?? []) })
     loadRecent()
     const t = setInterval(loadRecent, 10000)
     return () => clearInterval(t)
@@ -406,34 +413,56 @@ function KitchenVendor({ rid }: { rid: number }) {
   const [declineError, setDeclineError] = useState('')
   const decliningRef = useDismissable(() => { setDeclining(null); setDeclineError('') }, !!declining)
   const [reliability, setReliability] = useState<{ avg_accept_minutes: number | null; total_orders: number } | null>(null)
+  // Non-empty while the last poll failed. Never blanks the board -- it sits
+  // above whatever is still on screen and says the screen may be stale.
+  const [loadError, setLoadError] = useState('')
   const audioUnlocked = useRef(false)
   const stockRef = useRef<HTMLDivElement>(null)
 
+  // Every read here decides what a vendor believes about their own shop, and
+  // every one of them used to discard its error. `?? []` turns a failed fetch
+  // into an empty array, which renders as an empty orders board -- so a
+  // restaurant with live tickets was shown a clean screen and told, in effect,
+  // that nobody had ordered. That is not a cosmetic failure; it is food that
+  // never gets cooked.
+  //
+  // The orders read is the one that matters, so it is the one that sets the
+  // banner. The rest keep the last known good value rather than blanking, which
+  // is why the setters below are guarded on `!error` instead of writing `?? []`
+  // unconditionally.
   async function load() {
     if (!rid) return
-    const { data: r } = await supabase.from('restaurants').select('name, is_open').eq('id', rid).single()
+    const { data: r, error: rErr } = await supabase.from('restaurants').select('name, is_open').eq('id', rid).single()
     if (r) { setIsOpen(r.is_open); setName(r.name) }
     const { data: rel } = await supabase.rpc('restaurant_reliability', { p_restaurant_id: rid })
     setReliability(rel)
-    const { data: m } = await supabase.from('menu_items').select('*').eq('restaurant_id', rid).order('category').order('name')
-    setMenu(m ?? [])
-    const { data: o } = await supabase.from('orders').select('*')
+    const { data: m, error: mErr } = await supabase.from('menu_items').select('*').eq('restaurant_id', rid).order('category').order('name')
+    if (!mErr) setMenu(m ?? [])
+    const { data: o, error: oErr } = await supabase.from('orders').select('*')
       .eq('restaurant_id', rid)
       .not('status', 'in', '("Delivered","Cancelled","Failed_Delivery","awaiting_payment")')
       .order('id', { ascending: false }).limit(30)
+
+    // The whole point of the screen. If this failed we must NOT paint an empty
+    // board -- say so, keep whatever was last on screen, and let the poll retry.
+    if (oErr) { setLoadError('مش قادرين نجيب الطلبات دلوقتي — الشاشة دي ممكن تكون ناقصة'); return }
+    setLoadError('')
     setOrders(o ?? [])
 
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
-    const { data: done } = await supabase.from('orders').select('*')
+    const { data: done, error: dErr } = await supabase.from('orders').select('*')
       .eq('restaurant_id', rid).in('status', ['Delivered', 'Cancelled', 'Failed_Delivery'])
       .gte('created_at', todayStart.toISOString())
       .order('id', { ascending: false }).limit(50)
-    setCompletedToday(done ?? [])
+    if (!dErr) setCompletedToday(done ?? [])
 
     const allIds = [...(o ?? []), ...(done ?? [])].map(x => x.id)
     if (allIds.length) {
-      const { data: its } = await supabase.from('order_items').select('*')
+      const { data: its, error: itsErr } = await supabase.from('order_items').select('*')
         .in('order_id', allIds)
+      // An order card with no lines looks like an EMPTY order, not a failed
+      // fetch -- the vendor would cook nothing and mark it ready.
+      if (itsErr) { setLoadError('مش قادرين نجيب تفاصيل الأصناف — متأكدش من محتوى الطلبات'); return }
       const grouped: Record<number, OrderItem[]> = {}
       for (const it of its ?? []) (grouped[it.order_id] ??= []).push(it)
       setItems(grouped)
@@ -830,6 +859,19 @@ function KitchenVendor({ rid }: { rid: number }) {
         <div className="card p-3 mb-3 border-red-400/50 bg-red-500/5 flex items-center justify-between gap-3">
           <p className="text-sm text-red-700 font-semibold">{boardError}</p>
           <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0" onClick={() => setBoardError('')}>تمام</button>
+        </div>
+      )}
+
+      {/* A failed LOAD, as opposed to a failed action. Before this, a failed
+          orders fetch resolved through `?? []` and painted a clean, empty
+          board -- so a restaurant with live tickets was quietly told nobody had
+          ordered. Not dismissable: it clears itself on the next successful
+          poll, and a vendor who dismissed it would be straight back to trusting
+          an empty screen. */}
+      {loadError && (
+        <div className="card p-3 mb-3 border-sand/60 bg-sand/10 flex items-center justify-between gap-3">
+          <p className="text-sm text-sandink font-semibold">📡 {loadError}</p>
+          <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0" onClick={load}>حدّث</button>
         </div>
       )}
 

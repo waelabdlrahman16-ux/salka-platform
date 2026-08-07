@@ -37,7 +37,12 @@ export default function Profile() {
   const [addressError, setAddressError] = useState('')
 
   async function load() {
-    const { data } = await supabase.rpc('my_customer_addresses')
+    const { data, error } = await supabase.rpc('my_customer_addresses')
+    // A failed read rendered as "you have no saved addresses", which is the
+    // same screen as genuinely having none -- so the customer re-enters an
+    // address they already saved, and now has it twice.
+    if (error) { setAddressError('مش قادرين نجيب عناوينك دلوقتي — جرب تاني'); return }
+    setAddressError('')
     setAddresses((data as Address[]) ?? [])
   }
 

@@ -25,7 +25,13 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   async function refreshFromAuthSession(): Promise<boolean> {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return false
-    const { data } = await supabase.rpc('my_customer_profile')
+    const { data, error } = await supabase.rpc('my_customer_profile')
+    // Returning false on a failed READ makes the caller fall through to the
+    // legacy-token path and, on a Google/email customer who has no legacy row,
+    // ends with customer === null -- i.e. a signed-in person shown the signed-out
+    // app. Returning true keeps them in their existing session; the profile
+    // simply refreshes on the next call.
+    if (error) return true
     if (data) { setCustomer(data); return true }
     return false
   }
@@ -33,7 +39,21 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   async function refreshFromLegacyToken() {
     const token = localStorage.getItem(TOKEN_KEY)
     if (!token) return
-    const { data } = await supabase.rpc('session_whoami', { p_token: token })
+    const { data, error } = await supabase.rpc('session_whoami', { p_token: token })
+
+    // This one was not merely a silent read -- it was destructive.
+    //
+    // The error was discarded, so `data` was null for BOTH "the server says
+    // this session is not valid" and "the request never reached the server".
+    // The else branch then deleted the login token. One dropped request on a
+    // patchy Sokhna connection permanently signed the customer out, and because
+    // the token is the only copy, there was nothing to recover: they had to log
+    // in again, and the app looked like it had forgotten them for no reason.
+    //
+    // Delete ONLY on a clean answer of "no". A transport failure keeps the
+    // token and simply leaves them signed out for this load; the next
+    // successful call restores them.
+    if (error) return
     if (data) {
       setCustomer({ id: data.customer_id, name: data.name, phone: data.phone })
     } else {
@@ -50,8 +70,8 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
-        const { data } = await supabase.rpc('my_customer_profile')
-        if (data) setCustomer(data)
+        const { data, error } = await supabase.rpc('my_customer_profile')
+        if (!error && data) setCustomer(data)
       }
     })
     return () => sub.subscription.unsubscribe()

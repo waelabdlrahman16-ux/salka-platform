@@ -52,6 +52,8 @@ interface TrackData {
   items: {
     name: string; qty: number; total: number; image_url: string | null
     size_name: string | null; combo_name: string | null; addon_names: string[] | null
+    /** Admin price correction rather than something the customer ordered. */
+    is_adjustment?: boolean
   }[]
   assignment: {
     status: string; driver_name: string | null; driver_phone: string | null
@@ -693,9 +695,13 @@ export default function Track() {
               </div>
             ))}
             {o.request_notes && <p className="text-sm text-mist italic mt-1">"{o.request_notes}"</p>}
+            <Adjustments items={data.items} />
           </div>
         ) : o.order_type === 'pickup_request' ? (
-          o.request_notes && <p className="text-sm text-mist italic">"{o.request_notes}"</p>
+          <>
+            {o.request_notes && <p className="text-sm text-mist italic">"{o.request_notes}"</p>}
+            <Adjustments items={data.items} />
+          </>
         ) : (
           <div className="space-y-2">
             {data.items.map((it, i) => (
@@ -871,4 +877,32 @@ export default function Track() {
 
 function isCancelled(status: string) {
   return status === 'Cancelled'
+}
+
+/**
+ * Admin price adjustments, shown on EVERY order type.
+ *
+ * The catalog branch above already lists order_items, so adjustments appear
+ * there for free. Custom and pickup orders render request_items instead and
+ * would have shown nothing at all -- meaning a customer on a pharmacy order
+ * could be charged a corrected price with no line anywhere explaining it. Those
+ * are exactly the orders priced by hand, so they are the ones most likely to be
+ * corrected later. A charge the customer cannot identify is worse than one they
+ * can argue with.
+ */
+function Adjustments({ items }: { items: { name: string; total: number; is_adjustment?: boolean }[] }) {
+  const rows = (items ?? []).filter(i => i.is_adjustment)
+  if (!rows.length) return null
+  return (
+    <div className="mt-2 pt-2 border-t border-line space-y-1.5">
+      {rows.map((it, i) => (
+        <div key={i} className="flex items-center justify-between gap-3 text-sm">
+          <span className="text-mist">{it.name}</span>
+          <span className={`font-semibold ${Number(it.total) < 0 ? 'text-emerald-700' : 'text-foam'}`}>
+            {Number(it.total) > 0 ? '+' : ''}{it.total} ج.م
+          </span>
+        </div>
+      ))}
+    </div>
+  )
 }

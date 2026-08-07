@@ -17,6 +17,10 @@ import AddMenuItemModal from '../components/AddMenuItemModal'
 import MenuItemsPanel from '../components/MenuItemsPanel'
 import EnablePushButton from '../components/EnablePushButton'
 import CustomersTab from '../components/CustomersTab'
+import FunnelPanel from '../components/FunnelPanel'
+import VendorHoursRow from '../components/VendorHoursRow'
+import OrderAdjust from '../components/OrderAdjust'
+import { openLabel } from '../lib/vendorHours'
 import PhoneOrderForm from '../components/PhoneOrderForm'
 import CompoundsTab from '../components/CompoundsTab'
 import DriverForm, { driverToForm } from '../components/DriverForm'
@@ -672,11 +676,50 @@ export default function Admin() {
     load(true)
   }
 
+  // Open/closed for every vendor, computed by the SAME database function that
+  // gates ordering. Recomputing it here from vendor_hours would mean the admin
+  // badge and the customer's card could disagree about whether a shop is open,
+  // which is the one thing this screen must never do.
+  const [openStates, setOpenStates] = useState<Record<number, {
+    is_open: boolean; next_open_at: string | null; closed_until: string | null; has_hours: boolean
+  }>>({})
+
+  async function loadOpenStates() {
+    const { data, error } = await supabase.rpc('vendor_open_states')
+    if (error) return   // keep the last known states rather than blanking the row
+    const map: typeof openStates = {}
+    for (const s of (data as { id: number }[]) ?? []) map[s.id] = s as never
+    setOpenStates(map)
+  }
+  useEffect(() => { loadOpenStates() }, [])
+
+  // Closing from here is a TEMPORARY close: it sets closed_until to the next
+  // scheduled opening rather than flipping a permanent flag. A flag needs a
+  // human to undo it, and the proof humans do not is that all twelve vendors
+  // sat closed until today.
   async function toggleRestaurant(r: Restaurant) {
-    const { error } = await supabase.from('restaurants').update({ is_open: !r.is_open }).eq('id', r.id)
+    const st = openStates[r.id]
+    const open = !(st?.is_open ?? true)
+    const patch = open
+      ? { closed_until: null, is_open: true }
+      : { closed_until: st?.next_open_at ?? endOfCairoDayIso(), is_open: false }
+    const { error } = await supabase.from('restaurants').update(patch).eq('id', r.id)
     if (error) { setActionError('مش قادرين نفتح/نقفل المطعم دلوقتي'); return }
     setActionError('')
+    loadOpenStates()
     load(true)
+  }
+
+  /** Midnight tonight, Cairo. The fallback expiry when a vendor has no hours,
+   *  matching vendor_set_open()'s own fallback. Offset is derived, never
+   *  hardcoded -- Egypt observes DST and a fixed +02:00 is an hour wrong all
+   *  summer. */
+  function endOfCairoDayIso(): string {
+    const now = new Date()
+    const day = now.toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' })
+    const [y, m, d] = day.split('-').map(Number)
+    const offset = new Date(now.toLocaleString('sv-SE', { timeZone: 'Africa/Cairo' }) + 'Z').getTime() - now.getTime()
+    return new Date(Date.UTC(y, m - 1, d + 1, 0, 0) - offset).toISOString()
   }
 
   async function reassignShift(shiftId: number, driverId: number, requestId: number) {
@@ -1822,6 +1865,11 @@ export default function Admin() {
                 </div>
               </div>
 
+              {/* Money correction after the fact. Writes a visible line rather
+                  than editing the header, so the customer's own item list still
+                  adds up to what they are charged. */}
+              {!o.is_test && <OrderAdjust orderId={o.id} onDone={() => load(true)} />}
+
               {o.order_type === 'custom_request' && (
                 <div className="mt-2.5 bg-sand/10 border border-sand/30 rounded-xl p-3 text-sm space-y-1">
                   <p className="font-semibold">🧾 طلب خاص</p>
@@ -1968,6 +2016,11 @@ export default function Admin() {
 
       {tab === 'earnings' && (
         <div>
+          {/* Sits above the earnings rows on purpose. Those tell you what the
+              orders you already have were worth; this tells you how many
+              visitors never became one. The second number is the one that can
+              still be changed. */}
+          <div className="mb-4"><FunnelPanel /></div>
           <div className="grid grid-cols-3 gap-3 mb-4">
             <div className="card p-4 text-center"><p className="text-sm text-mist">التوصيلات (آخر 300)</p><p className="text-2xl font-bold mt-1">{earnings.length}</p></div>
             <div className="card p-4 text-center"><p className="text-sm text-mist">أرباح المندوبين</p><p className="text-2xl font-bold mt-1 text-sea">{totalDriver} ج.م</p></div>
@@ -2003,12 +2056,14 @@ export default function Admin() {
                   </button>
                   <div className="flex items-center gap-2 shrink-0">
                     <button className="btn-ghost !py-1.5 !px-2.5 text-xs" onClick={() => setAddingItemFor(r)}>+ صنف</button>
-                    <button className={r.is_open ? 'badge-open' : 'badge-closed'}
-                      onClick={() => toggleRestaurant(r)}>{r.is_open ? 'مفتوح' : 'مغلق'}</button>
+                    <button className={(openStates[r.id]?.is_open ?? true) ? 'badge-open' : 'badge-closed'}
+                      onClick={() => toggleRestaurant(r)}>{openLabel(openStates[r.id] ?? {}).text}</button>
                     <button className={`text-xs font-semibold rounded-full px-2.5 py-1 ${r.archived ? 'bg-emerald-500/15 text-emerald-700' : 'bg-red-500/15 text-red-600'}`}
                       onClick={() => archiveRestaurant(r, !r.archived)}>{r.archived ? 'تفعيل' : 'إيقاف'}</button>
                   </div>
                 </div>
+
+                {expanded && <VendorHoursRow restaurant={r} onSaved={loadOpenStates} />}
 
                 {expanded && (
                   <div className="flex items-center gap-3 mt-3">

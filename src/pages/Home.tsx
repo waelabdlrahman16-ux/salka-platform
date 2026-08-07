@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useDismissable } from '../lib/useDismissable'
 import { haversineKm } from '../lib/geo'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
+import { openLabel } from '../lib/vendorHours'
 import { BROWSE_KINDS, vendorKind, type VendorKind } from '../lib/categoryArt'
 import Icon from '../components/Icon'
 import BannerRail from '../components/BannerRail'
@@ -109,8 +110,15 @@ export default function Home() {
         const list = (data as Restaurant[]) ?? []
         setRestaurants(list); setLoading(false)
         if (!list.length) return
-        const { data: discounts } = await supabase.from('discounts').select('*')
+        // A failed discount read used to be indistinguishable from "no vendor
+        // has an offer": both produced an empty Set, so every «خصم» badge
+        // silently disappeared from the home screen. That is money -- the
+        // badges are what pull a customer into a discounted vendor -- and it
+        // failed in the one direction nobody notices, because a screen with no
+        // badges looks completely normal.
+        const { data: discounts, error: discErr } = await supabase.from('discounts').select('*')
           .in('restaurant_id', list.map(r => r.id)).eq('active', true)
+        if (discErr) return   // keep whatever badges are already on screen
         const now = new Date()
         const inEffect = (d: Discount) => (!d.starts_at || new Date(d.starts_at) <= now) && (!d.ends_at || new Date(d.ends_at) >= now)
         setDiscountedRestaurantIds(new Set((discounts ?? []).filter(inEffect).map(d => d.restaurant_id)))
@@ -449,7 +457,17 @@ export default function Home() {
                           ? <img src={r.logo_url} alt="" loading="lazy" className="w-full h-full object-cover" />
                           : '🍽️'}
                       </span>
-                      <span className="text-xs font-semibold truncate max-w-[130px]">{r.name}</span>
+                      <span className="min-w-0">
+                        <span className="text-xs font-semibold truncate max-w-[130px] block">{r.name}</span>
+                        {/* «هيفتحوا بعدين» says they open later; it does not say
+                            WHEN, and without that there is no reason to come
+                            back. The card variant has carried the opening time
+                            since vendorHours landed -- this chip is a second,
+                            older rendering of the same fact and was missed. */}
+                        {openLabel(r).text !== 'مقفول' && (
+                          <span className="text-[10px] text-sandink block">{openLabel(r).text}</span>
+                        )}
+                      </span>
                     </Link>
                   ))}
                 </div>
