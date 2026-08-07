@@ -83,7 +83,11 @@ function alert_(title: string, body: string) {
  * banner, not stack two. `renotify` re-alerts anyway, because a silently
  * replaced banner is the same as no banner to a driver looking at the road.
  */
-function showNotification(title: string, body: string) {
+export function showNotification(
+  title: string,
+  body: string,
+  extra: { tag?: string; requireInteraction?: boolean } = {},
+) {
   if (typeof window === 'undefined') return
   if (!('Notification' in window) || Notification.permission !== 'granted') return
 
@@ -91,7 +95,14 @@ function showNotification(title: string, body: string) {
     body,
     icon: '/icon-192.png',
     badge: '/icon-192.png',
-    tag: 'salka-work',
+    dir: 'rtl',
+    lang: 'ar',
+    // Default kept as 'salka-work' so the existing poll-based callers behave
+    // exactly as before. A push passes `order-<id>` to match what
+    // firebase-messaging-sw.js uses, so the same order never shows two banners
+    // just because one arrived in the foreground and one in the background.
+    tag: extra.tag ?? 'salka-work',
+    requireInteraction: extra.requireInteraction ?? false,
     // Not in the TS DOM lib yet, but honoured by Chrome on Android.
     ...({ renotify: true } as object),
   }

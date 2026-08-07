@@ -1,16 +1,18 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { rpc } from '../lib/rpc'
 import InstallPrompt from '../components/InstallPrompt'
 import { markOrderDelivered } from '../lib/firstOrder'
 import { registerPush } from '../lib/push'
+import type { PushPlatform } from '../lib/push'
+import EnablePushButton from '../components/EnablePushButton'
 import { vendorNoun } from '../lib/vendorWords'
-import { INSTAPAY_QR_URL, INSTAPAY_LINK } from '../lib/instapay'
+import { INSTAPAY_QR_URL, INSTAPAY_LINK, INSTAPAY_HANDLE } from '../lib/instapay'
 import LiveMap from '../components/LiveMap'
 import Icon from '../components/Icon'
 import InAppLoginPrompt from '../components/InAppLoginPrompt'
-import { isCancelled } from '../lib/statusLabels'
+import { isCancelled, cancelReasonLabel } from '../lib/statusLabels'
 
 // Found by driving it: a pharmacy order with no price, no vendor acceptance and
 // no driver rendered "قيد التجهيز" with "الوصول المتوقع 7:15 ص". Nothing was
@@ -216,18 +218,30 @@ export default function Track() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
+  // Named and hoisted so the mount-time refresh and the opt-in BUTTON below
+  // share one sink. They used to be one anonymous callback that only the effect
+  // could reach, which is part of why the button was never added.
+  //
+  // The platform argument was being dropped. persistPushToken forwards it for
+  // staff; this one took `pushToken` alone, so any token an Android app
+  // registered for a customer was stored as though it came from a browser --
+  // and a web-shaped message to a killed Android app displays nothing.
+  const saveCustomerToken = useCallback(async (pushToken: string, platform: PushPlatform) => {
+    const { error } = await supabase.rpc('save_customer_push_token', {
+      p_token: token, p_push_token: pushToken, p_platform: platform,
+    })
+    if (error) { console.error('saving customer push token failed', error); return false }
+    return true
+  }, [token])
+
   useEffect(() => {
     if (!token) return
     // Was a floating promise inside a floating promise: no await, no catch, no
     // error check. And the server does a bare `update ... where public_token =
     // p_token`, so a token matching nothing updates 0 rows and raises nothing --
     // meaning even a successful call could silently do nothing.
-    registerPush(async pushToken => {
-      const { error } = await supabase.rpc('save_customer_push_token', { p_token: token, p_push_token: pushToken })
-      if (error) { console.error('saving customer push token failed', error); return false }
-      return true
-    })
-  }, [token])
+    registerPush(saveCustomerToken)
+  }, [token, saveCustomerToken])
 
   // These four all used to discard their error and set the success flag
   // regardless, so a failed rating, tip or complaint told the customer it had
@@ -339,6 +353,26 @@ export default function Track() {
           <a href={INSTAPAY_LINK} target="_blank" rel="noreferrer" className="btn-sea w-full !flex items-center justify-center text-center mb-4">
             افتح InstaPay وحوّل مباشرة
           </a>
+
+          {/* THE ADDRESS, IN TEXT. This screen asked for money and showed only
+              two ways to send it that can both fail silently: a QR image with
+              no onError, and an ipn.eg deep link that resolves to nothing on a
+              desktop browser or a phone without the app installed. In either
+              case the customer was left on a payment wall holding an amount and
+              no destination -- and the only remaining button says "cancel".
+              A copyable handle costs one line and always works. */}
+          <div className="flex items-center justify-center gap-2 mb-4 text-sm">
+            <span className="text-mist">أو حوّل على</span>
+            <bdi dir="ltr" className="font-semibold select-all">{INSTAPAY_HANDLE}</bdi>
+            <button
+              className="text-sea underline text-xs"
+              onClick={async () => {
+                try { await navigator.clipboard.writeText(INSTAPAY_HANDLE); setCopied(true); setTimeout(() => setCopied(false), 2000) }
+                catch { /* select-all above is the fallback */ }
+              }}>
+              {copied ? 'تم النسخ ✓' : 'نسخ'}
+            </button>
+          </div>
 
           {o.instapay_claimed ? (
             <p className="text-sm text-mist">
@@ -459,8 +493,13 @@ export default function Track() {
         <div className="card p-4 text-center mb-4">
           <p className="text-4xl mb-2">📦</p>
           <h1 className="font-bold text-lg">تم إلغاء الطلب</h1>
+          {/* cancelReasonLabel, not the raw column. The reason is a code --
+              `customer_cancelled`, `vendor_rejected` -- and it was being
+              printed straight onto an Arabic RTL screen in English. It was
+              fixed on the admin card the same day and missed here, which is
+              the surface the CUSTOMER reads. */}
           {o.cancel_reason && (
-            <p className="text-sm text-mist mt-1.5">{o.cancel_reason}</p>
+            <p className="text-sm text-mist mt-1.5">{cancelReasonLabel(o.cancel_reason)}</p>
           )}
           {/* Silence here was the worst version of this screen: the customer had
               paid, the order was gone, and the page said nothing about the money
@@ -501,6 +540,7 @@ export default function Track() {
             {/* One word for the thing the customer actually wants to know. It
                 was buried in a sentence under the ETA. */}
             {o.sla_minutes && current !== 'Delivered' && !o.scheduled_date
+              && o.status !== 'Failed_Delivery'
               && o.pricing_status !== 'pending_quote' && (() => {
               const late = Date.now() > new Date(o.created_at).getTime() + o.sla_minutes * 60000
               return (
@@ -520,6 +560,22 @@ export default function Track() {
           {o.status === 'No_Driver_Found' && (
             <p className="text-sm text-sandink">الزحمة عالية دلوقتي — الإدارة بتظبط لك مندوب</p>
           )}
+          {/* Failed_Delivery was a genuine dead end. It appears in no branch of
+              this screen, so the stage bar pinned it at «في الطريق إليك» -- for
+              a delivery that had already failed -- and, because it was also
+              missing from the suppression list on the SLA line below, the page
+              then added «اتأخر شوية عن الوقت المستهدف». A customer whose
+              delivery had failed was told their order was on its way and
+              slightly late, with no action anywhere on the screen.
+
+              The order is still live and re-dispatchable (statusLabels.ts), so
+              the copy says a second attempt is being arranged rather than
+              implying it is over. */}
+          {o.status === 'Failed_Delivery' && (
+            <p className="text-sm text-sandink">
+              التوصيلة ما اكتملتش — الإدارة بتراجع الطلب وهنكلّمك حالًا
+            </p>
+          )}
           {/* This said «الوصول المتوقع» -- expected ARRIVAL -- while ready_at is
               when the food is ready and the DRIVER COLLECTS it. It was missing
               the whole delivery leg, and it contradicted the «الهدف: يوصلك قبل»
@@ -532,7 +588,7 @@ export default function Track() {
           {o.scheduled_date && <p className="text-sm text-mist">التوصيل خلال الفترة اللي اخترتها</p>}
           {o.sla_minutes && current !== 'Delivered' && !o.scheduled_date
             && o.pricing_status !== 'pending_quote'
-            && !['awaiting_quote', 'Scheduled', 'No_Driver_Found'].includes(o.status) && (() => {
+            && !['awaiting_quote', 'Scheduled', 'No_Driver_Found', 'Failed_Delivery'].includes(o.status) && (() => {
             const target = new Date(new Date(o.created_at).getTime() + o.sla_minutes * 60000)
             const isLate = Date.now() > target.getTime()
             return (
@@ -560,6 +616,32 @@ export default function Track() {
               </div>
             ))}
           </div>
+
+          {/* THE ASK THAT WAS NEVER MADE.
+           *
+           * Every customer notification the server can send -- order accepted,
+           * food ready, rider on the way, rider at your door, delivered --
+           * guards on `orders.push_token is null` and returns. On 2026-08-07
+           * that column had NEVER been non-null: `select count(push_token) from
+           * orders` returned 0 across every order ever placed. All of it was
+           * dead code in production.
+           *
+           * The reason was here. Track called registerPush(), which by design
+           * never prompts -- it only refreshes a token when permission is
+           * already granted -- and no customer surface anywhere in the app
+           * offered the prompt. Permission could not become granted through
+           * Salka, so the refresh had nothing to refresh, forever.
+           *
+           * Placed after the progress bar, not on mount: the customer has just
+           * watched the stages and the question "do you want to be told when it
+           * moves?" answers itself here. Asking on load is how an origin gets
+           * denied permanently. EnablePushButton renders nothing once granted.
+           */}
+          {current !== 'Delivered' && !isCancelled(o.status) && (
+            <div className="mt-3">
+              <EnablePushButton onToken={saveCustomerToken} label="نبّهني لما الطلب يتحرك 🔔" />
+            </div>
+          )}
 
           {/* The stage-by-stage story, in the order it actually happens. The
               server now distinguishes awaiting_quote / Scheduled /

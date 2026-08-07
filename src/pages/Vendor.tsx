@@ -11,6 +11,7 @@ import { registerPush, persistPushToken } from '../lib/push'
 import { orderStatusLabel } from '../lib/statusLabels'
 import { rpc } from '../lib/rpc'
 import PrescriptionLink from '../components/PrescriptionLink'
+import EnablePushButton from '../components/EnablePushButton'
 import type { Compound, MenuItem, Order, OrderItem, Restaurant } from '../lib/types'
 import Icon from '../components/Icon'
 
@@ -99,6 +100,20 @@ export default function Vendor() {
   // ride history.
   return (
     <div className="max-w-lg mx-auto">
+      {/* THE BUTTON THAT WAS NEVER HERE.
+       *
+       * This page called registerPush() on mount and stopped there.
+       * registerPush deliberately never prompts -- it only refreshes a token
+       * when permission is ALREADY granted -- and no other vendor surface
+       * offered the prompt. So a vendor had no way, anywhere in the app, to
+       * turn notifications on.
+       *
+       * That is not a theory. On 2026-08-07, six of seven vendor accounts had
+       * no push token and never had: كنتاكي, ماكدونالدز, بيتزا هت, إستاكوزا,
+       * صيدلية, سوبرماركت, هارت أتاك. The advice "tell the vendors to enable
+       * notifications on their own devices" was impossible to follow.
+       */}
+      <EnablePushButton onToken={persistPushToken} label="فعّل تنبيهات الطلبات الجديدة" />
       {view === 'main' && (
         <>
           <div className="flex items-center gap-2 mb-4">

@@ -567,6 +567,20 @@ export default function CheckoutPage() {
             <span className="font-semibold flex-1">InstaPay</span>
             <input type="radio" checked={paymentMethod === 'instapay'} onChange={() => setPaymentMethod('instapay')} className="accent-sea w-4 h-4" />
           </label>
+          {/* The same disclosure the cash path already gets, for the same
+              reason. An InstaPay order is BORN at awaiting_payment: the button
+              says «تأكيد الطلب · {finalTotal} ج.م», the basket is emptied, and
+              the customer lands on a full-screen transfer wall they were never
+              warned about -- and nothing is cooked until they pay. That exact
+              complaint was fixed for the cash-deposit path and left open here,
+              which is how one order can be disclosed and the next one ambushed.
+
+              Says the whole amount, not half: InstaPay is prepaid in full. */}
+          {paymentMethod === 'instapay' && serviceFee !== null && deliveryFee !== null && (
+            <p className="text-xs text-sandink -mt-1 px-1">
+              هتحوّل {finalTotal} ج.م كاملة على InstaPay قبل ما المطعم يبدأ التحضير — هنوريك الـ QR والرقم بعد التأكيد، ولو غيّرت رأيك تقدر ترجع كاش من نفس الشاشة
+            </p>
+          )}
         </div>
       </div>
 

@@ -344,6 +344,77 @@ async function nativeTokenOnce(onToken: PushTokenSink, allowPrompt: boolean): Pr
 }
 
 /**
+ * THE FOREGROUND HANDLER, AND WHY ITS ABSENCE WAS INVISIBLE.
+ *
+ * FCM splits delivery in two. When the page is backgrounded or closed, the
+ * message wakes the service worker and `onBackgroundMessage` in
+ * firebase-messaging-sw.js draws the banner. When the page is FOCUSED, FCM
+ * routes the message to `onMessage` in the page instead and **deliberately
+ * does not wake the service worker at all**.
+ *
+ * There was no `onMessage` handler anywhere in this app. So a push arriving
+ * while someone was looking at the screen was delivered -- FCM returned 200,
+ * push_send_log recorded ok:true, every server-side check said "sent" -- and
+ * then silently discarded by the SDK. No banner, no sound, nothing in the
+ * console.
+ *
+ * That is the exact shape of order #87: «طلب جديد 🔔» accepted by FCM at
+ * 17:46:41, and Wael, sitting on the admin screen where he spends his whole
+ * day, saw nothing. The dead-token bug fixed earlier the same day was real but
+ * it was not the only cause, and it hid this one: whenever push "worked" it was
+ * because the phone was locked.
+ *
+ * Attached from registerPush() rather than from each page, for the same reason
+ * `persist` is derived in send-push instead of passed: the failure mode of
+ * something every caller must remember is the one caller who does not.
+ */
+let foregroundAttached = false
+
+async function attachForegroundHandler(): Promise<void> {
+  if (foregroundAttached) return
+  if (pushSupport() !== 'web') return
+  if (typeof window === 'undefined') return
+  foregroundAttached = true
+
+  try {
+    const [{ initializeApp, getApps, getApp }, { getMessaging, onMessage, isSupported }] =
+      await Promise.all([import('firebase/app'), import('firebase/messaging')])
+    if (!(await isSupported())) return
+
+    const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
+    const messaging = getMessaging(app)
+
+    const [{ showNotification }, { ringBurst }] =
+      await Promise.all([import('./notify'), import('./ring')])
+
+    onMessage(messaging, payload => {
+      const d = (payload?.data ?? {}) as Record<string, string>
+      diag(`foreground message: ${d.title ?? '(no title)'}`)
+
+      // Same tag the service worker uses, so an order cannot produce two
+      // banners just because delivery switched paths mid-order.
+      showNotification(d.title || 'سالكة', d.body || '', {
+        tag: d.order_id ? `order-${d.order_id}` : 'salka',
+        // Staff banners stick; a customer's does not. `persist` is set by
+        // send-push from whether the token is a staff token.
+        requireInteraction: d.persist === '1',
+      })
+
+      // A banner is not enough for someone already staring at a screen full of
+      // orders -- it renders in a corner they are not looking at. Staff get
+      // sound. Customers deliberately do not: a noise they cannot stop, about
+      // an order they cannot speed up, is a reason to uninstall the app.
+      if (d.persist === '1') ringBurst()
+    })
+  } catch (e) {
+    // A missing foreground banner must never break the page it sits on.
+    foregroundAttached = false
+    lastPushError = `onMessage: ${(e as Error)?.message ?? String(e)}`
+    console.error('foreground push handler failed', e)
+  }
+}
+
+/**
  * Refresh the push token when permission is already granted. Never prompts, so
  * it is safe to call on mount. FCM tokens rotate, so re-registering on each
  * load is what keeps a driver reachable weeks later.
@@ -355,6 +426,7 @@ export async function registerPush(onToken: PushTokenSink): Promise<boolean> {
     if (support !== 'web') return false
     if (Notification.permission !== 'granted') return false
 
+    void attachForegroundHandler()
     return await saveWebTokenHealing(onToken)
   } catch (e) {
     // Push is an enhancement. It must never break the page it sits on.
@@ -406,6 +478,7 @@ export async function enablePush(onToken: PushTokenSink): Promise<boolean> {
       : await Notification.requestPermission()
     if (permission !== 'granted') { lastPushError = 'الإذن اترفض'; return false }
 
+    void attachForegroundHandler()
     return await saveWebTokenHealing(onToken)
   } catch (e) {
     lastPushError = `enablePush: ${(e as Error)?.message ?? String(e)}`

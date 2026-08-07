@@ -33,3 +33,24 @@ export function startRinging() {
 export function stopRinging() {
   if (loopId) { clearInterval(loopId); loopId = null }
 }
+
+/**
+ * A short burst, for a push that arrived while the app is open.
+ *
+ * Deliberately NOT startRinging(): nothing in a push handler is in a position
+ * to decide when the ringing should stop, and a siren with no off switch is
+ * worse than silence -- someone mutes the tablet and then misses everything.
+ * The server already re-sends every minute until the order is acted on
+ * (push_nudge_sweep), so repeated bursts carry the same "keep going until you
+ * deal with it" meaning without the risk of getting stuck on.
+ *
+ * If a continuous ring is already running -- the vendor tablet does this while
+ * orders sit unaccepted -- this does nothing rather than hijacking that loop
+ * and silencing it early.
+ */
+export function ringBurst(durationMs = 6000) {
+  if (loopId) return
+  startRinging()
+  const mine = loopId
+  setTimeout(() => { if (loopId === mine) stopRinging() }, durationMs)
+}
