@@ -1,0 +1,133 @@
+# Build the driver APK on GitHub's machines, not on a laptop.
+#
+# WHY THIS EXISTS. Building the APK needs the Android SDK, and the Android SDK
+# comes from dl.google.com and maven.google.com. Both are blocked from the agent
+# sandbox (403 through the CONNECT tunnel), so an agent session can run
+# `npm run build` and `npx cap sync` but can never run gradle. Android Studio on
+# a laptop was the only other route, and Wael does not have one set up.
+#
+# GitHub's ubuntu runners ship the Android SDK preinstalled. So: press the
+# button, wait a few minutes, download the APK. It works from a phone.
+#
+# HOW TO RUN IT: GitHub → Actions → "Build driver APK" → Run workflow.
+#
+# ---------------------------------------------------------------------------
+# YOU PROBABLY DO NOT NEED THIS.
+#
+# capacitor.config.ts sets `server.url = 'https://app.gosalka.com/login'`, so
+# the APK is a thin shell that loads the live site. Web changes -- every screen,
+# every fix, including all of push.ts -- reach an already-installed APK when the
+# driver reopens it. No rebuild.
+#
+# Rebuild ONLY when something NATIVE changes: capacitor.config.ts, a Capacitor
+# plugin added or removed, google-services.json, AndroidManifest, the app icon
+# or splash screen, or the SDK versions in android/variables.gradle.
+# ---------------------------------------------------------------------------
+#
+# SIGNING. The three secrets below are optional but you almost certainly want
+# them. The Firebase Android API key is restricted to package com.gosalka.app
+# plus the RELEASE keystore's SHA-1
+# (1B:FD:48:0F:DD:D3:3A:44:64:2F:EA:00:4A:D1:10:03:6A:DA:BF:B3). A debug build
+# is signed with a different key, so FCM will refuse to register it and the app
+# will look exactly like a push failure. Without the secrets this workflow still
+# produces an installable debug APK -- fine for checking the app opens, useless
+# for testing notifications.
+#
+#   Settings → Secrets and variables → Actions → New repository secret
+#     ANDROID_KEYSTORE_BASE64   base64 of salka-release.jks (in salka-android.zip)
+#     ANDROID_STORE_PASSWORD    from keystore.properties in the same zip
+#     ANDROID_KEY_PASSWORD      from keystore.properties in the same zip
+#
+#   To make the base64:  base64 -w0 salka-release.jks
+#
+# The keystore is deliberately NOT in the repo. Keep it that way -- anyone with
+# it can ship an update that replaces Salka on a driver's phone.
+
+name: Build driver APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # capacitor.settings.gradle points at ../node_modules/@capacitor/*/android,
+      # so npm ci has to come first or gradle cannot resolve the plugin projects.
+      - name: Build the web bundle
+        run: npm run build
+
+      # Generates capacitor-cordova-android-plugins/, assets/public and
+      # capacitor.config.json. All three are gitignored, so this step is not
+      # optional -- a fresh checkout does not contain them.
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      # Android refuses to install an update whose versionCode is not higher
+      # than the installed one, and build.gradle hardcodes 1. The run number is
+      # monotonic, so every build supersedes the last.
+      - name: Stamp versionCode from the run number
+        run: |
+          sed -i "s/^\( *versionCode \).*/\1${{ github.run_number }}/" android/app/build.gradle
+          sed -i "s/^\( *versionName \).*/\1\"1.0.${{ github.run_number }}\"/" android/app/build.gradle
+          grep -n "versionCode\|versionName" android/app/build.gradle
+
+      - name: Restore the release keystore
+        id: signing
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::warning::No ANDROID_KEYSTORE_BASE64 secret. Building an UNSIGNED debug APK — FCM will not register on it."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > android/salka-release.jks
+          cat > android/keystore.properties <<EOF
+          storeFile=salka-release.jks
+          storePassword=$STORE_PASSWORD
+          keyAlias=salka
+          keyPassword=$KEY_PASSWORD
+          EOF
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Assemble
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          if [ "${{ steps.signing.outputs.signed }}" = "true" ]; then
+            ./gradlew assembleRelease --no-daemon
+          else
+            ./gradlew assembleDebug --no-daemon
+          fi
+
+      # Printed so the fingerprint can be checked against the Firebase key
+      # restriction without anyone having to trust that the right secret was used.
+      - name: Report the signing fingerprint
+        if: steps.signing.outputs.signed == 'true'
+        run: |
+          APK=$(find android/app/build/outputs/apk -name '*.apk' | head -1)
+          "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs "$APK" | grep -i "SHA-1" || true
+
+      - name: Clean up the keystore
+        if: always()
+        run: rm -f android/salka-release.jks android/keystore.properties
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: salka-driver-apk
+          path: android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
+          retention-days: 30
