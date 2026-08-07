@@ -5,26 +5,35 @@ import { useAuth } from '../lib/auth'
 import { ping, askNotificationPermission } from '../lib/notify'
 import { registerPush, persistPushToken } from '../lib/push'
 import { orderStatusLabel, assignmentStatusLabel } from '../lib/statusLabels'
-import type { Assignment, Driver, LiveDelivery, Order } from '../lib/types'
+import { vendorNoun } from '../lib/vendorWords'
+import type { Assignment, Driver, LiveDelivery, Order, RequestItem } from '../lib/types'
 import Icon from '../components/Icon'
 import EnablePushButton from '../components/EnablePushButton'
 import LiveDeliveryDetail from '../components/LiveDeliveryDetail'
 import PhoneOrderForm from '../components/PhoneOrderForm'
 
-// The driver supervisor.
+// The operations supervisor.
 //
 // Restaurants are not logging into the vendor screen, so a Salka staff member
 // phones them and works the order on their behalf, and also runs dispatch.
-// They do NOT touch money and they do NOT see the pharmacy or the supermarket.
+//
+// The pharmacy and the supermarket are DIFFERENT: nobody is phoned, because
+// there is no counter waiting to cook. The supervisor goes and buys the order
+// themselves, and the price is not known until they are holding the receipt.
+// That is why this screen prices those orders and the vendor screen does not --
+// getting a pharmacy or market order ready for pickup is the supervisor's job,
+// not the vendor's. (Until 2026-08-07 the database enforced the exact opposite:
+// supervisor_may_touch_order() admitted catalog orders AND excluded
+// pharmacy/supermarket, so the only way to work one was to sign in as the
+// vendor account. That is what the accounts were being used for.)
 //
 // This is a separate page rather than a filtered Admin because Admin is 2,000
 // lines across fourteen tabs, and "the same screen with things hidden" is how a
 // permission leak happens -- a hidden button is still a button. The real
-// boundary is in the database: RLS gives this role only catalog restaurant
-// orders, and every RPC below re-checks supervisor_may_touch_order(). Verified
-// by executing it as a supervisor in a rolled-back transaction: the pharmacy
-// orders were invisible, and admin_confirm_instapay_payment, settle_driver_cash
-// and confirm_custom_order_price all refused.
+// boundary is in the database: RLS decides what this role reads, and every RPC
+// below re-checks supervisor_may_touch_order(). Verified by executing it as the
+// supervisor: settle_driver_cash and admin_confirm_instapay_payment both still
+// refuse with admin_only.
 //
 // So this file does not need to be defensive. It needs to be SHORT, so the
 // person on the phone at 1am can see the whole job at once.
@@ -54,7 +63,9 @@ export default function Supervisor() {
 
   async function load() {
     const [o, a, d, live] = await Promise.all([
-      supabase.from('orders').select('*, restaurants(name)')
+      // vendor_type comes along because every line of copy that NAMES the
+      // vendor goes through vendorNoun() -- "الصيدلية رفضت" not "المطعم رفض".
+      supabase.from('orders').select('*, restaurants(name, vendor_type)')
         .not('status', 'in', '("Delivered","Cancelled")')
         .order('id', { ascending: false }),
       supabase.from('delivery_assignments').select('*, orders(*, restaurants(name)), drivers(*)')
@@ -116,6 +127,16 @@ export default function Supervisor() {
   const markReady = (o: Order) =>
     run(`ready:${o.id}`, () => rpc('vendor_ready', { p_order_id: o.id }))
 
+  // The supervisor shopped the order and is holding the receipt, so they type
+  // the goods total and nothing else. The service fee, the delivery fee, the
+  // COD deposit and the new status all come back from
+  // confirm_custom_order_price() -- this screen deliberately does NO
+  // arithmetic. A second copy of the server's sum is how the five different
+  // "cash to collect" figures in Track/Driver/Admin happened.
+  const confirmPrice = (o: Order, subtotal: number) =>
+    run(`price:${o.id}`, () =>
+      rpc('confirm_custom_order_price', { p_order_id: o.id, p_subtotal: subtotal }))
+
   function cancelOrder(o: Order) {
     const reason = prompt(`إلغاء الطلب #${o.id}؟\n\nالسبب (هيتسجل على الطلب وهيشوفه العميل):`, '')
     if (reason === null) return
@@ -162,8 +183,22 @@ export default function Supervisor() {
   const assignedIds = new Set(
     assignments.filter(a => ACTIVE_STATUSES.includes(a.status)).map(a => a.order_id))
   const escalations = assignments.filter(a => a.no_answer_reported_at && !a.no_answer_admin_action)
-  const needsKitchen = orders.filter(o =>
-    o.kitchen_status !== 'ready' && !['awaiting_payment', 'awaiting_quote'].includes(o.status))
+  // A pharmacy or market order arrives with no price at all: submit_custom_order
+  // writes pricing_status 'pending_quote' and status 'awaiting_quote'. Both
+  // vendor_accept_order and vendor_ready refuse it with order_not_priced, so
+  // pricing is not a step that can be reordered -- it has to come first. It
+  // needs its own list because awaiting_quote is deliberately filtered out of
+  // the kitchen board below, which would otherwise make the order invisible.
+  const needsQuote = orders.filter(o => o.pricing_status === 'pending_quote')
+  const liveStage = (o: Order) =>
+    o.kitchen_status !== 'ready' && o.pricing_status !== 'pending_quote'
+    && !['awaiting_payment', 'awaiting_quote'].includes(o.status)
+  // A custom request has nobody to ring -- the supervisor is the one walking
+  // the aisles -- so it gets a list of its own with one button, rather than
+  // sitting under "كلّم المطعم" being offered prep times a supermarket cannot
+  // quote.
+  const needsShopping = orders.filter(o => o.order_type === 'custom_request' && liveStage(o))
+  const needsKitchen = orders.filter(o => o.order_type !== 'custom_request' && liveStage(o))
   const unassigned = orders.filter(o =>
     !assignedIds.has(o.id) && o.kitchen_status === 'ready' && o.status !== 'awaiting_payment')
   const availableDrivers = drivers.filter(d => d.active && d.available)
@@ -189,8 +224,8 @@ export default function Supervisor() {
       {/* Said plainly rather than left to be discovered by pressing something
           that fails. The database refuses these; this is just honesty. */}
       <p className="text-xs text-mist bg-shellup rounded-xl p-3 mb-4 leading-relaxed">
-        شاشتك للمطاعم بس. الصيدلية والماركت والفلوس (تأكيد التحويلات، تسوية الكاش،
-        الاستردادات) كلها عند الإدارة.
+        الطلبات والتوصيل كلها عندك — المطاعم والصيدلية والماركت. الفلوس (تأكيد
+        التحويلات، تسوية كاش المندوبين، الاستردادات) عند الإدارة.
       </p>
 
       {error && (
@@ -227,6 +262,61 @@ export default function Supervisor() {
         </div>
       )}
 
+      {/* 0. Pricing. Nothing downstream will move until this is done -- the
+             accept and ready RPCs both refuse an unpriced order -- so it sits
+             above the phone-call list rather than beside it. */}
+      {needsQuote.length > 0 && (
+        <>
+          <h2 className="font-bold mb-2.5">🧾 محتاج تسعير ({needsQuote.length})</h2>
+          <div className="space-y-3 mb-6">
+            {needsQuote.map(o => (
+              <QuoteCard key={o.id} order={o} addr={addr(o)}
+                busy={busy === `price:${o.id}`}
+                onConfirm={subtotal => confirmPrice(o, subtotal)}
+                onCancel={() => cancelOrder(o)} />
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* 0b. Priced, now go and buy it. */}
+      {needsShopping.length > 0 && (
+        <>
+          <h2 className="font-bold mb-2.5">🛒 اشتري وجهّز ({needsShopping.length})</h2>
+          <div className="space-y-3 mb-6">
+            {needsShopping.map(o => (
+              <div key={o.id} className="card p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <h3 className="font-bold">#{o.id} — {o.restaurants?.name}</h3>
+                    <p className="text-xs text-mist mt-0.5">👤 {o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
+                    <p className="text-xs text-mist mt-0.5">📍 {addr(o)}</p>
+                  </div>
+                  <div className="text-left shrink-0">
+                    <span className="font-bold text-sea block">{o.total} ج.م</span>
+                    <span className="text-xs text-mist">اتسعّر</span>
+                  </div>
+                </div>
+
+                <div className="mt-3 bg-night border border-line rounded-xl p-3 text-sm space-y-1">
+                  <OrderLines order={o} />
+                </div>
+
+                <button className="btn-sea w-full !py-2 text-sm mt-3"
+                  disabled={busy === `ready:${o.id}`}
+                  onClick={() => markReady(o)}>
+                  {busy === `ready:${o.id}` ? '…' : 'جاهز للاستلام'}
+                </button>
+                <button className="w-full text-xs text-red-600 font-semibold mt-2.5 py-1"
+                  onClick={() => cancelOrder(o)}>
+                  مش لاقي الطلب — الغِ الطلب
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
       {/* 1. The phone call. This is the supervisor's actual job: the restaurant
              does not have a screen, so nothing moves until someone rings them
              and then records the answer here. */}
@@ -250,7 +340,7 @@ export default function Supervisor() {
             </div>
 
             <div className="mt-3 bg-night border border-line rounded-xl p-3 text-sm space-y-1">
-              <OrderLines orderId={o.id} />
+              <OrderLines order={o} />
             </div>
 
             {o.kitchen_status === 'new' ? (
@@ -276,7 +366,7 @@ export default function Supervisor() {
 
             <button className="w-full text-xs text-red-600 font-semibold mt-2.5 py-1"
               onClick={() => cancelOrder(o)}>
-              المطعم رفض / مش هينفع — الغِ الطلب
+              {vendorNoun(o.restaurants?.vendor_type)} رفض / مش هينفع — الغِ الطلب
             </button>
           </div>
         ))}
@@ -364,22 +454,82 @@ export default function Supervisor() {
   )
 }
 
-// The supervisor is reading this list down a phone line to a restaurant, so it
-// has to be the real thing -- sizes, combo and add-ons included, exactly as the
-// kitchen screen would show it.
-function OrderLines({ orderId }: { orderId: number }) {
+// The supervisor is reading this list down a phone line to a restaurant, or off
+// their own screen while walking a supermarket aisle, so it has to be the real
+// thing -- sizes, combo and add-ons included, exactly as the kitchen screen
+// would show it.
+//
+// The two kinds of order keep their contents in DIFFERENT PLACES. A catalog
+// order has order_items rows. A pharmacy or market order has none at all --
+// there is no menu to reference -- and carries what the customer typed in
+// orders.request_items instead. Reading only order_items is why every custom
+// order rendered "مفيش أصناف على الطلب ده": an empty shopping list, which is
+// exactly the thing the supervisor is being sent out to buy.
+// admin_live_deliveries() has always merged both; this now matches it.
+function OrderLines({ order }: { order: Order }) {
   const [lines, setLines] = useState<
     { id: number; name: string; qty: number; size_name: string | null; combo_name: string | null; addon_names: string[] | null }[] | null
   >(null)
+  const [failed, setFailed] = useState(false)
+
+  // Only a custom_request carries request_items. A pickup_request is an errand
+  // -- collect a parcel, take the payment -- and legitimately has no item list
+  // at all, so it must NOT be told "the customer typed nothing, ring them".
+  const fromRequest: RequestItem[] | null =
+    order.order_type === 'custom_request' ? (order.request_items ?? []) : null
 
   useEffect(() => {
+    if (fromRequest) return
+    let live = true
     supabase.from('order_items').select('id, name, qty, size_name, combo_name, addon_names')
-      .eq('order_id', orderId)
-      .then(({ data }) => setLines((data as any) ?? []))
-  }, [orderId])
+      .eq('order_id', order.id)
+      .then(({ data, error }) => {
+        if (!live) return
+        // postgrest resolves with { error } rather than rejecting, so an
+        // unchecked read here renders "no items" for a failure -- and the
+        // supervisor dispatches a bag they think is empty.
+        if (error) { setFailed(true); return }
+        setLines((data as any) ?? [])
+      })
+    return () => { live = false }
+  }, [order.id, fromRequest])
 
+  const note = order.request_notes?.trim()
+  const extras = (
+    <>
+      {note && <p className="text-xs text-sandink mt-2 pt-2 border-t border-dashed border-line">📝 {note}</p>}
+      {order.prescription_path && (
+        <p className="text-xs text-sandink mt-1">📎 العميل رفع صورة روشتة — شوفها من شاشة الإدارة</p>
+      )}
+    </>
+  )
+
+  if (fromRequest) {
+    if (fromRequest.length === 0 && !note) {
+      return <p className="text-mist text-xs">العميل ما كتبش أصناف — كلّمه قبل ما تشتري</p>
+    }
+    return (
+      <>
+        {fromRequest.map((l, i) => (
+          <div key={i} className="flex justify-between gap-2">
+            <span className="font-semibold">{l.name}</span>
+            <span className="text-xs text-mist shrink-0">×{l.qty}</span>
+          </div>
+        ))}
+        {extras}
+      </>
+    )
+  }
+
+  if (failed) {
+    return <p className="text-red-600 text-xs">مش قادرين نحمّل أصناف الطلب — حدّث الصفحة قبل ما تكلّم المطعم</p>
+  }
   if (lines === null) return <p className="text-mist text-xs">…</p>
-  if (lines.length === 0) return <p className="text-mist text-xs">مفيش أصناف على الطلب ده</p>
+  // Still render the note on an item-less order: a pickup_request keeps the
+  // whole instruction there, so returning early would hide the only content.
+  if (lines.length === 0) {
+    return <><p className="text-mist text-xs">مفيش أصناف على الطلب ده</p>{extras}</>
+  }
 
   return (
     <>
@@ -394,6 +544,68 @@ function OrderLines({ orderId }: { orderId: number }) {
           )}
         </div>
       ))}
+      {extras}
     </>
+  )
+}
+
+// One order the supervisor has shopped for and now has to price.
+//
+// The input is the goods total off the receipt and nothing else. What the
+// customer finally pays -- service fee, delivery, and the COD deposit if it
+// crosses the threshold -- is computed by confirm_custom_order_price() and
+// arrives on the next load(). Showing a predicted total here would mean
+// re-implementing the server's sum in the client, which is the single mistake
+// this codebase has made most often.
+function QuoteCard({ order, addr, busy, onConfirm, onCancel }: {
+  order: Order; addr: string; busy: boolean
+  onConfirm: (subtotal: number) => void; onCancel: () => void
+}) {
+  const [raw, setRaw] = useState('')
+  const subtotal = Number(raw)
+  const valid = raw.trim() !== '' && Number.isFinite(subtotal) && subtotal >= 0
+
+  return (
+    <div className="card p-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h3 className="font-bold">#{order.id} — {order.restaurants?.name}</h3>
+          <p className="text-xs text-mist mt-0.5">👤 {order.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${order.customer_phone}`}>{order.customer_phone}</a></p>
+          <p className="text-xs text-mist mt-0.5">📍 {addr}</p>
+        </div>
+        <span className="text-xs font-semibold bg-sand/20 text-sandink rounded-full px-2.5 py-1 shrink-0">
+          محتاج تسعير
+        </span>
+      </div>
+
+      <div className="mt-3 bg-night border border-line rounded-xl p-3 text-sm space-y-1">
+        <p className="text-[11px] font-bold text-mist mb-1.5">طلب العميل</p>
+        <OrderLines order={order} />
+      </div>
+
+      <div className="mt-3 border border-linestrong rounded-xl p-3 bg-shellup">
+        <label className="block text-[11px] font-bold text-sandink mb-2" htmlFor={`p${order.id}`}>
+          اكتب إجمالي الفاتورة بعد ما تشتري
+        </label>
+        <div className="flex gap-2 items-stretch">
+          <input id={`p${order.id}`} className="field flex-1 !py-2 font-bold" inputMode="decimal"
+            dir="ltr" value={raw} placeholder="0"
+            onChange={e => setRaw(e.target.value)} />
+          <span className="self-center text-xs text-mist">ج.م</span>
+          <button className="btn-sea !py-2 !px-4 text-sm shrink-0"
+            disabled={!valid || busy}
+            onClick={() => onConfirm(subtotal)}>
+            {busy ? '…' : 'أكّد السعر'}
+          </button>
+        </div>
+        <p className="text-[11px] text-mist mt-2 pt-2 border-t border-dashed border-linestrong">
+          بعد التأكيد هيظهر اللي العميل هيدفعه — محسوب من السيرفر.
+        </p>
+      </div>
+
+      <button className="w-full text-xs text-red-600 font-semibold mt-2.5 py-1" onClick={onCancel}>
+        مش لاقي الطلب — الغِ الطلب
+      </button>
+    </div>
   )
 }
