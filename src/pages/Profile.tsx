@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
 import { homeFor, useAuth } from '../lib/auth'
 import { orderStatusLabel } from '../lib/statusLabels'
+import { useSheets } from '../components/ActionSheets'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { describeError, rpc } from '../lib/rpc'
 import { SUPPORT_WHATSAPP_URL } from '../lib/support'
@@ -23,6 +24,7 @@ export default function Profile() {
   const nav = useNavigate()
   const { customer, logout, updatePhone, updateName } = useCustomerAuth()
   const { profile: staffProfile } = useAuth()
+  const { confirmSheet, sheetElement } = useSheets()
   const [editingIdentity, setEditingIdentity] = useState(false)
   const [addresses, setAddresses] = useState<Address[]>([])
   const [orders, setOrders] = useState<OrderRow[]>([])
@@ -93,7 +95,7 @@ export default function Profile() {
   }
 
   async function remove(a: Address) {
-    if (!confirm(`حذف "${a.label}"؟`)) return
+    if (!(await confirmSheet({ title: `حذف «${a.label}»؟`, danger: true, confirmLabel: 'احذف' }))) return
     setAddressError('')
     const res = await rpc('delete_customer_address', { p_id: a.id })
     if (!res.ok) { setAddressError(res.error); return }
@@ -118,6 +120,7 @@ export default function Profile() {
 
   return (
     <div className="max-w-sm mx-auto space-y-4 pb-6">
+      {sheetElement}
       {/* Name and phone were display-only once set. There was no function to
           change a name at all, and the phone editor rendered only while the
           phone was MISSING -- so a typo at signup, or whatever display name

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { uploadVendorImage } from '../lib/upload'
 import type { MenuItem, VendorAddonLibraryItem } from '../lib/types'
+import { useSheets } from './ActionSheets'
 
 /**
  * Define an add-on once per vendor, then attach it to a whole category at once.
@@ -22,6 +23,7 @@ export default function AddonLibrary({ restaurantId, items }: {
   items: MenuItem[]
 }) {
   const [lib, setLib] = useState<VendorAddonLibraryItem[]>([])
+  const { confirmSheet, sheetElement } = useSheets()
   const [draft, setDraft] = useState({ name: '', price: '', imageUrl: null as string | null })
   const [uploading, setUploading] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -72,7 +74,7 @@ export default function AddonLibrary({ restaurantId, items }: {
   }
 
   async function remove(id: number) {
-    if (!confirm('حذف من المكتبة؟ الأصناف مش هتتأثر.')) return
+    if (!(await confirmSheet({ title: 'حذف من المكتبة؟', body: 'الأصناف اللي مستخدماها مش هتتأثر.', danger: true, confirmLabel: 'احذف' }))) return
     await supabase.from('vendor_addon_library').delete().eq('id', id)
     load()
   }
@@ -98,6 +100,7 @@ export default function AddonLibrary({ restaurantId, items }: {
 
   return (
     <div className="card p-4 mb-4">
+      {sheetElement}
       <p className="font-bold text-sm mb-1">مكتبة الإضافات</p>
       <p className="text-xs text-mist mb-3">اكتبها مرة واحدة، وضيفها لقسم كامل بضغطة.</p>
 

@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { describeError } from '../lib/rpc'
+import { useSheets } from './ActionSheets'
 
 interface BannerRow {
   id: number
@@ -33,6 +34,7 @@ const OK_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif']
 export default function BannersAdmin() {
   const fid = useId()
   const [rows, setRows] = useState<BannerRow[]>([])
+  const { confirmSheet, sheetElement } = useSheets()
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<BannerRow | 'new' | null>(null)
   const [form, setForm] = useState({ ...BLANK })
@@ -129,7 +131,7 @@ export default function BannersAdmin() {
   }
 
   async function remove(r: BannerRow) {
-    if (!confirm(`حذف "${r.title}"؟`)) return
+    if (!(await confirmSheet({ title: `حذف «${r.title}»؟`, danger: true, confirmLabel: 'احذف' }))) return
     setError('')
     const { error } = await supabase.from('banners').delete().eq('id', r.id)
     if (error) { setError(describeError(error.message)); return }
@@ -147,6 +149,7 @@ export default function BannersAdmin() {
 
   return (
     <div className="space-y-3">
+      {sheetElement}
       <div className="flex items-center justify-between">
         <p className="text-sm text-mist">بتظهر فوق الصفحة الرئيسية عند العميل. المقاس المفضّل ١٢٠٠×٤٠٠.</p>
         <button className="btn-sea !py-2 text-sm shrink-0" onClick={() => startEdit('new')}>+ إعلان جديد</button>

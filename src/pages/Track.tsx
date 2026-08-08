@@ -14,6 +14,7 @@ import LiveMap from '../components/LiveMap'
 import Icon from '../components/Icon'
 import InAppLoginPrompt from '../components/InAppLoginPrompt'
 import { isCancelled, cancelReasonLabel } from '../lib/statusLabels'
+import { useSheets } from '../components/ActionSheets'
 
 // Found by driving it: a pharmacy order with no price, no vendor acceptance and
 // no driver rendered "قيد التجهيز" with "الوصول المتوقع 7:15 ص". Nothing was
@@ -79,6 +80,7 @@ export default function Track() {
   const { token } = useParams()
   const [data, setData] = useState<TrackData | null>(null)
   const [notFound, setNotFound] = useState(false)
+  const { confirmSheet, sheetElement } = useSheets()
   const [cancelling, setCancelling] = useState(false)
   const [cancelled, setCancelled] = useState(false)
   const [timelineOpen, setTimelineOpen] = useState(false)
@@ -291,7 +293,8 @@ export default function Track() {
   }
 
   async function cancelOrder() {
-    if (!data?.order || !confirm('تأكيد إلغاء الطلب؟')) return
+    if (!data?.order) return
+    if (!(await confirmSheet({ title: 'تأكيد إلغاء الطلب؟', danger: true, confirmLabel: 'الغِ الطلب', cancelLabel: 'رجوع' }))) return
     setCancelling(true); setActionError(null)
     const res = await rpc('cancel_order', {
       p_order_id: data.order.id, p_reason: 'customer_cancelled', p_token: token
@@ -475,8 +478,11 @@ export default function Track() {
 
   return (
     <div className="max-w-lg mx-auto pb-6">
+      {sheetElement}
       <div className="flex items-center justify-between mb-3">
-        <Link to="/" className="text-sm text-mist hover:text-foam"><Icon name="chevronLeft" className="w-3 h-3 inline-block align-middle ml-1" />العودة</Link>
+        {/* rotate-180: the page is RTL, so "back" points RIGHT — same mirror
+            fix as RestaurantDetail and Vendor. */}
+        <Link to="/" className="text-sm text-mist hover:text-foam"><Icon name="chevronLeft" className="w-3 h-3 inline-block align-middle ml-1 rotate-180" />العودة</Link>
         <span className="text-sm font-semibold text-mist">طلب #{o.id}</span>
       </div>
 

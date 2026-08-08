@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { uploadVendorImage } from '../lib/upload'
 import { useDismissable } from '../lib/useDismissable'
+import { useSheets } from './ActionSheets'
 import BasicInfoCard from './menuItemEditor/BasicInfoCard'
 import OptionRowsCard from './menuItemEditor/OptionRowsCard'
 import AddonsCard from './menuItemEditor/AddonsCard'
@@ -19,6 +20,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
   canManageDiscounts?: boolean
 }) {
   const overlayRef = useDismissable(onClose)
+  const { confirmSheet, sheetElement } = useSheets()
   const [name, setName] = useState(item.name)
   const [description, setDescription] = useState(item.description ?? '')
   const [category, setCategory] = useState(item.category)
@@ -153,7 +155,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
   }
 
   async function deleteItem() {
-    if (!confirm(`حذف "${item.name}" نهائيًا؟ الإجراء ده مينفعش يتراجع فيه.`)) return
+    if (!(await confirmSheet({ title: `حذف «${item.name}» نهائيًا؟`, body: 'الإجراء ده مينفعش يتراجع فيه.', danger: true, confirmLabel: 'احذف' }))) return
     setDeleting(true); setDeleteBlockedReason('')
     const { error } = await supabase.rpc('admin_delete_menu_item', { p_item_id: item.id })
     setDeleting(false)
@@ -177,7 +179,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
     loadOptions()
   }
   async function removeSize(id: number) {
-    if (!confirm('حذف الحجم ده؟')) return
+    if (!(await confirmSheet({ title: 'حذف الحجم ده؟', danger: true, confirmLabel: 'احذف' }))) return
     if (!await write(supabase.from('menu_item_sizes').delete().eq('id', id), 'حذف حجم')) return
     loadOptions()
   }
@@ -234,7 +236,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
     loadOptions()
   }
   async function removeCombo(id: number) {
-    if (!confirm('حذف الكومبو ده؟')) return
+    if (!(await confirmSheet({ title: 'حذف الكومبو ده؟', danger: true, confirmLabel: 'احذف' }))) return
     if (!await write(supabase.from('menu_item_combos').delete().eq('id', id), 'حذف كومبو')) return
     loadOptions()
   }
@@ -306,7 +308,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
   }
 
   async function removeGroup(id: number) {
-    if (!confirm('حذف المجموعة دي هيحذف كل الخيارات اللي جواها. متأكد؟')) return
+    if (!(await confirmSheet({ title: 'حذف المجموعة دي؟', body: 'هيحذف كل الخيارات اللي جواها.', danger: true, confirmLabel: 'احذف' }))) return
     if (!await write(supabase.from('menu_item_addon_groups').delete().eq('id', id), 'حذف المجموعة')) return
     loadOptions()
   }
@@ -341,6 +343,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
   return (
     <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 grid place-items-end sm:place-items-center p-0 sm:p-4" onClick={onClose}>
       <div className="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto bg-shellup rounded-t-2xl sm:rounded-2xl p-4" onClick={e => e.stopPropagation()}>
+        {sheetElement}
         {writeError && (
           <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3" role="alert">
             ما اتحفظش: {writeError}
