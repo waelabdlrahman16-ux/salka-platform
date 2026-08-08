@@ -58,11 +58,22 @@ export default function ProductDetailSheet({
         {/* aspect-square on a phone is a full-width square, so the name, the
             price and the add button all started below the fold -- the customer
             had to scroll past a picture of a can to find out what it costs.
-            Capped against the viewport instead. */}
-        <div className="relative aspect-square max-h-[38vh] grid place-items-center text-6xl"
-          style={{ background: active.image_url ? '#fff' : art.tint }}>
+            Capped against the viewport instead.
+
+            AND, from a screenshot Wael sent on 2026-08-07: with NO photo this
+            was still rendering the full 38vh -- about 280px of flat beige with
+            a 60px emoji floating in the middle of it, above the name of a
+            250 ج.م item. An empty box does not become more informative by
+            being bigger. A vendor with no picture gets a short band instead,
+            which reads as "no photo" rather than as a broken image. */}
+        <div className={`relative grid place-items-center text-5xl ${
+            active.image_url ? 'aspect-[4/3] max-h-[30vh]' : 'h-28'}`}
+          style={{ background: active.image_url ? '#F4EEE3' : art.tint }}>
           {active.image_url
-            ? <img src={active.image_url} alt={active.name} className="w-full h-full object-contain" />
+            // Fills the frame, always. Same reasoning as the grid card: with
+            // `contain`, every photo was a different shape inside the same box
+            // and the sheet opened on a picture floating in beige.
+            ? <img src={active.image_url} alt={active.name} className="w-full h-full object-cover" />
             : art.emoji}
           <button className="absolute top-3 left-3 bg-white/80 rounded-full w-7 h-7 grid place-items-center text-mist text-sm" onClick={onClose}>✗</button>
           {active.requires_prescription && (
@@ -72,15 +83,19 @@ export default function ProductDetailSheet({
           )}
         </div>
 
-        <div className="p-4">
-          <h2 className="font-bold text-lg">{active.name}</h2>
-          {active.description && <p className="text-sm text-mist mt-1 leading-relaxed">{active.description}</p>}
-          <p className="text-lg mt-2">
+        {/* The image was taking 38vh and the item itself got whatever was left.
+            Reversed: the picture is capped at 30vh and 4:3 rather than square,
+            which hands roughly a fifth of the sheet back to the name, the price
+            and the button — the three things the customer opened it for. */}
+        <div className="p-5">
+          <h2 className="font-bold text-xl leading-snug">{active.name}</h2>
+          {active.description && <p className="text-sm text-mist mt-2 leading-relaxed">{active.description}</p>}
+          <p className="text-xl mt-3">
             {activeDiscount && <span className="text-mist text-sm line-through ml-2">{baseActivePrice}</span>}
             <span className="text-sea font-bold">{itemSizes.length > 0 ? `من ${activeDisplayPrice}` : activeDisplayPrice} ج.م</span>
           </p>
 
-          <div className="mt-4">
+          <div className="mt-5">
             {hasOptions ? (
               <button className="btn-sea w-full !py-3" disabled={disabled} onClick={() => onCustomize(active)}>
                 اختيار

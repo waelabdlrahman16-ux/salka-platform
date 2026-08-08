@@ -66,6 +66,9 @@ export default function ProductCard({
 }) {
   const art = artFor(item.category)
   const desc = usefulDescription(item)
+  const discountPct = originalPrice != null && originalPrice > 0
+    ? (() => { const p = Math.round((1 - displayPrice / originalPrice) * 100); return p >= 1 ? p : null })()
+    : null
   const optionsChip = optionCount && optionCount > 1 && optionLabel
     ? `${optionCount} ${optionLabel}`
     : null
@@ -73,49 +76,77 @@ export default function ProductCard({
   return (
     <div className="card p-2 flex flex-col h-full">
       <button className="text-right flex flex-col w-full" onClick={onOpenDetail} aria-label={item.name}>
-        {/* Square, not 4:3. The landscape crop was taking the top and bottom off
-            a plated dish shot from above, which is how most of this catalogue is
-            photographed. Square also makes the tiles the same height without
-            the layout having to force it. */}
-        <div className="relative rounded-md aspect-square grid place-items-center text-3xl overflow-hidden"
-          style={{ background: item.image_url ? '#fff' : art.tint }}>
+        {/* 4:3, reverted from square on 2026-08-07 after Wael sent a screenshot.
+            Measured at real phone width: the square version made a 278px card
+            with a visible void between the name and the price row, because the
+            photo box alone was ~165px on a 2-column grid. 4:3 brings the card to
+            230px with a genuinely two-line name in it, and the price rows still
+            land on one baseline.
+
+            The letterbox is `shellup`, not white. Half this catalogue is
+            packaged goods shot square -- أرابياتا has items whose photo is
+            effectively a brand tile -- and against a white card a contained
+            square image bleeds edge to edge and reads as the product being a
+            red rectangle. A warm neutral frames it instead. (The old note here
+            warned against a tint behind photos; that was `art.tint`, a
+            saturated category colour, not this.) */}
+        <div className="relative rounded-md aspect-[4/3] grid place-items-center text-3xl overflow-hidden"
+          style={{ background: item.image_url ? '#F4EEE3' : art.tint }}>
           {item.image_url
-            // contain, not cover: half this catalogue is packaged goods shot
-            // upright on white, and cover crops the top off a can. A food photo
-            // loses a little edge; a product loses its lid.
+            // COVER, not contain — Wael's call on 2026-08-07 and the right one.
+            //
+            // The old note here argued for `contain` so a can shot upright
+            // would not lose its lid. True in isolation, and wrong for a grid:
+            // `contain` means every image is a different shape inside an
+            // identical frame, so a landscape dish letterboxes, a square brand
+            // tile floats, and a portrait bottle leaves bands either side. The
+            // grid reads as broken even though each individual photo is intact.
+            //
+            // `cover` guarantees the frame is always full whatever arrives from
+            // a vendor import, which is the failure this catalogue actually
+            // has: 85 أرابياتا items, 85 different images, several of them
+            // brand tiles rather than food. A mild crop on a 4:3 box is a much
+            // smaller price than a grid that never looks finished.
             ? <img src={item.image_url} alt={item.name} loading="lazy" decoding="async"
-                className="w-full h-full object-contain" />
+                className="w-full h-full object-cover" />
             : art.emoji}
           {item.requires_prescription && (
             <span className="absolute top-1.5 right-1.5 bg-white/90 rounded-full px-2 py-0.5 text-[10px] font-bold text-seadeep">
               💊 روشتة
             </span>
           )}
-          {originalPrice != null && (
+          {discountPct != null && (
             // bg-sand carried white text at 2.87:1, against the palette file's
             // own rule that sand "must never carry text". sandink is the same
             // hue at 6.4:1. And since we are here: say how much, not just that
             // there is one -- «خصم» tells the customer nothing they can weigh.
+            //
+            // …but only when there is a whole percent to say. originalPrice was
+            // guarded with `!= null`, so a 0-priced row divided by zero and
+            // rendered «خصم NaN%», and a 1 ج.م fixed discount on a 250 ج.م item
+            // rounded to «خصم 0%» -- a badge advertising nothing.
             <span className="absolute top-1.5 left-1.5 bg-sandink text-white rounded-full px-2 py-0.5 text-[10px] font-bold">
-              خصم <bdi dir="ltr">{Math.round((1 - displayPrice / originalPrice) * 100)}%</bdi>
+              خصم <bdi dir="ltr">{discountPct}%</bdi>
             </span>
           )}
           {/* On the photo, but small and in a corner, because it is a FACT about
               the item rather than a control -- it tells you a sheet is coming
               before you tap, instead of ambushing you after. The button itself
               is down with the price with everything else. */}
-          {optionsChip && !originalPrice && (
+          {optionsChip && discountPct == null && (
             <span className="absolute bottom-1.5 right-1.5 bg-white/92 text-seadeep rounded-full px-2 py-0.5 text-[10px] font-bold">
               {optionsChip}
             </span>
           )}
         </div>
 
-        {/* Two lines, clamped, with the height reserved. One truncated line was
-            cutting real names in half -- «فرخة كاملة مجمدة (1100-1200 جم)» has
-            nothing droppable in it -- and reserving the second keeps the price
-            row on one baseline across the row. */}
-        <h3 className="font-semibold text-sm leading-snug line-clamp-2 min-h-[2.6em] mt-1.5"
+        {/* No reserved min-height. It was holding two lines open on every card
+            whether or not the name needed them, which on a one-line name is
+            ~17px of nothing -- and `mt-auto` below then pushed the price row
+            away from it, turning that into a visible gap rather than a tighter
+            card. The row is still pinned, so baselines still align; there is
+            just far less slack for it to absorb. */}
+        <h3 className="font-semibold text-[13px] leading-tight line-clamp-2 mt-1.5"
           title={item.name}>{item.name}</h3>
 
         {/* No reserved height any more. When there is nothing worth saying the
@@ -129,10 +160,17 @@ export default function ProductCard({
       {/* PRICE AND ACTION, ONE LINE, PINNED TO THE BOTTOM.
           The eye reads "how much" and "add it" together instead of hopping
           between a button on the photograph and a number two lines below it. */}
-      <div className="mt-auto pt-2 flex items-center justify-between gap-2">
-        <span className="min-w-0">
+      <div className="mt-auto pt-1.5 flex items-center justify-between gap-2">
+        {/* flex, not two inline spans in one box.
+            Inline, the struck-through original and the live price are adjacent
+            European-number runs with no character between them, so the bidi
+            algorithm merges them into ONE left-to-right run: «200 150 ج.م» laid
+            out in logical order, which an Arabic reader scans as 150 first and
+            leaves ج.م stranded past both. As flex items each price is its own
+            bidi paragraph and the row lays out right-to-left in source order. */}
+        <span className="flex items-baseline gap-1.5 min-w-0">
           {originalPrice != null && (
-            <span className="text-mist text-[11px] line-through ml-1.5">{originalPrice}</span>
+            <span className="text-mist text-[11px] line-through">{originalPrice}</span>
           )}
           {/* foam, not sea. Teal is the app's "do something" colour; when the
               price wore it too, the price competed with the control beside it
@@ -148,14 +186,14 @@ export default function ProductCard({
 
         {hasOptions ? (
           <button
-            className="h-9 px-3 rounded-full bg-sea text-white font-bold text-[12px] shrink-0 hover:bg-seadeep transition-colors disabled:opacity-40 disabled:pointer-events-none"
+            className="h-8 px-3 rounded-full bg-sea text-white font-bold text-[12px] shrink-0 hover:bg-seadeep transition-colors disabled:opacity-40 disabled:pointer-events-none"
             disabled={disabled} onClick={onCustomize}
             aria-label={`اختيارات ${item.name}`}>
             {qty > 0 ? `${qty} ✓` : 'اختار'}
           </button>
         ) : qty === 0 ? (
           <button
-            className="w-9 h-9 rounded-full bg-sea text-white grid place-items-center shrink-0 hover:bg-seadeep transition-colors disabled:opacity-40 disabled:pointer-events-none"
+            className="w-8 h-8 rounded-full bg-sea text-white grid place-items-center shrink-0 hover:bg-seadeep transition-colors disabled:opacity-40 disabled:pointer-events-none"
             disabled={disabled} onClick={onAdd} aria-label={`إضافة ${item.name}`}>
             <Icon name="plus" className="w-4 h-4" />
           </button>
@@ -164,11 +202,11 @@ export default function ProductCard({
           // and the two halves are 30px wide each, which clears the 24px CSS-px
           // floor WCAG 2.2 asks for at AA and keeps two cards per row on a
           // 360px phone. The 44px version forced the price to wrap.
-          <div className="h-9 rounded-full bg-sea text-white flex items-center shrink-0 px-0.5">
-            <button className="w-[30px] h-8 rounded-full grid place-items-center hover:bg-white/15 transition-colors"
+          <div className="h-8 rounded-full bg-sea text-white flex items-center shrink-0 px-0.5">
+            <button className="w-[28px] h-7 rounded-full grid place-items-center hover:bg-white/15 transition-colors"
               onClick={onRemove} aria-label={`تقليل ${item.name}`}><Icon name="minus" className="w-3.5 h-3.5" /></button>
             <span className="font-bold text-sm min-w-[1.1rem] text-center">{qty}</span>
-            <button className="w-[30px] h-8 rounded-full grid place-items-center hover:bg-white/15 transition-colors"
+            <button className="w-[28px] h-7 rounded-full grid place-items-center hover:bg-white/15 transition-colors"
               onClick={onAdd} aria-label={`زيادة ${item.name}`}><Icon name="plus" className="w-3.5 h-3.5" /></button>
           </div>
         )}

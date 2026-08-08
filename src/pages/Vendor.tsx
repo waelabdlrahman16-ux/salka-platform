@@ -83,6 +83,10 @@ export default function Vendor() {
   if (restaurant.order_mode === 'pickup_request') {
     return (
       <div className="max-w-lg mx-auto">
+        {/* Was only on the OTHER return, which meant it was missing from exactly
+            the vendors the fix was written for -- كنتاكي, ماكدونالدز, بيتزا هت
+            are all order_mode = 'pickup_request'. Caught in review. */}
+        <EnablePushButton onToken={persistPushToken} label="فعّل تنبيهات طلبات المندوب" />
         <div className="flex gap-2 mb-4">
           <button className={`tab ${view !== 'history' ? 'tab-active' : 'bg-shellup/60'}`} onClick={() => setView('main')}>🛵 طلب مندوب</button>
           <button className={`tab ${view === 'history' ? 'tab-active' : 'bg-shellup/60'}`} onClick={() => setView('history')}>🧾 السجل</button>
@@ -423,6 +427,11 @@ function KitchenVendor({ rid }: { rid: number }) {
   const [stockOpen, setStockOpen] = useState(false)
   const [togglingId, setTogglingId] = useState<number | null>(null)
   const [isOpen, setIsOpen] = useState(true)
+  /** vendor_open_states() failed, so the toggle below is showing a guess. */
+  const [openStateFailed, setOpenStateFailed] = useState(false)
+  /** The restaurants.name read failed. Separate from loadError so one cannot
+   *  clear the other in the same render pass. */
+  const [nameFailed, setNameFailed] = useState(false)
   const [name, setName] = useState('')
   const [declining, setDeclining] = useState<Order | null>(null)
   const [declineError, setDeclineError] = useState('')
@@ -453,10 +462,18 @@ function KitchenVendor({ rid }: { rid: number }) {
     // dashboard while they were open and taking orders. vendor_open_states()
     // returns the computed value. (rErr was destructured and never used
     // anywhere in this file -- noUnusedLocals is off, so it compiled clean.)
+    // setLoadError('') further down runs in the same React batch, so setting the
+    // banner here meant it was wiped before it ever painted -- the exact
+    // swallowed error this block was written to stop. Held separately.
     const { data: r, error: rErr } = await supabase.from('restaurants').select('name').eq('id', rid).single()
-    if (rErr) setLoadError('مش قادرين نحمّل بيانات المطعم — اتأكد من النت')
+    setNameFailed(!!rErr)
     if (r) setName(r.name)
-    const { data: states } = await supabase.rpc('vendor_open_states')
+    // The error was not even destructured. On failure `mine` is undefined,
+    // setIsOpen never runs, and isOpen keeps useState(true) -- a vendor who is
+    // actually closed reads «مفتوح» on their own dashboard and waits for orders
+    // that will never come. Leave the toggle alone AND say the read failed.
+    const { data: states, error: sErr } = await supabase.rpc('vendor_open_states')
+    if (sErr) setOpenStateFailed(true); else setOpenStateFailed(false)
     const mine = ((states ?? []) as { id: number; is_open: boolean }[]).find(v => v.id === rid)
     if (mine) setIsOpen(mine.is_open)
     const { data: rel } = await supabase.rpc('restaurant_reliability', { p_restaurant_id: rid })
@@ -893,9 +910,14 @@ function KitchenVendor({ rid }: { rid: number }) {
           ordered. Not dismissable: it clears itself on the next successful
           poll, and a vendor who dismissed it would be straight back to trusting
           an empty screen. */}
-      {loadError && (
+      {(loadError || nameFailed || openStateFailed) && (
         <div className="card p-3 mb-3 border-sand/60 bg-sand/10 flex items-center justify-between gap-3">
-          <p className="text-sm text-sandink font-semibold">📡 {loadError}</p>
+          <p className="text-sm text-sandink font-semibold">
+            📡 {loadError
+              || (openStateFailed
+                ? 'مش قادرين نتأكد إذا كنت فاتح ولا مقفول — الحالة تحت ممكن تكون قديمة'
+                : 'مش قادرين نحمّل بيانات المطعم — اتأكد من النت')}
+          </p>
           <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0" onClick={load}>حدّث</button>
         </div>
       )}

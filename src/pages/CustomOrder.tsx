@@ -20,6 +20,9 @@ export default function CustomOrder() {
   const typeFilter = searchParams.get('type')
   const vendorParam = Number(searchParams.get('vendor')) || null
   const [vendors, setVendors] = useState<Restaurant[]>([])
+  /** The vendor read failed. Distinct from "no vendor is open" -- the two
+   *  look identical on screen and mean opposite things. */
+  const [loadFailed, setLoadFailed] = useState(false)
   const [vendor, setVendor] = useState<Restaurant | null>(null)
   // The vendor's known items. Deliberately used as typing shortcuts and NOT as
   // a priced catalogue: of the supermarket's 13 rows, nine are shelf labels
@@ -143,7 +146,12 @@ export default function CustomOrder() {
       supabase.from('restaurants').select('*').eq('order_mode', 'custom_request').eq('archived', false),
       supabase.rpc('vendor_open_states'),
     ]).then(([r, s]) => {
-      if (r.error || s.error) { setVendors([]); return }
+      // Was `setVendors([])`, which renders the empty state -- a customer sees
+      // "nothing available" and leaves, when in fact the read failed. Offers.tsx
+      // already distinguishes the two; this screen is the custom-order revenue
+      // line and did not.
+      if (r.error || s.error) { setLoadFailed(true); return }
+      setLoadFailed(false)
       const states = new Map(
         ((s.data ?? []) as { id: number; is_open: boolean; next_open_at: string | null }[]).map(v => [v.id, v]))
       setVendors(((r.data ?? []) as Restaurant[])
@@ -392,6 +400,13 @@ export default function CustomOrder() {
           {typeFilter === 'pharmacy' ? 'الصيدلية' : typeFilter === 'supermarket' ? 'السوبر ماركت' : 'محتاج إيه دلوقتي؟'}
         </h1>
         <p className="text-mist text-sm mb-4">قول لنا اللي محتاجه، وإحنا هنجهزه معاك</p>
+
+        {loadFailed && (
+          <div className="card p-4 mb-4 border-sand/60 bg-sand/10">
+            <p className="text-sm text-sandink font-semibold">📡 مش قادرين نحمّل المحلات دلوقتي</p>
+            <p className="text-xs text-mist mt-1">اتأكد إن النت شغال — ده مش معناه إن كله مقفول.</p>
+          </div>
+        )}
 
         {/* Rebuilt as answer-shaped cards rather than two emoji tiles.
             The old chooser was a screen that ASKED a question ("pharmacy or

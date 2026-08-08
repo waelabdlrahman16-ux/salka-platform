@@ -18,7 +18,9 @@ export default function Home() {
   const [compounds, setCompounds] = useState<Compound[]>([])
   const [compoundId, setCompoundId] = useState<number | null>(null)
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
-  const [discountedRestaurantIds, setDiscountedRestaurantIds] = useState<Set<number>>(new Set())
+  /** restaurant_id -> the badge text, e.g. «خصم ٢٠٪». A fixed-amount offer
+   *  falls back to «عروض»: "20 ج.م off" means nothing without the price. */
+  const [discountLabels, setDiscountLabels] = useState<Map<number, string>>(new Map())
   const [loading, setLoading] = useState(true)
   const [picking, setPicking] = useState(false)
   // In the URL for the same reason as the restaurant categories: on a phone,
@@ -121,7 +123,20 @@ export default function Home() {
         if (discErr) return   // keep whatever badges are already on screen
         const now = new Date()
         const inEffect = (d: Discount) => (!d.starts_at || new Date(d.starts_at) <= now) && (!d.ends_at || new Date(d.ends_at) >= now)
-        setDiscountedRestaurantIds(new Set((discounts ?? []).filter(inEffect).map(d => d.restaurant_id)))
+        // Best offer per vendor, so a restaurant running 10% on one item and
+        // 30% on another advertises the 30.
+        const labels = new Map<number, string>()
+        let bestPct = new Map<number, number>()
+        for (const d of (discounts ?? []).filter(inEffect)) {
+          if (d.discount_type === 'percent') {
+            const cur = bestPct.get(d.restaurant_id) ?? 0
+            if (d.value > cur) bestPct.set(d.restaurant_id, d.value)
+          } else if (!labels.has(d.restaurant_id)) {
+            labels.set(d.restaurant_id, 'عروض')
+          }
+        }
+        for (const [id, pct] of bestPct) labels.set(id, `خصم ${Math.round(pct)}٪`)
+        setDiscountLabels(labels)
       })
   }, [compoundId])
 
@@ -390,7 +405,7 @@ export default function Home() {
                     {matchedVendors.map(r => (
                       <RestaurantCard key={r.id} restaurant={r}
                         etaMinutes={selected ? eta(r) : null}
-                        hasDiscount={discountedRestaurantIds.has(r.id)} />
+                        discountLabel={discountLabels.get(r.id)} />
                     ))}
                   </div>
                 </div>
@@ -441,7 +456,7 @@ export default function Home() {
                 key={r.id}
                 restaurant={r}
                 etaMinutes={selected ? eta(r) : null}
-                hasDiscount={discountedRestaurantIds.has(r.id)}
+                discountLabel={discountLabels.get(r.id)}
               />
             ))}
 

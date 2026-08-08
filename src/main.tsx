@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import * as Sentry from '@sentry/react'
 import App from './App'
 import ErrorBoundary from './components/ErrorBoundary'
+import { listenForInstallPrompt } from './lib/installPrompt'
 import './index.css'
 
 // Error monitoring: only activates if VITE_SENTRY_DSN is set (Vercel/Cloudflare
@@ -58,6 +59,11 @@ if (SENTRY_DSN) {
     },
   })
 }
+
+// Before React mounts. Chrome fires beforeinstallprompt once and early, and it
+// is not replayed for a listener that attaches later — which is why the offer
+// itself lives on Track but the CATCH has to be here.
+listenForInstallPrompt()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -26,12 +26,21 @@ import type { Restaurant } from '../lib/types'
 // in a way a small logo never does.
 
 export default function RestaurantCard({
-  restaurant: r, etaMinutes, hasDiscount,
+  restaurant: r, etaMinutes, discountLabel,
 }: {
   restaurant: Restaurant
   /** Prep + travel to the chosen compound. Null when no compound is chosen. */
   etaMinutes: number | null
-  hasDiscount?: boolean
+  /**
+   * «خصم ٢٠٪» when the vendor's best live offer is a percentage, «عروض» when it
+   * is a fixed amount off (a pound figure means nothing without knowing the
+   * price it comes off). Undefined when there is no offer.
+   *
+   * Was a bare `hasDiscount` boolean rendering «عروض». ProductCard has said
+   * «خصم N٪» since 2026-08-07, so the same fact wore two different shapes on
+   * one screen -- and «عروض» on its own does not let anyone decide anything.
+   */
+  discountLabel?: string
 }) {
   const art = artFor(r.category)
   const rated = (r.review_count ?? 0) > 0
@@ -61,9 +70,19 @@ export default function RestaurantCard({
           <span aria-hidden="true">·</span>
         </>
       )}
-      {etaMinutes !== null && !closed
-        ? <span>يوصلك {etaMinutes}–{etaMinutes + 10} دقيقة</span>
-        : <span className="truncate">{r.category}</span>}
+      {/* The delivery TIME is the only thing on this card that separates one
+          vendor from another -- the delivery fee is per-compound, so it is the
+          same number on every card in the list and putting it here would be
+          noise. It was rendering in `mist`, the same weight as the category
+          beside it. */}
+      {etaMinutes !== null && !closed ? (
+        <>
+          <span className="font-semibold text-seadeep">يوصلك {etaMinutes}–{etaMinutes + 10} د</span>
+          {r.category && <><span aria-hidden="true">·</span><span className="truncate">{r.category}</span></>}
+        </>
+      ) : (
+        <span className="truncate">{r.category}</span>
+      )}
     </div>
   )
 
@@ -98,14 +117,22 @@ export default function RestaurantCard({
     <Link
       to={`/restaurant/${r.id}`}
       aria-label={`${r.name}${closed ? ' — مغلق' : ''}`}
-      className={`block card overflow-hidden !rounded-2xl transition-opacity ${closed ? 'opacity-60' : ''}`}
+      // The scrim over the whole photo AND 60% opacity on the card was saying
+      // "closed" twice, on a vendor that since 2026-08-07 already sinks to the
+      // bottom of the list on its own. Greyscale plus the reopening time beside
+      // the name says it once and still lets someone see the food and decide to
+      // come back at nine.
+      className="block card overflow-hidden !rounded-2xl"
     >
-      {/* 2:1 rather than 16:9. On a 390px screen that is 179px of cover instead
-          of 201px -- about a fifth of a card back per vendor, so a scroll that
-          showed three shows four. Deliberately a trim and not a crop to a strip:
-          the card is photo-led on purpose and a 21:9 letterbox stops reading as
-          food. */}
-      <div className="relative aspect-[2/1] bg-shellup">
+      {/* 5:2, trimmed again on 2026-08-07 at Wael's request after seeing it
+          rendered at real phone width. On a 390px screen (minus the app's 16px
+          page padding) that is 143px of cover against 179px at 2:1, and 202px
+          of card against 247 -- 2.5 restaurants visible before scrolling
+          becomes 3.1.
+          NOT shorter than this. Past 5:2 the cover stops reading as food and
+          starts reading as a banner, which is the exact complaint that got the
+          item grid rebuilt the same day. */}
+      <div className={`relative aspect-[5/2] bg-shellup ${closed ? 'grayscale' : ''}`}>
         {/* loading="lazy" here, unlike the ad banner: that one is a single
             image above the fold and lazy actively broke it, while this is a
             list that can run to nine cards. */}
@@ -116,34 +143,36 @@ export default function RestaurantCard({
           // reads as a plain card rather than a failure.
           onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
 
-        {hasDiscount && (
+        {discountLabel && !closed && (
           // Was bg-sand carrying white text: 2.87:1, and tailwind.config.js says
           // in as many words that sand "must never carry text". This badge is
           // the one element whose whole job is to be legible at a glance, in
           // sunlight, on a coast, in August. sandink is the same hue at 6.4:1.
           <span className="absolute top-2 right-2 bg-sandink text-white text-[11px] font-bold rounded-md px-2 py-0.5 shadow-sm">
-            عروض
-          </span>
-        )}
-        {closed && (
-          // Over the photo, not beside the name. On a card this size a small
-          // grey chip next to the title is easy to scroll past, and "closed" is
-          // the one fact that changes what the customer does next.
-          <span className="absolute inset-0 bg-foam/45 grid place-items-center">
-            <span className="bg-shell/95 text-foam text-xs font-bold rounded-lg px-3 py-1.5">{status.text}</span>
+            {discountLabel}
           </span>
         )}
       </div>
 
-      <div className="flex items-center gap-2.5 p-3">
-        <span className="w-9 h-9 rounded-lg overflow-hidden grid place-items-center text-base shrink-0 border border-line"
+      {/* Tightened from p-3 and a 36px logo. ~15px of padding that was not
+          carrying any information, which is most of what the shorter cover
+          would otherwise have handed straight back. */}
+      <div className="flex items-center gap-2.5 px-2.5 py-2.5">
+        <span className="w-8 h-8 rounded-lg overflow-hidden grid place-items-center text-base shrink-0 border border-line"
           style={{ background: art.tint }}>
           {r.logo_url
             ? <img src={r.logo_url} alt="" loading="eager" className="w-full h-full object-cover" />
             : art.emoji}
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="font-bold text-[15px] truncate leading-tight">{r.name}</h2>
+          <div className="flex items-baseline gap-1.5 min-w-0">
+            <h2 className={`font-bold text-[15px] truncate leading-tight ${closed ? 'text-mist' : ''}`}>{r.name}</h2>
+            {closed && (
+              <span className="shrink-0 text-[10px] font-bold text-mist bg-shellup rounded px-1.5 py-0.5">
+                {status.text}
+              </span>
+            )}
+          </div>
           <div className="mt-0.5">{meta}</div>
         </div>
       </div>

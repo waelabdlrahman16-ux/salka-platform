@@ -246,6 +246,7 @@ export default function Admin() {
   const [accountBusy, setAccountBusy] = useState<string | null>(null)
   const [newCreds, setNewCreds] = useState<{ email: string; password: string } | null>(null)
   const credsRef = useDismissable(() => setNewCreds(null), !!newCreds)
+  const [rankDraft, setRankDraft] = useState<Record<number, string>>({})
   const [newRestaurant, setNewRestaurant] = useState({ name: '', description: '', category: '', vendor_type: 'restaurant', prep_minutes: '20' })
   const [uploadingImage, setUploadingImage] = useState<string | null>(null)
   const [imageError, setImageError] = useState<string | null>(null)
@@ -997,11 +998,32 @@ export default function Admin() {
    * database rather than relying on the RLS policy that happens to allow the
    * update today.
    */
-  async function setRank(r: Restaurant, order: number | null, featured: boolean | null) {
+  /**
+   * One writer for both controls, always sending the rank currently in the box.
+   *
+   * `<input type="number">` yields '' for anything it cannot parse, so «1e»
+   * used to arrive as null and CLEAR the rank rather than be rejected. The
+   * draft is a string and is validated as one.
+   */
+  async function commitRank(r: Restaurant, featured: boolean | null = null) {
+    const raw = (rankDraft[r.id] ?? (r.display_order == null ? '' : String(r.display_order))).trim()
+    let order: number | null
+    if (raw === '') {
+      order = null
+    } else if (!/^\d+$/.test(raw) || Number(raw) < 1) {
+      setActionError('المركز لازم يكون رقم صحيح ١ أو أكبر')
+      setRankDraft(d => ({ ...d, [r.id]: r.display_order == null ? '' : String(r.display_order) }))
+      return
+    } else {
+      order = Number(raw)
+    }
+    if (order === (r.display_order ?? null) && featured === null) return
+
     const res = await rpc('admin_set_restaurant_rank', {
       p_restaurant_id: r.id, p_display_order: order, p_featured: featured,
     }, { rank_must_be_positive: 'المركز لازم يكون ١ أو أكبر' })
     if (!res.ok) { setActionError(res.error); return }
+    setRankDraft(d => { const n = { ...d }; delete n[r.id]; return n })
     load(true)
   }
 
@@ -2166,26 +2188,25 @@ export default function Admin() {
                   <div className="mt-3 rounded-xl bg-shellup p-3">
                     <p className="text-xs font-semibold mb-2">ترتيب الظهور للعميل</p>
                     <div className="flex items-center gap-3">
+                      {/* CONTROLLED, and the rank is read from the live input
+                          rather than from props when the toggle is tapped.
+                          Blur fires before click: typing «2» and then tapping
+                          «مميز» sent onBlur(rank=2) and then onClick with the
+                          STALE r.display_order (still null, because load()
+                          had not returned), which silently cleared the 2. */}
                       <input
                         type="number" min={1} inputMode="numeric"
                         className="field !w-20 text-center"
                         placeholder="—"
-                        defaultValue={r.display_order ?? ''}
-                        onBlur={e => {
-                          const raw = e.target.value.trim()
-                          const next = raw === '' ? null : Number(raw)
-                          if (next !== null && (!Number.isFinite(next) || next < 1)) {
-                            e.target.value = String(r.display_order ?? ''); return
-                          }
-                          if ((r.display_order ?? null) === next) return
-                          setRank(r, next, null)
-                        }} />
+                        value={rankDraft[r.id] ?? (r.display_order == null ? '' : String(r.display_order))}
+                        onChange={e => setRankDraft(d => ({ ...d, [r.id]: e.target.value }))}
+                        onBlur={() => commitRank(r)} />
                       <button
                         type="button"
                         aria-pressed={!!r.featured}
                         className={`shrink-0 rounded-full px-4 min-h-[44px] text-sm font-semibold transition-colors ${
                           r.featured ? 'bg-sea text-white' : 'bg-shell text-mist border border-line'}`}
-                        onClick={() => setRank(r, r.display_order ?? null, !r.featured)}>
+                        onClick={() => commitRank(r, !r.featured)}>
                         {r.featured ? 'مميز ✓' : 'مميز'}
                       </button>
                     </div>
@@ -2207,11 +2228,14 @@ export default function Admin() {
                       <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
                         onChange={e => e.target.files?.[0] && uploadCover(r, e.target.files[0])} />
                       {r.cover_image_url
-                        ? <img src={r.cover_image_url} alt="" className="w-full aspect-[16/9] rounded-xl object-cover border border-line group-hover:opacity-80" />
-                        : <div className="w-full aspect-[16/9] rounded-xl bg-shellup border border-dashed border-linestrong grid place-items-center text-mist text-xs group-hover:opacity-80">
+                        ? <img src={r.cover_image_url} alt="" className="w-full aspect-[5/2] rounded-xl object-cover border border-line group-hover:opacity-80" />
+                        : <div className="w-full aspect-[5/2] rounded-xl bg-shellup border border-dashed border-linestrong grid place-items-center text-mist text-xs group-hover:opacity-80">
                             اضغط لرفع صورة واجهة المطعم
                           </div>}
                     </label>
+                    {/* Same 5:2 the customer sees. It previewed at 16:9 here,
+                        so a cover cropped to look right in the admin lost a
+                        strip top and bottom on the home screen. */}
                     <p className="text-xs text-mist mt-1.5">
                       {uploadingImage === `cover${r.id}`
                         ? 'جاري رفع صورة الواجهة…'
@@ -2993,8 +3017,10 @@ export default function Admin() {
  *    labelled as an assumption rather than presented as fact.
  */
 function DailyReportTab() {
+  // Was `Date.now() + 3h`, which is Cairo only during EEST -- in winter the tab
+  // opened on tomorrow's empty report between 23:00 and midnight local.
   const [day, setDay] = useState(() =>
-    new Date(Date.now() + 3 * 3600_000).toISOString().slice(0, 10)) // Cairo = UTC+3
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date()))
   const [r, setR] = useState<any>(null)
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
@@ -3005,7 +3031,10 @@ function DailyReportTab() {
     supabase.rpc('admin_daily_report', { p_date: day }).then(({ data, error }) => {
       if (cancelled) return
       setBusy(false)
-      if (error) { setErr(error.message); return }
+      // setR(null) matters: without it a failed fetch left the PREVIOUS day's
+      // report rendered underneath the new date and the error banner -- a P&L
+      // screen showing yesterday's result as though it were today's.
+      if (error) { setErr(error.message); setR(null); return }
       setR(data)
     })
     return () => { cancelled = true }
@@ -3029,9 +3058,16 @@ function DailyReportTab() {
     ['بدأوا الدفع', f.checkout ?? 0],
     ['طلبوا', f.ordered ?? 0],
   ]
-  const top = steps[0][1] || 1
-  const inApp = (r?.by_browser ?? []).find((b: any) => b.segment === 'in_app')
-  const normal = (r?.by_browser ?? []).find((b: any) => b.segment === 'browser')
+  // Steps are counted per DEVICE over the same window, but a returning device
+  // can choose a place without a fresh `arrival`, so a later step can exceed
+  // the first. Without this the bar renders width:500% and the label «500٪».
+  const top = Math.max(...steps.map(x => x[1]), 1)
+  // `?? []` only defends against null. If the RPC ever returns an object here
+  // instead of an array, `.find` is not a function and the THROW takes down the
+  // whole Admin tree, not just this tab.
+  const browsers: any[] = Array.isArray(r?.by_browser) ? r.by_browser : []
+  const inApp = browsers.find(b => b.segment === 'in_app')
+  const normal = browsers.find(b => b.segment === 'browser')
   const losing = Number(r?.result ?? 0) < 0
 
   return (
@@ -3065,10 +3101,10 @@ function DailyReportTab() {
 
           <div className="grid grid-cols-2 gap-3">
             <Stat k="طلبات اتوصّلت" v={n(r.delivered)} sub={`من ${n(r.orders_created)} اتعملوا`} />
-            <Stat k="نسبة الإلغاء" v={`${r.cancel_pct}٪`} sub={`${n(r.cancelled)} طلب`} warn={Number(r.cancel_pct) > 15} />
+            <Stat k="نسبة الإلغاء" v={`${n(r.cancel_pct)}٪`} sub={`${n(r.cancelled)} طلب`} warn={Number(r.cancel_pct) > 15} />
             <Stat k="دخل سالكة للطلب" v={n(r.revenue_per_delivered)} sub="توصيل + خدمة" />
             <Stat k="تكلفة المندوب للطلب" v={n(r.cost_per_delivered)} sub="أجور ÷ طلبات" warn />
-            <Stat k="من نقطة التعادل" v={`${r.pct_of_breakeven ?? 0}٪`} sub={`محتاج ${r.breakeven_orders} طلب`} warn={Number(r.pct_of_breakeven ?? 0) < 100} />
+            <Stat k="من نقطة التعادل" v={`${n(r.pct_of_breakeven ?? 0)}٪`} sub={`محتاج ${n(r.breakeven_orders)} طلب`} warn={Number(r.pct_of_breakeven ?? 0) < 100} />
             <Stat k="قيمة الطلبات كلها" v={n(r.gmv)} sub="أغلبها بضاعة للتجار" />
           </div>
 
@@ -3086,7 +3122,7 @@ function DailyReportTab() {
               <div key={label} className="mb-2">
                 <div className="flex items-center justify-between text-xs mb-1">
                   <span className={i === 0 ? 'font-semibold' : 'text-mist'}>{label}</span>
-                  <span className="font-bold num">
+                  <span className="font-bold">
                     {n(val)}{i > 0 && <span className="text-mist font-normal"> · {Math.round(val / top * 100)}٪</span>}
                   </span>
                 </div>

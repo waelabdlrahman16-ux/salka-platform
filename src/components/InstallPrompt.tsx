@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { isIOS, isStandalone } from '../lib/platform'
+import { clearInstallPrompt, onInstallPrompt } from '../lib/installPrompt'
 
 const DISMISS_KEY = 'salka_install_dismissed'
 
@@ -18,12 +19,13 @@ export default function InstallPrompt() {
       return
     }
 
-    function onBeforeInstallPrompt(e: Event) {
-      e.preventDefault()
-      setDeferredPrompt(e)
-    }
-    window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
-    return () => window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+    // Subscribing, NOT listening. This component now mounts from Track's
+    // delivered state, long after Chrome has already fired
+    // `beforeinstallprompt` — an own listener here would attach to an event
+    // that has already gone, which is exactly what happened on 2026-08-07 and
+    // made the Android install path unreachable. lib/installPrompt catches it
+    // at app start and replays it to whoever is listening.
+    return onInstallPrompt(setDeferredPrompt)
   }, [])
 
   function dismiss() {
@@ -35,6 +37,8 @@ export default function InstallPrompt() {
     if (!deferredPrompt) return
     deferredPrompt.prompt()
     await deferredPrompt.userChoice
+    // Spent either way — Chrome will not honour the same event twice.
+    clearInstallPrompt()
     setDeferredPrompt(null)
   }
 

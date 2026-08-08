@@ -52,19 +52,31 @@ function nativePlatform(): PushPlatform {
 }
 
 /**
- * The one place a staff push token is persisted. Every page used to inline
- * `supabase.rpc('save_my_push_token', { p_push_token })`, which meant six
- * copies that all had to learn about the platform argument at the same time or
- * silently register an APK as a browser -- and a token filed as 'web' gets a
- * data-only message the killed app will never display.
- */
-/**
  * Set when the server recognised the token we just sent as one FCM has already
  * rejected. See the comment on registerPush for why that happens and what the
  * caller does about it.
  */
 export let lastSaveWasStale = false
 
+/**
+ * For sinks that are not persistPushToken.
+ *
+ * saveWebTokenHealing() branches on `lastSaveWasStale` to decide whether to
+ * destroy the cached registration and mint a new one. That flag was written
+ * ONLY by persistPushToken, so Track's customer sink — which calls
+ * save_customer_push_token instead — could never trigger the heal, and a
+ * customer sitting on a dead cached token stayed unreachable forever. Worse,
+ * the flag could still be carrying a value from an unrelated earlier call.
+ */
+export function reportSaveStale(stale: boolean): void { lastSaveWasStale = stale }
+
+/**
+ * The one place a staff push token is persisted. Every page used to inline
+ * `supabase.rpc('save_my_push_token', { p_push_token })`, which meant six
+ * copies that all had to learn about the platform argument at the same time or
+ * silently register an APK as a browser -- and a token filed as 'web' gets a
+ * data-only message the killed app will never display.
+ */
 export async function persistPushToken(token: string, platform: PushPlatform): Promise<boolean> {
   lastSaveWasStale = false
   const { data, error } = await supabase.rpc('save_my_push_token', { p_push_token: token, p_platform: platform })

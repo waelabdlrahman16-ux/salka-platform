@@ -6,6 +6,7 @@ import InstallPrompt from '../components/InstallPrompt'
 import { markOrderDelivered } from '../lib/firstOrder'
 import { registerPush } from '../lib/push'
 import type { PushPlatform } from '../lib/push'
+import { reportSaveStale } from '../lib/push'
 import EnablePushButton from '../components/EnablePushButton'
 import { vendorNoun } from '../lib/vendorWords'
 import { INSTAPAY_QR_URL, INSTAPAY_LINK, INSTAPAY_HANDLE } from '../lib/instapay'
@@ -227,11 +228,19 @@ export default function Track() {
   // registered for a customer was stored as though it came from a browser --
   // and a web-shaped message to a killed Android app displays nothing.
   const saveCustomerToken = useCallback(async (pushToken: string, platform: PushPlatform) => {
-    const { error } = await supabase.rpc('save_customer_push_token', {
+    reportSaveStale(false)
+    const { data, error } = await supabase.rpc('save_customer_push_token', {
       p_token: token, p_push_token: pushToken, p_platform: platform,
     })
     if (error) { console.error('saving customer push token failed', error); return false }
-    return true
+    // Same contract as the staff sink. Without reporting this, the self-heal in
+    // saveWebTokenHealing could never fire for a customer -- it reads a module
+    // flag that only persistPushToken used to set.
+    if (data && typeof data === 'object' && (data as any).stale) {
+      reportSaveStale(true)
+      return false
+    }
+    return (data as any)?.stored !== false
   }, [token])
 
   useEffect(() => {
@@ -448,7 +457,11 @@ export default function Track() {
   // rider is referred to, so the screen never calls أشرف "the courier" in one
   // line and أشرف in the next.
   const driverName = data.assignment?.driver_name || 'المندوب'
+  // NOT once the delivery has failed. arrived_at_customer_at is never cleared,
+  // so a failed drop still carried the 🎉 «المندوب وصل تحت» banner directly
+  // above the notice saying the delivery did not complete.
   const hasArrived = !!data.assignment?.arrived_at_customer_at
+    && o.status !== 'Failed_Delivery' && data.assignment?.status !== 'Failed'
 
   // The customer keeps the right to cancel until the vendor accepts. It used to
   // survive until a driver appeared, so the page offered "إلغاء الطلب" directly
@@ -535,7 +548,13 @@ export default function Track() {
           )}
           <div className="flex items-start justify-between gap-2 mb-1">
             <h1 className="font-bold text-xl">
-              {current === 'Delivered' ? '✅ تم التوصيل' : STAGES[stageIdx]?.label ?? 'استلمنا طلبك'}
+              {current === 'Delivered' ? '✅ تم التوصيل'
+                // The BAR is right to sit at stage 2 -- the order really did get
+                // that far -- but «في الطريق إليك» as the headline for a
+                // delivery that has already failed is simply false, and it was
+                // rendering directly above the paragraph explaining the failure.
+                : o.status === 'Failed_Delivery' ? 'التوصيلة ما اكتملتش'
+                : STAGES[stageIdx]?.label ?? 'استلمنا طلبك'}
             </h1>
             {/* One word for the thing the customer actually wants to know. It
                 was buried in a sentence under the ETA. */}
