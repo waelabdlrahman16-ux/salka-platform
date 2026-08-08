@@ -36,9 +36,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: npm
@@ -65,7 +65,7 @@ jobs:
         env:
           VITE_FIREBASE_VAPID_KEY: ${{ secrets.VITE_FIREBASE_VAPID_KEY }}
 
-      # wrangler is pinned in package.json and installed by `npm ci` above, so
+      # Wrangler is pinned exactly in package.json and installed by `npm ci`, so
       # the deploy uses the same version that `wrangler deploy --dry-run`
       # passes against locally.
       #
@@ -76,13 +76,9 @@ jobs:
       # has no `main`, it ships ./dist as static assets. Nothing in the repo
       # changed; the runner did. A version this deploy depends on does not
       # belong in someone else's cache.
+      # Run that pinned local Wrangler directly. This avoids a second action
+      # runtime and keeps the deploy path identical to local dry-runs.
       - name: Deploy to Cloudflare Workers
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          packageManager: npm
-          wranglerVersion: '4.118.0'
-          # No accountId here: wrangler reads wrangler.jsonc, which also names
-          # the worker (appgosalka-platform) and points assets at ./dist with
-          # single-page-application not-found handling.
-          command: deploy
+        run: npx --no-install wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
