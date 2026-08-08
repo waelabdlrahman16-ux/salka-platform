@@ -1,6 +1,7 @@
 import { useId, useState } from 'react'
 import { rpc } from '../lib/rpc'
 import type { Driver } from '../lib/types'
+import Toggle from './Toggle'
 
 /**
  * Add or edit one driver, with the fields that actually matter operationally.
@@ -113,11 +114,10 @@ export default function DriverForm({ initial, onDone, onCancel }: {
         </div>
       </div>
 
-      <label className="flex items-center gap-2 mt-2 min-h-[44px] cursor-pointer">
-        <input type="checkbox" className="w-5 h-5 accent-sea" checked={f.active}
-          onChange={e => setF({ ...f, active: e.target.checked })} />
-        <span className="text-sm">حسابه شغّال — يقدر يستلم طلبات</span>
-      </label>
+      <div className="flex items-center mt-2 min-h-[44px]">
+        <Toggle on={f.active} onChange={() => setF({ ...f, active: !f.active })}
+          label="الحساب شغال" labelOff="الحساب موقوف" />
+      </div>
 
       {/* Says what this form does NOT touch, so nobody goes looking for it here. */}
       <p className="text-xs text-mist mb-2">

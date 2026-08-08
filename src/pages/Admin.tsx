@@ -26,6 +26,8 @@ import PhoneOrderForm from '../components/PhoneOrderForm'
 import CompoundsTab from '../components/CompoundsTab'
 import DriverForm, { driverToForm } from '../components/DriverForm'
 import LiveDeliveryDetail from '../components/LiveDeliveryDetail'
+import Toggle from '../components/Toggle'
+import { useSheets } from '../components/ActionSheets'
 
 function StarRow({ n }: { n: number }) {
   return (
@@ -179,6 +181,7 @@ function shiftDayKey(key: string, delta: number): string {
 type OrderDateFilter = 'today' | 'yesterday' | 'older' | 'all'
 
 export default function Admin() {
+  const { confirmSheet, promptSheet, alertSheet, sheetElement } = useSheets()
   const [tab, setTab] = useState<Tab>('unassigned')
   const [openGroup, setOpenGroup] = useState<TabGroup>('now')
   // null = closed, undefined-id form = adding, populated = editing.
@@ -246,6 +249,8 @@ export default function Admin() {
   const [accountBusy, setAccountBusy] = useState<string | null>(null)
   const [newCreds, setNewCreds] = useState<{ email: string; password: string } | null>(null)
   const credsRef = useDismissable(() => setNewCreds(null), !!newCreds)
+  // «اتنسخ ✓» flash on the creds-modal copy button; the 1.5s timeout resets it.
+  const [credsCopied, setCredsCopied] = useState(false)
   const [rankDraft, setRankDraft] = useState<Record<number, string>>({})
   const [newRestaurant, setNewRestaurant] = useState({ name: '', description: '', category: '', vendor_type: 'restaurant', prep_minutes: '20' })
   const [uploadingImage, setUploadingImage] = useState<string | null>(null)
@@ -625,11 +630,11 @@ export default function Admin() {
   // "admin manages drivers" already allows an admin UPDATE on this table; only
   // the field was missing.
   async function editDriverDetails(d: Driver) {
-    const name = prompt('اسم المندوب:', d.name ?? '')
+    const name = await promptSheet({ title: 'اسم المندوب', initial: d.name ?? '' })
     if (name === null) return
     if (!name.trim()) { setActionError('الاسم ماينفعش يكون فاضي'); return }
 
-    const phone = prompt('رقم موبايل المندوب:', d.phone ?? '')
+    const phone = await promptSheet({ title: 'رقم موبايل المندوب', initial: d.phone ?? '', inputMode: 'tel', dir: 'ltr' })
     if (phone === null) return
     if (!isValidEgyptPhone(phone)) { setActionError(PHONE_HINT); return }
 
@@ -655,17 +660,24 @@ export default function Admin() {
   // row frees the account to be claimed by whichever phone opens it next.
   async function resetDriverDevice(d: Driver) {
     const bound = d.device_label
-    if (!confirm(`فك ربط الجهاز عن ${d.name}؟\n\n${bound ? `الجهاز الحالي: ${bound}` : 'مفيش جهاز مربوط دلوقتي'}\n\nأول موبايل يفتح حسابه بعد كده هيتربط بيه.`)) return
+    if (!await confirmSheet({
+      title: `فك ربط الجهاز عن ${d.name}؟`,
+      body: <>{bound ? `الجهاز الحالي: ${bound}` : 'مفيش جهاز مربوط دلوقتي'}<br /><br />أول موبايل يفتح حسابه بعد كده هيتربط بيه.</>,
+    })) return
     const res = await rpc('admin_reset_driver_device', { p_driver_id: d.id })
-    if (!res.ok) { alert(res.error); return }
+    if (!res.ok) { await alertSheet(res.error); return }
     load()
   }
 
   async function editInstapay(d: Driver) {
-    const value = prompt('رقم إنستاباي بتاع المندوب (اسيبه فاضي لو زي رقم الموبايل):', d.instapay_number ?? '')
+    const value = await promptSheet({
+      title: 'رقم إنستاباي بتاع المندوب',
+      body: 'اسيبه فاضي لو زي رقم الموبايل',
+      initial: d.instapay_number ?? '', inputMode: 'tel', dir: 'ltr',
+    })
     if (value === null) return
     const { error } = await supabase.from('drivers').update({ instapay_number: value.trim() || null }).eq('id', d.id)
-    if (error) { alert('حصل خطأ، جرب تاني'); return }
+    if (error) { await alertSheet('حصل خطأ، جرب تاني'); return }
     load(true)
   }
 
@@ -866,7 +878,7 @@ export default function Admin() {
     setAccountBusy(`vendor-${restaurantId}`)
     const result = await callAccountsFn({ action: 'create_vendor_login', restaurant_id: restaurantId })
     setAccountBusy(null)
-    if (result.error) { alert('حصل خطأ: ' + result.error); return }
+    if (result.error) { await alertSheet('حصل خطأ: ' + result.error); return }
     setNewCreds({ email: result.email, password: result.password })
     load(true)
   }
@@ -875,7 +887,7 @@ export default function Admin() {
     setAccountBusy(`driver-${driverId}`)
     const result = await callAccountsFn({ action: 'create_driver_login', driver_id: driverId })
     setAccountBusy(null)
-    if (result.error) { alert('حصل خطأ: ' + result.error); return }
+    if (result.error) { await alertSheet('حصل خطأ: ' + result.error); return }
     setNewCreds({ email: result.email, password: result.password })
     load(true)
   }
@@ -886,7 +898,7 @@ export default function Admin() {
     setAccountBusy('catalog-new')
     const result = await callAccountsFn({ action: 'create_catalog_login', name })
     setAccountBusy(null)
-    if (result.error) { alert('حصل خطأ: ' + result.error); return }
+    if (result.error) { await alertSheet('حصل خطأ: ' + result.error); return }
     setNewCatalogName('')
     setNewCreds({ email: result.email, password: result.password })
     // force: this branch was written against the old load() that took no
@@ -904,7 +916,11 @@ export default function Admin() {
   // or the caller themself, and refuses a driver still holding cash or mid-
   // delivery, none of which the edge function checked.
   async function removeLogin(profileId: string) {
-    if (!confirm('تأكيد إلغاء الحساب؟ مش هيقدر يدخل تاني.\n\nسجل الطلبات والأرباح هيفضل زي ما هو.')) return
+    if (!await confirmSheet({
+      title: 'تأكيد إلغاء الحساب؟',
+      body: <>مش هيقدر يدخل تاني.<br /><br />سجل الطلبات والأرباح هيفضل زي ما هو.</>,
+      danger: true,
+    })) return
     setAccountBusy(profileId)
     const res = await rpc('admin_delete_staff', { p_profile_id: profileId }, {
       cannot_delete_self: 'مينفعش تلغي حسابك انت',
@@ -920,7 +936,11 @@ export default function Admin() {
       // was invisible and the operator just tapped again. This one keeps the
       // blocking dialog on purpose.
       if (res.code === 'driver_holds_cash') {
-        if (!confirm('المندوب ده لسه ماسك كاش على عهدته.\n\nلو ألغيت الحساب مش هتقدر تسوّي الكاش من الشاشة دي بعد كده. متأكد؟')) return
+        if (!await confirmSheet({
+          title: 'المندوب ده لسه ماسك كاش على عهدته',
+          body: 'لو ألغيت الحساب مش هتقدر تسوّي الكاش من الشاشة دي بعد كده. متأكد؟',
+          danger: true,
+        })) return
         setAccountBusy(profileId)
         const forced = await rpc('admin_delete_staff', { p_profile_id: profileId, p_force: true })
         setAccountBusy(null)
@@ -928,7 +948,7 @@ export default function Admin() {
         setActionError(''); load(true)
         return
       }
-      setActionError(res.error); alert(res.error); return
+      setActionError(res.error); return
     }
     setActionError('')
     load(true)
@@ -938,29 +958,33 @@ export default function Admin() {
     setAccountBusy(profileId)
     const result = await callAccountsFn({ action: 'reset_password', profile_id: profileId })
     setAccountBusy(null)
-    if (result.error) { alert('حصل خطأ: ' + result.error); return }
+    if (result.error) { await alertSheet('حصل خطأ: ' + result.error); return }
     setNewCreds({ email: '(نفس الإيميل)', password: result.password })
   }
 
   async function setCustomPassword(profileId: string) {
-    const pw = prompt('اكتب كلمة السر الجديدة (8 أحرف على الأقل):')
+    const pw = await promptSheet({
+      title: 'كلمة سر مخصصة',
+      placeholder: '٨ حروف على الأقل',
+      dir: 'ltr',
+      validate: v => v.length >= 8 ? null : 'لازم ٨ حروف على الأقل',
+    })
     if (!pw) return
-    if (pw.length < 8) { alert('كلمة السر لازم تكون 8 أحرف على الأقل'); return }
     setAccountBusy(profileId)
     const result = await callAccountsFn({ action: 'reset_password', profile_id: profileId, custom_password: pw })
     setAccountBusy(null)
-    if (result.error) { alert('حصل خطأ: ' + result.error); return }
-    alert('تم تغيير كلمة السر')
+    if (result.error) { await alertSheet('حصل خطأ: ' + result.error); return }
+    await alertSheet(<>تم تغيير كلمة السر — <bdi dir="ltr" className="font-mono">{pw}</bdi></>)
   }
 
   async function changeEmail(profileId: string, currentEmail: string) {
-    const newEmail = prompt('اكتب الإيميل الجديد:', currentEmail)
+    const newEmail = await promptSheet({ title: 'الإيميل الجديد', initial: currentEmail, dir: 'ltr', inputMode: 'text' })
     if (!newEmail || newEmail.trim() === currentEmail) return
     setAccountBusy(profileId)
     const result = await callAccountsFn({ action: 'update_email', profile_id: profileId, new_email: newEmail.trim() })
     setAccountBusy(null)
-    if (result.error) { alert('حصل خطأ: ' + result.error); return }
-    alert('تم تغيير الإيميل')
+    if (result.error) { await alertSheet('حصل خطأ: ' + result.error); return }
+    await alertSheet('تم تغيير الإيميل')
     load(true)
   }
 
@@ -1028,14 +1052,14 @@ export default function Admin() {
   }
 
   async function removeCover(r: Restaurant) {
-    if (!confirm('إزالة صورة الواجهة؟ هنرجع نختار صورة تلقائيًا من القايمة.')) return
+    if (!await confirmSheet({ title: 'إزالة صورة الواجهة؟', body: 'هنرجع نختار صورة تلقائيًا من القايمة.', danger: true })) return
     const { error } = await supabase.from('restaurants').update({ cover_image_url: null }).eq('id', r.id)
     if (error) { setActionError('مش قادرين نشيل الصورة دلوقتي'); return }
     load(true)
   }
 
   async function removeLogo(r: Restaurant) {
-    if (!confirm('إزالة شعار المطعم؟')) return
+    if (!await confirmSheet({ title: 'إزالة شعار المطعم؟', danger: true })) return
     const { error } = await supabase.from('restaurants').update({ logo_url: null }).eq('id', r.id)
     if (error) { setActionError('مش قادرين نشيل الصورة دلوقتي'); return }
     setActionError('')
@@ -1070,7 +1094,11 @@ export default function Admin() {
   }
 
   async function archiveRestaurant(r: Restaurant, archived: boolean) {
-    if (archived && !confirm(`تأكيد إخفاء ${r.name}؟ هيختفي من التطبيق للعملاء بس بياناته وطلباته القديمة هتفضل موجودة.`)) return
+    if (archived && !await confirmSheet({
+      title: `تأكيد إخفاء ${r.name}؟`,
+      body: 'هيختفي من التطبيق للعملاء بس بياناته وطلباته القديمة هتفضل موجودة.',
+      danger: true,
+    })) return
     const { error } = await supabase.from('restaurants').update({ archived }).eq('id', r.id)
     if (error) { setActionError('مش قادرين نأرشف المطعم دلوقتي'); return }
     setActionError('')
@@ -1111,7 +1139,11 @@ export default function Admin() {
       .from('drivers').select('name, cash_held').eq('id', driverId).single()
     if (freshErr || !fresh) { setActionError('مش قادرين نتأكد من الكاش دلوقتي، جرب تاني'); return }
     const d = fresh
-    if (!confirm(`تأكيد استلام ${d.cash_held ?? 0} ج.م كاش من ${d.name}؟\n\nده هيصفّر الكاش المسجل عليه، ومش هينفع يتراجع.`)) return
+    if (!await confirmSheet({
+      title: `تأكيد استلام ${d.cash_held ?? 0} ج.م كاش من ${d.name}؟`,
+      body: 'ده هيصفّر الكاش المسجل عليه، ومش هينفع يتراجع.',
+      danger: true,
+    })) return
     setActionError('')
     const res = await rpc('settle_driver_cash', { p_driver_id: driverId })
     if (!res.ok) { setActionError(res.error); return }
@@ -1130,7 +1162,11 @@ export default function Admin() {
     if (freshErr) { setActionError('مش قادرين نتأكد من الأرباح دلوقتي، جرب تاني'); return }
     const unpaid = (fresh ?? []).reduce((s, e) => s + Number(e.driver_earning), 0)
     if (unpaid <= 0) { setActionError('مفيش أرباح مستحقة للمندوب ده'); return }
-    if (!confirm(`تأكيد دفع ${unpaid} ج.م أرباح لـ ${d?.name ?? 'المندوب'}؟\n\nمش هينفع يتراجع.`)) return
+    if (!await confirmSheet({
+      title: `تأكيد دفع ${unpaid} ج.م أرباح لـ ${d?.name ?? 'المندوب'}؟`,
+      body: 'مش هينفع يتراجع.',
+      danger: true,
+    })) return
     setActionError('')
     const res = await rpc('settle_driver_earnings', { p_driver_id: driverId })
     if (!res.ok) { setActionError(res.error); return }
@@ -1140,7 +1176,11 @@ export default function Admin() {
   // The "توصيلات جارية" tab had no actions whatsoever, so a stalled delivery
   // could be surfaced but not acted on.
   async function unassignOrder(a: Assignment) {
-    const reason = prompt(`سحب الطلب #${a.order_id} من ${a.drivers?.name ?? 'المندوب'}؟\nالطلب هيرجع تاني لقائمة الطلبات المتاحة.\n\nالسبب (اختياري):`, '')
+    const reason = await promptSheet({
+      title: `سحب الطلب #${a.order_id} من ${a.drivers?.name ?? 'المندوب'}؟`,
+      body: 'الطلب هيرجع تاني لقائمة الطلبات المتاحة.',
+      placeholder: 'السبب (اختياري)',
+    })
     if (reason === null) return
     setActionError('')
     const res = await rpc('admin_unassign_order', { p_order_id: a.order_id, p_reason: reason || 'admin_unassigned' })
@@ -1157,13 +1197,14 @@ export default function Admin() {
   // and releases the driver, so this must go through the RPC and never through a
   // direct status update.
   async function cancelOrder(o: Order) {
-    const warn = CLOSED_ORDER_STATUSES.includes(o.status as OrderStatus)
-      ? null
-      : o.status === 'pending'
-        ? `إلغاء الطلب #${o.id}؟`
-        : `الطلب #${o.id} حالته "${orderStatusLabel(o.status)}" — يعني اتقبل أو خرج للتوصيل بالفعل.\n\nالإلغاء هيسحبه من المندوب ويرجّع رصيد المحفظة لو استُخدم. لو العميل دفع، هيتسجل استرداد مطلوب.`
-    if (warn === null) return
-    const reason = prompt(`${warn}\n\nالسبب (هيتسجل على الطلب):`, '')
+    if (CLOSED_ORDER_STATUSES.includes(o.status as OrderStatus)) return
+    const reason = await promptSheet({
+      title: `إلغاء الطلب #${o.id}؟`,
+      body: o.status === 'pending'
+        ? undefined
+        : <>الطلب #{o.id} حالته «{orderStatusLabel(o.status)}» — يعني اتقبل أو خرج للتوصيل بالفعل.<br /><br />الإلغاء هيسحبه من المندوب ويرجّع رصيد المحفظة لو استُخدم. لو العميل دفع، هيتسجل استرداد مطلوب.</>,
+      placeholder: 'السبب (هيتسجل على الطلب)',
+    })
     if (reason === null) return
     if (!reason.trim()) { setActionError('اكتب سبب الإلغاء'); return }
     setActionError('')
@@ -1192,10 +1233,19 @@ export default function Admin() {
   // to record a real delivery as Failed or Cancelled, which corrupts the
   // driver's stats and the day's cash reconciliation at the same time.
   async function forceDelivered(a: Assignment) {
-    const reason = prompt(`تسجيل الطلب #${a.order_id} كمُسلَّم بدل المندوب؟\n\nاستخدم ده لما المندوب يكون سلّم فعلاً ومش قادر يأكد بنفسه (بطارية، شبكة).\n\nالسبب:`, '')
+    const reason = await promptSheet({
+      title: `تسجيل الطلب #${a.order_id} كمُسلَّم بدل المندوب؟`,
+      body: 'استخدم ده لما المندوب يكون سلّم فعلاً ومش قادر يأكد بنفسه (بطارية، شبكة).',
+      placeholder: 'السبب',
+    })
     if (reason === null) return
     if (!reason.trim()) { setActionError('اكتب السبب'); return }
-    const cash = confirm('المندوب استلم الكاش من العميل؟\n\nموافق = أيوه، هيتسجل على عهدته.\nإلغاء = لأ، مش هيتسجل عليه كاش.')
+    const cash = await confirmSheet({
+      title: 'المندوب استلم الكاش من العميل؟',
+      body: 'لو استلمه هيتسجل على عهدته.',
+      confirmLabel: 'أيوه استلمه',
+      cancelLabel: 'لأ',
+    })
     setActionError('')
     const res = await rpc('admin_force_delivered', {
       p_order_id: a.order_id, p_reason: reason.trim(), p_cash_collected: cash,
@@ -1212,7 +1262,10 @@ export default function Admin() {
   // no-restaurant, no-driver roles -- it cannot mint an admin.
   async function convertStaffRole(profileId: string, role: 'catalog' | 'supervisor') {
     const label = role === 'supervisor' ? 'مشرف تشغيل' : 'موظف قوايم'
-    if (!confirm(`تحويل الحساب ده لـ "${label}"؟\n\nهيتغيّر اللي يقدر يشوفه ويعمله على طول.`)) return
+    if (!await confirmSheet({
+      title: `تحويل الحساب ده لـ «${label}»؟`,
+      body: 'هيتغيّر اللي يقدر يشوفه ويعمله على طول.',
+    })) return
     setActionError('')
     const res = await rpc('admin_convert_staff_role', { p_profile_id: profileId, p_role: role })
     if (!res.ok) { setActionError(res.error); return }
@@ -1258,9 +1311,9 @@ export default function Admin() {
     setTab('wallet')
   }
   async function markRefunded(orderId: number) {
-    if (!confirm('تأكيد إنك حوّلت المبلغ فعلاً للعميل؟')) return
+    if (!await confirmSheet({ title: 'تأكيد إنك حوّلت المبلغ فعلاً للعميل؟' })) return
     const { error } = await supabase.rpc('mark_refunded', { p_order_id: orderId })
-    if (error) { alert('حصل خطأ: ' + error.message); return }
+    if (error) { await alertSheet('حصل خطأ: ' + error.message); return }
     load(true)
   }
   async function toggleCoverage(restaurantId: number, compoundId: number) {
@@ -1269,7 +1322,11 @@ export default function Admin() {
     if (existing) {
       // Removing coverage silently stops a vendor appearing for a whole compound.
       const compound = compounds.find(c => c.id === compoundId)
-      if (!confirm(`إلغاء تغطية ${compound?.name ?? 'المكان ده'}؟\n\nالمطعم مش هيظهر لعملاء المكان ده.`)) return
+      if (!await confirmSheet({
+        title: `إلغاء تغطية ${compound?.name ?? 'المكان ده'}؟`,
+        body: 'المطعم مش هيظهر لعملاء المكان ده.',
+        danger: true,
+      })) return
       const { error } = await supabase.from('vendor_coverage').delete().eq('id', existing.id)
       if (error) { setActionError('مش قادرين نلغي التغطية دلوقتي'); return }
     } else {
@@ -1281,7 +1338,11 @@ export default function Admin() {
   async function sendWalletCredit() {
     if (!walletPhone.trim() || !walletAmount) return
     // A typo in this free-typed phone credits a stranger with no reversal path.
-    if (!confirm(`إضافة ${walletAmount} ج.م لمحفظة ${walletPhone.trim()}؟\n\nاتأكد من الرقم — مفيش طريقة تتراجع.`)) return
+    if (!await confirmSheet({
+      title: `إضافة ${walletAmount} ج.م لمحفظة ${walletPhone.trim()}؟`,
+      body: 'اتأكد من الرقم — مفيش طريقة تتراجع.',
+      danger: true,
+    })) return
     const { error } = await supabase.rpc('credit_wallet', {
       p_phone: walletPhone.trim(), p_amount: Number(walletAmount), p_reason: walletReason.trim() || 'admin credit',
       p_order_id: walletOrderId
@@ -1328,10 +1389,11 @@ export default function Admin() {
   }
 
   async function flagDriverDispute(c: Complaint) {
-    const note = prompt('ملاحظة عن المشكلة مع المندوب (اختياري):') ?? ''
+    const note = await promptSheet({ title: 'ملاحظة عن المشكلة مع المندوب', placeholder: '(اختياري)' })
+    if (note === null) return
     const { error } = await supabase.rpc('admin_flag_driver_dispute', { p_complaint_id: c.id, p_note: note })
-    if (error) { alert('حصل خطأ، جرب تاني'); return }
-    alert('اتسجلت في سجل المندوب')
+    if (error) { await alertSheet('حصل خطأ، جرب تاني'); return }
+    await alertSheet('اتسجلت في سجل المندوب')
   }
 
   // 'cancel' used to call mark_delivery_failed, which sets Failed_Delivery, pays
@@ -1340,10 +1402,18 @@ export default function Admin() {
   // money silently, under a button reading إلغاء الطلب. The two outcomes are
   // different and are now named differently.
   async function resolveNoAnswer(a: Assignment, action: 'wait' | 'contact' | 'fail' | 'refund') {
-    if (action === 'fail' && !confirm('تسجيل الطلب كتوصيل فاشل؟\n\nالمندوب هياخد أجره، ومفيش استرداد للعميل. لو العميل دفع، استخدم "إلغاء واسترداد" بدل ده.')) return
-    if (action === 'refund' && !confirm('إلغاء الطلب واسترداد فلوس العميل؟\n\nرصيد المحفظة هيرجع، ولو العميل حوّل فلوس هيتسجل استرداد مطلوب في تبويب الاستردادات.')) return
+    if (action === 'fail' && !await confirmSheet({
+      title: 'تسجيل الطلب كتوصيل فاشل؟',
+      body: 'المندوب هياخد أجره، ومفيش استرداد للعميل. لو العميل دفع، استخدم «إلغاء واسترداد» بدل ده.',
+      danger: true,
+    })) return
+    if (action === 'refund' && !await confirmSheet({
+      title: 'إلغاء الطلب واسترداد فلوس العميل؟',
+      body: 'رصيد المحفظة هيرجع، ولو العميل حوّل فلوس هيتسجل استرداد مطلوب في تبويب الاستردادات.',
+      danger: true,
+    })) return
     const { error } = await supabase.rpc('admin_resolve_no_answer', { p_assignment_id: a.id, p_action: action })
-    if (error) { alert('حصل خطأ، جرب تاني'); return }
+    if (error) { await alertSheet('حصل خطأ، جرب تاني'); return }
     load(true)
   }
 
@@ -1354,7 +1424,7 @@ export default function Admin() {
       { p_order_id: o.id }
     )
     setAccountBusy(null)
-    if (error) { alert('حصل خطأ، جرب تاني'); return }
+    if (error) { await alertSheet('حصل خطأ، جرب تاني'); return }
     load(true)
   }
 
@@ -1371,7 +1441,7 @@ export default function Admin() {
   )
 
   return (
-    <div>
+    <div className="max-w-5xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">لوحة التحكم</h1>
 
       {actionError && (
@@ -1746,8 +1816,8 @@ export default function Admin() {
                 <span className={d.active ? 'badge-open' : 'badge-closed'}>{driverStatusLabel(d.status)}</span>
               </div>
               <div className="flex flex-wrap gap-2.5 mt-3">
-                <button className="btn-ghost text-sm flex-1" onClick={() => toggleDriver(d, 'available')}>{d.available ? 'إيقاف مؤقت' : 'إتاحة'}</button>
-                <button className={`text-sm flex-1 ${d.active ? 'btn-danger' : 'btn-sea'}`} onClick={() => toggleDriver(d, 'active')}>{d.active ? 'إيقاف الحساب' : 'تفعيل الحساب'}</button>
+                <Toggle on={!!d.available} onChange={() => toggleDriver(d, 'available')} label="متاح" labelOff="موقوف مؤقتًا" />
+                <Toggle on={!!d.active} onChange={() => toggleDriver(d, 'active')} label="الحساب شغال" labelOff="الحساب موقوف" />
                 <button className="btn-ghost text-sm flex-1" onClick={() => setDriverForm(driverToForm(d))}>تعديل البيانات</button>
                 <button className="btn-ghost text-sm flex-1" onClick={() => editInstapay(d)}>تعديل إنستاباي</button>
                 <button className="btn-ghost text-sm flex-1" onClick={() => resetDriverDevice(d)}>فك ربط الجهاز</button>
@@ -2131,9 +2201,7 @@ export default function Admin() {
       )}
 
       {tab === 'menu' && (
-        // max-w: on a laptop these cards stretched edge to edge, which made
-        // the hours editor look like seven empty shelves. Phones unchanged.
-        <div className="space-y-3 max-w-3xl mx-auto">
+        <div className="space-y-3">
           {restaurants.map(r => {
             const its = menu.filter(m => m.restaurant_id === r.id)
             const expanded = openRest === r.id
@@ -2162,8 +2230,8 @@ export default function Admin() {
                       and rare, so it moved inside the expanded card. */}
                   <div className="flex items-center gap-2 shrink-0">
                     <button className="btn-ghost !py-1.5 !px-2.5 text-xs" onClick={() => setAddingItemFor(r)}>+ صنف</button>
-                    <button className={(openStates[r.id]?.is_open ?? true) ? 'badge-open' : 'badge-closed'}
-                      onClick={() => toggleRestaurant(r)}>{openLabel(openStates[r.id] ?? {}).text}</button>
+                    <Toggle on={openStates[r.id]?.is_open ?? true} onChange={() => toggleRestaurant(r)}
+                      label={openLabel(openStates[r.id] ?? {}).text} labelOff={openLabel(openStates[r.id] ?? {}).text} />
                   </div>
                 </div>
 
@@ -2195,14 +2263,7 @@ export default function Admin() {
                         value={rankDraft[r.id] ?? (r.display_order == null ? '' : String(r.display_order))}
                         onChange={e => setRankDraft(d => ({ ...d, [r.id]: e.target.value }))}
                         onBlur={() => commitRank(r)} />
-                      <button
-                        type="button"
-                        aria-pressed={!!r.featured}
-                        className={`shrink-0 rounded-full px-4 min-h-[44px] text-sm font-semibold transition-colors ${
-                          r.featured ? 'bg-sea text-white' : 'bg-shell text-mist border border-line'}`}
-                        onClick={() => commitRank(r, !r.featured)}>
-                        {r.featured ? 'مميز ✓' : 'مميز'}
-                      </button>
+                      <Toggle on={!!r.featured} onChange={() => commitRank(r, !r.featured)} label="مميز ⭐" labelOff="مميز" />
                     </div>
                     <p className="text-[11px] text-mist mt-2 leading-relaxed">
                       الرقم = المركز (١ يعني الأول). سيبه فاضي يعني مش مرتّب.
@@ -2281,9 +2342,9 @@ export default function Admin() {
 
                 {reliability[r.id] && reliability[r.id].total_orders > 0 && (
                   <p className="text-xs text-mist mt-2">
-                    ⏱ متوسط وقت القبول: {reliability[r.id].avg_accept_minutes ?? '—'} د ·
+                    ⏱ متوسط وقت القبول: <bdi dir="ltr">{reliability[r.id].avg_accept_minutes ?? '—'}</bdi> د ·
                     {' '}<span className={reliability[r.id].slow_accepts > 2 ? 'text-red-600' : 'text-mist'}>
-                      {reliability[r.id].slow_accepts} طلب اتأخر قبوله (٣٠ يوم)
+                      <bdi dir="ltr">{reliability[r.id].slow_accepts}</bdi> طلب اتأخر قبوله (٣٠ يوم)
                     </span>
                   </p>
                 )}
@@ -2321,10 +2382,8 @@ export default function Admin() {
                     <div className="space-y-2">
                       {slots.filter(sl => sl.restaurant_id === r.id).map(sl => (
                         <div key={sl.id} className="flex items-center justify-between bg-night border border-line rounded-xl p-2.5 text-sm">
-                          <span>{sl.start_time.slice(0,5)} – {sl.end_time.slice(0,5)} · سعة {sl.capacity}</span>
-                          <button className={sl.active ? 'badge-open' : 'badge-closed'} onClick={() => toggleSlot(sl)}>
-                            {sl.active ? 'فعّالة' : 'موقوفة'}
-                          </button>
+                          <span><bdi dir="ltr">{sl.start_time.slice(0,5)} – {sl.end_time.slice(0,5)}</bdi> · سعة {sl.capacity}</span>
+                          <Toggle on={!!sl.active} onChange={() => toggleSlot(sl)} label="فعّالة" labelOff="موقوفة" />
                         </div>
                       ))}
                       {slots.filter(sl => sl.restaurant_id === r.id).length === 0 && (
@@ -2386,16 +2445,10 @@ export default function Admin() {
             return (
               <div key={st.key} className="card p-4 flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-semibold text-sm">{st.label || st.key}</p>
+                  <p className="font-semibold text-sm truncate">{st.label || st.key}</p>
                 </div>
                 {isBool ? (
-                  <button
-                    className={`shrink-0 rounded-full px-4 min-h-[44px] text-sm font-semibold transition-colors ${
-                      on ? 'bg-sea text-white' : 'bg-shellup text-mist'}`}
-                    aria-pressed={on}
-                    onClick={() => updateSetting(st, on ? 'false' : 'true')}>
-                    {on ? 'مفعّل' : 'مقفول'}
-                  </button>
+                  <Toggle on={on} onChange={() => updateSetting(st, on ? 'false' : 'true')} label="مفعّل" labelOff="مقفول" />
                 ) : (
                   <input defaultValue={st.value} className="field !w-24 !py-1.5 text-center"
                     onBlur={e => updateSetting(st, e.target.value)} />
@@ -2644,7 +2697,7 @@ export default function Admin() {
                   <div className="min-w-0">
                     <p className="font-semibold text-sm truncate">طلب #{rt.order_id} — {rt.orders?.restaurants?.name}</p>
                     <p className="text-xs text-mist truncate flex items-center gap-1 flex-wrap">
-                      <span>{rt.orders?.customer_name} · {rt.orders?.customer_phone}</span>
+                      <span>{rt.orders?.customer_name} · <bdi dir="ltr">{rt.orders?.customer_phone}</bdi></span>
                       {rt.driver_rating != null && <span className="flex items-center gap-1">· المندوب <StarRow n={rt.driver_rating} /></span>}
                       {rt.restaurant_rating != null && <span className="flex items-center gap-1">· المطعم <StarRow n={rt.restaurant_rating} /></span>}
                     </p>
@@ -2800,7 +2853,7 @@ export default function Admin() {
                         {acc ? <p className="text-xs text-mist truncate" dir="ltr">{acc.email}</p>
                           : <p className="text-xs text-mist">مفيش حساب دخول</p>}
                       </div>
-                      <div className="flex gap-1.5 shrink-0">
+                      <div className="flex items-center gap-1.5 shrink-0">
                         {acc ? (
                           <AccountActionsMenu
                             busy={accountBusy === acc.profile_id}
@@ -2813,8 +2866,7 @@ export default function Admin() {
                           <button className="btn-sea !py-1.5 !px-3 text-xs" disabled={accountBusy === `vendor-${r.id}`}
                             onClick={() => createVendorLogin(r.id)}>إنشاء حساب</button>
                         )}
-                        <button className={`!py-1.5 !px-2.5 text-xs ${r.archived ? 'btn-sea' : 'btn-ghost'}`}
-                          onClick={() => archiveRestaurant(r, !r.archived)}>{r.archived ? 'إظهار' : 'إخفاء'}</button>
+                        <Toggle on={!r.archived} onChange={() => archiveRestaurant(r, !r.archived)} label="ظاهر في التطبيق" labelOff="مخفي" />
                       </div>
                     </div>
                   </div>
@@ -2895,7 +2947,7 @@ export default function Admin() {
                         const checked = explicit.some(e => e.compound_id === c.id)
                         return (
                           <label key={c.id} className={`flex items-center gap-1.5 text-xs rounded-lg px-2 py-1.5 cursor-pointer ${checked ? 'bg-sea/10 text-sea font-semibold' : 'bg-shellup/50'}`}>
-                            <input type="checkbox" className="accent-sea" checked={checked} onChange={() => toggleCoverage(r.id, c.id)} />
+                            <Toggle on={checked} onChange={() => toggleCoverage(r.id, c.id)} ariaLabel={`تغطية ${c.name} — ${r.name}`} />
                             <span className="truncate">{c.name}</span>
                           </label>
                         )
@@ -2917,7 +2969,14 @@ export default function Admin() {
             <p className="font-mono text-sm bg-night border border-line rounded-lg p-2.5 mb-3" dir="ltr">{newCreds.email}</p>
             <p className="text-sm text-mist mb-1">كلمة السر</p>
             <p className="font-mono text-sm bg-night border border-line rounded-lg p-2.5 mb-4" dir="ltr">{newCreds.password}</p>
-            <p className="text-xs text-sandink mb-4">⚠️ ده ظاهر مرة واحدة بس — انسخه وابعته دلوقتي</p>
+            <div className="flex items-center gap-2 mb-4">
+              <p className="text-xs text-sandink flex-1">⚠️ ده ظاهر مرة واحدة بس — انسخه وابعته دلوقتي</p>
+              <button className="btn-sea !py-2 text-xs shrink-0" onClick={() => {
+                navigator.clipboard.writeText(`${newCreds.email}\n${newCreds.password}`)
+                setCredsCopied(true)
+                window.setTimeout(() => setCredsCopied(false), 1500)
+              }}>{credsCopied ? 'اتنسخ ✓' : '📋 نسخ'}</button>
+            </div>
             <button className="btn-sea w-full" onClick={() => setNewCreds(null)}>تمام</button>
           </div>
         </div>
@@ -3022,6 +3081,8 @@ export default function Admin() {
           onDeleted={() => { setEditingItem(null); load(true) }}
         />
       )}
+
+      {sheetElement}
     </div>
   )
 }

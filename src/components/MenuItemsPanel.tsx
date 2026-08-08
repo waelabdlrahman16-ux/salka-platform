@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { rpc } from '../lib/rpc'
 import DiscountManager from './DiscountManager'
+import Toggle from './Toggle'
+import { useSheets } from './ActionSheets'
 import type { MenuItem, Restaurant } from '../lib/types'
 
 /**
@@ -47,6 +49,7 @@ export default function MenuItemsPanel({
   /** Categories other vendors already use, offered so «مقبلات» does not get
       retyped as «المقبلات» at the next restaurant. */
   const [otherCats, setOtherCats] = useState<string[]>([])
+  const { confirmSheet, promptSheet, sheetElement } = useSheets()
 
   async function loadCats() {
     const [{ data, error }, { data: others }] = await Promise.all([
@@ -134,7 +137,7 @@ export default function MenuItemsPanel({
   }
 
   async function renameCategory(oldName: string) {
-    const next = prompt('الاسم الجديد للقسم', oldName)
+    const next = await promptSheet({ title: 'الاسم الجديد للقسم', initial: oldName })
     if (!next || next.trim() === oldName) return
     const res = await rpc('admin_rename_menu_category',
       { p_restaurant_id: restaurant.id, p_old: oldName, p_new: next.trim() },
@@ -146,7 +149,7 @@ export default function MenuItemsPanel({
   }
 
   async function deleteCategory(name: string) {
-    if (!confirm(`حذف قسم «${name}»؟`)) return
+    if (!await confirmSheet({ title: `حذف قسم «${name}»؟`, danger: true })) return
     const res = await rpc('admin_delete_menu_category',
       { p_restaurant_id: restaurant.id, p_name: name },
       { not_authorized: 'مش من صلاحياتك' })
@@ -229,8 +232,8 @@ export default function MenuItemsPanel({
       {current && (
         <div className="flex items-center justify-between gap-2 mb-2.5 flex-wrap">
           <div className="flex items-center gap-2 text-xs">
-            <button className="text-mist underline" onClick={() => renameCategory(current)}>تغيير الاسم</button>
-            <button className="text-mist underline" onClick={() => deleteCategory(current)}>حذف القسم</button>
+            <button className="text-mist underline min-h-[44px] inline-flex items-center" onClick={() => renameCategory(current)}>تغيير الاسم</button>
+            <button className="text-red-600 underline min-h-[44px] inline-flex items-center" onClick={() => deleteCategory(current)}>حذف القسم</button>
           </div>
           <button className="btn-ghost !py-1.5 !px-3 text-xs" onClick={onAddItem}>+ صنف هنا</button>
         </div>
@@ -255,48 +258,59 @@ export default function MenuItemsPanel({
           {shown.map(it => {
             const sz = sizes[it.id]
             return (
-              <div key={it.id} className="flex items-center gap-2.5 bg-night border border-line rounded-xl p-2.5">
+              <div key={it.id} className="flex items-center gap-2.5 bg-night border border-line rounded-xl p-2.5 hover:border-sea/40 transition-colors">
                 {/* Availability first: it is what changes most in a working day,
-                    and as «✓ متاح» text nobody could tell it was a control. */}
-                <button onClick={() => onToggleAvailable(it)} aria-label={it.available ? 'إيقاف الصنف' : 'تفعيل الصنف'}
-                  className={`relative w-10 h-6 rounded-full shrink-0 transition-colors ${it.available ? 'bg-emerald-600' : 'bg-line'}`}>
-                  <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${it.available ? 'left-1' : 'right-1'}`} />
-                </button>
+                    and as «✓ متاح» text nobody could tell it was a control.
+                    Kept OUTSIDE the dimmed wrapper so an unavailable row still
+                    shows, at full opacity, the control that re-enables it. */}
+                <Toggle on={it.available} onChange={() => onToggleAvailable(it)} ariaLabel={it.name} />
 
-                {/* The photo is changed by tapping the photo. */}
-                <label className="relative shrink-0 cursor-pointer">
-                  <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
-                    onChange={e => e.target.files?.[0] && onUploadImage(it, e.target.files[0])} />
-                  {it.image_url
-                    ? <img src={it.image_url} alt="" className="w-11 h-11 rounded-lg object-cover border border-line" />
-                    : <span className="w-11 h-11 rounded-lg border border-dashed border-linestrong bg-shellup grid place-items-center text-mist text-lg">＋</span>}
-                  <span className="absolute -bottom-1 -left-1 w-[18px] h-[18px] rounded-full bg-sea text-white grid place-items-center text-[9px] border-2 border-night">
-                    {uploadingImage === `i${it.id}` ? '…' : '📷'}
-                  </span>
-                </label>
+                <div className={`flex items-center gap-2.5 flex-1 min-w-0 ${it.available ? '' : 'opacity-55'}`}>
+                  {/* The photo is changed by tapping the photo. */}
+                  <label className="relative shrink-0 cursor-pointer" aria-label="صورة الصنف">
+                    <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
+                      onChange={e => e.target.files?.[0] && onUploadImage(it, e.target.files[0])} />
+                    {it.image_url
+                      ? <img src={it.image_url} alt="" className="w-11 h-11 rounded-lg object-cover border border-line" />
+                      : <span className="w-11 h-11 rounded-lg border border-dashed border-linestrong bg-shellup grid place-items-center text-mist text-lg">＋</span>}
+                    <span className="absolute -bottom-1 -left-1 w-[18px] h-[18px] rounded-full bg-sea text-white grid place-items-center border-2 border-night">
+                      {uploadingImage === `i${it.id}` ? <span className="text-[9px]">…</span> : (
+                        <svg viewBox="0 0 24 24" className="w-2.5 h-2.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                          <circle cx="12" cy="13" r="4" />
+                        </svg>
+                      )}
+                    </span>
+                  </label>
 
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-sm truncate">{it.name}</p>
-                  {(sz || !it.image_url || (it.available_from && it.available_until)) && (
-                    <p className="text-[11px] text-mist truncate">
-                      {sz ? `${sz.count} أحجام` : !it.image_url ? 'من غير صورة' : ''}
-                      {it.available_from && it.available_until
-                        ? `${sz || !it.image_url ? ' · ' : ''}⏰ ${it.available_from.slice(0,5)}–${it.available_until.slice(0,5)}` : ''}
-                    </p>
-                  )}
-                </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-sm truncate" title={it.name}>{it.name}</p>
+                    {(sz || !it.image_url || (it.available_from && it.available_until)) && (
+                      <p className="text-[11px] text-mist truncate">
+                        {sz ? `${sz.count} أحجام` : !it.image_url ? 'من غير صورة' : ''}
+                        {it.available_from && it.available_until && (
+                          <>
+                            {sz || !it.image_url ? ' · ' : ''}
+                            {'⏰ '}
+                            <bdi dir="ltr">{it.available_from.slice(0, 5)}–{it.available_until.slice(0, 5)}</bdi>
+                          </>
+                        )}
+                      </p>
+                    )}
+                  </div>
 
-                {sz ? (
-                  // No editable box: this number is not what the customer pays.
-                  <button onClick={() => onEdit(it)}
-                    className="shrink-0 text-xs font-semibold text-sandink bg-sandink/10 rounded-lg px-2.5 py-2 whitespace-nowrap">
-                    من {sz.min}
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-1 shrink-0">
+                  {/* One w-24 cell for both pricing kinds, so prices line up in
+                      a column whatever mix of flat and sized items a tab has. */}
+                  {sz ? (
+                    // No editable box: this number is not what the customer pays.
+                    <button onClick={() => onEdit(it)}
+                      className="w-24 shrink-0 text-center text-xs font-semibold text-sandink bg-sandink/10 rounded-xl py-2 whitespace-nowrap">
+                      من {sz.min}
+                    </button>
+                  ) : (
                     <input type="number" inputMode="numeric" defaultValue={it.price}
-                      aria-label={`سعر ${it.name}`}
-                      className={`field !w-[68px] !py-1.5 !px-2 text-center text-sm ${savedPrice === it.id ? '!border-emerald-600 bg-emerald-50' : ''}`}
+                      aria-label={`سعر ${it.name} بالجنيه`}
+                      className={`field !w-24 shrink-0 !py-2 !px-2 text-center text-sm ${savedPrice === it.id ? '!border-emerald-600 bg-emerald-50' : ''}`}
                       onBlur={e => {
                         const v = Number(e.target.value)
                         if (v === Number(it.price)) return
@@ -305,24 +319,35 @@ export default function MenuItemsPanel({
                         setTimeout(() => setSavedPrice(p => (p === it.id ? null : p)), 1800)
                       }}
                       onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }} />
-                    <span className="text-[10px] text-mist">ج.م</span>
-                  </div>
-                )}
+                  )}
 
-                {restaurant.vendor_type === 'pharmacy' && (
-                  <button onClick={() => onToggleRx(it)} title="روشتة"
-                    className={`shrink-0 text-sm ${it.requires_prescription ? 'text-sandink' : 'text-line'}`}>💊</button>
-                )}
+                  {restaurant.vendor_type === 'pharmacy' && (
+                    <button onClick={() => onToggleRx(it)} title="روشتة"
+                      aria-pressed={it.requires_prescription} aria-label="محتاج وصفة"
+                      className={`shrink-0 w-10 h-10 rounded-lg grid place-items-center transition-colors ${
+                        it.requires_prescription ? 'bg-sandink/15 text-sandink' : 'bg-shellup text-mist'}`}>
+                      <svg viewBox="0 0 24 24" className="w-[17px] h-[17px]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M10.5 20.5a5 5 0 0 1-7-7l10-10a5 5 0 0 1 7 7l-10 10z" />
+                        <path d="M8.5 8.5l7 7" />
+                      </svg>
+                    </button>
+                  )}
 
-                <button onClick={() => onEdit(it)} aria-label="تعديل الصنف"
-                  className="shrink-0 w-8 h-8 rounded-lg bg-shellup border border-line grid place-items-center text-sm">
-                  ✏️
-                </button>
+                  <button onClick={() => onEdit(it)} aria-label="تعديل الصنف"
+                    className="shrink-0 w-10 h-10 rounded-lg bg-shellup border border-line grid place-items-center">
+                    <svg viewBox="0 0 24 24" className="w-[17px] h-[17px]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             )
           })}
         </div>
       )}
+
+      {sheetElement}
     </div>
   )
 }

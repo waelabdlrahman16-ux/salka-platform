@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { rpc } from '../lib/rpc'
 import { useAuth } from '../lib/auth'
+import { useDismissable } from '../lib/useDismissable'
 import { ping, askNotificationPermission } from '../lib/notify'
 import { registerPush, persistPushToken } from '../lib/push'
 import { orderStatusLabel, assignmentStatusLabel } from '../lib/statusLabels'
@@ -11,6 +12,7 @@ import Icon from '../components/Icon'
 import EnablePushButton from '../components/EnablePushButton'
 import LiveDeliveryDetail from '../components/LiveDeliveryDetail'
 import PhoneOrderForm from '../components/PhoneOrderForm'
+import { useSheets } from '../components/ActionSheets'
 
 // The operations supervisor.
 //
@@ -60,6 +62,8 @@ export default function Supervisor() {
   const [modalError, setModalError] = useState('')
   const knownOrderIds = useRef<Set<number>>(new Set())
   const firstLoad = useRef(true)
+  const { confirmSheet, promptSheet, sheetElement } = useSheets()
+  const assigningRef = useDismissable(() => setAssigning(null), !!assigning)
 
   async function load() {
     const [o, a, d, live] = await Promise.all([
@@ -137,8 +141,13 @@ export default function Supervisor() {
     run(`price:${o.id}`, () =>
       rpc('confirm_custom_order_price', { p_order_id: o.id, p_subtotal: subtotal }))
 
-  function cancelOrder(o: Order) {
-    const reason = prompt(`إلغاء الطلب #${o.id}؟\n\nالسبب (هيتسجل على الطلب وهيشوفه العميل):`, '')
+  async function cancelOrder(o: Order) {
+    const reason = await promptSheet({
+      title: `إلغاء الطلب #${o.id}؟`,
+      body: 'السبب (هيتسجل على الطلب وهيشوفه العميل):',
+      multiline: true,
+      placeholder: 'السبب…',
+    })
     if (reason === null) return
     if (!reason.trim()) { setError('اكتب سبب الإلغاء'); return }
     run(`cancel:${o.id}`, () => rpc('cancel_order', { p_order_id: o.id, p_reason: reason.trim() }))
@@ -158,25 +167,45 @@ export default function Supervisor() {
     })
   }
 
-  function unassign(a: Assignment) {
-    const reason = prompt(`سحب الطلب #${a.order_id} من ${a.drivers?.name ?? 'المندوب'}؟\nهيرجع تاني لقائمة الطلبات المتاحة.\n\nالسبب (اختياري):`, '')
+  async function unassign(a: Assignment) {
+    const reason = await promptSheet({
+      title: `سحب الطلب #${a.order_id} من ${a.drivers?.name ?? 'المندوب'}؟`,
+      body: 'هيرجع تاني لقائمة الطلبات المتاحة.',
+      placeholder: 'السبب (اختياري)',
+    })
     if (reason === null) return
     run(`unassign:${a.id}`, () =>
       rpc('admin_unassign_order', { p_order_id: a.order_id, p_reason: reason || 'supervisor_unassigned' }))
   }
 
-  function forceDelivered(a: Assignment) {
-    const reason = prompt(`تسجيل الطلب #${a.order_id} كمُسلَّم بدل المندوب؟\n\nاستخدمه لما المندوب يكون سلّم فعلاً ومش قادر يأكد بنفسه.\n\nالسبب:`, '')
+  async function forceDelivered(a: Assignment) {
+    const reason = await promptSheet({
+      title: `تسجيل الطلب #${a.order_id} كمُسلَّم بدل المندوب؟`,
+      body: 'استخدمه لما المندوب يكون سلّم فعلاً ومش قادر يأكد بنفسه.',
+      multiline: true,
+      placeholder: 'السبب…',
+    })
     if (reason === null) return
     if (!reason.trim()) { setError('اكتب السبب'); return }
-    const cash = confirm('المندوب استلم الكاش من العميل؟\n\nموافق = أيوه.\nإلغاء = لأ.')
+    const cash = await confirmSheet({
+      title: 'المندوب استلم الكاش من العميل؟',
+      confirmLabel: 'أيوه، استلمه',
+      cancelLabel: 'لأ',
+    })
     run(`force:${a.id}`, () =>
       rpc('admin_force_delivered', { p_order_id: a.order_id, p_reason: reason.trim(), p_cash_collected: cash }))
   }
 
-  function resolve(a: Assignment, action: 'wait' | 'fail' | 'refund') {
-    if (action === 'fail' && !confirm('تسجيل الطلب كتوصيل فاشل؟\n\nالمندوب هياخد أجره ومفيش استرداد للعميل.')) return
-    if (action === 'refund' && !confirm('إلغاء الطلب واسترداد فلوس العميل؟')) return
+  async function resolve(a: Assignment, action: 'wait' | 'fail' | 'refund') {
+    if (action === 'fail' && !await confirmSheet({
+      title: 'تسجيل الطلب كتوصيل فاشل؟',
+      body: 'المندوب هياخد أجره ومفيش استرداد للعميل.',
+      danger: true,
+    })) return
+    if (action === 'refund' && !await confirmSheet({
+      title: 'إلغاء الطلب واسترداد فلوس العميل؟',
+      danger: true,
+    })) return
     run(`resolve:${a.id}`, () => rpc('admin_resolve_no_answer', { p_assignment_id: a.id, p_action: action }))
   }
 
@@ -430,7 +459,7 @@ export default function Supervisor() {
       </div>
 
       {assigning && (
-        <div className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" onClick={() => setAssigning(null)}>
+        <div ref={assigningRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true" onClick={() => setAssigning(null)}>
           <div className="card !rounded-2xl w-full max-w-sm p-5 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold mb-1">تعيين مندوب لطلب #{assigning.id}</h3>
             <p className="text-xs text-mist mb-3">{assigning.restaurants?.name} → {addr(assigning)}</p>
@@ -450,6 +479,8 @@ export default function Supervisor() {
           </div>
         </div>
       )}
+
+      {sheetElement}
     </div>
   )
 }

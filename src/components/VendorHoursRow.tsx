@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Toggle from './Toggle'
 import { supabase } from '../lib/supabase'
 import { WEEK, type DayHours } from '../lib/vendorHours'
 import type { Restaurant } from '../lib/types'
@@ -122,13 +123,15 @@ export default function VendorHoursRow({ restaurant, onSaved }: {
             <input type="time" dir="ltr" aria-label={`قفل ${d.label}`} disabled={v.closed}
               className="field !h-9 !w-24 text-center !text-[11.5px] disabled:opacity-40"
               value={v.closes} onChange={e => set(d.dow, { closes: e.target.value })} />
-            <button
-              className={`text-[10px] font-bold rounded-full px-2.5 py-1.5 shrink-0 min-h-[36px] ${
-                v.closed ? 'bg-red-500/15 text-red-600' : 'bg-emerald-500/15 text-emerald-700'}`}
-              aria-pressed={v.closed}
-              onClick={() => set(d.dow, { closed: !v.closed })}>
-              {v.closed ? 'مقفول' : 'مفتوح'}
-            </button>
+            {/* The unified switch (Wael's rule): ON = the day is open. The old
+                red/green pill inverted aria-pressed (pressed = closed) and used
+                the error red for an ordinary day off. */}
+            <Toggle
+              on={!v.closed}
+              onChange={() => set(d.dow, { closed: !v.closed })}
+              ariaLabel={`${d.label} — ${v.closed ? 'مقفول' : 'مفتوح'}`}
+            />
+            {v.closed && <span className="text-[10.5px] text-mist shrink-0">مقفول اليوم ده</span>}
             {overnight && <span className="text-[10px] text-sandink shrink-0" title="بيعدّي نص الليل">🌙</span>}
           </div>
         )

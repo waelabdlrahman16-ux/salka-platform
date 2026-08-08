@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Discount } from '../lib/types'
+import Toggle from './Toggle'
+import { useSheets } from './ActionSheets'
 
 export default function DiscountManager({ restaurantId, scope, menuItemId, category }: {
   restaurantId: number
@@ -21,6 +23,7 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
   // gone while it kept coming off every order.
   const [writeError, setWriteError] = useState('')
   const [saving, setSaving] = useState(false)
+  const { confirmSheet, sheetElement } = useSheets()
 
   useEffect(() => { load() }, [scope, menuItemId, category])
 
@@ -78,7 +81,7 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
 
   async function remove() {
     if (!existing) return
-    if (!confirm('حذف الخصم ده؟')) return
+    if (!await confirmSheet({ title: 'حذف الخصم ده؟', danger: true })) return
     // Was optimistic: it cleared the panel whether or not the row changed, so a
     // failed write showed the promotion gone while it kept applying to every
     // order. Margin is the one thing this file is careful about everywhere else.
@@ -102,10 +105,11 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
           {existing.ends_at && ` — لحد ${new Date(existing.ends_at).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo' })}`}
         </span>
         <div className="flex gap-2">
-          <button className="text-sea text-xs font-semibold" onClick={() => setEditing(true)}>تعديل</button>
-          <button className="text-red-500 text-xs font-semibold" onClick={remove}>حذف</button>
+          <button className="text-sea text-xs font-semibold min-h-[44px] inline-flex items-center" onClick={() => setEditing(true)}>تعديل</button>
+          <button className="text-red-600 text-xs font-semibold min-h-[44px] inline-flex items-center" onClick={remove}>حذف</button>
         </div>
       </div>
+      {sheetElement}
       </div>
     )
   }
@@ -130,8 +134,8 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
             ))}
           </ul>
           <div className="flex gap-2">
-            <button className="btn-ghost !py-1 !px-2.5 !text-xs" onClick={() => setConflicts(null)}>إلغاء</button>
-            <button className="btn-sea !py-1 !px-2.5 !text-xs" onClick={() => doSave(conflicts.map(c => c.id))}>
+            <button className="btn-ghost !px-2.5 !text-xs" onClick={() => setConflicts(null)}>إلغاء</button>
+            <button className="btn-sea !px-2.5 !text-xs" onClick={() => doSave(conflicts.map(c => c.id))}>
               استخدم الخصم ده بدل التاني
             </button>
           </div>
@@ -147,10 +151,10 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
           value={value} onChange={e => setValue(e.target.value)} />
       </div>
 
-      <label className="flex items-center gap-2 text-xs">
-        <input type="checkbox" checked={hasWindow} onChange={e => setHasWindow(e.target.checked)} />
-        له تاريخ بداية/نهاية (عرض محدود)
-      </label>
+      <div className="min-h-[44px] flex items-center">
+        <Toggle on={hasWindow} onChange={() => setHasWindow(!hasWindow)}
+          label="له تاريخ بداية/نهاية (عرض محدود)" />
+      </div>
       {hasWindow && (
         <div className="flex gap-2">
           <input type="datetime-local" className="field !h-9 !py-1.5 !text-xs" value={startsAt} onChange={e => setStartsAt(e.target.value)} />
@@ -159,8 +163,8 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
       )}
 
       <div className="flex gap-2">
-        <button className="btn-ghost flex-1 !py-1.5 text-xs" onClick={() => { setEditing(false); setConflicts(null) }}>إلغاء</button>
-        <button className="btn-sea flex-1 !py-1.5 text-xs" disabled={saving || !value} onClick={attemptSave}>
+        <button className="btn-ghost flex-1 text-xs" onClick={() => { setEditing(false); setConflicts(null) }}>إلغاء</button>
+        <button className="btn-sea flex-1 text-xs" disabled={saving || !value} onClick={attemptSave}>
           {saving ? 'جاري الحفظ…' : 'حفظ الخصم'}
         </button>
       </div>

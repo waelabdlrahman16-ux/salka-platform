@@ -14,6 +14,8 @@ import PrescriptionLink from '../components/PrescriptionLink'
 import EnablePushButton from '../components/EnablePushButton'
 import type { Compound, MenuItem, Order, OrderItem, Restaurant } from '../lib/types'
 import Icon from '../components/Icon'
+import Toggle from '../components/Toggle'
+import { useSheets } from '../components/ActionSheets'
 
 const KITCHEN = [
   { key: 'new', label: 'طلب جديد', next: 'preparing', action: 'قبول وبدء التحضير' },
@@ -134,7 +136,7 @@ export default function Vendor() {
       {view === 'request' && <DriverRequestPanel restaurant={restaurant} onClose={() => setView('main')} />}
       {view === 'history' && (
         <div>
-          <button className="text-sm text-mist hover:text-foam mb-4" onClick={() => setView('main')}><Icon name="chevronLeft" className="w-3 h-3 inline-block align-middle ml-1" />رجوع</button>
+          <button className="text-sm text-mist hover:text-foam mb-4" onClick={() => setView('main')}><Icon name="chevronLeft" className="w-3 h-3 inline-block align-middle ml-1 rotate-180" />رجوع</button>
           <RideHistoryPanel restaurantId={restaurant.id} />
         </div>
       )}
@@ -442,6 +444,7 @@ function KitchenVendor({ rid }: { rid: number }) {
   const [loadError, setLoadError] = useState('')
   const audioUnlocked = useRef(false)
   const stockRef = useRef<HTMLDivElement>(null)
+  const { confirmSheet, sheetElement } = useSheets()
 
   // Every read here decides what a vendor believes about their own shop, and
   // every one of them used to discard its error. `?? []` turns a failed fetch
@@ -547,7 +550,9 @@ function KitchenVendor({ rid }: { rid: number }) {
     setTogglingId(it.id)
     const { error } = await supabase.rpc('vendor_set_item_availability', { p_item_id: it.id, p_available: !it.available })
     setTogglingId(null)
-    if (error) { alert('حصل خطأ، جرب تاني'); return }
+    // Judgment call per ActionSheets: this screen already has a styled board
+    // error banner, so route the failure there instead of a native alert.
+    if (error) { setBoardError(`${it.name}: حصل خطأ، جرب تاني`); return }
     setMenu(prev => prev.map(m => m.id === it.id ? { ...m, available: !m.available } : m))
   }
 
@@ -578,7 +583,12 @@ function KitchenVendor({ rid }: { rid: number }) {
   // no orders and no way to fix it.
   async function toggleOpen() {
     const next = !isOpen
-    if (!next && !confirm('تقفل المطعم؟ مش هتوصلك طلبات جديدة لحد ما تفتحه تاني.')) return
+    if (!next && !await confirmSheet({
+      title: 'تقفل المطعم دلوقتي؟',
+      body: 'مش هتوصلك طلبات جديدة لحد ما تفتحه تاني.',
+      danger: true,
+      confirmLabel: 'اقفل',
+    })) return
     setBoardError('')
     const res = await rpc('vendor_set_open', { p_open: next })
     if (!res.ok) { setBoardError(res.error); return }
@@ -882,7 +892,7 @@ function KitchenVendor({ rid }: { rid: number }) {
                     <p className="text-sea text-sm font-semibold mt-0.5">{label}</p>
                   </div>
                   {d.driver_phone && d.status !== 'Delivered' && (
-                    <a href={`tel:${d.driver_phone}`} className="shrink-0 w-10 h-10 rounded-full bg-emerald-500/15 text-emerald-700 grid place-items-center" aria-label="اتصال بالمندوب">📞</a>
+                    <a href={`tel:${d.driver_phone}`} className="shrink-0 w-11 h-11 rounded-full bg-emerald-500/15 text-emerald-800 grid place-items-center" aria-label="اتصال بالمندوب">📞</a>
                   )}
                 </div>
               )
@@ -927,31 +937,27 @@ function KitchenVendor({ rid }: { rid: number }) {
       {!isOpen && (
         <div className="card p-4 mb-3 border-sand/50 bg-sand/10 text-center">
           <p className="font-bold text-sandink">المطعم مقفول دلوقتي</p>
-          <p className="text-sm text-mist mt-1 mb-3">مش هتوصلك أي طلبات جديدة لحد ما تفتحه.</p>
-          <button className="btn-sea !py-2 !px-6 text-sm" onClick={toggleOpen}>افتح المطعم</button>
+          <p className="text-sm text-mist mt-1">مش هتوصلك أي طلبات جديدة لحد ما تفتحه من المفتاح اللي تحت.</p>
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-2">
-        <h1 className="text-xl font-bold">🍽️ {name}</h1>
-        <div className="flex items-center gap-2">
-          <button className={isOpen ? 'badge-open' : 'badge-closed'} onClick={toggleOpen}
-            aria-pressed={isOpen} title={isOpen ? 'اقفل المطعم' : 'افتح المطعم'}>
-            {isOpen ? 'مفتوح' : 'مغلق — اضغط للفتح'}
-          </button>
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <h1 className="text-xl font-bold min-w-0 truncate">🍽️ {name}</h1>
+        <div className="flex items-center gap-2 shrink-0">
+          <Toggle on={isOpen} onChange={toggleOpen} label="مفتوح" labelOff="مقفول" />
           <div className="relative" ref={stockRef}>
             <button className="btn-ghost !py-1.5 !px-2.5 text-xs" onClick={() => setStockOpen(v => !v)}>
               📋 الأصناف {menu.filter(m => !m.available).length > 0 && `(${menu.filter(m => !m.available).length} خلص)`}
             </button>
             {stockOpen && (
               <div className="absolute left-0 mt-1 z-20 bg-shell border border-line rounded-xl shadow-lg py-2 w-72 max-h-[60vh] overflow-y-auto">
-                <p className="text-xs text-mist px-3 pb-2">علّم على الصنف اللي خلص عشان العميل يبطل يشوفه</p>
+                <p className="text-xs text-mist px-3 pb-2">اقفل مفتاح الصنف اللي خلص عشان العميل يبطل يشوفه</p>
                 {menu.map(m => (
-                  <label key={m.id} className="flex items-center justify-between gap-2 px-3 py-2 hover:bg-night cursor-pointer">
-                    <span className={`text-sm ${m.available ? '' : 'text-mist line-through'}`}>{m.name}</span>
-                    <input type="checkbox" checked={!m.available} disabled={togglingId === m.id}
-                      onChange={() => toggleStock(m)} className="accent-sand w-4 h-4 shrink-0" />
-                  </label>
+                  <div key={m.id} className="flex items-center justify-between gap-2 px-3 py-2 min-h-[40px] hover:bg-night">
+                    <span className={`text-sm min-w-0 truncate ${m.available ? '' : 'text-mist line-through'}`}>{m.name}</span>
+                    <Toggle on={m.available} onChange={() => toggleStock(m)}
+                      disabled={togglingId === m.id} ariaLabel={m.name} />
+                  </div>
                 ))}
                 {menu.length === 0 && <p className="text-xs text-mist px-3 py-2">لا توجد أصناف</p>}
               </div>
@@ -1052,6 +1058,7 @@ function KitchenVendor({ rid }: { rid: number }) {
           </div>
         </div>
       )}
+      {sheetElement}
     </div>
   )
 }

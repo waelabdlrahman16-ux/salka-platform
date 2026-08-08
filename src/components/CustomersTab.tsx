@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { rpc } from '../lib/rpc'
 import { orderStatusLabel } from '../lib/statusLabels'
+import Toggle from './Toggle'
+import { useSheets } from './ActionSheets'
 
 /**
  * Customers.
@@ -301,6 +303,7 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
 }) {
   const [banBusy, setBanBusy] = useState(false)
   const [banError, setBanError] = useState('')
+  const { confirmSheet, promptSheet, sheetElement } = useSheets()
 
   // Banning is keyed on the PHONE, not on an account, because most orders here
   // are placed without signing in at all -- a ban on a customer id would be
@@ -308,7 +311,11 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
   // enforces it inside place_order() and submit_custom_order(), so it holds
   // even if someone reloads past the UI.
   async function removeAccount() {
-    if (!confirm(`مسح حساب ${c.name || c.phone} نهائيًا؟\n\nمش هينفع يتراجع. الطلبات القديمة هتفضل موجودة.`)) return
+    if (!await confirmSheet({
+      title: `مسح حساب ${c.name || c.phone} نهائيًا؟`,
+      body: 'مش هينفع يتراجع. الطلبات القديمة هتفضل موجودة.',
+      danger: true,
+    })) return
     setBanBusy(true); setBanError('')
     const res = await rpc('admin_delete_customer_by_phone', { p_phone: c.phone }, {
       no_account_for_phone: 'الرقم ده مالوش حساب دخول أصلًا — ده سجل طلبات بس، ومفيش حاجة تتمسح',
@@ -318,7 +325,11 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
     if (!res.ok) {
       if (res.code === 'customer_has_wallet_balance') {
         setBanBusy(false)
-        if (!confirm('العميل ده لسه معاه رصيد في المحفظة.\n\nالمسح هيلغي الرصيد ده خالص. متأكد؟')) return
+        if (!await confirmSheet({
+          title: 'العميل ده لسه معاه رصيد في المحفظة.',
+          body: 'المسح هيلغي الرصيد ده خالص. متأكد؟',
+          danger: true,
+        })) return
         setBanBusy(true)
         const forced = await rpc('admin_delete_customer_by_phone', { p_phone: c.phone, p_force: true })
         setBanBusy(false)
@@ -334,9 +345,14 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
 
   async function toggleBan() {
     if (c.banned) {
-      if (!confirm(`ترجّع ${c.name || c.phone} يقدر يطلب تاني؟`)) return
+      if (!await confirmSheet({ title: `ترجّع ${c.name || c.phone} يقدر يطلب تاني؟` })) return
     } else {
-      const reason = prompt(`إيقاف ${c.name || c.phone} عن الطلب.\n\nاكتب السبب (هيتسجل عندك، العميل مش هيشوفه):`)
+      const reason = await promptSheet({
+        title: `إيقاف ${c.name || c.phone} عن الطلب.`,
+        body: 'اكتب السبب (هيتسجل عندك، العميل مش هيشوفه):',
+        multiline: true,
+        placeholder: 'السبب…',
+      })
       if (reason === null) return
       setBanError('')
       setBanBusy(true)
@@ -373,7 +389,7 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
             <p dir="ltr" className="text-sm text-mist text-right">{dial(c.phone)}</p>
             {c.email && <p dir="ltr" className="text-xs text-mist text-right break-all">{c.email}</p>}
           </div>
-          <button className="text-mist hover:text-foam text-sm shrink-0" onClick={onClose}>إغلاق ✕</button>
+          <button className="text-mist hover:text-foam text-sm shrink-0 min-h-[44px] inline-flex items-center" onClick={onClose}>إغلاق ✕</button>
         </div>
 
         <div className="p-4 space-y-4">
@@ -423,16 +439,15 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
               </div>
             )}
             {banError && <p className="text-sm text-red-700 mb-2">{banError}</p>}
-            <button
-              className={`w-full text-sm !py-2.5 ${c.banned ? 'btn-sea' : 'btn-ghost !text-red-600'}`}
-              disabled={banBusy} onClick={toggleBan}>
-              {banBusy ? 'لحظة…' : c.banned ? 'رجّعه يقدر يطلب' : 'أوقف الحساب ده عن الطلب'}
-            </button>
+            <div className="min-h-[44px] flex items-center">
+              <Toggle on={!c.banned} onChange={toggleBan} disabled={banBusy}
+                label="يقدر يطلب" labelOff="محظور" />
+            </div>
 
             {/* Deleting is below banning on purpose, and worded so the
                 difference is obvious: a ban is reversible from this same
-                button, a delete is not. The orders stay either way. */}
-            <button className="w-full text-xs !py-2 mt-2 text-red-600 underline"
+                toggle, a delete is not. The orders stay either way. */}
+            <button className="w-full text-xs mt-2 text-red-600 underline min-h-[44px] inline-flex items-center justify-center"
               disabled={banBusy} onClick={removeAccount}>
               امسح حساب العميل ده نهائيًا
             </button>
@@ -487,6 +502,7 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
             </div>
           </div>
         </div>
+        {sheetElement}
       </div>
     </div>
   )

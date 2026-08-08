@@ -11,6 +11,8 @@ import Icon from '../components/Icon'
 import DriverActiveMap from '../components/DriverActiveMap'
 import DriverPoolMap from '../components/DriverPoolMap'
 import SwipeToConfirm from '../components/SwipeToConfirm'
+import Toggle from '../components/Toggle'
+import { useSheets } from '../components/ActionSheets'
 import { rpc, describeError } from '../lib/rpc'
 import { haversineKm } from '../lib/geo'
 import { vendorNoun } from '../lib/vendorWords'
@@ -100,6 +102,7 @@ const LOAD_TIMEOUT_MS = 15000
 
 export default function DriverPage() {
   const { profile } = useAuth()
+  const { confirmSheet, promptSheet, alertSheet, sheetElement } = useSheets()
   const id = profile?.driver_id
   const [driver, setDriver] = useState<Driver | null>(null)
   const [assignments, setAssignments] = useState<Assignment[]>([])
@@ -446,7 +449,7 @@ export default function DriverPage() {
       await runAction(`accept:${a.id}`, async () => {
         const { error } = await supabase.rpc('driver_accept_assignment', { p_assignment_id: a.id, p_order_id: a.order_id })
         if (error) {
-          alert(error.message.includes('dispatch_rule_blocked')
+          await alertSheet(error.message.includes('dispatch_rule_blocked')
             ? 'وصلت للحد الأقصى (٣ طلبات) أو الطلب ده في اتجاه مختلف عن طلباتك الحالية'
             : 'حصل خطأ، جرب تاني')
           return
@@ -458,7 +461,7 @@ export default function DriverPage() {
     if (status === 'Delivered') {
       await runAction(`deliver:${a.id}`, async () => {
         const { error } = await supabase.rpc('mark_delivered', { p_assignment_id: a.id, p_order_id: a.order_id })
-        if (error) { alert(describeError(error?.message)); return }
+        if (error) { await alertSheet(describeError(error?.message)); return }
         // Show it immediately -- gating on load() left the driver swiping a
         // control that gave no sign of life for several seconds on mobile data.
         // The totals inside refresh when the reload lands, still within the 3s.
@@ -474,7 +477,7 @@ export default function DriverPage() {
     await runAction(`arrived:${a.id}`, async () => {
       if (navigator.vibrate) navigator.vibrate(15)
       const { error } = await supabase.rpc('driver_arrived_at_restaurant', { p_assignment_id: a.id })
-      if (error) { alert(describeError(error?.message)); return }
+      if (error) { await alertSheet(describeError(error?.message)); return }
       await load(true)
     })
   }
@@ -484,7 +487,7 @@ export default function DriverPage() {
       if (navigator.vibrate) navigator.vibrate(15)
       const { error } = await supabase.rpc('driver_mark_picked_up', { p_assignment_id: a.id })
       if (error) {
-        alert(
+        await alertSheet(
           error.message.includes('order_not_ready') ? 'الطلب لسه بيتجهز — استنى لحد ما يبقى جاهز'
           : error.message.includes('must_arrive_first') ? 'لازم تسجل إنك وصلت المكان الأول'
           : 'حصل خطأ، جرب تاني'
@@ -499,7 +502,7 @@ export default function DriverPage() {
     await runAction(`out:${a.id}`, async () => {
       if (navigator.vibrate) navigator.vibrate(15)
       const { error } = await supabase.rpc('driver_mark_out_for_delivery', { p_assignment_id: a.id })
-      if (error) { alert(describeError(error?.message)); return }
+      if (error) { await alertSheet(describeError(error?.message)); return }
       await load(true)
     })
   }
@@ -508,14 +511,19 @@ export default function DriverPage() {
   // liability. A single mis-tap with three stacked order cards, one-handed, used
   // to be enough. reportNoAnswer -- a far cheaper action -- already confirmed.
   async function confirmCash(a: Assignment, cashDue: number) {
-    if (!confirm(`تأكيد إنك استلمت ${cashDue} ج.م كاش من العميل؟\n\nالمبلغ ده هيتسجل عليك لحد ما تسلّمه للإدارة، ومش هينفع تتراجع عنه.`)) return
+    const ok = await confirmSheet({
+      title: `تأكيد إنك استلمت ${cashDue} ج.م كاش من العميل؟`,
+      body: 'المبلغ ده هيتسجل عليك لحد ما تسلّمه للإدارة، ومش هينفع تتراجع عنه.',
+      danger: true,
+    })
+    if (!ok) return
     await runAction(`cash:${a.id}`, async () => {
       if (navigator.vibrate) navigator.vibrate(15)
       setCashConfirmed(s => new Set(s).add(a.id)) // optimistic
       const { error } = await supabase.rpc('driver_confirm_cash_received', { p_assignment_id: a.id })
       if (error) {
         setCashConfirmed(s => { const next = new Set(s); next.delete(a.id); return next })
-        alert(describeError(error?.message))
+        await alertSheet(describeError(error?.message))
         return
       }
       await load(true)
@@ -530,7 +538,7 @@ export default function DriverPage() {
     await runAction(`arrived:${a.id}`, async () => {
       if (navigator.vibrate) navigator.vibrate(15)
       const { error } = await supabase.rpc('driver_arrived_at_customer', { p_assignment_id: a.id })
-      if (error) { alert(describeError(error?.message)); return }
+      if (error) { await alertSheet(describeError(error?.message)); return }
       await load(true)
     })
   }
@@ -540,14 +548,18 @@ export default function DriverPage() {
   // that will not let them in -- none of those are "no answer", and the honest
   // driver's only option was to claim a call they had not made.
   async function reportProblem(a: Assignment) {
-    const reason = prompt('في مشكلة في الطلب ده؟ اكتبها والإدارة هتشوفها فورًا:\n\n(مثال: العنوان غلط · العميل رفض الطلب · البوابة مش بتدخلني)', '')
-    if (reason === null) return
-    if (!reason.trim()) return
+    const reason = await promptSheet({
+      title: 'في مشكلة في الطلب ده؟ اكتبها والإدارة هتشوفها فورًا',
+      body: 'مثال: العنوان غلط · العميل رفض الطلب · البوابة مش بتدخلني',
+      multiline: true,
+      placeholder: 'اكتب المشكلة…',
+    })
+    if (!reason?.trim()) return
     await runAction(`problem:${a.id}`, async () => {
       const { error } = await supabase.rpc('driver_report_problem', {
         p_assignment_id: a.id, p_reason: reason.trim(),
       })
-      if (error) { alert(describeError(error?.message)); return }
+      if (error) { await alertSheet(describeError(error?.message)); return }
       await load(true)
     })
   }
@@ -565,7 +577,7 @@ export default function DriverPage() {
         finish_your_orders_first: 'خلّص الطلبات اللي معاك الأول',
         driver_suspended: 'حسابك موقوف — كلّم الإدارة',
       })
-      if (!res.ok) { alert(res.error); return }
+      if (!res.ok) { await alertSheet(res.error); return }
       await load(true)
     })
   }
@@ -574,23 +586,23 @@ export default function DriverPage() {
     await runAction(`called:${a.id}`, async () => {
       if (navigator.vibrate) navigator.vibrate(15)
       const { error } = await supabase.rpc('driver_called_customer', { p_assignment_id: a.id })
-      if (error) { alert(describeError(error?.message)); return }
+      if (error) { await alertSheet(describeError(error?.message)); return }
       await load(true)
     })
   }
 
   async function reportNoAnswer(a: Assignment) {
-    if (!confirm('العميل فعلاً ما ردش بعد ما اتصلت؟ الإدارة هتشوف الطلب وتقرر.')) return
+    if (!await confirmSheet({ title: 'العميل فعلاً ما ردش بعد ما اتصلت؟', body: 'الإدارة هتشوف الطلب وتقرر.' })) return
     const { error } = await supabase.rpc('driver_report_no_answer', { p_assignment_id: a.id })
     if (error) {
-      alert(
+      await alertSheet(
         error.message.includes('must_call_customer_first') ? 'لازم تتصل بالعميل الأول'
         : error.message.includes('too_early') ? 'لسه بدري، استنى 5 دقايق من وقت خروجك للتوصيل'
         : 'حصل خطأ، جرب تاني'
       )
       return
     }
-    alert('تم إبلاغ الإدارة، هيتواصلوا معاك بقرار')
+    await alertSheet('تم إبلاغ الإدارة، هيتواصلوا معاك بقرار')
     load(true)
   }
 
@@ -600,7 +612,7 @@ export default function DriverPage() {
     // message and hid the button until the next poll.
     const { error } = await supabase.rpc('request_early_settlement')
     setRequestingSettlement(false)
-    if (error) { alert('مش قادرين نبعت طلب التسوية دلوقتي، جرب تاني'); return }
+    if (error) { await alertSheet('مش قادرين نبعت طلب التسوية دلوقتي، جرب تاني'); return }
     setSettlementSent(true)
   }
 
@@ -608,19 +620,19 @@ export default function DriverPage() {
     const { error } = await supabase.rpc('request_swap', {
       p_shift_id: shiftId, p_reason: swapReason[shiftId] || ''
     })
-    if (error) alert(describeError(error?.message))
+    if (error) await alertSheet(describeError(error?.message))
     load(true)
   }
 
   async function acceptSwap(requestId: number) {
     const { error } = await supabase.rpc('accept_swap', { p_request_id: requestId })
-    if (error) alert(error.message.includes('unavailable') ? 'حد تاني سبقك' : 'حصل خطأ')
+    if (error) await alertSheet(error.message.includes('unavailable') ? 'حد تاني سبقك' : 'حصل خطأ')
     load(true)
   }
 
   async function escalate(requestId: number) {
     const { error } = await supabase.rpc('escalate_swap', { p_request_id: requestId })
-    if (error) { alert(describeError(error?.message)); return }
+    if (error) { await alertSheet(describeError(error?.message)); return }
     load(true)
   }
 
@@ -631,7 +643,7 @@ export default function DriverPage() {
     setClaiming(orderId)
     const { error } = await supabase.rpc('claim_order', { p_order_id: orderId })
     if (error) {
-      alert(
+      await alertSheet(
         error.message.includes('already_taken') ? 'الطلب اتاخد من مندوب تاني'
         : error.message.includes('wrong_vehicle_type') ? 'الطلب ده محتاج فان'
         : error.message.includes('not_ready_yet') ? 'الطلب لسه بيتحضر، استنى شوية'
@@ -654,7 +666,7 @@ export default function DriverPage() {
   async function reject() {
     if (!rejecting) return
     const { error } = await supabase.rpc('driver_reject_assignment', { p_assignment_id: rejecting.id, p_reason: reason.trim() })
-    if (error) { alert(describeError(error?.message)); return }
+    if (error) { await alertSheet(describeError(error?.message)); return }
     setRejecting(null); setReason(''); load(true)
   }
 
@@ -707,14 +719,13 @@ export default function DriverPage() {
           <p className="text-sm text-mist">★ {driver.rating} · {driver.total_deliveries} توصيلة{streakDays >= 2 ? ` · 🔥 ${streakDays} أيام متتالية` : ''}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <button className={driver.available ? 'badge-open' : 'badge-closed'}
-            aria-pressed={driver.available}
+          <Toggle
+            on={!!driver.available}
+            onChange={toggleAvailable}
             disabled={isBusy('availability')}
-            title={driver.available ? 'اضغط عشان توقف الطلبات' : 'اضغط عشان تستقبل طلبات'}
-            onClick={toggleAvailable}>
-            {isBusy('availability') ? '…'
-              : driver.available ? driverStatusLabel(driver.status) : 'مش متاح — اضغط'}
-          </button>
+            label={driverStatusLabel(driver.status)}
+            labelOff="مش متاح دلوقتي"
+          />
           {/* Kept even now that push works: a backgrounded tab still gets its
               timers throttled, and a driver who declined notifications has no
               other way to force a check. */}
@@ -1167,7 +1178,7 @@ export default function DriverPage() {
                       <p className="text-sm text-mist mt-0.5">{o.total} ج.م</p>
                     </div>
                   </div>
-                  <button className="btn-sea w-full mt-3" disabled={claiming === o.id || notReadyYet}
+                  <button className="btn-sea w-full mt-3" disabled={claiming !== null || notReadyYet}
                     onClick={e => { e.stopPropagation(); claim(o.id) }}>
                     {claiming === o.id ? 'جاري القبول…'
                       : notReadyYet ? (minsLeft > 0 ? `لسه مش جاهز — بعد ${minsLeft} د` : 'لسه مش جاهز')
@@ -1325,7 +1336,7 @@ export default function DriverPage() {
                       </p>
                       <p className="text-sm text-mist mt-0.5">{sh.start_time.slice(0,5)} — {sh.end_time.slice(0,5)}</p>
                     </div>
-                    {sh.status === 'swapped' && <span className="badge-closed">اتبدلت</span>}
+                    {sh.status === 'swapped' && <span className="bg-shellup text-mist text-xs font-semibold rounded-full px-2.5 py-1">اتبدلت</span>}
                   </div>
 
                   {sh.status === 'scheduled' && !requested && !myEscalated.has(sh.id) && (
@@ -1406,6 +1417,7 @@ export default function DriverPage() {
           </div>
         </div>
       )}
+      {sheetElement}
     </div>
   )
 }

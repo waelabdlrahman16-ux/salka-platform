@@ -70,6 +70,26 @@ export default function SwipeToConfirm({ label, onConfirm, disabled }: Props) {
     }
   }
 
+  // Keyboard path for the same completion the successful drag reaches: the
+  // track is a single control ("confirm delivery"), so Enter/Space fires the
+  // same latched, vibrate-and-settle sequence as a full swipe. firedRef and
+  // the reset timeout behave identically, so a held key cannot double-fire.
+  function keyboardConfirm() {
+    if (disabled || firedRef.current) return
+    const track = trackRef.current
+    if (track) maxDrag.current = track.clientWidth - 56
+    firedRef.current = true
+    if (navigator.vibrate) navigator.vibrate(20)
+    dragXRef.current = maxDrag.current
+    setDragX(maxDrag.current)
+    onConfirm()
+    resetTimeoutRef.current = setTimeout(() => {
+      dragXRef.current = 0
+      setDragX(0)
+      firedRef.current = false
+    }, 400)
+  }
+
   // Attach move/up listeners to the window while dragging, not just the small
   // track element -- otherwise a fast swipe that leaves the div's bounds
   // stops receiving move events and the thumb gets stuck mid-drag.
@@ -95,6 +115,16 @@ export default function SwipeToConfirm({ label, onConfirm, disabled }: Props) {
 
   return (
     <div ref={trackRef}
+      role="button"
+      aria-label="تأكيد التسليم"
+      aria-disabled={disabled}
+      tabIndex={disabled ? -1 : 0}
+      onKeyDown={e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          if (e.key === ' ') e.preventDefault()
+          keyboardConfirm()
+        }
+      }}
       className={`relative w-full rounded-2xl p-1.5 select-none touch-none ${disabled ? 'bg-shellup opacity-50' : 'bg-shellup'}`}
       style={{ height: 64 }}>
       <p className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-mist pointer-events-none">
