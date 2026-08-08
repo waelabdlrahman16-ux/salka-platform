@@ -77,7 +77,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {
+    // One root-scoped worker must own both the app shell and FCM. Registering
+    // sw.js here and firebase-messaging-sw.js in push.ts made the two workers
+    // replace each other, leaving iOS with a valid token but no FCM handler.
+    navigator.serviceWorker.register('/firebase-messaging-sw.js').catch(() => {
       // installability/offline-shell is a nice-to-have, never block the app on it
     })
   })

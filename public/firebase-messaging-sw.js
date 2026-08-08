@@ -1,10 +1,10 @@
-/* Firebase Cloud Messaging background handler.
+/* Firebase Cloud Messaging and app-shell service worker.
  *
- * This is a SEPARATE service worker from sw.js. Firebase requires this exact
- * filename at the origin root -- getToken() looks for it by convention. sw.js
- * keeps doing the app-shell caching; this one only handles push while the tab
- * is closed or backgrounded, which is the case that matters for a driver whose
- * screen has gone to sleep.
+ * This is the ONE root-scoped service worker for the application. A service
+ * worker scope can only have one active registration: registering sw.js for
+ * caching and this file for FCM made them replace each other. The browser
+ * could therefore keep a valid FCM token while the active worker had no
+ * background-message handler. Keep install, cache, and push behavior together.
  *
  * It uses the compat build deliberately: service workers cannot use bare module
  * specifiers, and importScripts is the supported path for FCM in a worker.
@@ -49,6 +49,43 @@ firebase.initializeApp({
   storageBucket: 'salka-38d81.firebasestorage.app',
   messagingSenderId: '298864964514',
   appId: '1:298864964514:web:ffa48ef7432992fdc538fb',
+})
+
+// Keep the app installable and let its shell reopen through a brief connection
+// loss. API calls are deliberately never cached: order state must stay fresh.
+const CACHE = 'salka-shell-v3'
+
+self.addEventListener('install', () => {
+  self.skipWaiting()
+})
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key))))
+      .then(() => self.clients.claim())
+  )
+})
+
+self.addEventListener('fetch', event => {
+  const { request } = event
+  if (request.method !== 'GET') return
+
+  const url = new URL(request.url)
+  if (url.origin !== self.location.origin) return
+  if (url.pathname.startsWith('/rest/') || url.pathname.startsWith('/auth/') || url.pathname.startsWith('/storage/')) return
+
+  event.respondWith(
+    fetch(request)
+      .then(response => {
+        if (response && response.ok) {
+          const clone = response.clone()
+          caches.open(CACHE).then(cache => cache.put(request, clone))
+        }
+        return response
+      })
+      .catch(() => caches.match(request).then(cached => cached || caches.match('/index.html')))
+  )
 })
 
 // This worker owns the display, and send-push (v12+) sends DATA-ONLY messages
