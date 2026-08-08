@@ -268,7 +268,7 @@ export default function Track() {
     if (driverRating > 0 && driverRating <= 2) {
       setComplaintCategory('driver_conduct')
       setComplaining(true)
-    } else if (driverRating >= 4) {
+    } else if (driverRating >= 4 && data?.assignment?.driver_instapay) {
       setShowTipPrompt(true)
     }
   }
@@ -941,10 +941,10 @@ export default function Track() {
       )}
       {ratingSent && !showTipPrompt && <p className="text-emerald-700 text-sm text-center mb-4">✅ شكرًا لتقييمك</p>}
 
-      {showTipPrompt && !tipSent && (
+      {showTipPrompt && !tipSent && data.assignment?.driver_instapay && (
         <div className="card p-4 mb-4">
           <p className="text-sm font-semibold mb-1">حابب تكرّم المندوب؟ 🙏</p>
-          <p className="text-xs text-mist mb-3">الإكرامية بتتحول مباشرة لحساب المندوب على إنستاباي — مش من غير سالكة</p>
+          <p className="text-xs text-mist mb-3">التحويل مباشر للمندوب خارج سالكة. سالكة لا تستلم المبلغ ولا تؤكد وصوله.</p>
           <div className="grid grid-cols-4 gap-2 mb-3">
             {[10, 20, 50].map(amt => (
               <button key={amt} className={`text-sm font-semibold py-2.5 rounded-xl border-2 ${tipAmount === amt ? 'border-sea bg-sea/5 text-sea' : 'border-line text-mist'}`}
@@ -963,11 +963,11 @@ export default function Track() {
           {errFor('tip') && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-2">{errFor('tip')}</p>}
           <div className="flex gap-2">
             <button className="btn-ghost flex-1 text-sm" onClick={() => setShowTipPrompt(false)}>لأ شكرًا</button>
-            <button className="btn-sea flex-1 text-sm" disabled={!tipAmount && !(Number(customTip) > 0)} onClick={sendTip}>حوّلت الإكرامية</button>
+            <button className="btn-sea flex-1 text-sm" disabled={!tipAmount && !(Number(customTip) > 0)} onClick={sendTip}>أبلغت إني حوّلت</button>
           </div>
         </div>
       )}
-      {tipSent && <p className="text-emerald-700 text-sm text-center mb-4">✅ شكرًا لكرمك، المندوب هيقدرها</p>}
+      {tipSent && <p className="text-emerald-700 text-sm text-center mb-4">✅ تم إبلاغ المندوب — يراجع إنستاباي للتأكيد</p>}
 
       {canCancel && (
         <>
