@@ -98,6 +98,14 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Receipt sending stays deliberately off until both the Resend key and the
+    // gosalka.com sending domain are verified. A disabled integration is a
+    // normal no-op; a supposedly enabled integration with no key remains a
+    // visible 503 configuration error.
+    if (Deno.env.get("RECEIPT_EMAIL_ENABLED") !== "true") {
+      return json({ ok: true, skipped: "receipt_email_disabled" })
+    }
+
     const resendKey = Deno.env.get("RESEND_API_KEY")
     // Was HTTP 200. The caller is a Postgres trigger via pg_net, which only
     // inspects status codes -- so if RESEND_API_KEY is unset or rotated, every
