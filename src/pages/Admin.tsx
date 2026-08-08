@@ -2131,7 +2131,9 @@ export default function Admin() {
       )}
 
       {tab === 'menu' && (
-        <div className="space-y-3">
+        // max-w: on a laptop these cards stretched edge to edge, which made
+        // the hours editor look like seven empty shelves. Phones unchanged.
+        <div className="space-y-3 max-w-3xl mx-auto">
           {restaurants.map(r => {
             const its = menu.filter(m => m.restaurant_id === r.id)
             const expanded = openRest === r.id
@@ -2143,40 +2145,32 @@ export default function Admin() {
                       ? <img src={r.logo_url} alt="" className="w-11 h-11 rounded-xl object-cover shrink-0 border border-line" />
                       : <div className="w-11 h-11 rounded-xl bg-shellup grid place-items-center shrink-0 text-lg font-bold text-mist">{r.name.charAt(0)}</div>}
                     <div className="min-w-0">
-                      <h2 className="font-bold truncate">{r.name}{r.archived ? ' (متوقف)' : ''}</h2>
-                      <p className="text-sm text-mist mt-0.5">{its.length} صنف · اضغط للتعديل</p>
+                      <h2 className="font-bold truncate">
+                        {r.display_order != null && (
+                          <span className="text-[10px] font-bold text-sea bg-sea/10 rounded-full px-1.5 py-0.5 ml-1.5 align-middle">#{r.display_order}</span>
+                        )}
+                        {r.name}
+                        {r.featured && <span className="text-sm align-middle"> ⭐</span>}
+                        {r.archived ? ' (متوقف)' : ''}
+                      </h2>
+                      <p className="text-sm text-mist mt-0.5">{its.length} صنف · اضغط للتعديل والترتيب</p>
                     </div>
                   </button>
+                  {/* Two actions, not three. The red «إيقاف» pill used to sit
+                      here next to a red closed-status pill — two alarms side by
+                      side that meant different things. Archiving is destructive
+                      and rare, so it moved inside the expanded card. */}
                   <div className="flex items-center gap-2 shrink-0">
                     <button className="btn-ghost !py-1.5 !px-2.5 text-xs" onClick={() => setAddingItemFor(r)}>+ صنف</button>
                     <button className={(openStates[r.id]?.is_open ?? true) ? 'badge-open' : 'badge-closed'}
                       onClick={() => toggleRestaurant(r)}>{openLabel(openStates[r.id] ?? {}).text}</button>
-                    <button className={`text-xs font-semibold rounded-full px-2.5 py-1 ${r.archived ? 'bg-emerald-500/15 text-emerald-700' : 'bg-red-500/15 text-red-600'}`}
-                      onClick={() => archiveRestaurant(r, !r.archived)}>{r.archived ? 'تفعيل' : 'إيقاف'}</button>
                   </div>
                 </div>
 
-                {expanded && <VendorHoursRow restaurant={r} onSaved={loadOpenStates} />}
+                {/* WHO APPEARS FIRST — deliberately the first thing in the
+                    expanded card: it exists precisely because nobody could
+                    find it when it sat under the hours and the logo.
 
-                {expanded && (
-                  <div className="flex items-center gap-3 mt-3">
-                    <label className="relative cursor-pointer group">
-                      <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
-                        onChange={e => e.target.files?.[0] && uploadLogo(r, e.target.files[0])} />
-                      {r.logo_url
-                        ? <img src={r.logo_url} alt="" className="w-14 h-14 rounded-xl object-cover border border-line group-hover:opacity-70" />
-                        : <div className="w-14 h-14 rounded-xl bg-shellup grid place-items-center text-mist text-[10px] group-hover:opacity-70">اضغط لإضافة</div>}
-                    </label>
-                    <div className="text-xs text-mist">
-                      <p>{uploadingImage === `r${r.id}` ? 'جاري رفع الشعار…' : 'الشعار — بيظهر جنب الاسم'}</p>
-                      {r.logo_url && (
-                        <button className="text-red-500 font-semibold mt-1" onClick={() => removeLogo(r)}>✗ إزالة الشعار</button>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* WHO APPEARS FIRST.
                     Before this existed the sort fell through to the vendor's
                     NAME -- order_ratings is empty, so the review and rating
                     tiebreakers both collapse, and the customer list for الحجاز ٣
@@ -2185,7 +2179,7 @@ export default function Admin() {
 
                     No badge is shown to the customer for either control. */}
                 {expanded && (
-                  <div className="mt-3 rounded-xl bg-shellup p-3">
+                  <div className="mt-3 rounded-xl bg-shellup p-3 max-w-md">
                     <p className="text-xs font-semibold mb-2">ترتيب الظهور للعميل</p>
                     <div className="flex items-center gap-3">
                       {/* CONTROLLED, and the rank is read from the live input
@@ -2215,6 +2209,26 @@ export default function Admin() {
                       «مميز» بيرفعه فوق غير المرتّبين من غير ما تحدد له مركز.
                       <b className="text-sandink"> المطعم المقفول بينزل تحت في كل الأحوال.</b>
                     </p>
+                  </div>
+                )}
+
+                {expanded && <VendorHoursRow restaurant={r} onSaved={loadOpenStates} />}
+
+                {expanded && (
+                  <div className="flex items-center gap-3 mt-3">
+                    <label className="relative cursor-pointer group">
+                      <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
+                        onChange={e => e.target.files?.[0] && uploadLogo(r, e.target.files[0])} />
+                      {r.logo_url
+                        ? <img src={r.logo_url} alt="" className="w-14 h-14 rounded-xl object-cover border border-line group-hover:opacity-70" />
+                        : <div className="w-14 h-14 rounded-xl bg-shellup grid place-items-center text-mist text-[10px] group-hover:opacity-70">اضغط لإضافة</div>}
+                    </label>
+                    <div className="text-xs text-mist">
+                      <p>{uploadingImage === `r${r.id}` ? 'جاري رفع الشعار…' : 'الشعار — بيظهر جنب الاسم'}</p>
+                      {r.logo_url && (
+                        <button className="text-red-500 font-semibold mt-1" onClick={() => removeLogo(r)}>✗ إزالة الشعار</button>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -2251,6 +2265,19 @@ export default function Admin() {
                   </div>
                 )}
                 {imageError && expanded && <p className="text-xs text-sandink mt-1">{imageError}</p>}
+
+                {/* Archiving lives HERE, not as a red pill on every collapsed
+                    card. It is rare and destructive; giving it a permanent
+                    header slot made every closed vendor look like two alarms. */}
+                {expanded && (
+                  <div className="mt-3 pt-2.5 border-t border-line flex justify-end">
+                    <button
+                      className={`text-xs font-semibold ${r.archived ? 'text-emerald-700' : 'text-red-500'}`}
+                      onClick={() => archiveRestaurant(r, !r.archived)}>
+                      {r.archived ? '↩ تفعيل المطعم تاني' : '⛔ إيقاف المطعم — يختفي من التطبيق خالص'}
+                    </button>
+                  </div>
+                )}
 
                 {reliability[r.id] && reliability[r.id].total_orders > 0 && (
                   <p className="text-xs text-mist mt-2">

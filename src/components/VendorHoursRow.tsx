@@ -95,7 +95,10 @@ export default function VendorHoursRow({ restaurant, onSaved }: {
   const anySet = WEEK.some(d => draft[d.dow].closed || draft[d.dow].opens)
 
   return (
-    <div className="mt-3 bg-shellup/60 border border-line rounded-xl p-3">
+    // max-w: inside a full-width card on a laptop these seven rows stretched
+    // edge to edge and read as acres of empty space. The rows are naturally
+    // ~22rem wide; the box now hugs them. Phones unchanged (max-w never bites).
+    <div className="mt-3 bg-shellup/60 border border-line rounded-xl p-3 max-w-md">
       <div className="flex items-center justify-between gap-2 mb-1">
         <p className="text-sm font-bold">مواعيد الفتح</p>
         <button className="btn-ghost !py-1.5 !px-3 text-[11px]" onClick={copyFromFirst}>
