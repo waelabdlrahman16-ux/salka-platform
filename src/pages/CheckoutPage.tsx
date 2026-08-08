@@ -80,12 +80,12 @@ export default function CheckoutPage() {
   const [walletFailed, setWalletFailed] = useState(false)
   const [compoundsFailed, setCompoundsFailed] = useState(false)
   // null until the server answers. This used to default to 300 while
-  // settings.cod_deposit_threshold_egp says 1000, so for the moment between
+  // settings.cod_deposit_threshold_egp says 3000, so for the moment between
   // first paint and the settings fetch landing, a 451 ج.م order was told it
   // needed a 208 ج.م InstaPay deposit that it does not need -- a false
   // statement about payment terms, on the checkout screen, in the second
   // someone is deciding whether to go through with it. On a *failed* fetch it
-  // was not a flash at all: every order between 300 and 1000 kept the warning.
+  // was not a flash at all: every order between 300 and 3000 kept the warning.
   // Same rule as the delivery fee and the service fee: never guess a
   // server-owned number.
   const [codDepositThreshold, setCodDepositThreshold] = useState<number | null>(null)

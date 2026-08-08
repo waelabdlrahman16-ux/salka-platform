@@ -572,9 +572,19 @@ function KitchenVendor({ rid }: { rid: number }) {
       : await rpc('vendor_accept_order', { p_order_id: o.id, p_prep_minutes: prepMinutes ?? null }, {
           order_not_priced: 'الطلب ده لسه محتاج تسعير من الإدارة — استنى مكالمتهم',
         })
+    if (!res.ok) { setBusyOrder(null); setBoardError(`طلب #${o.id}: ${res.error}`); return }
+
+    // The RPC has committed, so paint the confirmed state immediately. load()
+    // performs several sequential reads (restaurant, schedule, reliability,
+    // menu, orders, items and assignments); waiting for all of them left the
+    // old action enabled long enough for vendors to press it twice and believe
+    // the first tap had failed. The server remains authoritative: reconcile
+    // straight afterwards and keep the button locked until that finishes.
+    setOrders(prev => prev.map(order => order.id === o.id
+      ? { ...order, kitchen_status: next, ...(next === 'ready' ? { ready_at: new Date().toISOString() } : {}) }
+      : order))
+    await load()
     setBusyOrder(null)
-    if (!res.ok) { setBoardError(`طلب #${o.id}: ${res.error}`); return }
-    load()
   }
 
   // The vendor could not open their own restaurant. The badge looked like a

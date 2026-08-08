@@ -178,6 +178,7 @@ Deno.serve(async (req) => {
   }
 
   const results: unknown[] = []
+  let successCount = 0
   for (const target of targets) {
     let status = 0, ok = false, errCode = ""
     try {
@@ -190,6 +191,7 @@ Deno.serve(async (req) => {
         })
       status = fwRes.status
       ok = fwRes.ok
+      if (ok) successCount++
       if (!ok) {
         // UNREGISTERED means the device is gone for good; UNAVAILABLE means try
         // again later. Treating them the same would either keep a dead token
@@ -210,5 +212,19 @@ Deno.serve(async (req) => {
     })
   }
 
-  return new Response(JSON.stringify({ results }), { headers: { "Content-Type": "application/json" } })
+  // A blanket HTTP 200 made an all-token outage indistinguishable from full
+  // delivery in Edge Function logs. Preserve 2xx for partial fan-out success,
+  // but surface complete delivery failure as 502. Per-token detail remains in
+  // the body and push_send_log, and permanent tokens are pruned by
+  // record_push_result().
+  const allSucceeded = successCount === targets.length
+  const noneSucceeded = successCount === 0
+  return new Response(JSON.stringify({
+    ok: allSucceeded,
+    summary: { attempted: targets.length, succeeded: successCount, failed: targets.length - successCount },
+    results,
+  }), {
+    status: noneSucceeded ? 502 : 200,
+    headers: { "Content-Type": "application/json" }
+  })
 })
