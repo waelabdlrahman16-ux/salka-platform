@@ -41,6 +41,7 @@ interface DriverStats {
   today_orders: number
   today_earnings: number
   today_tips: number
+  today_reported_tips?: number
   unpaid_earnings: number
   cash_held: number
   bonus: BonusInfo
@@ -165,6 +166,7 @@ export default function DriverPage() {
   const todayEarnings = stats?.today_earnings ?? 0
   const todayOrders = stats?.today_orders ?? 0
   const todayTips = stats?.today_tips ?? 0
+  const todayReportedTips = stats?.today_reported_tips ?? 0
   const bonus = stats?.bonus ?? null
   const money = (n: number) => (haveStats ? `${n} ج.م` : '— ج.م')
 
@@ -1220,6 +1222,11 @@ export default function DriverPage() {
           <p className="text-xs text-mist">أرباح النهاردة</p>
           <p className="text-xl font-bold text-sea mt-1">{money(todayEarnings)}</p>
           {todayTips > 0 && <p className="text-xs text-seadeep font-semibold mt-1">+ {todayTips} ج.م إكراميات</p>}
+          {todayReportedTips > 0 ? (
+            <p className="text-xs text-amber-700 font-semibold mt-1">
+              العميل أبلغ بتحويل {todayReportedTips} ج.م — راجع إنستاباي
+            </p>
+          ) : null}
         </div>
         <div className="card p-4">
           <p className="text-xs text-mist">طلبات النهاردة</p>
