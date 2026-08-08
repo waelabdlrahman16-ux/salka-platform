@@ -1,0 +1,574 @@
+{
+  "jsonb_agg": [
+    {
+      "name": "app_events_created_idx",
+      "table": "app_events",
+      "definition": "CREATE INDEX app_events_created_idx ON public.app_events USING btree (created_at DESC)"
+    },
+    {
+      "name": "app_events_device_idx",
+      "table": "app_events",
+      "definition": "CREATE INDEX app_events_device_idx ON public.app_events USING btree (device_id, created_at)"
+    },
+    {
+      "name": "app_events_event_idx",
+      "table": "app_events",
+      "definition": "CREATE INDEX app_events_event_idx ON public.app_events USING btree (event, created_at DESC)"
+    },
+    {
+      "name": "app_events_pkey",
+      "table": "app_events",
+      "definition": "CREATE UNIQUE INDEX app_events_pkey ON public.app_events USING btree (id)"
+    },
+    {
+      "name": "banned_customers_pkey",
+      "table": "banned_customers",
+      "definition": "CREATE UNIQUE INDEX banned_customers_pkey ON public.banned_customers USING btree (phone)"
+    },
+    {
+      "name": "banners_pkey",
+      "table": "banners",
+      "definition": "CREATE UNIQUE INDEX banners_pkey ON public.banners USING btree (id)"
+    },
+    {
+      "name": "banners_visible_idx",
+      "table": "banners",
+      "definition": "CREATE INDEX banners_visible_idx ON public.banners USING btree (active, sort)"
+    },
+    {
+      "name": "complaints_pkey",
+      "table": "complaints",
+      "definition": "CREATE UNIQUE INDEX complaints_pkey ON public.complaints USING btree (id)"
+    },
+    {
+      "name": "idx_complaints_driver_id",
+      "table": "complaints",
+      "definition": "CREATE INDEX idx_complaints_driver_id ON public.complaints USING btree (driver_id)"
+    },
+    {
+      "name": "idx_complaints_order_id",
+      "table": "complaints",
+      "definition": "CREATE INDEX idx_complaints_order_id ON public.complaints USING btree (order_id)"
+    },
+    {
+      "name": "compounds_pkey",
+      "table": "compounds",
+      "definition": "CREATE UNIQUE INDEX compounds_pkey ON public.compounds USING btree (id)"
+    },
+    {
+      "name": "idx_compounds_region_id",
+      "table": "compounds",
+      "definition": "CREATE INDEX idx_compounds_region_id ON public.compounds USING btree (region_id)"
+    },
+    {
+      "name": "customer_addresses_customer_id_idx",
+      "table": "customer_addresses",
+      "definition": "CREATE INDEX customer_addresses_customer_id_idx ON public.customer_addresses USING btree (customer_id)"
+    },
+    {
+      "name": "customer_addresses_pkey",
+      "table": "customer_addresses",
+      "definition": "CREATE UNIQUE INDEX customer_addresses_pkey ON public.customer_addresses USING btree (id)"
+    },
+    {
+      "name": "idx_customer_addresses_compound_id",
+      "table": "customer_addresses",
+      "definition": "CREATE INDEX idx_customer_addresses_compound_id ON public.customer_addresses USING btree (compound_id)"
+    },
+    {
+      "name": "wallet_otp_pkey",
+      "table": "customer_otp_codes",
+      "definition": "CREATE UNIQUE INDEX wallet_otp_pkey ON public.customer_otp_codes USING btree (id)"
+    },
+    {
+      "name": "customer_sessions_customer_id_idx",
+      "table": "customer_sessions",
+      "definition": "CREATE INDEX customer_sessions_customer_id_idx ON public.customer_sessions USING btree (customer_id)"
+    },
+    {
+      "name": "customer_sessions_pkey",
+      "table": "customer_sessions",
+      "definition": "CREATE UNIQUE INDEX customer_sessions_pkey ON public.customer_sessions USING btree (token)"
+    },
+    {
+      "name": "customer_wallets_phone_key",
+      "table": "customer_wallets",
+      "definition": "CREATE UNIQUE INDEX customer_wallets_phone_key ON public.customer_wallets USING btree (phone)"
+    },
+    {
+      "name": "customer_wallets_pkey",
+      "table": "customer_wallets",
+      "definition": "CREATE UNIQUE INDEX customer_wallets_pkey ON public.customer_wallets USING btree (id)"
+    },
+    {
+      "name": "customers_auth_user_id_idx",
+      "table": "customers",
+      "definition": "CREATE UNIQUE INDEX customers_auth_user_id_idx ON public.customers USING btree (auth_user_id) WHERE (auth_user_id IS NOT NULL)"
+    },
+    {
+      "name": "customers_phone_key",
+      "table": "customers",
+      "definition": "CREATE UNIQUE INDEX customers_phone_key ON public.customers USING btree (phone)"
+    },
+    {
+      "name": "customers_pkey",
+      "table": "customers",
+      "definition": "CREATE UNIQUE INDEX customers_pkey ON public.customers USING btree (id)"
+    },
+    {
+      "name": "dead_push_tokens_pkey",
+      "table": "dead_push_tokens",
+      "definition": "CREATE UNIQUE INDEX dead_push_tokens_pkey ON public.dead_push_tokens USING btree (token)"
+    },
+    {
+      "name": "delivery_assignments_driver_id_idx",
+      "table": "delivery_assignments",
+      "definition": "CREATE INDEX delivery_assignments_driver_id_idx ON public.delivery_assignments USING btree (driver_id)"
+    },
+    {
+      "name": "delivery_assignments_order_id_idx",
+      "table": "delivery_assignments",
+      "definition": "CREATE INDEX delivery_assignments_order_id_idx ON public.delivery_assignments USING btree (order_id)"
+    },
+    {
+      "name": "delivery_assignments_pkey",
+      "table": "delivery_assignments",
+      "definition": "CREATE UNIQUE INDEX delivery_assignments_pkey ON public.delivery_assignments USING btree (id)"
+    },
+    {
+      "name": "delivery_slots_pkey",
+      "table": "delivery_slots",
+      "definition": "CREATE UNIQUE INDEX delivery_slots_pkey ON public.delivery_slots USING btree (id)"
+    },
+    {
+      "name": "idx_delivery_slots_restaurant_id",
+      "table": "delivery_slots",
+      "definition": "CREATE INDEX idx_delivery_slots_restaurant_id ON public.delivery_slots USING btree (restaurant_id)"
+    },
+    {
+      "name": "discounts_pkey",
+      "table": "discounts",
+      "definition": "CREATE UNIQUE INDEX discounts_pkey ON public.discounts USING btree (id)"
+    },
+    {
+      "name": "idx_discounts_menu_item_id",
+      "table": "discounts",
+      "definition": "CREATE INDEX idx_discounts_menu_item_id ON public.discounts USING btree (menu_item_id)"
+    },
+    {
+      "name": "idx_discounts_restaurant_id",
+      "table": "discounts",
+      "definition": "CREATE INDEX idx_discounts_restaurant_id ON public.discounts USING btree (restaurant_id)"
+    },
+    {
+      "name": "driver_device_log_driver_idx",
+      "table": "driver_device_log",
+      "definition": "CREATE INDEX driver_device_log_driver_idx ON public.driver_device_log USING btree (driver_id, created_at DESC)"
+    },
+    {
+      "name": "driver_device_log_pkey",
+      "table": "driver_device_log",
+      "definition": "CREATE UNIQUE INDEX driver_device_log_pkey ON public.driver_device_log USING btree (id)"
+    },
+    {
+      "name": "driver_earnings_assignment_unique",
+      "table": "driver_earnings",
+      "definition": "CREATE UNIQUE INDEX driver_earnings_assignment_unique ON public.driver_earnings USING btree (assignment_id)"
+    },
+    {
+      "name": "driver_earnings_pkey",
+      "table": "driver_earnings",
+      "definition": "CREATE UNIQUE INDEX driver_earnings_pkey ON public.driver_earnings USING btree (id)"
+    },
+    {
+      "name": "idx_driver_earnings_driver_id",
+      "table": "driver_earnings",
+      "definition": "CREATE INDEX idx_driver_earnings_driver_id ON public.driver_earnings USING btree (driver_id)"
+    },
+    {
+      "name": "idx_driver_earnings_order_id",
+      "table": "driver_earnings",
+      "definition": "CREATE INDEX idx_driver_earnings_order_id ON public.driver_earnings USING btree (order_id)"
+    },
+    {
+      "name": "driver_settlements_pkey",
+      "table": "driver_settlements",
+      "definition": "CREATE UNIQUE INDEX driver_settlements_pkey ON public.driver_settlements USING btree (id)"
+    },
+    {
+      "name": "idx_driver_settlements_driver_id",
+      "table": "driver_settlements",
+      "definition": "CREATE INDEX idx_driver_settlements_driver_id ON public.driver_settlements USING btree (driver_id)"
+    },
+    {
+      "name": "driver_shift_bonuses_driver_id_bonus_date_key",
+      "table": "driver_shift_bonuses",
+      "definition": "CREATE UNIQUE INDEX driver_shift_bonuses_driver_id_bonus_date_key ON public.driver_shift_bonuses USING btree (driver_id, bonus_date)"
+    },
+    {
+      "name": "driver_shift_bonuses_pkey",
+      "table": "driver_shift_bonuses",
+      "definition": "CREATE UNIQUE INDEX driver_shift_bonuses_pkey ON public.driver_shift_bonuses USING btree (id)"
+    },
+    {
+      "name": "driver_tips_order_id_key",
+      "table": "driver_tips",
+      "definition": "CREATE UNIQUE INDEX driver_tips_order_id_key ON public.driver_tips USING btree (order_id)"
+    },
+    {
+      "name": "driver_tips_pkey",
+      "table": "driver_tips",
+      "definition": "CREATE UNIQUE INDEX driver_tips_pkey ON public.driver_tips USING btree (id)"
+    },
+    {
+      "name": "idx_driver_tips_driver_id",
+      "table": "driver_tips",
+      "definition": "CREATE INDEX idx_driver_tips_driver_id ON public.driver_tips USING btree (driver_id)"
+    },
+    {
+      "name": "drivers_pkey",
+      "table": "drivers",
+      "definition": "CREATE UNIQUE INDEX drivers_pkey ON public.drivers USING btree (id)"
+    },
+    {
+      "name": "menu_categories_pkey",
+      "table": "menu_categories",
+      "definition": "CREATE UNIQUE INDEX menu_categories_pkey ON public.menu_categories USING btree (id)"
+    },
+    {
+      "name": "menu_categories_uniq",
+      "table": "menu_categories",
+      "definition": "CREATE UNIQUE INDEX menu_categories_uniq ON public.menu_categories USING btree (restaurant_id, lower(btrim(name)))"
+    },
+    {
+      "name": "idx_menu_item_addon_groups_menu_item_id",
+      "table": "menu_item_addon_groups",
+      "definition": "CREATE INDEX idx_menu_item_addon_groups_menu_item_id ON public.menu_item_addon_groups USING btree (menu_item_id)"
+    },
+    {
+      "name": "menu_item_addon_groups_pkey",
+      "table": "menu_item_addon_groups",
+      "definition": "CREATE UNIQUE INDEX menu_item_addon_groups_pkey ON public.menu_item_addon_groups USING btree (id)"
+    },
+    {
+      "name": "idx_menu_item_addons_group_id",
+      "table": "menu_item_addons",
+      "definition": "CREATE INDEX idx_menu_item_addons_group_id ON public.menu_item_addons USING btree (group_id)"
+    },
+    {
+      "name": "menu_item_addons_pkey",
+      "table": "menu_item_addons",
+      "definition": "CREATE UNIQUE INDEX menu_item_addons_pkey ON public.menu_item_addons USING btree (id)"
+    },
+    {
+      "name": "menu_item_combos_item_idx",
+      "table": "menu_item_combos",
+      "definition": "CREATE INDEX menu_item_combos_item_idx ON public.menu_item_combos USING btree (menu_item_id)"
+    },
+    {
+      "name": "menu_item_combos_pkey",
+      "table": "menu_item_combos",
+      "definition": "CREATE UNIQUE INDEX menu_item_combos_pkey ON public.menu_item_combos USING btree (id)"
+    },
+    {
+      "name": "idx_menu_item_sizes_menu_item_id",
+      "table": "menu_item_sizes",
+      "definition": "CREATE INDEX idx_menu_item_sizes_menu_item_id ON public.menu_item_sizes USING btree (menu_item_id)"
+    },
+    {
+      "name": "menu_item_sizes_pkey",
+      "table": "menu_item_sizes",
+      "definition": "CREATE UNIQUE INDEX menu_item_sizes_pkey ON public.menu_item_sizes USING btree (id)"
+    },
+    {
+      "name": "menu_items_pkey",
+      "table": "menu_items",
+      "definition": "CREATE UNIQUE INDEX menu_items_pkey ON public.menu_items USING btree (id)"
+    },
+    {
+      "name": "menu_items_restaurant_id_idx",
+      "table": "menu_items",
+      "definition": "CREATE INDEX menu_items_restaurant_id_idx ON public.menu_items USING btree (restaurant_id)"
+    },
+    {
+      "name": "idx_order_items_menu_item_id",
+      "table": "order_items",
+      "definition": "CREATE INDEX idx_order_items_menu_item_id ON public.order_items USING btree (menu_item_id)"
+    },
+    {
+      "name": "order_items_order_id_idx",
+      "table": "order_items",
+      "definition": "CREATE INDEX order_items_order_id_idx ON public.order_items USING btree (order_id)"
+    },
+    {
+      "name": "order_items_pkey",
+      "table": "order_items",
+      "definition": "CREATE UNIQUE INDEX order_items_pkey ON public.order_items USING btree (id)"
+    },
+    {
+      "name": "order_ratings_order_id_key",
+      "table": "order_ratings",
+      "definition": "CREATE UNIQUE INDEX order_ratings_order_id_key ON public.order_ratings USING btree (order_id)"
+    },
+    {
+      "name": "order_ratings_pkey",
+      "table": "order_ratings",
+      "definition": "CREATE UNIQUE INDEX order_ratings_pkey ON public.order_ratings USING btree (id)"
+    },
+    {
+      "name": "order_status_events_order_idx",
+      "table": "order_status_events",
+      "definition": "CREATE INDEX order_status_events_order_idx ON public.order_status_events USING btree (order_id, created_at)"
+    },
+    {
+      "name": "order_status_events_pkey",
+      "table": "order_status_events",
+      "definition": "CREATE UNIQUE INDEX order_status_events_pkey ON public.order_status_events USING btree (id)"
+    },
+    {
+      "name": "order_status_events_to_status_idx",
+      "table": "order_status_events",
+      "definition": "CREATE INDEX order_status_events_to_status_idx ON public.order_status_events USING btree (to_status, created_at)"
+    },
+    {
+      "name": "idx_orders_customer_id",
+      "table": "orders",
+      "definition": "CREATE INDEX idx_orders_customer_id ON public.orders USING btree (customer_id)"
+    },
+    {
+      "name": "idx_orders_slot_id",
+      "table": "orders",
+      "definition": "CREATE INDEX idx_orders_slot_id ON public.orders USING btree (slot_id)"
+    },
+    {
+      "name": "orders_compound_id_idx",
+      "table": "orders",
+      "definition": "CREATE INDEX orders_compound_id_idx ON public.orders USING btree (compound_id)"
+    },
+    {
+      "name": "orders_customer_phone_idx",
+      "table": "orders",
+      "definition": "CREATE INDEX orders_customer_phone_idx ON public.orders USING btree (customer_phone)"
+    },
+    {
+      "name": "orders_dispatch_at_idx",
+      "table": "orders",
+      "definition": "CREATE INDEX orders_dispatch_at_idx ON public.orders USING btree (dispatch_at) WHERE (status = 'pending'::text)"
+    },
+    {
+      "name": "orders_open_status_idx",
+      "table": "orders",
+      "definition": "CREATE INDEX orders_open_status_idx ON public.orders USING btree (status, created_at) WHERE (status <> ALL (ARRAY['Delivered'::text, 'Cancelled'::text]))"
+    },
+    {
+      "name": "orders_pkey",
+      "table": "orders",
+      "definition": "CREATE UNIQUE INDEX orders_pkey ON public.orders USING btree (id)"
+    },
+    {
+      "name": "orders_public_token_idx",
+      "table": "orders",
+      "definition": "CREATE UNIQUE INDEX orders_public_token_idx ON public.orders USING btree (public_token)"
+    },
+    {
+      "name": "orders_restaurant_id_idx",
+      "table": "orders",
+      "definition": "CREATE INDEX orders_restaurant_id_idx ON public.orders USING btree (restaurant_id)"
+    },
+    {
+      "name": "orders_status_idx",
+      "table": "orders",
+      "definition": "CREATE INDEX orders_status_idx ON public.orders USING btree (status)"
+    },
+    {
+      "name": "idx_profiles_driver_id",
+      "table": "profiles",
+      "definition": "CREATE INDEX idx_profiles_driver_id ON public.profiles USING btree (driver_id)"
+    },
+    {
+      "name": "idx_profiles_restaurant_id",
+      "table": "profiles",
+      "definition": "CREATE INDEX idx_profiles_restaurant_id ON public.profiles USING btree (restaurant_id)"
+    },
+    {
+      "name": "profiles_pkey",
+      "table": "profiles",
+      "definition": "CREATE UNIQUE INDEX profiles_pkey ON public.profiles USING btree (id)"
+    },
+    {
+      "name": "push_nudge_pkey",
+      "table": "push_nudge",
+      "definition": "CREATE UNIQUE INDEX push_nudge_pkey ON public.push_nudge USING btree (kind, ref_id)"
+    },
+    {
+      "name": "push_send_log_created_idx",
+      "table": "push_send_log",
+      "definition": "CREATE INDEX push_send_log_created_idx ON public.push_send_log USING btree (created_at DESC)"
+    },
+    {
+      "name": "push_send_log_pkey",
+      "table": "push_send_log",
+      "definition": "CREATE UNIQUE INDEX push_send_log_pkey ON public.push_send_log USING btree (id)"
+    },
+    {
+      "name": "push_tokens_pkey",
+      "table": "push_tokens",
+      "definition": "CREATE UNIQUE INDEX push_tokens_pkey ON public.push_tokens USING btree (id)"
+    },
+    {
+      "name": "push_tokens_profile_id_idx",
+      "table": "push_tokens",
+      "definition": "CREATE INDEX push_tokens_profile_id_idx ON public.push_tokens USING btree (profile_id)"
+    },
+    {
+      "name": "push_tokens_token_key",
+      "table": "push_tokens",
+      "definition": "CREATE UNIQUE INDEX push_tokens_token_key ON public.push_tokens USING btree (token)"
+    },
+    {
+      "name": "rate_limit_log_bucket_idx",
+      "table": "rate_limit_log",
+      "definition": "CREATE INDEX rate_limit_log_bucket_idx ON public.rate_limit_log USING btree (bucket, called_at)"
+    },
+    {
+      "name": "rate_limit_log_pkey",
+      "table": "rate_limit_log",
+      "definition": "CREATE UNIQUE INDEX rate_limit_log_pkey ON public.rate_limit_log USING btree (id)"
+    },
+    {
+      "name": "regions_name_key",
+      "table": "regions",
+      "definition": "CREATE UNIQUE INDEX regions_name_key ON public.regions USING btree (name)"
+    },
+    {
+      "name": "regions_pkey",
+      "table": "regions",
+      "definition": "CREATE UNIQUE INDEX regions_pkey ON public.regions USING btree (id)"
+    },
+    {
+      "name": "request_item_suppressions_pkey",
+      "table": "request_item_suppressions",
+      "definition": "CREATE UNIQUE INDEX request_item_suppressions_pkey ON public.request_item_suppressions USING btree (id)"
+    },
+    {
+      "name": "request_item_suppressions_uniq",
+      "table": "request_item_suppressions",
+      "definition": "CREATE UNIQUE INDEX request_item_suppressions_uniq ON public.request_item_suppressions USING btree (restaurant_id, lower(btrim(name)))"
+    },
+    {
+      "name": "restaurants_display_order_idx",
+      "table": "restaurants",
+      "definition": "CREATE INDEX restaurants_display_order_idx ON public.restaurants USING btree (display_order) WHERE (display_order IS NOT NULL)"
+    },
+    {
+      "name": "restaurants_pkey",
+      "table": "restaurants",
+      "definition": "CREATE UNIQUE INDEX restaurants_pkey ON public.restaurants USING btree (id)"
+    },
+    {
+      "name": "settings_pkey",
+      "table": "settings",
+      "definition": "CREATE UNIQUE INDEX settings_pkey ON public.settings USING btree (key)"
+    },
+    {
+      "name": "idx_settlement_requests_driver_id",
+      "table": "settlement_requests",
+      "definition": "CREATE INDEX idx_settlement_requests_driver_id ON public.settlement_requests USING btree (driver_id)"
+    },
+    {
+      "name": "settlement_requests_pkey",
+      "table": "settlement_requests",
+      "definition": "CREATE UNIQUE INDEX settlement_requests_pkey ON public.settlement_requests USING btree (id)"
+    },
+    {
+      "name": "idx_shift_swap_requests_accepted_by",
+      "table": "shift_swap_requests",
+      "definition": "CREATE INDEX idx_shift_swap_requests_accepted_by ON public.shift_swap_requests USING btree (accepted_by)"
+    },
+    {
+      "name": "idx_shift_swap_requests_requested_by",
+      "table": "shift_swap_requests",
+      "definition": "CREATE INDEX idx_shift_swap_requests_requested_by ON public.shift_swap_requests USING btree (requested_by)"
+    },
+    {
+      "name": "idx_shift_swap_requests_shift_id",
+      "table": "shift_swap_requests",
+      "definition": "CREATE INDEX idx_shift_swap_requests_shift_id ON public.shift_swap_requests USING btree (shift_id)"
+    },
+    {
+      "name": "shift_swap_requests_pkey",
+      "table": "shift_swap_requests",
+      "definition": "CREATE UNIQUE INDEX shift_swap_requests_pkey ON public.shift_swap_requests USING btree (id)"
+    },
+    {
+      "name": "idx_shifts_driver_id",
+      "table": "shifts",
+      "definition": "CREATE INDEX idx_shifts_driver_id ON public.shifts USING btree (driver_id)"
+    },
+    {
+      "name": "shifts_pkey",
+      "table": "shifts",
+      "definition": "CREATE UNIQUE INDEX shifts_pkey ON public.shifts USING btree (id)"
+    },
+    {
+      "name": "vendor_addon_library_pkey",
+      "table": "vendor_addon_library",
+      "definition": "CREATE UNIQUE INDEX vendor_addon_library_pkey ON public.vendor_addon_library USING btree (id)"
+    },
+    {
+      "name": "vendor_addon_library_restaurant_id_name_key",
+      "table": "vendor_addon_library",
+      "definition": "CREATE UNIQUE INDEX vendor_addon_library_restaurant_id_name_key ON public.vendor_addon_library USING btree (restaurant_id, name)"
+    },
+    {
+      "name": "vendor_addon_library_restaurant_idx",
+      "table": "vendor_addon_library",
+      "definition": "CREATE INDEX vendor_addon_library_restaurant_idx ON public.vendor_addon_library USING btree (restaurant_id)"
+    },
+    {
+      "name": "idx_vendor_coverage_compound_id",
+      "table": "vendor_coverage",
+      "definition": "CREATE INDEX idx_vendor_coverage_compound_id ON public.vendor_coverage USING btree (compound_id)"
+    },
+    {
+      "name": "vendor_coverage_pkey",
+      "table": "vendor_coverage",
+      "definition": "CREATE UNIQUE INDEX vendor_coverage_pkey ON public.vendor_coverage USING btree (id)"
+    },
+    {
+      "name": "vendor_coverage_restaurant_id_compound_id_key",
+      "table": "vendor_coverage",
+      "definition": "CREATE UNIQUE INDEX vendor_coverage_restaurant_id_compound_id_key ON public.vendor_coverage USING btree (restaurant_id, compound_id)"
+    },
+    {
+      "name": "vendor_hours_pkey",
+      "table": "vendor_hours",
+      "definition": "CREATE UNIQUE INDEX vendor_hours_pkey ON public.vendor_hours USING btree (restaurant_id, day_of_week)"
+    },
+    {
+      "name": "vendor_hours_restaurant_idx",
+      "table": "vendor_hours",
+      "definition": "CREATE INDEX vendor_hours_restaurant_idx ON public.vendor_hours USING btree (restaurant_id)"
+    },
+    {
+      "name": "idx_wallet_transactions_order_id",
+      "table": "wallet_transactions",
+      "definition": "CREATE INDEX idx_wallet_transactions_order_id ON public.wallet_transactions USING btree (order_id)"
+    },
+    {
+      "name": "idx_wallet_transactions_wallet_id",
+      "table": "wallet_transactions",
+      "definition": "CREATE INDEX idx_wallet_transactions_wallet_id ON public.wallet_transactions USING btree (wallet_id)"
+    },
+    {
+      "name": "wallet_transactions_pkey",
+      "table": "wallet_transactions",
+      "definition": "CREATE UNIQUE INDEX wallet_transactions_pkey ON public.wallet_transactions USING btree (id)"
+    },
+    {
+      "name": "zones_pkey",
+      "table": "zones",
+      "definition": "CREATE UNIQUE INDEX zones_pkey ON public.zones USING btree (id)"
+    }
+  ]
+}

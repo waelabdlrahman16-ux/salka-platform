@@ -1,0 +1,74 @@
+{
+  "jsonb_agg": [
+    {
+      "name": "trg_notify_admin_new_complaint",
+      "table": "complaints",
+      "definition": "CREATE TRIGGER trg_notify_admin_new_complaint AFTER INSERT ON complaints FOR EACH ROW EXECUTE FUNCTION notify_admin_new_complaint()"
+    },
+    {
+      "name": "trg_compound_fee_default",
+      "table": "compounds",
+      "definition": "CREATE TRIGGER trg_compound_fee_default BEFORE INSERT ON compounds FOR EACH ROW EXECUTE FUNCTION compound_fee_default()"
+    },
+    {
+      "name": "trg_notify_customer_driver_arrived",
+      "table": "delivery_assignments",
+      "definition": "CREATE TRIGGER trg_notify_customer_driver_arrived AFTER UPDATE OF arrived_at_customer_at ON delivery_assignments FOR EACH ROW EXECUTE FUNCTION notify_customer_driver_arrived()"
+    },
+    {
+      "name": "trg_notify_driver_assignment",
+      "table": "delivery_assignments",
+      "definition": "CREATE TRIGGER trg_notify_driver_assignment AFTER INSERT OR UPDATE ON delivery_assignments FOR EACH ROW EXECUTE FUNCTION notify_driver_assignment_change()"
+    },
+    {
+      "name": "trg_ensure_menu_category",
+      "table": "menu_items",
+      "definition": "CREATE TRIGGER trg_ensure_menu_category BEFORE INSERT OR UPDATE OF category ON menu_items FOR EACH ROW EXECUTE FUNCTION ensure_menu_category()"
+    },
+    {
+      "name": "on_order_delivered_send_receipt",
+      "table": "orders",
+      "definition": "CREATE TRIGGER on_order_delivered_send_receipt AFTER UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION notify_order_delivered_receipt()"
+    },
+    {
+      "name": "trg_log_order_status",
+      "table": "orders",
+      "definition": "CREATE TRIGGER trg_log_order_status AFTER INSERT OR UPDATE OF status ON orders FOR EACH ROW EXECUTE FUNCTION log_order_status_change()"
+    },
+    {
+      "name": "trg_notify_admin_new_order",
+      "table": "orders",
+      "definition": "CREATE TRIGGER trg_notify_admin_new_order AFTER INSERT ON orders FOR EACH ROW EXECUTE FUNCTION notify_admin_new_order()"
+    },
+    {
+      "name": "trg_notify_admin_order_trouble",
+      "table": "orders",
+      "definition": "CREATE TRIGGER trg_notify_admin_order_trouble AFTER UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION notify_admin_order_trouble()"
+    },
+    {
+      "name": "trg_notify_driver_order_ready",
+      "table": "orders",
+      "definition": "CREATE TRIGGER trg_notify_driver_order_ready AFTER UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION notify_driver_order_ready()"
+    },
+    {
+      "name": "trg_notify_new_order",
+      "table": "orders",
+      "definition": "CREATE TRIGGER trg_notify_new_order AFTER INSERT ON orders FOR EACH ROW EXECUTE FUNCTION notify_new_order()"
+    },
+    {
+      "name": "trg_notify_order_status",
+      "table": "orders",
+      "definition": "CREATE TRIGGER trg_notify_order_status AFTER UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION notify_order_status_change()"
+    },
+    {
+      "name": "trg_notify_vendor_order_now_due",
+      "table": "orders",
+      "definition": "CREATE TRIGGER trg_notify_vendor_order_now_due AFTER UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION notify_vendor_order_now_due()"
+    },
+    {
+      "name": "trg_order_is_test",
+      "table": "orders",
+      "definition": "CREATE TRIGGER trg_order_is_test BEFORE INSERT ON orders FOR EACH ROW EXECUTE FUNCTION set_order_is_test()"
+    }
+  ]
+}

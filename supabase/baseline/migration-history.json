@@ -1,0 +1,1097 @@
+{
+  "migrations": [
+    {
+      "version": "20260725013347",
+      "name": "ops_vendor_and_driver_pool"
+    },
+    {
+      "version": "20260725013419",
+      "name": "launch_dispatch_clock_and_slots"
+    },
+    {
+      "version": "20260725013435",
+      "name": "shifts_and_swaps"
+    },
+    {
+      "version": "20260725013508",
+      "name": "drop_old_place_order_overload"
+    },
+    {
+      "version": "20260725013934",
+      "name": "safety_checks_closed_restaurant"
+    },
+    {
+      "version": "20260725014030",
+      "name": "track_order_expose_eta"
+    },
+    {
+      "version": "20260725020811",
+      "name": "pharmacy_type_and_vehicle_matching"
+    },
+    {
+      "version": "20260725123448",
+      "name": "fix_drivers_insert_and_earnings_idempotency"
+    },
+    {
+      "version": "20260725132356",
+      "name": "real_compounds_and_coverage"
+    },
+    {
+      "version": "20260725132423",
+      "name": "place_order_compound_support"
+    },
+    {
+      "version": "20260725180446",
+      "name": "ratings_and_reliability"
+    },
+    {
+      "version": "20260725180509",
+      "name": "cash_ledger_settlement_complaints"
+    },
+    {
+      "version": "20260725180533",
+      "name": "wallet_ledger"
+    },
+    {
+      "version": "20260725180814",
+      "name": "fix_wallet_phone_normalization"
+    },
+    {
+      "version": "20260725203325",
+      "name": "real_vendor_data_replaces_placeholders"
+    },
+    {
+      "version": "20260725222045",
+      "name": "create_vendor_logins"
+    },
+    {
+      "version": "20260726082840",
+      "name": "distance_based_delivery_fee"
+    },
+    {
+      "version": "20260726083117",
+      "name": "mark_delivered_uses_real_fee"
+    },
+    {
+      "version": "20260726085039",
+      "name": "fawaterak_online_payment"
+    },
+    {
+      "version": "20260726210656",
+      "name": "request_pickup_any_vendor"
+    },
+    {
+      "version": "20260726215205",
+      "name": "remove_chalets_harden_search_path"
+    },
+    {
+      "version": "20260726221626",
+      "name": "fix_search_path_regression"
+    },
+    {
+      "version": "20260726221851",
+      "name": "last_address_and_reliability_helpers"
+    },
+    {
+      "version": "20260726222152",
+      "name": "driver_stats_helper"
+    },
+    {
+      "version": "20260726223053",
+      "name": "fix_last_address_phone_match"
+    },
+    {
+      "version": "20260726225048",
+      "name": "admin_account_management_support"
+    },
+    {
+      "version": "20260727021852",
+      "name": "compound_coordinates"
+    },
+    {
+      "version": "20260727062607",
+      "name": "drop_stale_function_overloads"
+    },
+    {
+      "version": "20260727073804",
+      "name": "enforce_server_side_delivery_fee"
+    },
+    {
+      "version": "20260727074932",
+      "name": "update_admin_driver_login_emails_to_salka_domain"
+    },
+    {
+      "version": "20260727083049",
+      "name": "require_ownership_proof_for_cancel_order"
+    },
+    {
+      "version": "20260727083159",
+      "name": "drop_old_vulnerable_cancel_order_overload"
+    },
+    {
+      "version": "20260727083806",
+      "name": "add_images_for_restaurants_and_menu_items"
+    },
+    {
+      "version": "20260727102650",
+      "name": "push_notifications_schema_and_triggers"
+    },
+    {
+      "version": "20260728090345",
+      "name": "instapay_support_and_fix_activate_paid_order_grants"
+    },
+    {
+      "version": "20260728090407",
+      "name": "fix_activate_paid_order_public_grant"
+    },
+    {
+      "version": "20260728090517",
+      "name": "track_order_include_instapay_claimed"
+    },
+    {
+      "version": "20260728101330",
+      "name": "revoke_trigger_functions_from_api_roles"
+    },
+    {
+      "version": "20260728104744",
+      "name": "limit_driver_concurrent_orders_and_enforce_direction"
+    },
+    {
+      "version": "20260728104813",
+      "name": "available_orders_respects_direction_and_max_limit"
+    },
+    {
+      "version": "20260728111155",
+      "name": "unify_driver_dispatch_rule_across_all_assignment_paths"
+    },
+    {
+      "version": "20260728115219",
+      "name": "cancel_order_also_cancels_active_assignment"
+    },
+    {
+      "version": "20260728115232",
+      "name": "cancel_order_recompute_driver_availability"
+    },
+    {
+      "version": "20260728193415",
+      "name": "driver_push_notifications"
+    },
+    {
+      "version": "20260728203202",
+      "name": "mark_delivery_failed_recompute_availability"
+    },
+    {
+      "version": "20260728203833",
+      "name": "enforce_driver_suspension"
+    },
+    {
+      "version": "20260728213042",
+      "name": "update_compounds_from_verified_gps_directory"
+    },
+    {
+      "version": "20260728215621",
+      "name": "add_delivery_sla"
+    },
+    {
+      "version": "20260728215641",
+      "name": "add_sla_to_other_order_creation_paths"
+    },
+    {
+      "version": "20260728215700",
+      "name": "add_live_driver_location"
+    },
+    {
+      "version": "20260729005417",
+      "name": "add_vendor_max_delivery_km"
+    },
+    {
+      "version": "20260729012025",
+      "name": "track_order_items_include_image"
+    },
+    {
+      "version": "20260729012140",
+      "name": "add_service_fee"
+    },
+    {
+      "version": "20260729012150",
+      "name": "track_order_include_service_fee"
+    },
+    {
+      "version": "20260729015514",
+      "name": "add_wallet_usage_at_checkout"
+    },
+    {
+      "version": "20260729015544",
+      "name": "track_order_include_wallet_used"
+    },
+    {
+      "version": "20260729031137",
+      "name": "cancel_order_refunds_wallet"
+    },
+    {
+      "version": "20260729063922",
+      "name": "add_rate_limiting_for_phone_lookups_v2"
+    },
+    {
+      "version": "20260729064008",
+      "name": "add_refund_tracking"
+    },
+    {
+      "version": "20260729064548",
+      "name": "fix_price_manipulation_in_place_order"
+    },
+    {
+      "version": "20260729064859",
+      "name": "rate_limit_wallet_spend_and_harden_search_path"
+    },
+    {
+      "version": "20260729065613",
+      "name": "remove_public_bucket_listing"
+    },
+    {
+      "version": "20260729071602",
+      "name": "drop_dead_wallet_functions"
+    },
+    {
+      "version": "20260729073808",
+      "name": "add_customer_accounts_and_sessions"
+    },
+    {
+      "version": "20260729073836",
+      "name": "add_session_whoami_and_logout"
+    },
+    {
+      "version": "20260729074049",
+      "name": "wire_sessions_into_place_order_and_lookups"
+    },
+    {
+      "version": "20260729074126",
+      "name": "drop_old_place_order_overloads"
+    },
+    {
+      "version": "20260729074142",
+      "name": "drop_old_phone_lookup_overloads"
+    },
+    {
+      "version": "20260729074526",
+      "name": "wire_sessions_into_custom_order_and_pickup"
+    },
+    {
+      "version": "20260729074540",
+      "name": "drop_old_custom_order_pickup_overloads"
+    },
+    {
+      "version": "20260729120944",
+      "name": "lock_down_rate_limit_log"
+    },
+    {
+      "version": "20260729131326",
+      "name": "supermarket_slots_and_per_order_vehicle_rule"
+    },
+    {
+      "version": "20260729131427",
+      "name": "submit_custom_order_slot_support"
+    },
+    {
+      "version": "20260729132508",
+      "name": "fix_pickup_request_van_threshold"
+    },
+    {
+      "version": "20260729175232",
+      "name": "rename_wallet_otp_to_customer_otp_codes"
+    },
+    {
+      "version": "20260729200347",
+      "name": "menu_item_sizes_and_addons"
+    },
+    {
+      "version": "20260729200803",
+      "name": "place_order_with_sizes_and_addons"
+    },
+    {
+      "version": "20260729203527",
+      "name": "place_order_time_windowed_availability"
+    },
+    {
+      "version": "20260729204216",
+      "name": "vendor_set_item_availability"
+    },
+    {
+      "version": "20260729210158",
+      "name": "admin_delete_menu_item"
+    },
+    {
+      "version": "20260729211438",
+      "name": "clear_all_test_orders"
+    },
+    {
+      "version": "20260730011424",
+      "name": "reset_stale_driver_stats"
+    },
+    {
+      "version": "20260730011856",
+      "name": "place_order_customer_note"
+    },
+    {
+      "version": "20260730062442",
+      "name": "discounts_table"
+    },
+    {
+      "version": "20260730062530",
+      "name": "check_discount_conflict"
+    },
+    {
+      "version": "20260730062749",
+      "name": "place_order_discounts"
+    },
+    {
+      "version": "20260730183922",
+      "name": "fix_search_path_phone_functions"
+    },
+    {
+      "version": "20260730235356",
+      "name": "dispatch_tracking_columns"
+    },
+    {
+      "version": "20260730235438",
+      "name": "vendor_delay_limit"
+    },
+    {
+      "version": "20260730235600",
+      "name": "driver_call_arrival_noanswer_functions"
+    },
+    {
+      "version": "20260730235743",
+      "name": "late_order_alert_and_ready_broadcast"
+    },
+    {
+      "version": "20260731000644",
+      "name": "admin_resolve_no_answer"
+    },
+    {
+      "version": "20260731002017",
+      "name": "place_order_cod_deposit"
+    },
+    {
+      "version": "20260731002228",
+      "name": "admin_confirm_cod_deposit_and_cancel_refund_fix"
+    },
+    {
+      "version": "20260731002358",
+      "name": "track_order_cod_deposit"
+    },
+    {
+      "version": "20260731002459",
+      "name": "mark_instapay_claimed_cod_deposit"
+    },
+    {
+      "version": "20260731004359",
+      "name": "driver_validated_status_transitions"
+    },
+    {
+      "version": "20260731044602",
+      "name": "driver_reject_rpc_and_harden_mark_delivered"
+    },
+    {
+      "version": "20260731044621",
+      "name": "lock_down_delivery_assignments_direct_writes"
+    },
+    {
+      "version": "20260731044959",
+      "name": "add_missing_indexes"
+    },
+    {
+      "version": "20260731050821",
+      "name": "lock_down_orders_direct_writes"
+    },
+    {
+      "version": "20260731142640",
+      "name": "remove_unguarded_activate_paid_order"
+    },
+    {
+      "version": "20260731142744",
+      "name": "guard_open_swaps"
+    },
+    {
+      "version": "20260731205412",
+      "name": "customer_auth_trigger_and_helper"
+    },
+    {
+      "version": "20260731205556",
+      "name": "place_order_recognize_auth_identity"
+    },
+    {
+      "version": "20260731212748",
+      "name": "my_customer_orders"
+    },
+    {
+      "version": "20260731212844",
+      "name": "my_customer_profile"
+    },
+    {
+      "version": "20260731212905",
+      "name": "update_my_customer_phone"
+    },
+    {
+      "version": "20260731213401",
+      "name": "order_delivered_receipt_trigger"
+    },
+    {
+      "version": "20260801062133",
+      "name": "add_porto_sokhna_compounds"
+    },
+    {
+      "version": "20260801063137",
+      "name": "complaint_categories_and_driver_disputes"
+    },
+    {
+      "version": "20260802232448",
+      "name": "vendor_accept_order_prep_time_choice"
+    },
+    {
+      "version": "20260802232526",
+      "name": "vendor_reads_assigned_drivers"
+    },
+    {
+      "version": "20260802232647",
+      "name": "driver_cash_confirmation_gate"
+    },
+    {
+      "version": "20260803024221",
+      "name": "customer_addresses_rpcs"
+    },
+    {
+      "version": "20260803033727",
+      "name": "fix_driver_earnings_to_flat_rate"
+    },
+    {
+      "version": "20260803034322",
+      "name": "driver_shift_bonus_tiers"
+    },
+    {
+      "version": "20260803034349",
+      "name": "wire_shift_bonus_into_mark_delivered"
+    },
+    {
+      "version": "20260803040628",
+      "name": "available_orders_add_dest_coords"
+    },
+    {
+      "version": "20260803061354",
+      "name": "driver_tips_and_track_order_update"
+    },
+    {
+      "version": "20260803061601",
+      "name": "driver_tips_read_policy"
+    },
+    {
+      "version": "20260803114630",
+      "name": "stepped_distance_delivery_pricing"
+    },
+    {
+      "version": "20260803114714",
+      "name": "vendor_radius_stalled_orders_and_security"
+    },
+    {
+      "version": "20260803114739",
+      "name": "fix_phone_validation_regex"
+    },
+    {
+      "version": "20260803114812",
+      "name": "add_missing_foreign_key_indexes"
+    },
+    {
+      "version": "20260803114912",
+      "name": "fix_driver_cash_held_overstatement"
+    },
+    {
+      "version": "20260803115002",
+      "name": "wrap_auth_uid_in_select_for_rls"
+    },
+    {
+      "version": "20260803115016",
+      "name": "revoke_internal_functions_from_public"
+    },
+    {
+      "version": "20260803120206",
+      "name": "close_driver_self_write_payout_vectors"
+    },
+    {
+      "version": "20260803205510",
+      "name": "order_status_events_and_cancel_reasons"
+    },
+    {
+      "version": "20260803213550",
+      "name": "driver_stats_with_bonus_progress"
+    },
+    {
+      "version": "20260803224519",
+      "name": "admin_reassign_unassign_and_batched_reliability"
+    },
+    {
+      "version": "20260804000316",
+      "name": "catalog_role_and_role_capability_coupling"
+    },
+    {
+      "version": "20260804000652",
+      "name": "admin_list_accounts_include_catalog"
+    },
+    {
+      "version": "20260804001457",
+      "name": "sms_login_enabled_flag"
+    },
+    {
+      "version": "20260804023804",
+      "name": "revoke_anon_execute_on_privileged_functions"
+    },
+    {
+      "version": "20260804023817",
+      "name": "require_session_token_for_phone_lookups"
+    },
+    {
+      "version": "20260804023939",
+      "name": "revoke_public_execute_on_privileged_functions"
+    },
+    {
+      "version": "20260804025357",
+      "name": "link_guest_orders_on_phone_claim"
+    },
+    {
+      "version": "20260804032324",
+      "name": "relax_phone_lookups_but_gate_public_token"
+    },
+    {
+      "version": "20260804032736",
+      "name": "driver_flat_earning_from_settings"
+    },
+    {
+      "version": "20260804032856",
+      "name": "fix_mark_delivered_restore_driver_update"
+    },
+    {
+      "version": "20260804065042",
+      "name": "notify_admin_on_all_order_events"
+    },
+    {
+      "version": "20260804065057",
+      "name": "notify_customer_on_cancellation"
+    },
+    {
+      "version": "20260804073505",
+      "name": "lock_down_20260804_backup_tables"
+    },
+    {
+      "version": "20260804080926",
+      "name": "restaurants_for_compound_sort_open_first"
+    },
+    {
+      "version": "20260804080951",
+      "name": "restaurants_for_compound_sort_comment_fix"
+    },
+    {
+      "version": "20260804174143",
+      "name": "update_my_customer_name"
+    },
+    {
+      "version": "20260804174659",
+      "name": "banners"
+    },
+    {
+      "version": "20260804174738",
+      "name": "banners_storage_bucket"
+    },
+    {
+      "version": "20260804175552",
+      "name": "custom_order_prescription"
+    },
+    {
+      "version": "20260804175610",
+      "name": "prescriptions_bucket"
+    },
+    {
+      "version": "20260804190825",
+      "name": "menu_item_combos_and_addon_library"
+    },
+    {
+      "version": "20260804190842",
+      "name": "apply_library_addon_rpc"
+    },
+    {
+      "version": "20260804190938",
+      "name": "place_order_validates_combo"
+    },
+    {
+      "version": "20260805004340",
+      "name": "never_dispatch_an_unpriced_order"
+    },
+    {
+      "version": "20260805004605",
+      "name": "my_orders_exposes_pricing_status"
+    },
+    {
+      "version": "20260805030202",
+      "name": "per_compound_delivery_fee"
+    },
+    {
+      "version": "20260805030214",
+      "name": "order_fns_use_compound_fee"
+    },
+    {
+      "version": "20260805030246",
+      "name": "assign_guard_and_admin_compound_fee"
+    },
+    {
+      "version": "20260805030305",
+      "name": "revoke_anon_on_new_admin_fns"
+    },
+    {
+      "version": "20260805030630",
+      "name": "restaurants_review_count"
+    },
+    {
+      "version": "20260805031218",
+      "name": "driver_arrived_at_customer"
+    },
+    {
+      "version": "20260805032723",
+      "name": "pickup_request_is_born_ready"
+    },
+    {
+      "version": "20260805033551",
+      "name": "failed_delivery_force_close_and_gates"
+    },
+    {
+      "version": "20260805033913",
+      "name": "track_order_exposes_cancel_reason"
+    },
+    {
+      "version": "20260805041057",
+      "name": "four_new_order_statuses"
+    },
+    {
+      "version": "20260805041204",
+      "name": "status_transitions_cron_and_cancel_rules"
+    },
+    {
+      "version": "20260805041958",
+      "name": "supervisor_role"
+    },
+    {
+      "version": "20260805042331",
+      "name": "notify_admin_includes_supervisor"
+    },
+    {
+      "version": "20260805042525",
+      "name": "admin_convert_staff_role"
+    },
+    {
+      "version": "20260805042554",
+      "name": "admin_list_accounts_includes_role"
+    },
+    {
+      "version": "20260805053119",
+      "name": "van_rule_and_cod_deposit_rounding"
+    },
+    {
+      "version": "20260805054339",
+      "name": "vendor_and_driver_self_toggles"
+    },
+    {
+      "version": "20260805060327",
+      "name": "no_dispatch_before_the_kitchen_accepts"
+    },
+    {
+      "version": "20260805060356",
+      "name": "restaurants_hero_image"
+    },
+    {
+      "version": "20260805062826",
+      "name": "kitchen_gate_errands_only"
+    },
+    {
+      "version": "20260805065550",
+      "name": "driver_flow_correctness_fixes"
+    },
+    {
+      "version": "20260805072112",
+      "name": "admin_customers_rpcs"
+    },
+    {
+      "version": "20260805072153",
+      "name": "admin_customers_fix_ambiguous_ph"
+    },
+    {
+      "version": "20260805072219",
+      "name": "admin_customer_detail_fix_notes"
+    },
+    {
+      "version": "20260805072702",
+      "name": "my_orders_rate_limit_5"
+    },
+    {
+      "version": "20260805074351",
+      "name": "track_order_returns_vendor_type"
+    },
+    {
+      "version": "20260805074711",
+      "name": "switch_to_cash"
+    },
+    {
+      "version": "20260805074739",
+      "name": "switch_to_cash_fix_event_columns"
+    },
+    {
+      "version": "20260805080524",
+      "name": "my_orders_trust_supabase_auth"
+    },
+    {
+      "version": "20260805085233",
+      "name": "driver_device_binding"
+    },
+    {
+      "version": "20260805093534",
+      "name": "pharmacy_market_server_upgrades"
+    },
+    {
+      "version": "20260805093616",
+      "name": "popular_items_exclude_shelf_labels_from_history"
+    },
+    {
+      "version": "20260805095042",
+      "name": "append_items_reject_cancelled"
+    },
+    {
+      "version": "20260805112039",
+      "name": "restaurant_cover_image_and_hero_ranking"
+    },
+    {
+      "version": "20260805112259",
+      "name": "search_menu_for_compound"
+    },
+    {
+      "version": "20260805112837",
+      "name": "banned_customers"
+    },
+    {
+      "version": "20260805112933",
+      "name": "admin_customers_expose_ban"
+    },
+    {
+      "version": "20260805114124",
+      "name": "switch_to_cash_wallet_double_subtraction"
+    },
+    {
+      "version": "20260805114151",
+      "name": "search_menu_from_price"
+    },
+    {
+      "version": "20260805115914",
+      "name": "restaurant_public_with_review_count"
+    },
+    {
+      "version": "20260805122532",
+      "name": "critical_slot_timezone_and_wallet_ownership"
+    },
+    {
+      "version": "20260805122628",
+      "name": "dispatch_payment_and_notification_fixes"
+    },
+    {
+      "version": "20260805122723",
+      "name": "confirm_payment_preserves_scheduled"
+    },
+    {
+      "version": "20260805122817",
+      "name": "admin_assign_reject_unpaid_orders"
+    },
+    {
+      "version": "20260805122855",
+      "name": "last_address_requires_verified_session"
+    },
+    {
+      "version": "20260805183403",
+      "name": "location_only_during_active_delivery"
+    },
+    {
+      "version": "20260805191319",
+      "name": "push_token_platform_and_native_targets"
+    },
+    {
+      "version": "20260805213002",
+      "name": "admin_delete_customer"
+    },
+    {
+      "version": "20260805222054",
+      "name": "money_fixes_wallet_instapay_deposit"
+    },
+    {
+      "version": "20260805225718",
+      "name": "lock_down_anon_execute_surface"
+    },
+    {
+      "version": "20260805225755",
+      "name": "lock_down_anon_execute_surface_public_too"
+    },
+    {
+      "version": "20260805230947",
+      "name": "account_deletion_customers_and_staff"
+    },
+    {
+      "version": "20260805231132",
+      "name": "admin_delete_customer_by_phone"
+    },
+    {
+      "version": "20260806013641",
+      "name": "staff_create_pickup_order"
+    },
+    {
+      "version": "20260806020650",
+      "name": "admin_manage_compounds_and_drivers"
+    },
+    {
+      "version": "20260806052911",
+      "name": "custom_order_payment_method_and_service_fee"
+    },
+    {
+      "version": "20260806054400",
+      "name": "suppress_request_item_suggestions_and_slot_time_guard"
+    },
+    {
+      "version": "20260806060155",
+      "name": "drop_backup_tables_holding_customer_pii"
+    },
+    {
+      "version": "20260806061159",
+      "name": "suppression_contains_match_mode"
+    },
+    {
+      "version": "20260806125158",
+      "name": "pickup_order_service_fee_and_deposit_advice"
+    },
+    {
+      "version": "20260806131930",
+      "name": "request_pickup_service_fee"
+    },
+    {
+      "version": "20260806140906",
+      "name": "banner_link_url_reject_protocol_relative"
+    },
+    {
+      "version": "20260806163924",
+      "name": "delete_test_orders_20260806"
+    },
+    {
+      "version": "20260806164936",
+      "name": "test_mode_vendor_driver_and_money_isolation"
+    },
+    {
+      "version": "20260806165014",
+      "name": "test_mode_claim_assign_and_money_guards"
+    },
+    {
+      "version": "20260806165101",
+      "name": "test_mode_force_delivered_guard_and_fixtures"
+    },
+    {
+      "version": "20260806170843",
+      "name": "menu_categories_table"
+    },
+    {
+      "version": "20260806173321",
+      "name": "mcdonalds_menu_sync_from_kiosk_20260806"
+    },
+    {
+      "version": "20260806225950",
+      "name": "revoke_truncate_from_anon_and_fix_defaults"
+    },
+    {
+      "version": "20260806230147",
+      "name": "sla_includes_prep_time_and_is_tunable"
+    },
+    {
+      "version": "20260806230205",
+      "name": "order_functions_use_prep_aware_sla"
+    },
+    {
+      "version": "20260806230448",
+      "name": "sla_travel_uses_real_per_compound_estimates"
+    },
+    {
+      "version": "20260806230501",
+      "name": "order_functions_use_compound_based_sla"
+    },
+    {
+      "version": "20260806230702",
+      "name": "funnel_analytics_events"
+    },
+    {
+      "version": "20260806230720",
+      "name": "admin_funnel_report"
+    },
+    {
+      "version": "20260807010243",
+      "name": "hide_mcd_breakfast_pending_kiosk_prices"
+    },
+    {
+      "version": "20260807015607",
+      "name": "vendor_opening_hours_model"
+    },
+    {
+      "version": "20260807015700",
+      "name": "extract_pure_time_window_predicate"
+    },
+    {
+      "version": "20260807015817",
+      "name": "all_order_paths_respect_opening_hours"
+    },
+    {
+      "version": "20260807015901",
+      "name": "custom_orders_respect_opening_hours"
+    },
+    {
+      "version": "20260807020111",
+      "name": "vendor_temporary_close_and_hours_admin"
+    },
+    {
+      "version": "20260807020140",
+      "name": "restaurant_public_carries_computed_open_state"
+    },
+    {
+      "version": "20260807020717",
+      "name": "vendor_hours_per_day_of_week"
+    },
+    {
+      "version": "20260807020802",
+      "name": "vendor_next_open_and_admin_hours_per_day"
+    },
+    {
+      "version": "20260807020841",
+      "name": "vendor_open_states_for_admin"
+    },
+    {
+      "version": "20260807021445",
+      "name": "drop_hand_typed_delivery_time"
+    },
+    {
+      "version": "20260807023313",
+      "name": "order_price_adjustments"
+    },
+    {
+      "version": "20260807023349",
+      "name": "adjust_order_60_item_price_difference"
+    },
+    {
+      "version": "20260807023724",
+      "name": "fix_adjust_order_for_orders_without_line_items"
+    },
+    {
+      "version": "20260807023833",
+      "name": "track_order_returns_is_adjustment"
+    },
+    {
+      "version": "20260807025135",
+      "name": "close_backup_table_exposure_and_pin_search_paths"
+    },
+    {
+      "version": "20260807025924",
+      "name": "drop_ambiguous_single_arg_delivery_quote"
+    },
+    {
+      "version": "20260807045112",
+      "name": "supervisor_pharmacy_supermarket_remit"
+    },
+    {
+      "version": "20260807060252",
+      "name": "track_order_expose_arrived_at_customer"
+    },
+    {
+      "version": "20260807112422",
+      "name": "push_token_health_and_pruning"
+    },
+    {
+      "version": "20260807112824",
+      "name": "vendor_push_send_platform"
+    },
+    {
+      "version": "20260807113549",
+      "name": "push_nudge_until_acknowledged"
+    },
+    {
+      "version": "20260807113613",
+      "name": "push_nudge_fix_offered_at"
+    },
+    {
+      "version": "20260807125023",
+      "name": "no_pricing_a_cancelled_order"
+    },
+    {
+      "version": "20260807130924",
+      "name": "push_nudge_pricing_needed"
+    },
+    {
+      "version": "20260807152834",
+      "name": "nudge_awaiting_payment_and_quote"
+    },
+    {
+      "version": "20260807152933",
+      "name": "tell_the_kitchen_when_an_order_is_cancelled"
+    },
+    {
+      "version": "20260807153532",
+      "name": "customer_push_token_platform_and_feedback"
+    },
+    {
+      "version": "20260807153557",
+      "name": "fix_notify_customer_driver_arrived_undeclared_v_platform"
+    },
+    {
+      "version": "20260807155652",
+      "name": "arabic_labels_for_the_nine_unlabelled_settings"
+    },
+    {
+      "version": "20260807161752",
+      "name": "push_tokens_one_row_per_device"
+    },
+    {
+      "version": "20260807171630",
+      "name": "admin_daily_report"
+    },
+    {
+      "version": "20260807171724",
+      "name": "fix_admin_daily_report_nested_aggregate"
+    },
+    {
+      "version": "20260807184857",
+      "name": "restaurant_display_order_and_featured"
+    },
+    {
+      "version": "20260807193934",
+      "name": "cap_push_tokens_per_profile"
+    },
+    {
+      "version": "20260807194003",
+      "name": "cap_push_tokens_deterministic_tiebreak"
+    },
+    {
+      "version": "20260808010959",
+      "name": "revoke_anon_push_internals"
+    },
+    {
+      "version": "20260808043834",
+      "name": "scheduled_only_for_slot_orders"
+    },
+    {
+      "version": "20260808043919",
+      "name": "vendor_nudge_from_placement"
+    },
+    {
+      "version": "20260808162151",
+      "name": "audit_operational_batch_1"
+    },
+    {
+      "version": "20260808204852",
+      "name": "restrict_security_definer_permissions"
+    }
+  ]
+}
+
