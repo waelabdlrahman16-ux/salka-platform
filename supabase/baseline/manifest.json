@@ -1,0 +1,16 @@
+{
+  "project_ref": "pqpnwxyevrsipklzmwex",
+  "schema": "public",
+  "captured_at": "2026-08-08T20:53:32.842823+00:00",
+  "postgres_version": "17.6",
+  "snapshot_only": true,
+  "includes_data_rows": false,
+  "counts": {
+    "tables": 48,
+    "views": 0,
+    "functions": 159,
+    "policies": 80,
+    "triggers": 14,
+    "indexes": 114
+  }
+}
