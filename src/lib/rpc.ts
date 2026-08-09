@@ -94,6 +94,7 @@ export const ERROR_AR: Record<string, string> = {
   account_blocked: 'الحساب ده متوقف عن الطلب — كلّم الإدارة لو في مشكلة',
   has_live_orders: 'العميل ده عنده طلب شغال دلوقتي — اقفله الأول قبل ما توقفه',
   no_driver_on_this_order: 'مفيش مندوب متسجل على الطلب ده',
+  driver_instapay_unavailable: 'المندوب مش مسجل رقم إنستاباي — كلّمه أو اختار طريقة تانية',
 
   // Payment-method switching (switch_to_cash). These MUST live here, not only
   // in a call-site `overrides` map: describeError() resolves a code by matching
@@ -104,6 +105,9 @@ export const ERROR_AR: Record<string, string> = {
   // someone has already told us they transferred the money.
   payment_already_claimed: 'قلت لنا إنك حوّلت بالفعل — استنى المراجعة، ولو في مشكلة كلّمنا',
   already_cash: 'الطلب ده أصلاً كاش عند الاستلام',
+  order_not_awaiting_payment: 'الطلب مش مستني دفع دلوقتي',
+  rate_limit_check_failed: 'حصل عطل مؤقت — جرب تاني بعد شوية',
+  payment_action_failed: 'العملية متنفذتش — جرب تاني أو كلّمنا',
 
   // account
   not_logged_in: 'لازم تسجل دخولك الأول',
@@ -177,5 +181,43 @@ export async function rpc<T = unknown>(
     // supabase-js normally surfaces transport failures via `error`, but a hard
     // network drop can reject instead. Treat it as offline rather than generic.
     return { ok: false, code: 'network', error: OFFLINE_AR, offline: true }
+  }
+}
+
+/**
+ * Same result contract as rpc(), but for privileged customer actions that now
+ * enter through an Edge Function rather than an anonymous database RPC.
+ */
+export async function edgeAction<T = unknown>(
+  name: string,
+  body: Record<string, unknown>,
+  overrides?: Record<string, string>
+): Promise<RpcResult<T>> {
+  try {
+    const { data, error } = await supabase.functions.invoke(name, { body })
+    if (error || data?.error || !data?.ok) {
+      let serverMessage = typeof data?.error === 'string' ? data.error : error?.message
+      if (error && 'context' in error && error.context instanceof Response) {
+        const payload = await error.context.clone().json().catch(() => null)
+        if (typeof payload?.error === 'string') serverMessage = payload.error
+      }
+      const transport = isTransportFailure(serverMessage)
+      return {
+        ok: false,
+        code: transport ? 'network' : extractCode(serverMessage),
+        error: transport ? OFFLINE_AR : describeError(serverMessage, overrides),
+        offline: transport,
+      }
+    }
+    return { ok: true, data: data.data as T }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : null
+    const transport = isTransportFailure(message)
+    return {
+      ok: false,
+      code: transport ? 'network' : 'unknown',
+      error: transport ? OFFLINE_AR : GENERIC_AR,
+      offline: transport,
+    }
   }
 }

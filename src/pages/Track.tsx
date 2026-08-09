@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { describeError, isTransportFailure, rpc } from '../lib/rpc'
+import { describeError, edgeAction, isTransportFailure, rpc } from '../lib/rpc'
 import InstallPrompt from '../components/InstallPrompt'
 import { markOrderDelivered } from '../lib/firstOrder'
 import { registerPush } from '../lib/push'
@@ -141,8 +141,9 @@ export default function Track() {
   async function switchToCash() {
     if (!token) return
     setSwitchingToCash(true); setActionError(null)
-    const res = await rpc<{ status: string; deposit_required: number | null }>(
-      'switch_to_cash', { p_token: token }, {
+    const res = await edgeAction<{ status: string; deposit_required: number | null }>(
+      'customer-payment-actions', { action: 'switch_to_cash', token }, {
+        rate_limited: 'حاولت تغيّر طريقة الدفع كتير — استنى شوية وجرب تاني',
         payment_already_claimed: 'قلت لنا إنك حوّلت بالفعل — استنى المراجعة، ولو في مشكلة كلّمنا',
         wrong_stage: 'الطلب اتحرك خلاص — مش هينفع نغيّر طريقة الدفع دلوقتي',
         already_assigned: 'المندوب استلم الطلب خلاص — ادفع كاش عند التوصيل عادي',
@@ -186,7 +187,11 @@ export default function Track() {
   async function claimInstapayPayment() {
     if (!token) return
     setClaimingPayment(true); setActionError(null)
-    const res = await rpc('mark_instapay_claimed', { p_token: token })
+    const res = await edgeAction('customer-payment-actions', {
+      action: 'claim_instapay', token,
+    }, {
+      rate_limited: 'حاولت تأكد التحويل كتير — استنى شوية وجرب تاني',
+    })
     setClaimingPayment(false)
     // The customer's money is already gone at this point. A failure here used
     // to silently redraw the same button with no explanation.
@@ -293,7 +298,11 @@ export default function Track() {
     const amount = tipAmount ?? Number(customTip)
     if (!token || !amount || amount <= 0) return
     setActionError(null)
-    const res = await rpc('submit_tip', { p_token: token, p_amount: amount })
+    const res = await edgeAction('customer-payment-actions', {
+      action: 'submit_tip', token, amount,
+    }, {
+      rate_limited: 'حاولت تبعت الإكرامية كتير — استنى شوية وجرب تاني',
+    })
     if (!res.ok) { setActionError({ scope: 'tip', message: res.error }); return }
     setTipSent(true)
   }
