@@ -1,4 +1,4 @@
-import { supabase } from './supabase'
+import { edgeAction } from './rpc'
 import { getDeviceId } from './deviceId'
 import { isInAppBrowser } from './inAppBrowser'
 
@@ -83,14 +83,14 @@ export function track(
 ): void {
   try {
     const click = fbclid()
-    void supabase.rpc('log_app_event', {
-      p_event: event,
-      p_device_id: getDeviceId(),
-      p_session_id: safeSession(),
-      p_compound_id: fields.compoundId ?? null,
-      p_restaurant_id: fields.restaurantId ?? null,
-      p_order_id: fields.orderId ?? null,
-      p_props: {
+    void edgeAction('analytics-ingestion', {
+      event,
+      deviceId: getDeviceId(),
+      sessionId: safeSession(),
+      compoundId: fields.compoundId ?? null,
+      restaurantId: fields.restaurantId ?? null,
+      orderId: fields.orderId ?? null,
+      props: {
         in_app: String(isInAppBrowser()),
         ...(click ? { fbclid: click } : {}),
         ...(referrerHost() ? { ref: referrerHost() as string } : {}),
