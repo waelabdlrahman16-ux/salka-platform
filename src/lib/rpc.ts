@@ -29,6 +29,7 @@ export const ERROR_AR: Record<string, string> = {
   menu_item_not_found: 'في صنف في عربتك مابقاش موجود، شيله وجرب تاني',
   size_required: 'اختار حجم الصنف قبل ما تكمل',
   invalid_size: 'اختار حجم الصنف قبل ما تكمل',
+  invalid_combo: 'فيه كومبو في عربتك مابقاش متاح — امسح الصنف وضيفه تاني',
   addon_group_min_not_met: 'في اختيار مطلوب لصنف في عربتك لسه ما اتحددش',
   addon_group_max_exceeded: 'اخترت إضافات أكتر من المسموح لصنف في عربتك',
   empty_order: 'عربتك فاضية',
@@ -41,6 +42,12 @@ export const ERROR_AR: Record<string, string> = {
   compound_missing_fee: 'المكان ده لسه مش متسعّر عندنا، كلّمنا لو سمحت',
   slot_full: 'الفترة دي اتملت، اختار فترة تانية',
   slot_unavailable: 'الفترة دي مابقتش متاحة، اختار فترة تانية',
+  order_rate_limit: 'عملت طلبات كتير بسرعة — استنى شوية وجرب تاني',
+  daily_order_limit: 'وصلت للحد اليومي للطلبات — كلّمنا عشان نساعدك',
+  not_your_restaurant: 'مش مسموح تعمل طلب مندوب للمطعم ده',
+  invalid_customer_input: 'راجع بيانات الاسم والموبايل والعنوان وجرب تاني',
+  invalid_order_input: 'راجع تفاصيل الطلب وجرب تاني',
+  order_creation_failed: 'مقدرناش نسجل الطلب — جرب تاني أو كلّمنا',
 
   // order lifecycle
   order_not_found: 'الطلب ده مش موجود',

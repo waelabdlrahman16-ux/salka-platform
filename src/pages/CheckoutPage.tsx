@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useId } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { customerOrderCreation } from '../lib/customerOrderCreation'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { useCart } from '../lib/cart'
 import { loadMenuOptions } from '../lib/menuOptions'
@@ -274,24 +275,26 @@ export default function CheckoutPage() {
     setSaving(true)
     setError('')
     const payload = lines.map(l => ({ menu_item_id: l.menuItemId, qty: l.qty, size_id: l.sizeId, combo_id: l.comboId, addon_ids: l.addonIds }))
-    const { data, error: err } = await supabase.rpc('place_order', {
-      p_restaurant_id: restaurant.id,
-      p_customer_name: name.trim(),
-      p_customer_phone: phone.trim(),
-      p_zone: selectedCompound?.name ?? '',
-      p_unit_number: unit.trim(),
-      p_address_notes: notes.trim(),
-      p_delivery_fee: deliveryFee ?? 0, // server recomputes and ignores this
-      p_items: payload,
-      p_slot_id: slot?.id ?? null,
-      p_scheduled_date: slot?.scheduled_date ?? null,
-      p_compound_id: compoundId,
-      p_payment_method: isInstapay ? 'instapay' : 'cod',
-      p_use_wallet: walletBalance > 0 && useWallet,
-      p_session_token: getSessionToken(),
-      p_customer_note: customerNote.trim() || null
+    const result = await customerOrderCreation<{ token: string; id: number; cod_deposit_amount?: number | null }>('catalog', {
+      restaurantId: restaurant.id,
+      customerName: name.trim(),
+      customerPhone: phone.trim(),
+      zone: selectedCompound?.name ?? '',
+      unitNumber: unit.trim(),
+      addressNotes: notes.trim(),
+      deliveryFee: deliveryFee ?? 0, // server recomputes and ignores this
+      items: payload,
+      slotId: slot?.id ?? null,
+      scheduledDate: slot?.scheduled_date ?? null,
+      compoundId,
+      paymentMethod: isInstapay ? 'instapay' : 'cod',
+      useWallet: walletBalance > 0 && useWallet,
+      sessionToken: getSessionToken(),
+      customerNote: customerNote.trim() || null
     })
-    if (err || !data?.token) {
+    const data = result.ok ? result.data : null
+    const err = result.ok ? null : { message: result.code }
+    if (!result.ok || !data?.token) {
       setSaving(false)
       const reason =
         err?.message.includes('slot_full') ? 'slot_full'
