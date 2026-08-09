@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { rpc } from '../lib/rpc'
+import { describeError, isTransportFailure, rpc } from '../lib/rpc'
 import InstallPrompt from '../components/InstallPrompt'
 import { markOrderDelivered } from '../lib/firstOrder'
 import { registerPush } from '../lib/push'
@@ -312,12 +312,36 @@ export default function Track() {
     if (!data?.order) return
     setCancelPickerOpen(false)
     setCancelling(true); setActionError(null)
-    const res = await rpc('cancel_order', {
-      p_order_id: data.order.id, p_reason: reason, p_token: token
-    })
-    setCancelling(false)
-    if (!res.ok) { setActionError({ scope: 'cancel', message: res.error }); return }
-    setCancelled(true)
+    try {
+      const { data: result, error } = await supabase.functions.invoke('cancel-order', {
+        body: { order_id: data.order.id, reason, token }
+      })
+      if (error || !result?.ok) {
+        let code = typeof result?.error === 'string' ? result.error : null
+        if (!code && error && 'context' in error && error.context instanceof Response) {
+          const payload = await error.context.clone().json().catch(() => null)
+          if (typeof payload?.error === 'string') code = payload.error
+        }
+        const cancellationErrors: Record<string, string> = {
+          rate_limited: 'حاولت تلغي كتير في وقت قصير — استنى شوية وجرب تاني',
+          cancel_failed: 'الإلغاء متنفذش — جرب تاني أو كلّمنا',
+          rate_limit_check_failed: 'حصل عطل مؤقت — جرب تاني بعد شوية',
+          invalid_cancel_reason: 'اختار سبب الإلغاء وجرب تاني',
+        }
+        const message = (code && cancellationErrors[code]) || describeError(code ?? error?.message)
+        setActionError({ scope: 'cancel', message })
+        return
+      }
+      setCancelled(true)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : null
+      setActionError({
+        scope: 'cancel',
+        message: isTransportFailure(message) ? 'مفيش اتصال بالنت — اتأكد من الشبكة وجرب تاني' : 'الإلغاء متنفذش — جرب تاني أو كلّمنا'
+      })
+    } finally {
+      setCancelling(false)
+    }
   }
 
   function copyOrderNumber() {
