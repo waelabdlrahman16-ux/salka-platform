@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import CustomerLogin from '../components/CustomerLogin'
 import { getSessionToken, useCustomerAuth } from '../lib/customerAuth'
-import { rpc } from '../lib/rpc'
+import { customerSessionAccess } from '../lib/customerSessionAccess'
 import { orderStatusLabel } from '../lib/statusLabels'
 
 interface Row {
@@ -26,11 +26,11 @@ export default function MyOrders() {
     if (!customer?.phone) return
     setBusy(true)
     setError('')
-    const res = await rpc<Row[]>('my_orders', {
+    const res = await customerSessionAccess<Row[]>('orders', {
       // Kept for RPC signature compatibility. The server deliberately ignores
       // this typed value and derives the number from the verified identity.
-      p_phone: customer.phone,
-      p_session_token: getSessionToken(),
+      phone: customer.phone,
+      sessionToken: getSessionToken(),
     })
     setBusy(false)
     if (!res.ok) {

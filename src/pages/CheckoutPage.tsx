@@ -15,6 +15,7 @@ import LocationPreviewMap from '../components/LocationPreviewMap'
 import type { Compound, Discount, MenuItem, MenuItemAddon, MenuItemCombo, MenuItemSize, Restaurant, Slot } from '../lib/types'
 import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
 import { publicCatalog } from '../lib/publicCatalog'
+import { customerSessionAccess } from '../lib/customerSessionAccess'
 
 export default function CheckoutPage() {
   const fid = useId()
@@ -124,9 +125,9 @@ export default function CheckoutPage() {
     // A failed lookup used to be indistinguishable from an empty wallet, so the
     // customer's credit was silently not offered at checkout.
     const key = `salka_wallet_seen_${phone.trim()}`
-    supabase.rpc('wallet_balance_for_phone', { p_phone: phone.trim(), p_session_token: getSessionToken() })
-      .then(({ data, error }) => {
-        if (error) {
+    customerSessionAccess<number>('wallet', { phone: phone.trim(), sessionToken: getSessionToken() })
+      .then(result => {
+        if (!result.ok) {
           // Only warn someone who has actually HAD credit.
           //
           // The banner used to fire on any failed lookup, which meant a warning
@@ -143,7 +144,7 @@ export default function CheckoutPage() {
           return
         }
         setWalletFailed(false)
-        const balance = Number(data) || 0
+        const balance = Number(result.data) || 0
         setWalletBalance(balance)
         try { localStorage.setItem(key, String(balance)) } catch { /* private mode */ }
       })
@@ -152,7 +153,10 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!isValidEgyptPhone(phone) || addressLoaded) return
     const t = setTimeout(async () => {
-      const { data } = await supabase.rpc('last_address_for_phone', { p_phone: phone, p_session_token: getSessionToken() })
+      const result = await customerSessionAccess<{
+        customer_name: string | null; unit_number: string | null; address_notes: string | null; compound_id: number | null
+      } | null>('lastAddress', { phone, sessionToken: getSessionToken() })
+      const data = result.ok ? result.data : null
       setAddressLoaded(true)
       if (data) {
         if (!name.trim() && data.customer_name) setName(data.customer_name)

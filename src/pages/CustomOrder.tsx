@@ -10,6 +10,7 @@ import { getSessionToken, useCustomerAuth } from '../lib/customerAuth'
 import type { Compound, MenuItem, Restaurant, Slot } from '../lib/types'
 import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
 import { publicCatalog } from '../lib/publicCatalog'
+import { customerSessionAccess } from '../lib/customerSessionAccess'
 
 export default function CustomOrder() {
   const fid = useId()
@@ -119,7 +120,10 @@ export default function CustomOrder() {
   useEffect(() => {
     if (!isValidEgyptPhone(phone) || addressLoaded) return
     const t = setTimeout(async () => {
-      const { data } = await supabase.rpc('last_address_for_phone', { p_phone: phone, p_session_token: getSessionToken() })
+      const result = await customerSessionAccess<{
+        customer_name: string | null; unit_number: string | null; address_notes: string | null; compound_id: number | null
+      } | null>('lastAddress', { phone, sessionToken: getSessionToken() })
+      const data = result.ok ? result.data : null
       // Was set inside `if (data)`, so a first-time customer with no saved
       // address never latched the flag and this debounced RPC re-fired on every
       // subsequent keystroke in the phone field, forever.
@@ -205,8 +209,9 @@ export default function CustomOrder() {
       .then(res => setPopular(res.ok ? res.data : []))
     // Returns null for anyone we cannot identify -- it refuses to answer to a
     // typed phone number, unlike every other lookup here.
-    supabase.rpc('my_last_request', { p_restaurant_id: vendor.id, p_session_token: getSessionToken() })
-      .then(({ data }) => setLastRequest((data as typeof lastRequest) ?? null))
+    customerSessionAccess<typeof lastRequest>('lastRequest', {
+      restaurantId: vendor.id, sessionToken: getSessionToken()
+    }).then(res => setLastRequest(res.ok ? res.data : null))
   }, [vendor, customer?.id])
 
   // Everything the customer has built belongs to ONE vendor. Switching vendors
