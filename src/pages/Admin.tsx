@@ -10,6 +10,7 @@ import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel,
          ORDER_STATUSES, CLOSED_ORDER_STATUSES, UNPAID_ORDER_STATUSES, type OrderStatus, isCancelled, cancelReasonLabel } from '../lib/statusLabels'
 import { rpc } from '../lib/rpc'
 import { adminFinancialAction } from '../lib/adminFinancialActions'
+import { adminAccountDriverAction } from '../lib/adminAccountDriverActions'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import Icon from '../components/Icon'
 import BannersAdmin from '../components/BannersAdmin'
@@ -665,7 +666,7 @@ export default function Admin() {
       title: `فك ربط الجهاز عن ${d.name}؟`,
       body: <>{bound ? `الجهاز الحالي: ${bound}` : 'مفيش جهاز مربوط دلوقتي'}<br /><br />أول موبايل يفتح حسابه بعد كده هيتربط بيه.</>,
     })) return
-    const res = await rpc('admin_reset_driver_device', { p_driver_id: d.id })
+    const res = await adminAccountDriverAction('resetDriverDevice', { driverId: d.id })
     if (!res.ok) { await alertSheet(res.error); return }
     load()
   }
@@ -923,7 +924,7 @@ export default function Admin() {
       danger: true,
     })) return
     setAccountBusy(profileId)
-    const res = await rpc('admin_delete_staff', { p_profile_id: profileId }, {
+    const res = await adminAccountDriverAction('deleteStaff', { profileId }, {
       cannot_delete_self: 'مينفعش تلغي حسابك انت',
       cannot_delete_admin: 'مينفعش تلغي حساب إدارة من هنا',
       driver_has_live_delivery: 'المندوب ده معاه طلب شغال دلوقتي — سيبه يخلّصه أو اسحب الطلب منه الأول',
@@ -943,7 +944,7 @@ export default function Admin() {
           danger: true,
         })) return
         setAccountBusy(profileId)
-        const forced = await rpc('admin_delete_staff', { p_profile_id: profileId, p_force: true })
+        const forced = await adminAccountDriverAction('deleteStaff', { profileId, force: true })
         setAccountBusy(null)
         if (!forced.ok) { setActionError(forced.error); return }
         setActionError(''); load(true)
@@ -1268,7 +1269,7 @@ export default function Admin() {
       body: 'هيتغيّر اللي يقدر يشوفه ويعمله على طول.',
     })) return
     setActionError('')
-    const res = await rpc('admin_convert_staff_role', { p_profile_id: profileId, p_role: role })
+    const res = await adminAccountDriverAction('convertStaffRole', { profileId, role })
     if (!res.ok) { setActionError(res.error); return }
     load(true)
   }
