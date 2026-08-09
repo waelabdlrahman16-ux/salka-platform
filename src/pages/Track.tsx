@@ -55,6 +55,8 @@ interface TrackData {
     kitchen_status: 'new' | 'preparing' | 'ready' | null
     cod_deposit_amount: number | null
     instapay_claimed: boolean
+    /** Whether this order already contributed to driver/vendor reputation. */
+    rating_submitted: boolean
   } | null
   items: {
     name: string; qty: number; total: number; image_url: string | null
@@ -262,6 +264,9 @@ export default function Track() {
     setActionError(null)
     const res = await rpc('submit_rating', {
       p_token: token, p_driver_rating: driverRating || null, p_restaurant_rating: restaurantRating || null
+    }, {
+      rating_already_submitted: 'تم إرسال تقييم للطلب ده بالفعل',
+      rating_window_closed: 'فترة تقييم الطلب انتهت',
     })
     if (!res.ok) { setActionError({ scope: 'rating', message: res.error }); return }
     setRatingSent(true)
@@ -908,7 +913,7 @@ export default function Track() {
         <div className="mb-4"><InstallPrompt /></div>
       )}
 
-      {current === 'Delivered' && !ratingSent && (
+      {current === 'Delivered' && !ratingSent && !o.rating_submitted && (
         <div className="card p-4 mb-4">
           <p className="text-sm font-semibold mb-3">قيّم تجربتك (اختياري)</p>
           <div className="space-y-2.5">
@@ -938,6 +943,9 @@ export default function Track() {
           {errFor('rating') && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-2">{errFor('rating')}</p>}
           <button className="btn-sea w-full mt-3 text-sm" disabled={!driverRating && !restaurantRating} onClick={sendRating}>إرسال التقييم</button>
         </div>
+      )}
+      {o.rating_submitted && !ratingSent && (
+        <p className="text-emerald-700 text-sm text-center mb-4">✅ شكرًا، تقييم الطلب مسجّل</p>
       )}
       {ratingSent && !showTipPrompt && <p className="text-emerald-700 text-sm text-center mb-4">✅ شكرًا لتقييمك</p>}
 
