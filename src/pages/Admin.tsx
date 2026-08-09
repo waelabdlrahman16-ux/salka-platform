@@ -11,6 +11,7 @@ import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel,
 import { rpc } from '../lib/rpc'
 import { adminFinancialAction } from '../lib/adminFinancialActions'
 import { adminAccountDriverAction } from '../lib/adminAccountDriverActions'
+import { staffOperation } from '../lib/staffOperations'
 import { dispatchOperation } from '../lib/dispatchOperations'
 import { vendorOperation } from '../lib/vendorOperations'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
@@ -719,10 +720,10 @@ export default function Admin() {
   }>>({})
 
   async function loadOpenStates() {
-    const { data, error } = await supabase.rpc('staff_vendor_open_states')
-    if (error) return   // keep the last known states rather than blanking the row
+    const res = await staffOperation<{ id: number }[]>('vendorOpenStates')
+    if (!res.ok) return   // keep the last known states rather than blanking the row
     const map: typeof openStates = {}
-    for (const s of (data as { id: number }[]) ?? []) map[s.id] = s as never
+    for (const s of res.data ?? []) map[s.id] = s as never
     setOpenStates(map)
   }
   useEffect(() => { loadOpenStates() }, [])

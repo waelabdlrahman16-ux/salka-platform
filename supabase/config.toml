@@ -115,3 +115,15 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/vendor-operations/deno.json"
 entrypoint = "./functions/vendor-operations/index.ts"
+
+[functions.customer-accounts]
+enabled = true
+verify_jwt = true
+import_map = "./functions/customer-accounts/deno.json"
+entrypoint = "./functions/customer-accounts/index.ts"
+
+[functions.staff-operations]
+enabled = true
+verify_jwt = true
+import_map = "./functions/staff-operations/deno.json"
+entrypoint = "./functions/staff-operations/index.ts"

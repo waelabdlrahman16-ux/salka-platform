@@ -17,6 +17,7 @@ import type { Compound, Discount, MenuItem, MenuItemAddon, MenuItemCombo, MenuIt
 import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
 import { publicCatalog } from '../lib/publicCatalog'
 import { customerSessionAccess } from '../lib/customerSessionAccess'
+import { customerAccount } from '../lib/customerAccounts'
 
 export default function CheckoutPage() {
   const fid = useId()
@@ -99,9 +100,9 @@ export default function CheckoutPage() {
   // because the RPC is account-scoped -- a guest gets an empty list, not an error.
   useEffect(() => {
     if (!customer) { setSavedAddresses([]); return }
-    supabase.rpc('my_customer_addresses').then(({ data, error }) => {
-      if (error) return
-      const list = (data as typeof savedAddresses) ?? []
+    customerAccount<typeof savedAddresses>('myAddresses').then(res => {
+      if (!res.ok) return
+      const list = res.data ?? []
       setSavedAddresses(list)
       const preferred = list.find(a => a.is_default) ?? list[0]
       if (!preferred) return
