@@ -5,6 +5,8 @@ import { secureOtpCode, isRateLimitError, CORS_HEADERS, json, fail } from "../_s
 // Customer login via SMS OTP -- no password, no Supabase Auth account.
 // action=request  -> generates a code, stores it, sends it via SMS Misr's OTP API.
 // action=verify   -> checks the code, creates/finds the customer, issues a session token.
+// action=request_change / verify_change -> requires a valid Supabase Auth JWT
+// and changes the profile phone only after the new number's SMS code succeeds.
 //
 // Requires these secrets (set in Supabase dashboard -> Edge Functions -> Secrets)
 // once a SMS Misr account exists and a Sender ID + OTP template are approved:
@@ -60,7 +62,17 @@ Deno.serve(async (req) => {
     const cleanPhone = normalizePhone(phone)
     if (cleanPhone.length !== 10) return json({ error: "invalid_phone" }, 400)
 
-    if (action === "request") {
+    const phoneChange = action === "request_change" || action === "verify_change"
+    let authenticatedUserId: string | null = null
+    if (phoneChange) {
+      const bearer = req.headers.get("Authorization")?.match(/^Bearer\s+(.+)$/i)?.[1]
+      if (!bearer) return json({ error: "not_authenticated" }, 401)
+      const { data: { user }, error: userErr } = await admin.auth.getUser(bearer)
+      if (userErr || !user) return json({ error: "not_authenticated" }, 401)
+      authenticatedUserId = user.id
+    }
+
+    if (action === "request" || action === "request_change") {
       // Ordering matters. check_rate_limit INSERTS a row on every non-limited
       // call, so a check that runs *after* another has already spent that
       // bucket's budget. The service-wide circuit breakers therefore run FIRST:
@@ -92,7 +104,8 @@ Deno.serve(async (req) => {
 
       {
         const { error: limitErr } = await admin.rpc("check_rate_limit", {
-          p_bucket: `login_otp:${cleanPhone}`, p_max: 5, p_window: "10 minutes"
+          p_bucket: `${phoneChange ? "phone_change_otp" : "login_otp"}:${cleanPhone}`,
+          p_max: 5, p_window: "10 minutes"
         })
         if (limitErr) {
           // Only a real limit is "wait and retry". A missing function or a
@@ -156,9 +169,10 @@ Deno.serve(async (req) => {
       return json({ ok: true })
     }
 
-    if (action === "verify") {
+    if (action === "verify" || action === "verify_change") {
       const { error: limitErr } = await admin.rpc("check_rate_limit", {
-        p_bucket: `verify_otp:${cleanPhone}`, p_max: 8, p_window: "10 minutes"
+        p_bucket: `${phoneChange ? "verify_phone_change" : "verify_otp"}:${cleanPhone}`,
+        p_max: 8, p_window: "10 minutes"
       })
       if (limitErr) {
         if (isRateLimitError(limitErr)) return json({ error: "rate_limited" }, 429)
@@ -175,6 +189,20 @@ Deno.serve(async (req) => {
       if (!otpRow) return json({ error: "invalid_or_expired_code" }, 400)
 
       await admin.from("customer_otp_codes").update({ used: true }).eq("id", otpRow.id)
+
+      if (phoneChange) {
+        const { data: changed, error: changeErr } = await admin.rpc("set_verified_customer_phone", {
+          p_auth_user_id: authenticatedUserId,
+          p_phone: cleanPhone,
+        })
+        if (changeErr) {
+          const known = ["phone_already_registered", "customer_not_found", "invalid_phone"]
+            .find(code => changeErr.message?.includes(code))
+          if (known) return json({ error: known }, 400)
+          return fail("customer-otp", "phone_change_failed", 500, changeErr)
+        }
+        return json({ ok: true, phone: changed.phone })
+      }
 
       let { data: customer } = await admin.from("customers").select("*").eq("phone", cleanPhone).maybeSingle()
       if (!customer) {

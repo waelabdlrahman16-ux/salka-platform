@@ -5,10 +5,10 @@ import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
 import { homeFor, useAuth } from '../lib/auth'
 import { orderStatusLabel } from '../lib/statusLabels'
 import { useSheets } from '../components/ActionSheets'
-import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { describeError, rpc } from '../lib/rpc'
 import { SUPPORT_WHATSAPP_URL } from '../lib/support'
 import type { Compound } from '../lib/types'
+import VerifiedPhoneEditor from '../components/VerifiedPhoneEditor'
 
 interface Address {
   id: number; label: string; compound_id: number; compound_name: string
@@ -22,7 +22,7 @@ interface OrderRow {
 export default function Profile() {
   const fid = useId()
   const nav = useNavigate()
-  const { customer, logout, updatePhone, updateName } = useCustomerAuth()
+  const { customer, logout, updateName } = useCustomerAuth()
   const { profile: staffProfile } = useAuth()
   const { confirmSheet, sheetElement } = useSheets()
   const [editingIdentity, setEditingIdentity] = useState(false)
@@ -121,20 +121,15 @@ export default function Profile() {
   return (
     <div className="max-w-sm mx-auto space-y-4 pb-6">
       {sheetElement}
-      {/* Name and phone were display-only once set. There was no function to
-          change a name at all, and the phone editor rendered only while the
-          phone was MISSING -- so a typo at signup, or whatever display name
-          Google supplied, was permanent. That name is what a driver reads at
-          the door. Both are editable now, and stay editable. */}
+      {/* Names can be corrected directly. Phone changes live in their own OTP
+          card below because a phone number also unlocks historical orders. */}
       <div className="card p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             {editingIdentity ? (
               <IdentityEditor
                 initialName={customer.name ?? ''}
-                initialPhone={customer.phone ?? ''}
                 onSaveName={updateName}
-                onSavePhone={updatePhone}
                 onClose={() => setEditingIdentity(false)}
               />
             ) : (
@@ -156,10 +151,13 @@ export default function Profile() {
         </div>
       </div>
 
-      {!customer.phone && !editingIdentity && (
+      {!editingIdentity && (
         <div className="card p-4 bg-sand/10 mt-3">
-          <p className="text-sm font-semibold mb-2">محتاجين رقم موبايلك عشان نقدر نوصلك</p>
-          <PhoneInline onSave={updatePhone} />
+          <p className="text-sm font-semibold mb-1">
+            {customer.phone ? 'تغيير رقم الموبايل' : 'محتاجين رقم موبايلك عشان نقدر نوصلك'}
+          </p>
+          <p className="text-xs text-mist mb-3">هنبعت كود للرقم عشان نتأكد إنه رقمك.</p>
+          <VerifiedPhoneEditor compact />
         </div>
       )}
 
@@ -286,73 +284,30 @@ export default function Profile() {
   )
 }
 
-function PhoneInline({ onSave }: { onSave: (phone: string) => Promise<{ ok: boolean; error?: string }> }) {
-  const [phone, setPhone] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-
-  // The result of onSave was discarded entirely, so a rejected number just made
-  // the spinner blink. It also skipped isValidEgyptPhone, which every other
-  // phone field in the app enforces, so invalid input reached the RPC.
-  async function save() {
-    if (!isValidEgyptPhone(phone)) { setError(PHONE_HINT); return }
-    setSaving(true); setError('')
-    const res = await onSave(phone)
-    setSaving(false)
-    if (!res.ok) setError(describeError(res.error))
-  }
-
-  return (
-    <div>
-      <div className="flex gap-2">
-        <input className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-red-400' : ''}`}
-          dir="ltr" value={phone} onChange={e => { setPhone(e.target.value); setError('') }}
-          placeholder="01xxxxxxxxx" maxLength={13} />
-        <button className="btn-sea shrink-0 !px-4" disabled={saving || !isValidEgyptPhone(phone)} onClick={save}>
-          {saving ? '...' : 'حفظ'}
-        </button>
-      </div>
-      {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
-    </div>
-  )
-}
-
 /**
- * Edit the name and phone together. Saved separately, because they are separate
- * RPCs with separate failure modes -- a phone can be rejected for already
- * belonging to another account, and that must not silently discard a perfectly
- * good name typed at the same time.
+ * The display name is editable immediately. Phone ownership is a separate OTP
+ * flow below the card, so typing a number can never grant access to its orders.
  */
 function IdentityEditor({
-  initialName, initialPhone, onSaveName, onSavePhone, onClose
+  initialName, onSaveName, onClose
 }: {
   initialName: string
-  initialPhone: string
   onSaveName: (name: string) => Promise<{ ok: boolean; error?: string }>
-  onSavePhone: (phone: string) => Promise<{ ok: boolean; error?: string }>
   onClose: () => void
 }) {
   const fid = useId()
   const [name, setName] = useState(initialName)
-  const [phone, setPhone] = useState(initialPhone)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
   const nameChanged = name.trim() !== initialName.trim()
-  const phoneChanged = phone.trim() !== initialPhone.trim()
   const nameValid = name.trim().length >= 2
-  const phoneValid = !phone.trim() || isValidEgyptPhone(phone)
-  const canSave = (nameChanged || phoneChanged) && nameValid && phoneValid && !saving
+  const canSave = nameChanged && nameValid && !saving
 
   async function save() {
     setSaving(true); setError('')
     if (nameChanged) {
       const res = await onSaveName(name.trim())
-      if (!res.ok) { setSaving(false); setError(describeError(res.error)); return }
-    }
-    if (phoneChanged && phone.trim()) {
-      const res = await onSavePhone(phone.trim())
-      // The name is already saved by now; say so, so nobody retypes it.
       if (!res.ok) { setSaving(false); setError(describeError(res.error)); return }
     }
     setSaving(false)
@@ -366,13 +321,6 @@ function IdentityEditor({
         <input id={`${fid}-name`} className="field" value={name}
           onChange={e => { setName(e.target.value); setError('') }} placeholder="الاسم بالكامل" />
         {name.trim() && !nameValid && <p className="text-xs text-red-600 mt-1">الاسم قصير أوي</p>}
-      </div>
-      <div>
-        <label className="label" htmlFor={`${fid}-phone`}>رقم الموبايل</label>
-        <input id={`${fid}-phone`} className={`field ${phone.trim() && !phoneValid ? '!border-red-400' : ''}`}
-          dir="ltr" value={phone} maxLength={13}
-          onChange={e => { setPhone(e.target.value); setError('') }} placeholder="01xxxxxxxxx" />
-        {phone.trim() && !phoneValid && <p className="text-xs text-red-600 mt-1">{PHONE_HINT}</p>}
       </div>
       {error && <p className="text-xs text-red-600">{error}</p>}
       <div className="flex gap-2">

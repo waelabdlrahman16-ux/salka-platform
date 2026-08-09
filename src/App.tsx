@@ -17,7 +17,6 @@ import Offers from './pages/Offers'
 import Terms from './pages/Terms'
 import InstallPrompt from './components/InstallPrompt'
 import CustomerLogin from './components/CustomerLogin'
-import PhonePrompt from './components/PhonePrompt'
 import { CustomerAuthProvider, useCustomerAuth } from './lib/customerAuth'
 import { useScrollRestoration } from './lib/useScrollRestoration'
 import { isInAppBrowser } from './lib/inAppBrowser'
@@ -273,7 +272,9 @@ function AppShell() {
           onSkip={() => { localStorage.setItem('salka_onboarded', '1'); setSkipped(true) }}
         />
       )}
-      {!isStaff && !loading && customer && !customer.phone && <PhonePrompt />}
+      {/* A signed-in customer without a phone can still browse and check out as
+          a guest. Phone ownership now requires SMS verification, so never trap
+          the whole app behind that flow (especially while SMS is unavailable). */}
       {/* The app now always renders. This used to be gated on
           (isStaff || loading || customer || skipped), and CustomerLogin's
           backdrop was an opaque bg-night, so a first-time customer's entire

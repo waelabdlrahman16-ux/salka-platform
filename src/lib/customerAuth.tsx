@@ -9,7 +9,8 @@ interface CustomerAuthState {
   verifyOtp: (phone: string, code: string, name?: string) => Promise<{ ok: boolean; error?: string }>
   signInWithGoogle: () => Promise<void>
   requestEmailLink: (email: string) => Promise<{ ok: boolean; error?: string }>
-  updatePhone: (phone: string) => Promise<{ ok: boolean; error?: string }>
+  requestPhoneChange: (phone: string) => Promise<{ ok: boolean; error?: string }>
+  verifyPhoneChange: (phone: string, code: string) => Promise<{ ok: boolean; error?: string }>
   updateName: (name: string) => Promise<{ ok: boolean; error?: string }>
   logout: () => Promise<void>
 }
@@ -124,10 +125,22 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     return { ok: true }
   }
 
-  async function updatePhone(phone: string) {
-    const { error } = await supabase.rpc('update_my_customer_phone', { p_phone: phone })
-    if (error) return { ok: false, error: error.message }
-    setCustomer(c => c ? { ...c, phone } : c)
+  async function requestPhoneChange(phone: string) {
+    const { data, error } = await supabase.functions.invoke('customer-otp', {
+      body: { action: 'request_change', phone }
+    })
+    if (error) return { ok: false, error: await edgeErrorCode(error, 'send_failed') }
+    if (data?.error) return { ok: false, error: data.error }
+    return { ok: true }
+  }
+
+  async function verifyPhoneChange(phone: string, code: string) {
+    const { data, error } = await supabase.functions.invoke('customer-otp', {
+      body: { action: 'verify_change', phone, code }
+    })
+    if (error) return { ok: false, error: await edgeErrorCode(error, 'verify_failed') }
+    if (data?.error || !data?.phone) return { ok: false, error: data?.error ?? 'verify_failed' }
+    setCustomer(c => c ? { ...c, phone: data.phone } : c)
     return { ok: true }
   }
 
@@ -165,7 +178,8 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <CustomerAuthContext.Provider value={{
-      customer, loading, requestOtp, verifyOtp, signInWithGoogle, requestEmailLink, updatePhone, updateName, logout
+      customer, loading, requestOtp, verifyOtp, signInWithGoogle, requestEmailLink,
+      requestPhoneChange, verifyPhoneChange, updateName, logout
     }}>
       {children}
     </CustomerAuthContext.Provider>
