@@ -4,7 +4,7 @@ import { isInAppBrowser } from './inAppBrowser'
 
 // Funnel instrumentation.
 //
-// Six events, fixed names, matching the whitelist in log_app_event(). Anything
+// Fixed event names, matching the whitelist in log_app_event(). Anything
 // else the server drops on the floor, so adding an event here without adding it
 // there is a silent no-op -- change both or neither.
 //
@@ -23,7 +23,10 @@ export type AppEvent =
   | 'place_chosen'
   | 'vendor_opened'
   | 'item_added'
+  | 'customization_opened'
+  | 'customization_abandoned'
   | 'checkout_started'
+  | 'checkout_blocked'
   | 'order_placed'
 
 const SESSION_KEY = 'salka_analytics_session'
@@ -112,7 +115,11 @@ export function track(
  */
 export function trackOnce(event: AppEvent, fields?: Parameters<typeof track>[1]): void {
   try {
-    const key = FIRED_PREFIX + event
+    // Checkout is meaningful per vendor. A customer can abandon one restaurant
+    // and successfully check out another in the same browser session; treating
+    // the second as a duplicate hides exactly the recovery we need to measure.
+    const scope = fields?.restaurantId != null ? `:${fields.restaurantId}` : ''
+    const key = FIRED_PREFIX + event + scope
     if (sessionStorage.getItem(key)) return
     sessionStorage.setItem(key, '1')
   } catch {
