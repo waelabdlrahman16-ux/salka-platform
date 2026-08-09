@@ -21,6 +21,7 @@ import { CustomerAuthProvider, useCustomerAuth } from './lib/customerAuth'
 import { useScrollRestoration } from './lib/useScrollRestoration'
 import { isInAppBrowser } from './lib/inAppBrowser'
 import { trackOnce } from './lib/analytics'
+import { lastStaffHome, promoteCurrentSessionToRole } from './lib/supabase'
 
 // Staff-only pages: not needed in the customer bundle, so they're loaded
 // on demand instead of shipping ~1500 lines of admin/vendor/driver code to
@@ -204,15 +205,22 @@ function AppShell() {
   // Now it fires once per mount, so opening the app lands a driver in their
   // workspace and tapping the logo afterwards actually goes home.
   const { profile, loading: staffLoading } = useAuth()
-  const nav = useNavigate()
   const launchRedirectDone = useRef(false)
   useEffect(() => {
     if (launchRedirectDone.current || staffLoading) return
-    if (!profile) return
     launchRedirectDone.current = true
-    if (pathname === '/' && (profile.role === 'driver' || profile.role === 'vendor' || profile.role === 'supervisor')) {
-      nav(homeFor(profile.role), { replace: true })
+    if (pathname !== '/') return
+
+    // A legacy staff session may have been discovered while the app started on
+    // the customer URL. Move it before crossing the auth boundary. A later app
+    // launch has no shared session to inspect, so the remembered staff board
+    // restores the old installed-app behaviour without sharing refresh tokens.
+    if (profile && (profile.role === 'driver' || profile.role === 'vendor' || profile.role === 'supervisor')) {
+      window.location.replace(promoteCurrentSessionToRole(profile.role))
+      return
     }
+    const remembered = lastStaffHome()
+    if (!profile && remembered) window.location.replace(remembered)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [staffLoading, profile?.role])
   useScrollRestoration()

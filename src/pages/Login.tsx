@@ -1,6 +1,6 @@
-import { useState, useId } from 'react'
-import { Navigate } from 'react-router-dom'
-import { useAuth, homeFor } from '../lib/auth'
+import { useEffect, useState, useId } from 'react'
+import { useAuth } from '../lib/auth'
+import { forgetLastStaffHome, promoteCurrentSessionToRole } from '../lib/supabase'
 
 export default function Login() {
   const fid = useId()
@@ -10,15 +10,23 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
-  if (!loading && session && profile) {
-    return <Navigate to={homeFor(profile.role)} replace />
-  }
+  useEffect(() => {
+    if (loading || !session || !profile) return
+    // The login page uses a neutral temporary namespace because the role is
+    // unknown until the protected profile is read. Move the session, then do a
+    // real navigation so every module starts against the role-specific client.
+    window.location.replace(promoteCurrentSessionToRole(profile.role))
+  }, [loading, session, profile])
 
   async function submit() {
     setBusy(true); setError(null)
     const err = await signIn(email, password)
     setBusy(false)
     if (err) setError(err)
+  }
+
+  if (!loading && session && profile) {
+    return <p className="text-mist text-center py-10">جاري فتح شاشة الشغل…</p>
   }
 
   return (
@@ -49,7 +57,7 @@ export default function Login() {
         </button>
       </div>
       <p className="text-center text-sm text-mist mt-4">
-        عميل؟ <a className="text-sea" href="/">اطلب من هنا</a>
+        عميل؟ <a className="text-sea" href="/" onClick={forgetLastStaffHome}>اطلب من هنا</a>
       </p>
     </div>
   )
