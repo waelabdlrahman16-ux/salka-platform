@@ -13,6 +13,7 @@ import { priceLine } from '../lib/linePricing'
 import type { Compound, Discount, MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemCombo, MenuItemSize, Restaurant } from '../lib/types'
 import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
 import { track } from '../lib/analytics'
+import { publicCatalog } from '../lib/publicCatalog'
 
 const ALL = '__all__'
 
@@ -76,9 +77,9 @@ export default function RestaurantDetail() {
     // order_ratings: 8 of the 9 catalogue vendors have never been rated and all
     // of them showed a score, including "★ 3.0" on كنتاكي. The home card had
     // the count and suppressed it correctly; this page did not and could not.
-    supabase.rpc('restaurant_public', { p_id: Number(id) }).then(({ data, error }) => {
-      if (error || !data) { setLoadFailed(true); return }
-      setRestaurant(data as Restaurant)
+    publicCatalog<Restaurant | null>('restaurant', { restaurantId: Number(id) }).then(res => {
+      if (!res.ok || !res.data) { setLoadFailed(true); return }
+      setRestaurant(res.data)
     })
     supabase.from('menu_items').select('*').eq('restaurant_id', id).eq('available', true).then(async ({ data }) => {
       const list = data ?? []

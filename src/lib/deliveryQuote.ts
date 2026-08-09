@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase } from './supabase'
+import { publicCatalog } from './publicCatalog'
 
 // The delivery fee is owned by the server. place_order / submit_custom_order /
 // request_pickup all read it from compounds.delivery_fee and ignore whatever the
@@ -63,15 +63,15 @@ export async function fetchDeliveryQuote(
   if (pending) return pending
 
   const request = (async () => {
-    const { data, error } = await supabase.rpc('delivery_quote', {
-      p_compound_id: compoundId,
+    const result = await publicCatalog<DeliveryQuote | null>('deliveryQuote', {
+      compoundId,
       // Defaulted to null server-side, so omitting it stays valid -- but any
       // screen that knows the vendor should pass it, or the customer is quoted
       // the fallback prep instead of the real one.
-      p_restaurant_id: restaurantId ?? null,
+      restaurantId: restaurantId ?? null,
     })
-    if (error || !data) return null
-    const quote = data as DeliveryQuote
+    if (!result.ok || !result.data) return null
+    const quote = result.data
     cache.set(key, { at: Date.now(), quote })
     return quote
   })()

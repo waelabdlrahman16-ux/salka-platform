@@ -9,6 +9,7 @@ import Icon from '../components/Icon'
 import { getSessionToken, useCustomerAuth } from '../lib/customerAuth'
 import type { Compound, MenuItem, Restaurant, Slot } from '../lib/types'
 import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
+import { publicCatalog } from '../lib/publicCatalog'
 
 export default function CustomOrder() {
   const fid = useId()
@@ -193,15 +194,15 @@ export default function CustomOrder() {
     const markets = vendors.filter(v => v.vendor_type === 'supermarket')
     if (!markets.length) return
     Promise.all(markets.map(v =>
-      supabase.rpc('open_slots', { p_restaurant_id: v.id })
-        .then(({ data }) => [v.id, (data as Slot[]) ?? []] as const)
+      publicCatalog<Slot[]>('openSlots', { restaurantId: v.id })
+        .then(res => [v.id, res.ok ? res.data : []] as const)
     )).then(pairs => setVendorSlots(Object.fromEntries(pairs)))
   }, [vendors])
 
   useEffect(() => {
     if (!vendor) { setPopular([]); setLastRequest(null); return }
-    supabase.rpc('popular_request_items', { p_restaurant_id: vendor.id })
-      .then(({ data }) => setPopular((data as string[]) ?? []))
+    publicCatalog<string[]>('popularItems', { restaurantId: vendor.id })
+      .then(res => setPopular(res.ok ? res.data : []))
     // Returns null for anyone we cannot identify -- it refuses to answer to a
     // typed phone number, unlike every other lookup here.
     supabase.rpc('my_last_request', { p_restaurant_id: vendor.id, p_session_token: getSessionToken() })
@@ -243,7 +244,8 @@ export default function CustomOrder() {
       .then(({ data }) => setKnownItems((data as MenuItem[]) ?? []))
     setSlot(null)
     if (vendor.vendor_type === 'supermarket') {
-      supabase.rpc('open_slots', { p_restaurant_id: vendor.id }).then(({ data }) => setSlots((data as Slot[]) ?? []))
+      publicCatalog<Slot[]>('openSlots', { restaurantId: vendor.id })
+        .then(res => setSlots(res.ok ? res.data : []))
     } else {
       setSlots([])
     }

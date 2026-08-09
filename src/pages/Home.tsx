@@ -11,6 +11,7 @@ import BannerRail from '../components/BannerRail'
 import RestaurantCard from '../components/RestaurantCard'
 import type { Compound, Discount, Restaurant } from '../lib/types'
 import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
+import { publicCatalog } from '../lib/publicCatalog'
 
 const STORAGE_KEY = 'salka_compound_id'
 
@@ -97,8 +98,8 @@ export default function Home() {
     if (!compoundId || q.length < 2) { setFoodHits([]); setFoodSearching(false); return }
     setFoodSearching(true)
     const t = setTimeout(() => {
-      supabase.rpc('search_menu_for_compound', { p_compound_id: compoundId, p_q: q, p_limit: 12 })
-        .then(({ data }) => { setFoodHits((data as typeof foodHits) ?? []); setFoodSearching(false) })
+      publicCatalog<typeof foodHits>('searchMenu', { compoundId, q, limit: 12 })
+        .then(res => { setFoodHits(res.ok ? res.data : []); setFoodSearching(false) })
     }, 250)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -107,9 +108,10 @@ export default function Home() {
   useEffect(() => {
     if (!compoundId) { setLoading(false); return }
     setLoading(true)
-    supabase.rpc('restaurants_for_compound', { p_compound_id: compoundId })
-      .then(async ({ data }) => {
-        const list = (data as Restaurant[]) ?? []
+    publicCatalog<Restaurant[]>('restaurants', { compoundId })
+      .then(async res => {
+        if (!res.ok) { setRestaurants([]); setLoading(false); return }
+        const list = res.data ?? []
         setRestaurants(list); setLoading(false)
         if (!list.length) return
         // A failed discount read used to be indistinguishable from "no vendor
