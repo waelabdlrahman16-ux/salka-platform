@@ -85,6 +85,12 @@ export const isCancelled = (status: string) => status === 'Cancelled'
  */
 const CANCEL_REASON_AR: Record<string, string> = {
   customer_cancelled: 'العميل لغى الطلب',
+  customer_waiting_too_long: 'العميل مقدرش يستنى أكتر',
+  customer_price_too_high: 'السعر أعلى من المناسب للعميل',
+  customer_payment_problem: 'العميل واجه مشكلة في الدفع',
+  customer_ordered_by_mistake: 'الطلب اتعمل بالغلط',
+  customer_changed_mind: 'العميل غيّر رأيه',
+  customer_other: 'العميل لغى لسبب تاني',
   vendor_rejected: 'المطعم رفض',
   no_driver_found: 'مالقيناش مندوب',
   driver_failed: 'توصيل فاشل',

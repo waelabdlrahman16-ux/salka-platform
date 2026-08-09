@@ -14,7 +14,7 @@ import LiveMap from '../components/LiveMap'
 import Icon from '../components/Icon'
 import InAppLoginPrompt from '../components/InAppLoginPrompt'
 import { isCancelled, cancelReasonLabel } from '../lib/statusLabels'
-import { useSheets } from '../components/ActionSheets'
+import { useDismissable } from '../lib/useDismissable'
 
 // Found by driving it: a pharmacy order with no price, no vendor acceptance and
 // no driver rendered "قيد التجهيز" with "الوصول المتوقع 7:15 ص". Nothing was
@@ -33,6 +33,17 @@ const STAGES = [
   { key: 'onway',     label: 'في الطريق إليك' },
   { key: 'delivered', label: 'تم التوصيل' },
 ]
+
+const CUSTOMER_CANCEL_REASONS = [
+  { code: 'customer_waiting_too_long', label: 'الطلب اتأخر وأنا مش هقدر أستنى' },
+  { code: 'customer_price_too_high', label: 'السعر أعلى من اللي يناسبني' },
+  { code: 'customer_payment_problem', label: 'عندي مشكلة في طريقة الدفع' },
+  { code: 'customer_ordered_by_mistake', label: 'طلبت بالغلط' },
+  { code: 'customer_changed_mind', label: 'غيّرت رأيي' },
+  { code: 'customer_other', label: 'سبب تاني' },
+] as const
+
+type CustomerCancelReason = typeof CUSTOMER_CANCEL_REASONS[number]['code']
 
 interface TrackData {
   order: {
@@ -82,9 +93,9 @@ export default function Track() {
   const { token } = useParams()
   const [data, setData] = useState<TrackData | null>(null)
   const [notFound, setNotFound] = useState(false)
-  const { confirmSheet, sheetElement } = useSheets()
   const [cancelling, setCancelling] = useState(false)
   const [cancelled, setCancelled] = useState(false)
+  const [cancelPickerOpen, setCancelPickerOpen] = useState(false)
   const [timelineOpen, setTimelineOpen] = useState(false)
   const [driverRating, setDriverRating] = useState(0)
   const [restaurantRating, setRestaurantRating] = useState(0)
@@ -297,12 +308,12 @@ export default function Track() {
     setComplaintSent(true); setComplaining(false)
   }
 
-  async function cancelOrder() {
+  async function cancelOrder(reason: CustomerCancelReason) {
     if (!data?.order) return
-    if (!(await confirmSheet({ title: 'تأكيد إلغاء الطلب؟', danger: true, confirmLabel: 'الغِ الطلب', cancelLabel: 'رجوع' }))) return
+    setCancelPickerOpen(false)
     setCancelling(true); setActionError(null)
     const res = await rpc('cancel_order', {
-      p_order_id: data.order.id, p_reason: 'customer_cancelled', p_token: token
+      p_order_id: data.order.id, p_reason: reason, p_token: token
     })
     setCancelling(false)
     if (!res.ok) { setActionError({ scope: 'cancel', message: res.error }); return }
@@ -342,6 +353,11 @@ export default function Track() {
     const payNow = isDeposit ? o.cod_deposit_amount! : o.total
     return (
       <div className="max-w-lg mx-auto">
+        {cancelPickerOpen && (
+          <CancelReasonSheet busy={cancelling}
+            onClose={() => setCancelPickerOpen(false)}
+            onConfirm={cancelOrder} />
+        )}
         <Link to="/" className="text-sm text-mist hover:text-foam"><Icon name="chevronLeft" className="w-3 h-3 inline-block align-middle ml-1" />العودة للرئيسية</Link>
         {errFor('instapay') && (
           <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mt-3">{errFor('instapay')}</p>
@@ -426,7 +442,7 @@ export default function Track() {
               {errFor('cancel') && (
                 <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mt-4">{errFor('cancel')}</p>
               )}
-              <button className="text-sm text-mist underline mt-4" disabled={cancelling} onClick={cancelOrder}>
+              <button className="text-sm text-mist underline mt-4" disabled={cancelling} onClick={() => setCancelPickerOpen(true)}>
                 {cancelling ? 'جاري الإلغاء…' : 'مش عايز أكمل — الغِ الطلب'}
               </button>
 
@@ -483,7 +499,11 @@ export default function Track() {
 
   return (
     <div className="max-w-lg mx-auto pb-6">
-      {sheetElement}
+      {cancelPickerOpen && (
+        <CancelReasonSheet busy={cancelling}
+          onClose={() => setCancelPickerOpen(false)}
+          onConfirm={cancelOrder} />
+      )}
       <div className="flex items-center justify-between mb-3">
         {/* rotate-180: the page is RTL, so "back" points RIGHT — same mirror
             fix as RestaurantDetail and Vendor. */}
@@ -980,7 +1000,7 @@ export default function Track() {
       {canCancel && (
         <>
           {errFor('cancel') && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-2">{errFor('cancel')}</p>}
-          <button className="btn-danger w-full mb-2" disabled={cancelling} onClick={cancelOrder}>
+          <button className="btn-danger w-full mb-2" disabled={cancelling} onClick={() => setCancelPickerOpen(true)}>
             {cancelling ? 'جاري الإلغاء…' : 'إلغاء الطلب'}
           </button>
         </>
@@ -1034,6 +1054,50 @@ export default function Track() {
       {!isCancelled(o.status) && !cancelled && o.status !== 'Delivered' && (
         <p className="text-center text-xs text-mist">الصفحة بتتحدث تلقائياً</p>
       )}
+    </div>
+  )
+}
+
+function CancelReasonSheet({ busy, onClose, onConfirm }: {
+  busy: boolean
+  onClose: () => void
+  onConfirm: (reason: CustomerCancelReason) => void
+}) {
+  const [reason, setReason] = useState<CustomerCancelReason | null>(null)
+  const ref = useDismissable<HTMLDivElement>(onClose)
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 grid place-items-end sm:place-items-center"
+      onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div ref={ref} role="dialog" aria-modal="true" aria-labelledby="cancel-reason-title"
+        className="card w-full sm:max-w-sm p-5 rounded-b-none sm:rounded-2xl">
+        <h2 id="cancel-reason-title" className="font-bold text-lg">ليه عايز تلغي الطلب؟</h2>
+        <p className="text-xs text-mist mt-1 mb-4">اختار السبب عشان نعرف نصلّح المشكلة.</p>
+
+        <div className="space-y-2">
+          {CUSTOMER_CANCEL_REASONS.map(item => (
+            <label key={item.code}
+              className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${
+                reason === item.code ? 'border-red-500 bg-red-500/5' : 'border-line'
+              }`}>
+              <input type="radio" name="cancel-reason" value={item.code}
+                checked={reason === item.code}
+                onChange={() => setReason(item.code)}
+                className="accent-red-600 w-4 h-4 shrink-0" />
+              <span className="text-sm font-medium">{item.label}</span>
+            </label>
+          ))}
+        </div>
+
+        <div className="flex gap-2 mt-4">
+          <button className="btn bg-red-600 text-white hover:bg-red-700 flex-1"
+            disabled={!reason || busy}
+            onClick={() => reason && onConfirm(reason)}>
+            {busy ? 'جاري الإلغاء…' : 'تأكيد إلغاء الطلب'}
+          </button>
+          <button className="btn-ghost" disabled={busy} onClick={onClose}>رجوع</button>
+        </div>
+      </div>
     </div>
   )
 }
