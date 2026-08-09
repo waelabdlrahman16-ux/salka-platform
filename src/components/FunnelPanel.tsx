@@ -17,23 +17,52 @@ type Step = {
   paid_devices: number
   in_app_devices: number
 }
+type VendorDiagnostic = {
+  restaurant_id: number
+  name: string
+  open_devices: number
+  closed_browsers: number
+  item_devices: number
+  customization_opened: number
+  customization_abandoned: number
+  checkout_blocked: number
+  order_devices: number
+}
+type CheckoutBlock = { reason: string; events: number; devices: number }
 type Funnel = {
   since: string
+  requested_since: string
   days: number
   funnel: Step[]
   totals: { devices: number; paid_devices: number; in_app_devices: number; events: number }
+  closed_browsers: number
+  vendors: VendorDiagnostic[]
+  checkout_blocks: CheckoutBlock[]
 }
 
 const LABELS: Record<string, string> = {
   arrival:          'فتح التطبيق',
   place_chosen:     'اختار مكانه',
-  vendor_opened:    'فتح مطعم',
+  vendor_opened:    'فتح مكان مفتوح',
   item_added:       'ضاف صنف',
   checkout_started: 'وصل للدفع',
   order_placed:     'أكّد الطلب',
 }
 
 const RANGES = [1, 7, 30]
+
+const BLOCK_LABELS: Record<string, string> = {
+  slot_full: 'الفترة اتمَلَت',
+  invalid_combo: 'الكومبو اتغيّر',
+  restaurant_closed: 'المكان قفل',
+  coverage: 'خارج التغطية',
+  timed_item_unavailable: 'صنف وقته خلص',
+  item_unavailable: 'صنف خلص',
+  size: 'الحجم ناقص',
+  addon_required: 'اختيار مطلوب ناقص',
+  addon_limit: 'إضافات زيادة',
+  unknown: 'سبب غير معروف',
+}
 
 export default function FunnelPanel() {
   const [days, setDays] = useState(7)
@@ -76,6 +105,11 @@ export default function FunnelPanel() {
         </div>
       </div>
       <p className="text-xs text-mist mb-3">كل رقم = جهاز مختلف، مش عدد الضغطات</p>
+      {data && (
+        <p className="text-[10px] text-mist mb-3">
+          القياس الدقيق بدأ {new Date(data.since).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}
+        </p>
+      )}
 
       {error && (
         <div className="border border-red-400/50 bg-red-500/5 rounded-xl p-3 mb-3 flex items-center justify-between gap-3">
@@ -138,6 +172,13 @@ export default function FunnelPanel() {
             </div>
           </div>
 
+          {(data?.closed_browsers ?? 0) > 0 && (
+            <p className="text-xs text-mist mt-3 bg-shellup rounded-xl p-3">
+              <b className="text-foam">{data?.closed_browsers}</b> جهاز اتفرّج على قايمة مكان مقفول —
+              دول تصفّح، مش عملاء ضاعوا وقت الطلب.
+            </p>
+          )}
+
           {/* The ad question, stated plainly. Suppressed entirely when no paid
               traffic arrived in the window, because 0 of 0 renders as 0% and
               reads as "the ad converts nobody". */}
@@ -147,6 +188,45 @@ export default function FunnelPanel() {
               منهم <b className="text-foam">{steps.find(s => s.event === 'order_placed')?.paid_devices ?? 0}</b> طلبوا
               {' '}({pct(steps.find(s => s.event === 'order_placed')?.paid_devices ?? 0, topPaid)}%)
             </p>
+          )}
+
+          {(data?.vendors?.length ?? 0) > 0 && (
+            <div className="mt-5 pt-4 border-t border-line">
+              <h4 className="font-bold text-sm mb-1">التحويل حسب المكان</h4>
+              <p className="text-[10px] text-mist mb-2">فتح وهو شغال ← ضاف ← طلب</p>
+              <div className="space-y-2">
+                {data!.vendors.map(v => (
+                  <div key={v.restaurant_id} className="bg-shellup rounded-xl p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-semibold truncate">{v.name}</p>
+                      <p className="text-xs font-bold shrink-0" dir="ltr">
+                        {v.open_devices} → {v.item_devices} → {v.order_devices}
+                      </p>
+                    </div>
+                    {(v.customization_opened > 0 || v.checkout_blocked > 0) && (
+                      <p className="text-[10px] text-mist mt-1">
+                        فتح الاختيارات {v.customization_opened}
+                        {' · '}خرج من غير إضافة {v.customization_abandoned}
+                        {' · '}اتعطّل في التأكيد {v.checkout_blocked}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(data?.checkout_blocks?.length ?? 0) > 0 && (
+            <div className="mt-5 pt-4 border-t border-line">
+              <h4 className="font-bold text-sm mb-2">ليه تأكيد الطلب وقف؟</h4>
+              <div className="flex flex-wrap gap-2">
+                {data!.checkout_blocks.map(b => (
+                  <span key={b.reason} className="text-xs bg-red-500/10 text-red-700 rounded-full px-3 py-1.5">
+                    {BLOCK_LABELS[b.reason] ?? b.reason}: {b.devices}
+                  </span>
+                ))}
+              </div>
+            </div>
           )}
         </>
       )}

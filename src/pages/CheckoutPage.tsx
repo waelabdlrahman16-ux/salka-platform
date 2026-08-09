@@ -287,6 +287,22 @@ export default function CheckoutPage() {
     })
     if (err || !data?.token) {
       setSaving(false)
+      const reason =
+        err?.message.includes('slot_full') ? 'slot_full'
+        : err?.message.includes('invalid_combo') ? 'invalid_combo'
+        : err?.message.includes('restaurant_closed') ? 'restaurant_closed'
+        : err?.message.includes('vendor_not_covering_compound') ? 'coverage'
+        : err?.message.includes('item_not_available_now') ? 'timed_item_unavailable'
+        : err?.message.includes('item_unavailable') ? 'item_unavailable'
+        : err?.message.includes('size_required') || err?.message.includes('invalid_size') ? 'size'
+        : err?.message.includes('addon_group_min_not_met') ? 'addon_required'
+        : err?.message.includes('addon_group_max_exceeded') ? 'addon_limit'
+        : 'unknown'
+      track('checkout_blocked', {
+        restaurantId: restaurant.id,
+        compoundId,
+        props: { reason, payment: isInstapay ? 'instapay' : 'cod' },
+      })
       setError(
         err?.message.includes('slot_full') ? 'الفترة دي اتملت، اختار فترة تانية'
         : err?.message.includes('invalid_combo') ? 'فيه كومبو في عربتك مابقاش متاح — امسح الصنف وضيفه تاني'

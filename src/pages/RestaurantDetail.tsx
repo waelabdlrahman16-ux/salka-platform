@@ -36,6 +36,7 @@ export default function RestaurantDetail() {
   const [addons, setAddons] = useState<MenuItemAddon[]>([])
   const [discounts, setDiscounts] = useState<Discount[]>([])
   const [customizing, setCustomizing] = useState<MenuItem | null>(null)
+  const customizationFinished = useRef(false)
   const [detailItem, setDetailItem] = useState<MenuItem | null>(null)
   // أرابياتا has 85 items across 8 categories. Categories are a filing system,
   // not a way to find one specific dish, and there was nothing else.
@@ -122,7 +123,11 @@ export default function RestaurantDetail() {
   // a vendor that failed to load is not counted as one the customer opened --
   // that would make a broken page look like interest.
   useEffect(() => {
-    if (restaurant) track('vendor_opened', { restaurantId: restaurant.id, compoundId: getCompoundId() })
+    if (restaurant) track('vendor_opened', {
+      restaurantId: restaurant.id,
+      compoundId: getCompoundId(),
+      props: { is_open: restaurant.is_open, order_mode: restaurant.order_mode },
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurant?.id])
 
@@ -160,6 +165,27 @@ export default function RestaurantDetail() {
     ? items.filter(it => isItemAvailableNow(it.available_from, it.available_until)
         && (it.name.toLowerCase().includes(menuQuery) || it.category.toLowerCase().includes(menuQuery))).length
     : 0
+
+  function openCustomization(item: MenuItem) {
+    customizationFinished.current = false
+    track('customization_opened', {
+      restaurantId: restaurant?.id,
+      props: { item_id: item.id },
+    })
+    setCustomizing(item)
+  }
+
+  function abandonCustomization() {
+    if (!customizing) return
+    if (!customizationFinished.current) {
+      customizationFinished.current = true
+      track('customization_abandoned', {
+        restaurantId: restaurant?.id,
+        props: { item_id: customizing.id },
+      })
+    }
+    setCustomizing(null)
+  }
 
   // The basket total, computed from the SAME linePrice() the cart and checkout
   // use. Re-deriving it here with a second formula is exactly how a screen ends
@@ -497,7 +523,7 @@ export default function RestaurantDetail() {
                       }
                       onAdd={() => cart.add(it, 1)}
                       onRemove={() => cart.add(it, -1)}
-                      onCustomize={() => setCustomizing(it)}
+                      onCustomize={() => openCustomization(it)}
                       onOpenDetail={() => setDetailItem(it)}
                     />
                   )
@@ -522,7 +548,7 @@ export default function RestaurantDetail() {
           qtyFor={id => cart.qtyFor(id)}
           onAdd={it => cart.add(it, 1)}
           onRemove={it => cart.add(it, -1)}
-          onCustomize={it => { setDetailItem(null); setCustomizing(it) }}
+          onCustomize={it => { setDetailItem(null); openCustomization(it) }}
           onClose={() => setDetailItem(null)}
         />
       )}
@@ -535,8 +561,9 @@ export default function RestaurantDetail() {
           discounts={discounts}
           addonGroups={addonGroups.filter(g => g.menu_item_id === customizing.id)}
           addons={addons.filter(a => addonGroups.some(g => g.menu_item_id === customizing.id && g.id === a.group_id))}
-          onClose={() => setCustomizing(null)}
+          onClose={abandonCustomization}
           onConfirm={(sizeId, comboId, addonIds, qty) => {
+            customizationFinished.current = true
             cart.addCustomLine(customizing.id, sizeId, comboId, addonIds, qty)
             setCustomizing(null)
           }}
