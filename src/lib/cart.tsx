@@ -94,7 +94,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     // with a size, a combo or add-ons. Instrumenting add() alone would have
     // silently omitted every sized item, which for pizza or a McDonald's combo
     // is most of the catalogue.
-    if (qty > 0) track('item_added', { props: { path: 'customize' } })
+    if (qty > 0) track('item_added', { restaurantId: state.restaurantId, props: { path: 'customize' } })
     setState(s => {
       const existing = s.lines.find(l => l.key === key)
       const rest = s.lines.filter(l => l.key !== key)

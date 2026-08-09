@@ -218,7 +218,11 @@ export default function Supervisor() {
   // pricing is not a step that can be reordered -- it has to come first. It
   // needs its own list because awaiting_quote is deliberately filtered out of
   // the kitchen board below, which would otherwise make the order invisible.
-  const needsQuote = orders.filter(o => o.pricing_status === 'pending_quote')
+  // Oldest first: every newer quote still has more of its ten-minute promise
+  // left. Copy before sorting so React state remains immutable.
+  const needsQuote = orders
+    .filter(o => o.pricing_status === 'pending_quote')
+    .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at))
   const liveStage = (o: Order) =>
     o.kitchen_status !== 'ready' && o.pricing_status !== 'pending_quote'
     && !['awaiting_payment', 'awaiting_quote'].includes(o.status)
@@ -595,6 +599,9 @@ function QuoteCard({ order, addr, busy, onConfirm, onCancel }: {
   const [raw, setRaw] = useState('')
   const subtotal = Number(raw)
   const valid = raw.trim() !== '' && Number.isFinite(subtotal) && subtotal >= 0
+  const elapsedMinutes = Math.max(0, Math.floor((Date.now() - Date.parse(order.created_at)) / 60000))
+  const urgent = elapsedMinutes >= 5
+  const late = elapsedMinutes >= 10
 
   return (
     <div className="card p-4">
@@ -604,10 +611,18 @@ function QuoteCard({ order, addr, busy, onConfirm, onCancel }: {
           <p className="text-xs text-mist mt-0.5">👤 {order.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${order.customer_phone}`}>{order.customer_phone}</a></p>
           <p className="text-xs text-mist mt-0.5">📍 {addr}</p>
         </div>
-        <span className="text-xs font-semibold bg-sand/20 text-sandink rounded-full px-2.5 py-1 shrink-0">
-          محتاج تسعير
+        <span className={`text-xs font-semibold rounded-full px-2.5 py-1 shrink-0 ${
+          late ? 'bg-red-500/15 text-red-700' : urgent ? 'bg-sand/20 text-sandink' : 'bg-shellup text-mist'
+        }`}>
+          {late ? `متأخر ${elapsedMinutes} د` : `مستني ${elapsedMinutes} د`}
         </span>
       </div>
+
+      {urgent && (
+        <p className={`mt-2 text-xs font-bold ${late ? 'text-red-700' : 'text-sandink'}`}>
+          {late ? 'عدّى وعد الـ10 دقايق — سعّره فورًا' : 'اتصل وسعّر دلوقتي قبل ما يعدّي 10 دقايق'}
+        </p>
+      )}
 
       <div className="mt-3 bg-night border border-line rounded-xl p-3 text-sm space-y-1">
         <p className="text-[11px] font-bold text-mist mb-1.5">طلب العميل</p>
