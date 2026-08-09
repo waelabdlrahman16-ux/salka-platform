@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { supabase } from './supabase'
+import { customerSessionAccess } from './customerSessionAccess'
 
 interface Customer { id: number; name: string | null; phone: string | null; email?: string | null }
 interface CustomerAuthState {
@@ -40,7 +41,9 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   async function refreshFromLegacyToken() {
     const token = localStorage.getItem(TOKEN_KEY)
     if (!token) return
-    const { data, error } = await supabase.rpc('session_whoami', { p_token: token })
+    const result = await customerSessionAccess<{
+      customer_id: number; name: string | null; phone: string | null
+    } | null>('whoami', { token })
 
     // This one was not merely a silent read -- it was destructive.
     //
@@ -54,9 +57,9 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     // Delete ONLY on a clean answer of "no". A transport failure keeps the
     // token and simply leaves them signed out for this load; the next
     // successful call restores them.
-    if (error) return
-    if (data) {
-      setCustomer({ id: data.customer_id, name: data.name, phone: data.phone })
+    if (!result.ok) return
+    if (result.data) {
+      setCustomer({ id: result.data.customer_id, name: result.data.name, phone: result.data.phone })
     } else {
       localStorage.removeItem(TOKEN_KEY)
     }
@@ -162,7 +165,7 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     const { data: { session } } = await supabase.auth.getSession()
     if (session) await supabase.auth.signOut()
     const token = localStorage.getItem(TOKEN_KEY)
-    if (token) await supabase.rpc('session_logout', { p_token: token })
+    if (token) await customerSessionAccess('logout', { token })
     try {
       localStorage.removeItem(TOKEN_KEY)
       localStorage.removeItem('salka_phone')

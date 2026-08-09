@@ -2,6 +2,7 @@ import { useEffect, useState, useId } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
+import { customerSessionAccess } from '../lib/customerSessionAccess'
 import { homeFor, useAuth } from '../lib/auth'
 import { orderStatusLabel } from '../lib/statusLabels'
 import { useSheets } from '../components/ActionSheets'
@@ -57,8 +58,8 @@ export default function Profile() {
       // Pass the session token like checkout does. Without it the RPC falls
       // through to the anonymous path and burns the phone_lookup rate limit on
       // a customer who is already signed in.
-      supabase.rpc('wallet_balance_for_phone', { p_phone: customer.phone, p_session_token: getSessionToken() })
-        .then(({ data, error }) => { if (!error) setWalletBalance(Number(data) || 0) })
+      customerSessionAccess<number>('wallet', { phone: customer.phone, sessionToken: getSessionToken() })
+        .then(result => { if (result.ok) setWalletBalance(Number(result.data) || 0) })
     }
   }, [customer])
 
