@@ -512,15 +512,13 @@ function KitchenVendor({ rid }: { rid: number }) {
       for (const it of its ?? []) (grouped[it.order_id] ??= []).push(it)
       setItems(grouped)
 
-      const { data: das } = await supabase.from('delivery_assignments')
-        .select('order_id, status, arrived_at_restaurant_at, out_for_delivery_at, drivers(name, phone)')
-        .in('order_id', allIds)
-        .in('status', ['Accepted', 'Picked_Up', 'Out_for_Delivery', 'Delivered'])
+      const { data: das, error: dasErr } = await supabase.rpc('vendor_delivery_overview', { p_order_ids: allIds })
+      if (dasErr) { setLoadError('مش قادرين نجيب بيانات المندوب دلوقتي — حالة التوصيل ممكن تكون قديمة'); return }
       const delivMap: typeof deliveryByOrder = {}
       for (const d of das ?? []) {
         delivMap[d.order_id] = {
-          status: d.status, driver_name: (d as any).drivers?.name ?? 'المندوب',
-          driver_phone: (d as any).drivers?.phone ?? null,
+          status: d.status, driver_name: d.driver_name ?? 'المندوب',
+          driver_phone: d.driver_phone ?? null,
           arrived_at_restaurant_at: d.arrived_at_restaurant_at, out_for_delivery_at: d.out_for_delivery_at
         }
       }

@@ -2030,6 +2030,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      vendor_delivery_overview: {
+        Args: { p_order_ids?: number[] }
+        Returns: {
+          arrived_at_restaurant_at: string | null
+          driver_name: string | null
+          driver_phone: string | null
+          order_id: number
+          out_for_delivery_at: string | null
+          status: string
+        }[]
+      }
       accept_swap: { Args: { p_request_id: number }; Returns: Json }
       add_customer_address: {
         Args: {
@@ -2726,4 +2737,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-
