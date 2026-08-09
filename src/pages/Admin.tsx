@@ -11,6 +11,7 @@ import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel,
 import { rpc } from '../lib/rpc'
 import { adminFinancialAction } from '../lib/adminFinancialActions'
 import { adminAccountDriverAction } from '../lib/adminAccountDriverActions'
+import { dispatchOperation } from '../lib/dispatchOperations'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import Icon from '../components/Icon'
 import BannersAdmin from '../components/BannersAdmin'
@@ -609,7 +610,7 @@ export default function Admin() {
   // again, which is how order #41 reached attempt number 8.
   async function assign(order: Order, driver: Driver) {
     setModalError('')
-    const res = await rpc('admin_assign_order', { p_order_id: order.id, p_driver_id: driver.id }, {
+    const res = await dispatchOperation('assign', { orderId: order.id, driverId: driver.id }, {
       dispatch_rule_blocked: 'المندوب ده وصل للحد الأقصى (٣ طلبات) أو شغال في اتجاه مختلف',
       driver_already_declined: `${driver.name} رفض الطلب ده قبل كده — اختار مندوب تاني`,
       too_many_attempts: 'الطلب ده اتعرض على مندوبين ٥ مرات. ده مشكلة توزيع مش مشكلة إعادة محاولة — كلّم مندوب بنفسك أو الغِ الطلب',
@@ -1185,7 +1186,7 @@ export default function Admin() {
     })
     if (reason === null) return
     setActionError('')
-    const res = await rpc('admin_unassign_order', { p_order_id: a.order_id, p_reason: reason || 'admin_unassigned' })
+    const res = await dispatchOperation('unassign', { orderId: a.order_id, reason: reason || 'admin_unassigned' })
     if (!res.ok) { setActionError(res.error); return }
     load(true)
   }
@@ -1249,8 +1250,8 @@ export default function Admin() {
       cancelLabel: 'لأ',
     })
     setActionError('')
-    const res = await rpc('admin_force_delivered', {
-      p_order_id: a.order_id, p_reason: reason.trim(), p_cash_collected: cash,
+    const res = await dispatchOperation('forceDelivered', {
+      orderId: a.order_id, reason: reason.trim(), cashCollected: cash,
     })
     if (!res.ok) { setActionError(res.error); return }
     load(true)
@@ -1276,8 +1277,8 @@ export default function Admin() {
 
   async function reassignOrder(a: Assignment, driver: Driver) {
     setModalError(''); setReassignBusy(true)
-    const res = await rpc('admin_reassign_order', {
-      p_order_id: a.order_id, p_driver_id: driver.id, p_reason: 'admin_reassigned'
+    const res = await dispatchOperation('reassign', {
+      orderId: a.order_id, driverId: driver.id, reason: 'admin_reassigned'
     }, {
       dispatch_rule_blocked: 'المندوب ده وصل للحد الأقصى (٣ طلبات) أو شغال في اتجاه مختلف',
       wrong_vehicle_type: 'الطلب ده محتاج فان',
@@ -1414,8 +1415,8 @@ export default function Admin() {
       body: 'رصيد المحفظة هيرجع، ولو العميل حوّل فلوس هيتسجل استرداد مطلوب في تبويب الاستردادات.',
       danger: true,
     })) return
-    const { error } = await supabase.rpc('admin_resolve_no_answer', { p_assignment_id: a.id, p_action: action })
-    if (error) { await alertSheet('حصل خطأ، جرب تاني'); return }
+    const result = await dispatchOperation('resolveNoAnswer', { assignmentId: a.id, resolution: action })
+    if (!result.ok) { await alertSheet(result.error); return }
     load(true)
   }
 

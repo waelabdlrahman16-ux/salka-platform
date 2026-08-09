@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { rpc } from '../lib/rpc'
+import { dispatchOperation } from '../lib/dispatchOperations'
 import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
 
 /**
@@ -75,15 +76,10 @@ export default function PhoneOrderForm({ onCreated }: { onCreated: () => void })
 
   async function submit() {
     setBusy(true); setError('')
-    const res = await rpc<{ id: number; total: number }>('staff_create_pickup_order', {
-      p_restaurant_id: Number(f.restaurant_id),
-      p_customer_name: f.name.trim(),
-      p_customer_phone: f.phone.trim(),
-      p_compound_id: Number(f.compound_id),
-      p_unit_number: f.unit.trim(),
-      p_address_notes: '',
-      p_collect_amount: collect,
-      p_request_notes: f.notes.trim(),
+    const res = await dispatchOperation<{ id: number; total: number }>('staffPickup', {
+      restaurantId: Number(f.restaurant_id), customerName: f.name.trim(), customerPhone: f.phone.trim(),
+      compoundId: Number(f.compound_id), unitNumber: f.unit.trim(), addressNotes: '',
+      collectAmount: collect, requestNotes: f.notes.trim(),
     }, {
       not_authorized: 'الصيدلية والماركت مش من صلاحياتك',
       admin_only: 'مش من صلاحياتك تعمل طلب من هنا',
