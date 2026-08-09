@@ -48,6 +48,18 @@ export const ERROR_AR: Record<string, string> = {
   invalid_customer_input: 'راجع بيانات الاسم والموبايل والعنوان وجرب تاني',
   invalid_order_input: 'راجع تفاصيل الطلب وجرب تاني',
   order_creation_failed: 'مقدرناش نسجل الطلب — جرب تاني أو كلّمنا',
+  invalid_push_input: 'بيانات التنبيهات مش مظبوطة — حاول تفعّلها تاني',
+  invalid_rating_input: 'راجع التقييم وجرب تاني',
+  invalid_complaint_input: 'اكتب تفاصيل المشكلة من ٥ حروف على الأقل',
+  complaint_limit_reached: 'وصلت للحد اليومي للشكاوى على الطلب ده',
+  complaint_too_short: 'اكتب تفاصيل أكتر عن المشكلة',
+  complaint_too_long: 'تفاصيل المشكلة طويلة أوي',
+  rating_required: 'اختار تقييم الأول',
+  invalid_driver_rating: 'تقييم المندوب لازم يكون من ١ إلى ٥',
+  invalid_restaurant_rating: 'تقييم المكان لازم يكون من ١ إلى ٥',
+  rating_already_submitted: 'تم إرسال تقييم للطلب ده بالفعل',
+  rating_window_closed: 'فترة تقييم الطلب انتهت',
+  customer_order_access_failed: 'مقدرناش نحدّث الطلب — جرب تاني',
 
   // order lifecycle
   order_not_found: 'الطلب ده مش موجود',

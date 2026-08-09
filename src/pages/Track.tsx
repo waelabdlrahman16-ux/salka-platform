@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { describeError, edgeAction, isTransportFailure, rpc } from '../lib/rpc'
+import { describeError, edgeAction, isTransportFailure } from '../lib/rpc'
+import { customerOrderAccess } from '../lib/customerOrderAccess'
 import InstallPrompt from '../components/InstallPrompt'
 import { markOrderDelivered } from '../lib/firstOrder'
 import { registerPush } from '../lib/push'
@@ -207,7 +208,7 @@ export default function Track() {
   const dataRef = useRef<TrackData | null>(null)
 
   async function load() {
-    const res = await rpc<TrackData>('track_order', { p_token: token })
+    const res = await customerOrderAccess<TrackData>('track', { token })
 
     // A transient poll failure used to set notFound permanently -- one lift ride
     // replaced a live order with "الطلب غير موجود" and it never recovered,
@@ -251,10 +252,9 @@ export default function Track() {
   // and a web-shaped message to a killed Android app displays nothing.
   const saveCustomerToken = useCallback(async (pushToken: string, platform: PushPlatform) => {
     reportSaveStale(false)
-    const { data, error } = await supabase.rpc('save_customer_push_token', {
-      p_token: token, p_push_token: pushToken, p_platform: platform,
-    })
-    if (error) { console.error('saving customer push token failed', error); return false }
+    const result = await customerOrderAccess<Record<string, unknown>>('push', { token, pushToken, platform })
+    if (!result.ok) { console.error('saving customer push token failed', result.code); return false }
+    const data = result.data
     // Same contract as the staff sink. Without reporting this, the self-heal in
     // saveWebTokenHealing could never fire for a customer -- it reads a module
     // flag that only persistPushToken used to set.
@@ -280,8 +280,8 @@ export default function Track() {
   async function sendRating() {
     if (!token || (!driverRating && !restaurantRating)) return
     setActionError(null)
-    const res = await rpc('submit_rating', {
-      p_token: token, p_driver_rating: driverRating || null, p_restaurant_rating: restaurantRating || null
+    const res = await customerOrderAccess('rating', {
+      token, driverRating: driverRating || null, restaurantRating: restaurantRating || null
     }, {
       rating_already_submitted: 'تم إرسال تقييم للطلب ده بالفعل',
       rating_window_closed: 'فترة تقييم الطلب انتهت',
@@ -312,8 +312,8 @@ export default function Track() {
   async function sendComplaint() {
     if (!token || !complaintText.trim()) return
     setActionError(null)
-    const res = await rpc('submit_complaint', {
-      p_token: token, p_description: complaintText.trim(), p_category: complaintCategory
+    const res = await customerOrderAccess('complaint', {
+      token, description: complaintText.trim(), category: complaintCategory
     })
     if (!res.ok) { setActionError({ scope: 'complaint', message: res.error }); return }
     setComplaintSent(true); setComplaining(false)
