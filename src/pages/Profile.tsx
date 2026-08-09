@@ -276,9 +276,12 @@ export default function Profile() {
           </div>
         </Link>
       ) : (
-        <Link to="/login" className="block text-center text-xs text-mist hover:text-foam py-3 min-h-[44px]">
+        /* This must be a document navigation. The Supabase client chooses its
+           isolated auth namespace before React starts; an SPA transition would
+           keep the customer client alive on the staff login screen. */
+        <a href="/login" className="block text-center text-xs text-mist hover:text-foam py-3 min-h-[44px]">
           دخول فريق سالكة
-        </Link>
+        </a>
       )}
     </div>
   )
