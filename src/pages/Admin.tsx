@@ -715,7 +715,7 @@ export default function Admin() {
   }>>({})
 
   async function loadOpenStates() {
-    const { data, error } = await supabase.rpc('vendor_open_states')
+    const { data, error } = await supabase.rpc('staff_vendor_open_states')
     if (error) return   // keep the last known states rather than blanking the row
     const map: typeof openStates = {}
     for (const s of (data as { id: number }[]) ?? []) map[s.id] = s as never

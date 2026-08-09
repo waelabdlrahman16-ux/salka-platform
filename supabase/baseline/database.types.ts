@@ -2030,6 +2030,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      staff_vendor_open_states: { Args: never; Returns: Json }
       vendor_delivery_overview: {
         Args: { p_order_ids?: number[] }
         Returns: {
