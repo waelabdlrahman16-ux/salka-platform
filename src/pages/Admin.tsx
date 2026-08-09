@@ -9,6 +9,7 @@ import { uploadVendorImage } from '../lib/upload'
 import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel,
          ORDER_STATUSES, CLOSED_ORDER_STATUSES, UNPAID_ORDER_STATUSES, type OrderStatus, isCancelled, cancelReasonLabel } from '../lib/statusLabels'
 import { rpc } from '../lib/rpc'
+import { adminFinancialAction } from '../lib/adminFinancialActions'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import Icon from '../components/Icon'
 import BannersAdmin from '../components/BannersAdmin'
@@ -1145,7 +1146,7 @@ export default function Admin() {
       danger: true,
     })) return
     setActionError('')
-    const res = await rpc('settle_driver_cash', { p_driver_id: driverId })
+    const res = await adminFinancialAction('settleCash', { driverId })
     if (!res.ok) { setActionError(res.error); return }
     load(true)
   }
@@ -1168,7 +1169,7 @@ export default function Admin() {
       danger: true,
     })) return
     setActionError('')
-    const res = await rpc('settle_driver_earnings', { p_driver_id: driverId })
+    const res = await adminFinancialAction('settleEarnings', { driverId })
     if (!res.ok) { setActionError(res.error); return }
     load(true)
   }
@@ -1312,8 +1313,8 @@ export default function Admin() {
   }
   async function markRefunded(orderId: number) {
     if (!await confirmSheet({ title: 'تأكيد إنك حوّلت المبلغ فعلاً للعميل؟' })) return
-    const { error } = await supabase.rpc('mark_refunded', { p_order_id: orderId })
-    if (error) { await alertSheet('حصل خطأ: ' + error.message); return }
+    const result = await adminFinancialAction('markRefunded', { orderId })
+    if (!result.ok) { await alertSheet(result.error); return }
     load(true)
   }
   async function toggleCoverage(restaurantId: number, compoundId: number) {
@@ -1343,12 +1344,12 @@ export default function Admin() {
       body: 'اتأكد من الرقم — مفيش طريقة تتراجع.',
       danger: true,
     })) return
-    const { error } = await supabase.rpc('credit_wallet', {
-      p_phone: walletPhone.trim(), p_amount: Number(walletAmount), p_reason: walletReason.trim() || 'admin credit',
-      p_order_id: walletOrderId
+    const result = await adminFinancialAction('creditWallet', {
+      phone: walletPhone.trim(), amount: Number(walletAmount), reason: walletReason.trim() || 'admin credit',
+      orderId: walletOrderId
     })
-    setWalletResult(error ? 'حصل خطأ، جرب تاني' : `تمت إضافة ${walletAmount} ج.م لمحفظة ${walletPhone}`)
-    if (!error) {
+    setWalletResult(!result.ok ? result.error : `تمت إضافة ${walletAmount} ج.م لمحفظة ${walletPhone}`)
+    if (result.ok) {
       setWalletPhone(''); setWalletAmount(''); setWalletReason('')
       if (walletOrderId != null) setCompensatedOrderIds(prev => new Set(prev).add(walletOrderId))
       setWalletOrderId(null)
@@ -1419,12 +1420,12 @@ export default function Admin() {
 
   async function confirmInstapayPayment(o: Order) {
     setAccountBusy(`instapay-${o.id}`)
-    const { error } = await supabase.rpc(
-      o.cod_deposit_amount != null ? 'admin_confirm_cod_deposit' : 'admin_confirm_instapay_payment',
-      { p_order_id: o.id }
+    const result = await adminFinancialAction(
+      o.cod_deposit_amount != null ? 'confirmCodDeposit' : 'confirmInstapay',
+      { orderId: o.id },
     )
     setAccountBusy(null)
-    if (error) { await alertSheet('حصل خطأ، جرب تاني'); return }
+    if (!result.ok) { await alertSheet(result.error); return }
     load(true)
   }
 

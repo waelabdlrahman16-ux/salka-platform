@@ -60,6 +60,8 @@ export const ERROR_AR: Record<string, string> = {
   rating_already_submitted: 'تم إرسال تقييم للطلب ده بالفعل',
   rating_window_closed: 'فترة تقييم الطلب انتهت',
   customer_order_access_failed: 'مقدرناش نحدّث الطلب — جرب تاني',
+  invalid_financial_input: 'راجع المبلغ والبيانات وجرب تاني',
+  financial_action_failed: 'العملية المالية متنفذتش — جرب تاني أو راجع السجل',
 
   // order lifecycle
   order_not_found: 'الطلب ده مش موجود',

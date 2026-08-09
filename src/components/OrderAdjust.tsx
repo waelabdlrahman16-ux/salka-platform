@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { adminFinancialAction } from '../lib/adminFinancialActions'
 
 // Adjust the money on a placed order: a price difference, a goodwill discount,
 // a forgotten item.
@@ -38,22 +38,22 @@ export default function OrderAdjust({ orderId, onDone }: {
   async function submit() {
     if (!valid) return
     setSaving(true); setError('')
-    const { data, error: err } = await supabase.rpc('admin_adjust_order', {
-      p_order_id: orderId,
-      p_amount: sign * value,
-      p_reason: reason.trim(),
-      p_charge_service_fee: chargeFee,
+    const response = await adminFinancialAction<typeof result>('adjustOrder', {
+      orderId,
+      amount: sign * value,
+      reason: reason.trim(),
+      chargeServiceFee: chargeFee,
     })
     setSaving(false)
-    if (err) {
+    if (!response.ok) {
       setError(
-        err.message.includes('order_cancelled') ? 'الطلب ملغي — مش هينفع نعدّله'
-        : err.message.includes('negative_total') ? 'الخصم أكبر من إجمالي الطلب'
-        : err.message.includes('admin_only') ? 'محتاج صلاحية أدمن'
-        : 'التعديل فشل — جرب تاني')
+        response.code === 'order_cancelled' ? 'الطلب ملغي — مش هينفع نعدّله'
+        : response.code === 'negative_total' ? 'الخصم أكبر من إجمالي الطلب'
+        : response.code === 'admin_only' ? 'محتاج صلاحية أدمن'
+        : response.error)
       return
     }
-    setResult(data as typeof result)
+    setResult(response.data)
     setReason(''); setAmount('')
     onDone()
   }
