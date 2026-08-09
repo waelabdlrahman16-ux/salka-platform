@@ -109,3 +109,9 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/dispatch-operations/deno.json"
 entrypoint = "./functions/dispatch-operations/index.ts"
+
+[functions.vendor-operations]
+enabled = true
+verify_jwt = true
+import_map = "./functions/vendor-operations/deno.json"
+entrypoint = "./functions/vendor-operations/index.ts"

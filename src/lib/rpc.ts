@@ -66,6 +66,8 @@ export const ERROR_AR: Record<string, string> = {
   account_action_failed: 'العملية متنفذتش — جرب تاني أو راجع السجل',
   invalid_dispatch_input: 'راجع بيانات الطلب أو المندوب وجرب تاني',
   dispatch_action_failed: 'تحديث التوصيل متنفذش — جرب تاني أو راجع السجل',
+  invalid_vendor_input: 'راجع بيانات الطلب أو المكان وجرب تاني',
+  vendor_action_failed: 'تحديث المكان متنفذش — جرب تاني أو راجع السجل',
   cannot_delete_self: 'مينفعش تلغي حسابك انت',
   cannot_delete_admin: 'مينفعش تلغي حساب إدارة من هنا',
   cannot_target_self: 'مينفعش تغيّر صلاحية حسابك انت',
