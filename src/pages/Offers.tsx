@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { artFor } from '../lib/categoryArt'
 import type { Discount, Restaurant } from '../lib/types'
 import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
+import { publicCatalog } from '../lib/publicCatalog'
 
 interface RestaurantOffer {
   restaurant: Restaurant
@@ -53,15 +54,15 @@ export default function Offers() {
       let visible = (restaurants ?? []).filter(r => openNow.has(r.id))
       const savedCompound = getCompoundId()
       if (savedCompound) {
-        const { data: covering, error: coverErr } = await supabase.rpc('restaurants_for_compound', {
-          p_compound_id: Number(savedCompound)
+        const coveringResult = await publicCatalog<Restaurant[]>('restaurants', {
+          compoundId: Number(savedCompound)
         })
         // Branch on the error, not on an empty result. "Zero vendors cover this
         // compound" is a real and now-common answer (Home no longer hides far
         // compounds), and treating it as a failed lookup would show offers the
         // customer cannot order -- exactly the trap this filter exists to close.
-        if (!coverErr) {
-          const coveringIds = new Set(((covering as Restaurant[]) ?? []).map(r => r.id))
+        if (coveringResult.ok) {
+          const coveringIds = new Set((coveringResult.data ?? []).map(r => r.id))
           visible = visible.filter(r => coveringIds.has(r.id))
         }
       }

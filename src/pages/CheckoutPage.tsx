@@ -14,6 +14,7 @@ import { applyDiscount, effectiveDiscount } from '../lib/discounts'
 import LocationPreviewMap from '../components/LocationPreviewMap'
 import type { Compound, Discount, MenuItem, MenuItemAddon, MenuItemCombo, MenuItemSize, Restaurant, Slot } from '../lib/types'
 import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
+import { publicCatalog } from '../lib/publicCatalog'
 
 export default function CheckoutPage() {
   const fid = useId()
@@ -176,7 +177,8 @@ export default function CheckoutPage() {
     // no explanation. Surface it.
     supabase.from('compounds').select('*').eq('active', true).order('direction').order('distance_km')
       .then(({ data, error }) => { setCompoundsFailed(!!error); setCompounds(data ?? []) })
-    supabase.rpc('open_slots', { p_restaurant_id: cart.restaurantId }).then(({ data }) => setSlots((data as Slot[]) ?? []))
+    publicCatalog<Slot[]>('openSlots', { restaurantId: cart.restaurantId })
+      .then(res => setSlots(res.ok ? res.data : []))
     supabase.from('discounts').select('*').eq('restaurant_id', cart.restaurantId).eq('active', true)
       .then(({ data }) => setDiscounts(data ?? []))
     // A failed read, a missing row or a value of "0" all left this null, and
