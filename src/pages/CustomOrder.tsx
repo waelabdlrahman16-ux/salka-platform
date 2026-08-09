@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useId } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { customerOrderCreation } from '../lib/customerOrderCreation'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
@@ -371,23 +372,25 @@ export default function CustomOrder() {
   async function submit() {
     if (!vendor || !valid) return
     setSaving(true); setError('')
-    const { data, error: err } = await supabase.rpc('submit_custom_order', {
-      p_restaurant_id: vendor.id,
-      p_customer_name: name.trim(),
-      p_customer_phone: phone.trim(),
-      p_zone: selectedCompound?.name ?? '',
-      p_unit_number: unit.trim(),
-      p_address_notes: addrNotes.trim(),
-      p_delivery_fee: deliveryFee ?? 0, // server recomputes and ignores this
-      p_request_items: lines,
-      p_request_notes: notes.trim(),
-      p_compound_id: compoundId,
-      p_session_token: getSessionToken(),
-      p_slot_id: slot?.id ?? null,
-      p_scheduled_date: slot?.scheduled_date ?? null,
-      p_prescription_path: rxPath
+    const result = await customerOrderCreation<{ token: string; id: number }>('custom', {
+      restaurantId: vendor.id,
+      customerName: name.trim(),
+      customerPhone: phone.trim(),
+      zone: selectedCompound?.name ?? '',
+      unitNumber: unit.trim(),
+      addressNotes: addrNotes.trim(),
+      deliveryFee: deliveryFee ?? 0, // server recomputes and ignores this
+      items: lines,
+      requestNotes: notes.trim(),
+      compoundId,
+      sessionToken: getSessionToken(),
+      slotId: slot?.id ?? null,
+      scheduledDate: slot?.scheduled_date ?? null,
+      prescriptionPath: rxPath
     })
-    if (err || !data?.token) {
+    const data = result.ok ? result.data : null
+    const err = result.ok ? null : { message: result.code }
+    if (!result.ok || !data?.token) {
       setSaving(false)
       setError(err?.message.includes('slot_full') ? 'الفترة دي اتملت، اختار فترة تانية' : 'حصل خطأ، جرب تاني')
       return

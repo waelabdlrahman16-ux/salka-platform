@@ -10,6 +10,7 @@ import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { registerPush, persistPushToken } from '../lib/push'
 import { orderStatusLabel } from '../lib/statusLabels'
 import { rpc } from '../lib/rpc'
+import { customerOrderCreation } from '../lib/customerOrderCreation'
 import PrescriptionLink from '../components/PrescriptionLink'
 import EnablePushButton from '../components/EnablePushButton'
 import type { Compound, MenuItem, Order, OrderItem, Restaurant } from '../lib/types'
@@ -238,24 +239,24 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
   async function submit() {
     if (!valid) return
     setSaving(true); setError('')
-    const { data, error: err } = await supabase.rpc('request_pickup', {
-      p_restaurant_id: restaurant.id,
-      p_customer_name: name.trim(),
-      p_customer_phone: phone.trim(),
-      p_zone: selectedCompound?.name ?? '',
-      p_unit_number: unit.trim(),
-      p_address_notes: addrNotes.trim(),
-      p_delivery_fee: deliveryFee ?? 0, // server recomputes and ignores this
-      p_payment_mode: paymentMode,
-      p_collect_amount: paymentMode === 'driver_pays' ? amount : null,
-      p_request_notes: orderNotes.trim(),
-      p_compound_id: compoundId
+    const result = await customerOrderCreation<{ id: number; token: string }>('pickup', {
+      restaurantId: restaurant.id,
+      customerName: name.trim(),
+      customerPhone: phone.trim(),
+      zone: selectedCompound?.name ?? '',
+      unitNumber: unit.trim(),
+      addressNotes: addrNotes.trim(),
+      deliveryFee: deliveryFee ?? 0, // server recomputes and ignores this
+      paymentMode,
+      collectAmount: paymentMode === 'driver_pays' ? amount : null,
+      requestNotes: orderNotes.trim(),
+      compoundId
     })
     setSaving(false)
-    if (err) { setError('حصل خطأ، جرب تاني'); return }
+    if (!result.ok) { setError(result.error); return }
     setName(''); setPhone(''); setUnit(''); setAddrNotes(''); setCompoundId(null)
     setCollectAmount(''); setOrderNotes(''); setPaymentMode('prepaid')
-    const created = data as { id: number; token: string } | null
+    const created = result.data
     setSent(created && created.token ? { id: created.id, token: created.token } : null)
     loadRecent()
   }
