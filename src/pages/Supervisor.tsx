@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { rpc } from '../lib/rpc'
+import { dispatchOperation } from '../lib/dispatchOperations'
 import { useAuth } from '../lib/auth'
 import { useDismissable } from '../lib/useDismissable'
 import { ping, askNotificationPermission } from '../lib/notify'
@@ -156,7 +157,7 @@ export default function Supervisor() {
   function assign(o: Order, driver: Driver) {
     setModalError('')
     run(`assign:${o.id}`, async () => {
-      const res = await rpc('admin_assign_order', { p_order_id: o.id, p_driver_id: driver.id }, {
+      const res = await dispatchOperation('assign', { orderId: o.id, driverId: driver.id }, {
         dispatch_rule_blocked: 'المندوب ده وصل للحد الأقصى (٣ طلبات) أو شغال في اتجاه مختلف',
         driver_already_declined: 'المندوب ده رفض الطلب ده قبل كده',
         already_assigned: 'الطلب ده معروض على مندوب بالفعل',
@@ -175,7 +176,7 @@ export default function Supervisor() {
     })
     if (reason === null) return
     run(`unassign:${a.id}`, () =>
-      rpc('admin_unassign_order', { p_order_id: a.order_id, p_reason: reason || 'supervisor_unassigned' }))
+      dispatchOperation('unassign', { orderId: a.order_id, reason: reason || 'supervisor_unassigned' }))
   }
 
   async function forceDelivered(a: Assignment) {
@@ -193,7 +194,7 @@ export default function Supervisor() {
       cancelLabel: 'لأ',
     })
     run(`force:${a.id}`, () =>
-      rpc('admin_force_delivered', { p_order_id: a.order_id, p_reason: reason.trim(), p_cash_collected: cash }))
+      dispatchOperation('forceDelivered', { orderId: a.order_id, reason: reason.trim(), cashCollected: cash }))
   }
 
   async function resolve(a: Assignment, action: 'wait' | 'fail' | 'refund') {
@@ -206,7 +207,7 @@ export default function Supervisor() {
       title: 'إلغاء الطلب واسترداد فلوس العميل؟',
       danger: true,
     })) return
-    run(`resolve:${a.id}`, () => rpc('admin_resolve_no_answer', { p_assignment_id: a.id, p_action: action }))
+    run(`resolve:${a.id}`, () => dispatchOperation('resolveNoAnswer', { assignmentId: a.id, resolution: action }))
   }
 
   const assignedIds = new Set(

@@ -64,6 +64,8 @@ export const ERROR_AR: Record<string, string> = {
   financial_action_failed: 'العملية المالية متنفذتش — جرب تاني أو راجع السجل',
   invalid_account_input: 'راجع بيانات الحساب أو المندوب وجرب تاني',
   account_action_failed: 'العملية متنفذتش — جرب تاني أو راجع السجل',
+  invalid_dispatch_input: 'راجع بيانات الطلب أو المندوب وجرب تاني',
+  dispatch_action_failed: 'تحديث التوصيل متنفذش — جرب تاني أو راجع السجل',
   cannot_delete_self: 'مينفعش تلغي حسابك انت',
   cannot_delete_admin: 'مينفعش تلغي حساب إدارة من هنا',
   cannot_target_self: 'مينفعش تغيّر صلاحية حسابك انت',
