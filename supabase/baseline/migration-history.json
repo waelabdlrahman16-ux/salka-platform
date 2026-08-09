@@ -1091,7 +1091,150 @@
     {
       "version": "20260808204852",
       "name": "restrict_security_definer_permissions"
+    },
+    {
+      "version": "20260808211252",
+      "name": "restrict_internal_function_execution"
+    },
+    {
+      "version": "20260808212941",
+      "name": "restore_supervisor_policy_dependency"
+    },
+    {
+      "version": "20260808214232",
+      "name": "index_event_foreign_keys_and_backup_pk"
+    },
+    {
+      "version": "20260808215409",
+      "name": "harden_financial_admin_functions"
+    },
+    {
+      "version": "20260808220722",
+      "name": "harden_anonymous_input_functions"
+    },
+    {
+      "version": "20260808222010",
+      "name": "guard_anonymous_order_creation"
+    },
+    {
+      "version": "20260808223536",
+      "name": "guard_custom_order_inputs"
+    },
+    {
+      "version": "20260808225053",
+      "name": "require_verified_order_history"
+    },
+    {
+      "version": "20260808231225",
+      "name": "minimize_tracking_driver_data"
+    },
+    {
+      "version": "20260808232649",
+      "name": "restrict_restaurant_reliability"
+    },
+    {
+      "version": "20260808234241",
+      "name": "limit_public_analytics_ingestion"
+    },
+    {
+      "version": "20260808235523",
+      "name": "separate_reported_and_confirmed_tips"
+    },
+    {
+      "version": "20260809001628",
+      "name": "protect_customer_push_destination"
+    },
+    {
+      "version": "20260809003752",
+      "name": "protect_rating_integrity"
+    },
+    {
+      "version": "20260809085946",
+      "name": "require_verified_customer_phone_changes"
+    },
+    {
+      "version": "20260809092249",
+      "name": "protect_driver_shift_privacy"
+    },
+    {
+      "version": "20260809093207",
+      "name": "protect_internal_settings"
+    },
+    {
+      "version": "20260809095045",
+      "name": "vendor_delivery_overview"
+    },
+    {
+      "version": "20260809102011",
+      "name": "split_public_and_staff_vendor_availability"
+    },
+    {
+      "version": "20260809113753",
+      "name": "quote_sla_escalation"
+    },
+    {
+      "version": "20260809115855",
+      "name": "conversion_diagnostics"
+    },
+    {
+      "version": "20260809123710",
+      "name": "customer_cancellation_reasons"
+    },
+    {
+      "version": "20260809132130",
+      "name": "route_customer_cancellation_through_edge"
+    },
+    {
+      "version": "20260809134357",
+      "name": "route_customer_payment_actions_through_edge"
+    },
+    {
+      "version": "20260809183700",
+      "name": "route_customer_order_editing_through_edge"
+    },
+    {
+      "version": "20260809185819",
+      "name": "route_public_catalog_reads_through_edge"
+    },
+    {
+      "version": "20260809191628",
+      "name": "route_customer_session_history_through_edge"
+    },
+    {
+      "version": "20260809193327",
+      "name": "route_order_creation_through_edge"
+    },
+    {
+      "version": "20260809195205",
+      "name": "route_customer_order_access_through_edge"
+    },
+    {
+      "version": "20260809200409",
+      "name": "route_analytics_ingestion_through_edge"
+    },
+    {
+      "version": "20260809201609",
+      "name": "route_admin_financial_actions_through_edge"
+    },
+    {
+      "version": "20260809203514",
+      "name": "route_admin_account_driver_actions_through_edge"
+    },
+    {
+      "version": "20260809205028",
+      "name": "route_dispatch_operations_through_edge"
+    },
+    {
+      "version": "20260809212319",
+      "name": "vendor_delivery_slots_toggle"
+    },
+    {
+      "version": "20260809212659",
+      "name": "route_vendor_operations_through_edge"
+    },
+    {
+      "version": "20260809215238",
+      "name": "supermarket_delivery_slots_off"
     }
   ]
 }
-

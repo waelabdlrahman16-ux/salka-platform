@@ -12,5 +12,29 @@
     "policies": 80,
     "triggers": 14,
     "indexes": 114
+  },
+  "migration_history_current_as_of": "2026-08-09T22:00:00+00:00",
+  "stale": {
+    "note": "migration-history.json is current. Every OTHER file in this directory is still the 2026-08-08 capture and does NOT describe production. Refresh them with the procedure in README.md before relying on them for recovery.",
+    "stale_files": [
+      "database.types.ts",
+      "grants.json",
+      "indexes.json",
+      "policies.json",
+      "public-tables.json",
+      "routines.json",
+      "triggers.json"
+    ],
+    "production_at_2026_08_09T22_00Z": {
+      "tables": 48,
+      "views": 0,
+      "functions_public": 163,
+      "functions_private": 41,
+      "policies": 79,
+      "triggers": 14,
+      "indexes": 119,
+      "migrations": 309
+    },
+    "biggest_gap": "The snapshot predates the `private` schema entirely. Security batches 1-5 moved privileged cores into `private` and left service-role-only wrappers in `public`; routines.json and grants.json therefore describe a permission model that no longer exists, and show none of the 41 private functions."
   }
 }

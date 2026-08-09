@@ -1,0 +1,9 @@
+-- Historical migration marker: vendor_delivery_slots_toggle
+-- The production schema is captured in supabase/baseline; this version is already applied.
+--
+-- Reconstructed after the fact. This migration was applied straight to
+-- production on 2026-08-09 without ever being committed, so it was the one
+-- version in supabase_migrations.schema_migrations with no file here at all.
+-- It added restaurants.uses_delivery_slots (boolean, default false) and
+-- public.admin_set_vendor_slots(integer, boolean), and taught open_slots() to
+-- return '[]' for a vendor whose flag is off.
