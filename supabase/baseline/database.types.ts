@@ -22,7 +22,7 @@ export type Database = {
           category: string | null
           combo_label: string | null
           description: string | null
-          id: number | null
+          id: number
           image_url: string | null
           is_shelf_label: boolean | null
           name: string | null
@@ -37,7 +37,7 @@ export type Database = {
           category?: string | null
           combo_label?: string | null
           description?: string | null
-          id?: number | null
+          id: number
           image_url?: string | null
           is_shelf_label?: boolean | null
           name?: string | null
@@ -52,7 +52,7 @@ export type Database = {
           category?: string | null
           combo_label?: string | null
           description?: string | null
-          id?: number | null
+          id?: number
           image_url?: string | null
           is_shelf_label?: boolean | null
           name?: string | null
@@ -803,24 +803,30 @@ export type Database = {
       driver_tips: {
         Row: {
           amount: number
+          confirmed_at: string | null
           created_at: string
           driver_id: number
           id: number
           order_id: number
+          status: string
         }
         Insert: {
           amount: number
+          confirmed_at?: string | null
           created_at?: string
           driver_id: number
           id?: number
           order_id: number
+          status?: string
         }
         Update: {
           amount?: number
+          confirmed_at?: string | null
           created_at?: string
           driver_id?: number
           id?: number
           order_id?: number
+          status?: string
         }
         Relationships: [
           {
@@ -1680,6 +1686,7 @@ export type Database = {
           order_mode: string
           prep_minutes: number | null
           rating: number | null
+          uses_delivery_slots: boolean
           vendor_type: string | null
         }
         Insert: {
@@ -1699,6 +1706,7 @@ export type Database = {
           order_mode?: string
           prep_minutes?: number | null
           rating?: number | null
+          uses_delivery_slots?: boolean
           vendor_type?: string | null
         }
         Update: {
@@ -1718,6 +1726,7 @@ export type Database = {
           order_mode?: string
           prep_minutes?: number | null
           rating?: number | null
+          uses_delivery_slots?: boolean
           vendor_type?: string | null
         }
         Relationships: []
@@ -2030,21 +2039,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      staff_vendor_open_states: { Args: never; Returns: Json }
-      vendor_delivery_overview: {
-        Args: { p_order_ids?: number[] }
-        Returns: {
-          arrived_at_restaurant_at: string | null
-          driver_name: string | null
-          driver_phone: string | null
-          order_id: number
-          out_for_delivery_at: string | null
-          status: string
-        }[]
+      accept_swap: {
+        Args: { p_auth_user_id?: string; p_request_id: number }
+        Returns: Json
       }
-      accept_swap: { Args: { p_request_id: number }; Returns: Json }
       add_customer_address: {
         Args: {
+          p_auth_user_id?: string
           p_compound_id: number
           p_is_default?: boolean
           p_label: string
@@ -2060,6 +2061,7 @@ export type Database = {
       admin_adjust_order: {
         Args: {
           p_amount: number
+          p_auth_user_id?: string
           p_charge_service_fee?: boolean
           p_order_id: number
           p_reason: string
@@ -2067,30 +2069,39 @@ export type Database = {
         Returns: Json
       }
       admin_assign_order: {
-        Args: { p_driver_id: number; p_force?: boolean; p_order_id: number }
+        Args: {
+          p_auth_user_id?: string
+          p_driver_id: number
+          p_force?: boolean
+          p_order_id: number
+        }
         Returns: undefined
       }
       admin_confirm_cod_deposit: {
-        Args: { p_order_id: number }
+        Args: { p_auth_user_id?: string; p_order_id: number }
         Returns: undefined
       }
       admin_confirm_instapay_payment: {
-        Args: { p_force?: boolean; p_order_id: number }
+        Args: { p_auth_user_id?: string; p_force?: boolean; p_order_id: number }
         Returns: undefined
       }
       admin_convert_staff_role: {
-        Args: { p_profile_id: string; p_role: string }
+        Args: { p_auth_user_id?: string; p_profile_id: string; p_role: string }
         Returns: undefined
       }
       admin_customer_detail: { Args: { p_phone: string }; Returns: Json }
       admin_customers: { Args: never; Returns: Json }
       admin_daily_report: { Args: { p_date?: string }; Returns: Json }
       admin_delete_customer: {
-        Args: { p_customer_id: number; p_force?: boolean }
+        Args: {
+          p_auth_user_id?: string
+          p_customer_id: number
+          p_force?: boolean
+        }
         Returns: Json
       }
       admin_delete_customer_by_phone: {
-        Args: { p_force?: boolean; p_phone: string }
+        Args: { p_auth_user_id?: string; p_force?: boolean; p_phone: string }
         Returns: Json
       }
       admin_delete_menu_category: {
@@ -2102,7 +2113,11 @@ export type Database = {
         Returns: undefined
       }
       admin_delete_staff: {
-        Args: { p_force?: boolean; p_profile_id: string }
+        Args: {
+          p_auth_user_id?: string
+          p_force?: boolean
+          p_profile_id: string
+        }
         Returns: Json
       }
       admin_flag_driver_dispute: {
@@ -2111,6 +2126,7 @@ export type Database = {
       }
       admin_force_delivered: {
         Args: {
+          p_auth_user_id?: string
           p_cash_collected?: boolean
           p_order_id: number
           p_reason: string
@@ -2123,7 +2139,12 @@ export type Database = {
       admin_pending_refunds: { Args: never; Returns: Json }
       admin_push_health: { Args: never; Returns: Json }
       admin_reassign_order: {
-        Args: { p_driver_id: number; p_order_id: number; p_reason?: string }
+        Args: {
+          p_auth_user_id?: string
+          p_driver_id: number
+          p_order_id: number
+          p_reason?: string
+        }
         Returns: undefined
       }
       admin_rename_menu_category: {
@@ -2135,11 +2156,15 @@ export type Database = {
         Returns: undefined
       }
       admin_reset_driver_device: {
-        Args: { p_driver_id: number }
+        Args: { p_auth_user_id?: string; p_driver_id: number }
         Returns: undefined
       }
       admin_resolve_no_answer: {
-        Args: { p_action: string; p_assignment_id: number }
+        Args: {
+          p_action: string
+          p_assignment_id: number
+          p_auth_user_id?: string
+        }
         Returns: undefined
       }
       admin_set_compound_fee: {
@@ -2147,7 +2172,12 @@ export type Database = {
         Returns: undefined
       }
       admin_set_customer_ban: {
-        Args: { p_banned: boolean; p_phone: string; p_reason?: string }
+        Args: {
+          p_auth_user_id?: string
+          p_banned: boolean
+          p_phone: string
+          p_reason?: string
+        }
         Returns: Json
       }
       admin_set_restaurant_rank: {
@@ -2162,9 +2192,17 @@ export type Database = {
         Args: { p_days: Json; p_restaurant_id: number }
         Returns: undefined
       }
+      admin_set_vendor_slots: {
+        Args: {
+          p_auth_user_id?: string
+          p_enabled: boolean
+          p_restaurant_id: number
+        }
+        Returns: boolean
+      }
       admin_stalled_orders: { Args: never; Returns: Json }
       admin_unassign_order: {
-        Args: { p_order_id: number; p_reason?: string }
+        Args: { p_auth_user_id?: string; p_order_id: number; p_reason?: string }
         Returns: undefined
       }
       admin_upsert_compound: {
@@ -2184,6 +2222,7 @@ export type Database = {
       admin_upsert_driver: {
         Args: {
           p_active?: boolean
+          p_auth_user_id?: string
           p_id: number
           p_instapay_number?: string
           p_name: string
@@ -2196,7 +2235,7 @@ export type Database = {
       }
       admin_vendors_without_items: { Args: never; Returns: Json }
       append_request_items: {
-        Args: { p_items: Json; p_token: string }
+        Args: { p_items: Json; p_rate_key: string; p_token: string }
         Returns: Json
       }
       apply_library_addon: {
@@ -2234,12 +2273,17 @@ export type Database = {
       claim_order: { Args: { p_order_id: number }; Returns: Json }
       clear_my_location: { Args: never; Returns: undefined }
       confirm_custom_order_price: {
-        Args: { p_order_id: number; p_subtotal: number }
+        Args: {
+          p_auth_user_id?: string
+          p_order_id: number
+          p_subtotal: number
+        }
         Returns: undefined
       }
       credit_wallet: {
         Args: {
           p_amount: number
+          p_auth_user_id?: string
           p_order_id?: number
           p_phone: string
           p_reason: string
@@ -2256,7 +2300,10 @@ export type Database = {
         }
         Returns: boolean
       }
-      delete_customer_address: { Args: { p_id: number }; Returns: undefined }
+      delete_customer_address: {
+        Args: { p_auth_user_id?: string; p_id: number }
+        Returns: undefined
+      }
       delivery_fee_for_distance: { Args: { p_km: number }; Returns: number }
       delivery_quote: {
         Args: { p_compound_id: number; p_restaurant_id?: number }
@@ -2314,7 +2361,10 @@ export type Database = {
         Args: { p_available: boolean }
         Returns: undefined
       }
-      escalate_swap: { Args: { p_request_id: number }; Returns: undefined }
+      escalate_swap: {
+        Args: { p_auth_user_id?: string; p_request_id: number }
+        Returns: undefined
+      }
       is_admin: { Args: never; Returns: boolean }
       is_banned: { Args: { p_phone: string }; Returns: boolean }
       is_catalog_manager: { Args: never; Returns: boolean }
@@ -2325,11 +2375,16 @@ export type Database = {
       is_predispatch_status: { Args: { p_status: string }; Returns: boolean }
       is_supervisor: { Args: never; Returns: boolean }
       last_address_for_phone: {
-        Args: { p_phone: string; p_session_token?: string }
+        Args: {
+          p_auth_user_id: string
+          p_phone: string
+          p_session_token: string
+        }
         Returns: Json
       }
       log_app_event: {
         Args: {
+          p_auth_user_id?: string
           p_compound_id?: number
           p_device_id?: string
           p_event: string
@@ -2345,23 +2400,37 @@ export type Database = {
         Returns: undefined
       }
       mark_delivery_failed: {
-        Args: { p_assignment_id: number }
+        Args: { p_assignment_id: number; p_auth_user_id?: string }
         Returns: undefined
       }
       mark_instapay_claimed: { Args: { p_token: string }; Returns: undefined }
-      mark_refunded: { Args: { p_order_id: number }; Returns: undefined }
-      my_customer_addresses: { Args: never; Returns: Json }
+      mark_refunded: {
+        Args: { p_auth_user_id?: string; p_order_id: number }
+        Returns: undefined
+      }
+      my_customer_addresses: {
+        Args: { p_auth_user_id?: string }
+        Returns: Json
+      }
       my_customer_id: { Args: never; Returns: number }
-      my_customer_orders: { Args: never; Returns: Json }
-      my_customer_profile: { Args: never; Returns: Json }
+      my_customer_orders: { Args: { p_auth_user_id?: string }; Returns: Json }
+      my_customer_profile: { Args: { p_auth_user_id?: string }; Returns: Json }
       my_driver_id: { Args: never; Returns: number }
       my_driver_stats: { Args: never; Returns: Json }
       my_last_request: {
-        Args: { p_restaurant_id: number; p_session_token?: string }
+        Args: {
+          p_auth_user_id: string
+          p_restaurant_id: number
+          p_session_token: string
+        }
         Returns: Json
       }
       my_orders: {
-        Args: { p_phone: string; p_session_token?: string }
+        Args: {
+          p_auth_user_id: string
+          p_phone: string
+          p_session_token: string
+        }
         Returns: Json
       }
       my_restaurant_id: { Args: never; Returns: number }
@@ -2372,11 +2441,12 @@ export type Database = {
       }
       notify_new_order_for: { Args: { p_order_id: number }; Returns: undefined }
       open_slots: { Args: { p_restaurant_id: number }; Returns: Json }
-      open_swaps: { Args: never; Returns: Json }
+      open_swaps: { Args: { p_auth_user_id?: string }; Returns: Json }
       order_is_dispatchable: { Args: { p_order_id: number }; Returns: boolean }
       place_order: {
         Args: {
           p_address_notes: string
+          p_auth_user_id?: string
           p_compound_id?: number
           p_customer_name: string
           p_customer_note?: string
@@ -2384,6 +2454,7 @@ export type Database = {
           p_delivery_fee: number
           p_items: Json
           p_payment_method?: string
+          p_rate_key?: string
           p_restaurant_id: number
           p_scheduled_date?: string
           p_session_token?: string
@@ -2418,16 +2489,21 @@ export type Database = {
         }
         Returns: undefined
       }
-      request_early_settlement: { Args: never; Returns: undefined }
+      request_early_settlement: {
+        Args: { p_auth_user_id?: string }
+        Returns: undefined
+      }
       request_pickup: {
         Args: {
           p_address_notes: string
+          p_auth_user_id?: string
           p_collect_amount: number
           p_compound_id?: number
           p_customer_name: string
           p_customer_phone: string
           p_delivery_fee: number
           p_payment_mode: string
+          p_rate_key?: string
           p_request_notes: string
           p_restaurant_id: number
           p_session_token?: string
@@ -2437,7 +2513,7 @@ export type Database = {
         Returns: Json
       }
       request_swap: {
-        Args: { p_reason?: string; p_shift_id: number }
+        Args: { p_auth_user_id?: string; p_reason?: string; p_shift_id: number }
         Returns: Json
       }
       restaurant_public: { Args: { p_id: number }; Returns: Json }
@@ -2451,7 +2527,12 @@ export type Database = {
       }
       restaurants_reliability_all: { Args: never; Returns: Json }
       save_customer_push_token: {
-        Args: { p_platform?: string; p_push_token: string; p_token: string }
+        Args: {
+          p_auth_user_id?: string
+          p_platform?: string
+          p_push_token: string
+          p_token: string
+        }
         Returns: Json
       }
       save_my_push_token: {
@@ -2464,10 +2545,20 @@ export type Database = {
       }
       session_logout: { Args: { p_token: string }; Returns: undefined }
       session_whoami: { Args: { p_token: string }; Returns: Json }
-      set_default_address: { Args: { p_id: number }; Returns: undefined }
-      settle_driver_cash: { Args: { p_driver_id: number }; Returns: undefined }
+      set_default_address: {
+        Args: { p_auth_user_id?: string; p_id: number }
+        Returns: undefined
+      }
+      set_verified_customer_phone: {
+        Args: { p_auth_user_id: string; p_phone: string }
+        Returns: Json
+      }
+      settle_driver_cash: {
+        Args: { p_auth_user_id?: string; p_driver_id: number }
+        Returns: undefined
+      }
       settle_driver_earnings: {
-        Args: { p_driver_id: number }
+        Args: { p_auth_user_id?: string; p_driver_id: number }
         Returns: undefined
       }
       sla_max_minutes: { Args: { p_min: number }; Returns: number }
@@ -2479,6 +2570,7 @@ export type Database = {
       staff_create_pickup_order: {
         Args: {
           p_address_notes?: string
+          p_auth_user_id?: string
           p_collect_amount?: number
           p_compound_id: number
           p_customer_name: string
@@ -2487,6 +2579,10 @@ export type Database = {
           p_restaurant_id: number
           p_unit_number: string
         }
+        Returns: Json
+      }
+      staff_vendor_open_states: {
+        Args: { p_auth_user_id?: string }
         Returns: Json
       }
       stalled_orders: {
@@ -2512,11 +2608,13 @@ export type Database = {
       submit_custom_order: {
         Args: {
           p_address_notes: string
+          p_auth_user_id?: string
           p_compound_id?: number
           p_customer_name: string
           p_customer_phone: string
           p_delivery_fee: number
           p_prescription_path?: string
+          p_rate_key?: string
           p_request_items: Json
           p_request_notes: string
           p_restaurant_id: number
@@ -2530,6 +2628,7 @@ export type Database = {
       }
       submit_rating: {
         Args: {
+          p_auth_user_id?: string
           p_comment?: string
           p_driver_rating?: number
           p_restaurant_rating?: number
@@ -2558,15 +2657,19 @@ export type Database = {
       travel_minutes_for_distance: { Args: { p_km: number }; Returns: number }
       update_customer_address: {
         Args: {
+          p_auth_user_id?: string
           p_compound_id: number
           p_id: number
           p_label: string
-          p_notes?: string
+          p_notes: string
           p_unit_number: string
         }
         Returns: undefined
       }
-      update_my_customer_name: { Args: { p_name: string }; Returns: undefined }
+      update_my_customer_name: {
+        Args: { p_auth_user_id?: string; p_name: string }
+        Returns: undefined
+      }
       update_my_customer_phone: {
         Args: { p_phone: string }
         Returns: undefined
@@ -2576,7 +2679,11 @@ export type Database = {
         Returns: undefined
       }
       vendor_accept_order: {
-        Args: { p_order_id: number; p_prep_minutes?: number }
+        Args: {
+          p_auth_user_id?: string
+          p_order_id: number
+          p_prep_minutes: number
+        }
         Returns: undefined
       }
       vendor_covers_compound: {
@@ -2584,8 +2691,19 @@ export type Database = {
         Returns: boolean
       }
       vendor_delay: {
-        Args: { p_minutes?: number; p_order_id: number }
+        Args: { p_auth_user_id?: string; p_minutes: number; p_order_id: number }
         Returns: undefined
+      }
+      vendor_delivery_overview: {
+        Args: { p_auth_user_id?: string; p_order_ids: number[] }
+        Returns: {
+          arrived_at_restaurant_at: string
+          driver_name: string
+          driver_phone: string
+          order_id: number
+          out_for_delivery_at: string
+          status: string
+        }[]
       }
       vendor_is_open_now: {
         Args: { p_restaurant_id: number }
@@ -2596,14 +2714,28 @@ export type Database = {
         Returns: string
       }
       vendor_open_states: { Args: never; Returns: Json }
-      vendor_ready: { Args: { p_order_id: number }; Returns: undefined }
-      vendor_set_item_availability: {
-        Args: { p_available: boolean; p_item_id: number }
+      vendor_ready: {
+        Args: { p_auth_user_id?: string; p_order_id: number }
         Returns: undefined
       }
-      vendor_set_open: { Args: { p_open: boolean }; Returns: string }
+      vendor_set_item_availability: {
+        Args: {
+          p_auth_user_id?: string
+          p_available: boolean
+          p_item_id: number
+        }
+        Returns: undefined
+      }
+      vendor_set_open: {
+        Args: { p_auth_user_id?: string; p_open: boolean }
+        Returns: string
+      }
       wallet_balance_for_phone: {
-        Args: { p_phone: string; p_session_token?: string }
+        Args: {
+          p_auth_user_id: string
+          p_phone: string
+          p_session_token: string
+        }
         Returns: number
       }
     }

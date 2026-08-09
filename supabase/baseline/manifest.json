@@ -1,40 +1,35 @@
 {
   "project_ref": "pqpnwxyevrsipklzmwex",
-  "schema": "public",
-  "captured_at": "2026-08-08T20:53:32.842823+00:00",
+  "schemas": ["public", "private"],
+  "captured_at": "2026-08-09T23:20:08+00:00",
+  "previous_capture": "2026-08-08T20:53:32.842823+00:00",
   "postgres_version": "17.6",
   "snapshot_only": true,
   "includes_data_rows": false,
   "counts": {
     "tables": 48,
     "views": 0,
-    "functions": 159,
-    "policies": 80,
+    "functions_public": 163,
+    "functions_private": 56,
+    "functions_total": 219,
+    "functions_security_definer": 200,
+    "policies": 79,
     "triggers": 14,
-    "indexes": 114
+    "indexes": 119,
+    "migrations": 309
   },
-  "migration_history_current_as_of": "2026-08-09T22:00:00+00:00",
-  "stale": {
-    "note": "migration-history.json is current. Every OTHER file in this directory is still the 2026-08-08 capture and does NOT describe production. Refresh them with the procedure in README.md before relying on them for recovery.",
-    "stale_files": [
-      "database.types.ts",
-      "grants.json",
-      "indexes.json",
-      "policies.json",
-      "public-tables.json",
-      "routines.json",
-      "triggers.json"
-    ],
-    "production_at_2026_08_09T22_00Z": {
-      "tables": 48,
-      "views": 0,
-      "functions_public": 163,
-      "functions_private": 41,
-      "policies": 79,
-      "triggers": 14,
-      "indexes": 119,
-      "migrations": 309
-    },
-    "biggest_gap": "The snapshot predates the `private` schema entirely. Security batches 1-5 moved privileged cores into `private` and left service-role-only wrappers in `public`; routines.json and grants.json therefore describe a permission model that no longer exists, and show none of the 41 private functions."
-  }
+  "drift_since_previous_capture": {
+    "tables": "unchanged (48)",
+    "triggers": "unchanged (14)",
+    "indexes": "+5 (_mcd_menu_backup_20260806_pkey, app_events_compound_id_idx, app_events_customer_id_idx, app_events_order_id_idx, app_events_restaurant_id_idx)",
+    "policies": "+2 (settings.admin manages settings, settings.public reads customer settings), -3 (drivers.vendor reads assigned drivers, settings.admin writes settings, settings.public read settings)",
+    "public_routine_names": "+4 (admin_set_vendor_slots, set_verified_customer_phone, staff_vendor_open_states, vendor_delivery_overview), none removed",
+    "private_schema": "NEW — 56 functions. The previous capture predated security batches 1-6 entirely and recorded no private schema."
+  },
+  "notes": [
+    "routines.json now carries schema, per-role execute grants and full definitions for BOTH public and private.",
+    "grants.json now records schema-level USAGE as well as table and routine grants.",
+    "No public routine was removed by name: every core relocated to private kept a same-named public wrapper, so name-level comparison understates the change. Signatures gained a trailing p_auth_user_id and execute was narrowed to service_role.",
+    "database.types.ts covers the public schema ONLY. The Supabase type generator emits public by default and was not asked to include private, so it is not a complete picture of the database. routines.json is the authoritative record for private."
+  ]
 }

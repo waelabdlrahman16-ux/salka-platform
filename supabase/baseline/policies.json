@@ -3,9 +3,7 @@
     {
       "cmd": "SELECT",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "app_events",
       "permissive": "PERMISSIVE",
       "policyname": "app_events_admin_read",
@@ -64,9 +62,7 @@
     {
       "cmd": "ALL",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "complaints",
       "permissive": "PERMISSIVE",
       "policyname": "admin manages complaints",
@@ -76,9 +72,7 @@
     {
       "cmd": "ALL",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "compounds",
       "permissive": "PERMISSIVE",
       "policyname": "admin writes compounds",
@@ -88,9 +82,7 @@
     {
       "cmd": "SELECT",
       "qual": "true",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "compounds",
       "permissive": "PERMISSIVE",
       "policyname": "public read compounds",
@@ -100,9 +92,7 @@
     {
       "cmd": "SELECT",
       "qual": "is_supervisor()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "compounds",
       "permissive": "PERMISSIVE",
       "policyname": "supervisor reads compounds",
@@ -112,9 +102,7 @@
     {
       "cmd": "ALL",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "customer_wallets",
       "permissive": "PERMISSIVE",
       "policyname": "admin manages wallets",
@@ -124,9 +112,7 @@
     {
       "cmd": "INSERT",
       "qual": null,
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "delivery_assignments",
       "permissive": "PERMISSIVE",
       "policyname": "admin creates assignments",
@@ -136,9 +122,7 @@
     {
       "cmd": "UPDATE",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "delivery_assignments",
       "permissive": "PERMISSIVE",
       "policyname": "admin updates assignments",
@@ -148,9 +132,7 @@
     {
       "cmd": "SELECT",
       "qual": "(is_admin() OR (driver_id = my_driver_id()))",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "delivery_assignments",
       "permissive": "PERMISSIVE",
       "policyname": "read assignments",
@@ -160,9 +142,7 @@
     {
       "cmd": "SELECT",
       "qual": "is_supervisor()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "delivery_assignments",
       "permissive": "PERMISSIVE",
       "policyname": "supervisor reads assignments",
@@ -172,9 +152,7 @@
     {
       "cmd": "ALL",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "delivery_slots",
       "permissive": "PERMISSIVE",
       "policyname": "admin writes slots",
@@ -184,9 +162,7 @@
     {
       "cmd": "SELECT",
       "qual": "true",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "delivery_slots",
       "permissive": "PERMISSIVE",
       "policyname": "public read slots",
@@ -196,9 +172,7 @@
     {
       "cmd": "ALL",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "discounts",
       "permissive": "PERMISSIVE",
       "policyname": "admin writes discounts",
@@ -208,9 +182,7 @@
     {
       "cmd": "SELECT",
       "qual": "true",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "discounts",
       "permissive": "PERMISSIVE",
       "policyname": "public read discounts",
@@ -232,9 +204,7 @@
     {
       "cmd": "INSERT",
       "qual": null,
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "driver_earnings",
       "permissive": "PERMISSIVE",
       "policyname": "admin creates earnings",
@@ -244,9 +214,7 @@
     {
       "cmd": "SELECT",
       "qual": "(is_admin() OR (driver_id = my_driver_id()))",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "driver_earnings",
       "permissive": "PERMISSIVE",
       "policyname": "read earnings",
@@ -256,9 +224,7 @@
     {
       "cmd": "ALL",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "driver_settlements",
       "permissive": "PERMISSIVE",
       "policyname": "admin writes settlements",
@@ -268,9 +234,7 @@
     {
       "cmd": "SELECT",
       "qual": "(is_admin() OR (driver_id = my_driver_id()))",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "driver_settlements",
       "permissive": "PERMISSIVE",
       "policyname": "read settlements",
@@ -280,9 +244,7 @@
     {
       "cmd": "SELECT",
       "qual": "(is_admin() OR (driver_id = my_driver_id()))",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "driver_tips",
       "permissive": "PERMISSIVE",
       "policyname": "read tips",
@@ -292,9 +254,7 @@
     {
       "cmd": "INSERT",
       "qual": null,
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "drivers",
       "permissive": "PERMISSIVE",
       "policyname": "admin creates drivers",
@@ -304,9 +264,7 @@
     {
       "cmd": "UPDATE",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "drivers",
       "permissive": "PERMISSIVE",
       "policyname": "admin manages drivers",
@@ -316,9 +274,7 @@
     {
       "cmd": "SELECT",
       "qual": "(is_admin() OR (id = my_driver_id()))",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "drivers",
       "permissive": "PERMISSIVE",
       "policyname": "read drivers",
@@ -328,9 +284,7 @@
     {
       "cmd": "SELECT",
       "qual": "is_supervisor()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "drivers",
       "permissive": "PERMISSIVE",
       "policyname": "supervisor reads drivers",
@@ -338,23 +292,9 @@
       "with_check": null
     },
     {
-      "cmd": "SELECT",
-      "qual": "(EXISTS ( SELECT 1\n   FROM (delivery_assignments da\n     JOIN orders o ON ((o.id = da.order_id)))\n  WHERE ((da.driver_id = drivers.id) AND (o.restaurant_id = my_restaurant_id()) AND (da.status = ANY (ARRAY['Accepted'::text, 'Picked_Up'::text, 'Out_for_Delivery'::text, 'Delivered'::text])))))",
-      "roles": [
-        "public"
-      ],
-      "tablename": "drivers",
-      "permissive": "PERMISSIVE",
-      "policyname": "vendor reads assigned drivers",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
       "cmd": "ALL",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "menu_categories",
       "permissive": "PERMISSIVE",
       "policyname": "admin writes categories",
@@ -364,9 +304,7 @@
     {
       "cmd": "ALL",
       "qual": "is_catalog_manager()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "menu_categories",
       "permissive": "PERMISSIVE",
       "policyname": "catalog writes categories",
@@ -376,9 +314,7 @@
     {
       "cmd": "SELECT",
       "qual": "true",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "menu_categories",
       "permissive": "PERMISSIVE",
       "policyname": "public read categories",
@@ -388,9 +324,7 @@
     {
       "cmd": "ALL",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "menu_item_addon_groups",
       "permissive": "PERMISSIVE",
       "policyname": "admin writes addon groups",
@@ -400,9 +334,7 @@
     {
       "cmd": "ALL",
       "qual": "is_catalog_manager()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "menu_item_addon_groups",
       "permissive": "PERMISSIVE",
       "policyname": "catalog writes addon groups",
@@ -412,9 +344,7 @@
     {
       "cmd": "SELECT",
       "qual": "true",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "menu_item_addon_groups",
       "permissive": "PERMISSIVE",
       "policyname": "public read addon groups",
@@ -424,9 +354,7 @@
     {
       "cmd": "ALL",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "menu_item_addons",
       "permissive": "PERMISSIVE",
       "policyname": "admin writes addons",
@@ -436,9 +364,7 @@
     {
       "cmd": "ALL",
       "qual": "is_catalog_manager()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "menu_item_addons",
       "permissive": "PERMISSIVE",
       "policyname": "catalog writes addons",
@@ -448,9 +374,7 @@
     {
       "cmd": "SELECT",
       "qual": "true",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "menu_item_addons",
       "permissive": "PERMISSIVE",
       "policyname": "public read addons",
@@ -460,9 +384,7 @@
     {
       "cmd": "ALL",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "menu_item_combos",
       "permissive": "PERMISSIVE",
       "policyname": "admin writes combos",
@@ -472,9 +394,7 @@
     {
       "cmd": "ALL",
       "qual": "is_catalog_manager()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "menu_item_combos",
       "permissive": "PERMISSIVE",
       "policyname": "catalog writes combos",
@@ -484,9 +404,7 @@
     {
       "cmd": "SELECT",
       "qual": "true",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "menu_item_combos",
       "permissive": "PERMISSIVE",
       "policyname": "public read combos",
@@ -496,9 +414,7 @@
     {
       "cmd": "ALL",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "menu_item_sizes",
       "permissive": "PERMISSIVE",
       "policyname": "admin writes menu sizes",
@@ -508,9 +424,7 @@
     {
       "cmd": "ALL",
       "qual": "is_catalog_manager()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "menu_item_sizes",
       "permissive": "PERMISSIVE",
       "policyname": "catalog writes menu sizes",
@@ -520,9 +434,7 @@
     {
       "cmd": "SELECT",
       "qual": "true",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "menu_item_sizes",
       "permissive": "PERMISSIVE",
       "policyname": "public read sizes",
@@ -532,9 +444,7 @@
     {
       "cmd": "ALL",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "menu_items",
       "permissive": "PERMISSIVE",
       "policyname": "admin writes menu",
@@ -544,9 +454,7 @@
     {
       "cmd": "ALL",
       "qual": "is_catalog_manager()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "menu_items",
       "permissive": "PERMISSIVE",
       "policyname": "catalog writes menu",
@@ -556,9 +464,7 @@
     {
       "cmd": "SELECT",
       "qual": "true",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "menu_items",
       "permissive": "PERMISSIVE",
       "policyname": "public read",
@@ -568,9 +474,7 @@
     {
       "cmd": "SELECT",
       "qual": "(is_admin() OR (EXISTS ( SELECT 1\n   FROM delivery_assignments da\n  WHERE ((da.order_id = order_items.order_id) AND (da.driver_id = my_driver_id())))))",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "order_items",
       "permissive": "PERMISSIVE",
       "policyname": "staff read order items",
@@ -580,9 +484,7 @@
     {
       "cmd": "SELECT",
       "qual": "(is_supervisor() AND (EXISTS ( SELECT 1\n   FROM orders o\n  WHERE (o.id = order_items.order_id))))",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "order_items",
       "permissive": "PERMISSIVE",
       "policyname": "supervisor reads order items",
@@ -592,9 +494,7 @@
     {
       "cmd": "SELECT",
       "qual": "(EXISTS ( SELECT 1\n   FROM orders o\n  WHERE ((o.id = order_items.order_id) AND (o.restaurant_id = my_restaurant_id()))))",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "order_items",
       "permissive": "PERMISSIVE",
       "policyname": "vendor reads order items",
@@ -604,9 +504,7 @@
     {
       "cmd": "SELECT",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "order_ratings",
       "permissive": "PERMISSIVE",
       "policyname": "admin reads ratings",
@@ -616,9 +514,7 @@
     {
       "cmd": "UPDATE",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "orders",
       "permissive": "PERMISSIVE",
       "policyname": "admin updates orders",
@@ -628,9 +524,7 @@
     {
       "cmd": "SELECT",
       "qual": "(is_admin() OR (EXISTS ( SELECT 1\n   FROM delivery_assignments da\n  WHERE ((da.order_id = orders.id) AND (da.driver_id = my_driver_id())))))",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "orders",
       "permissive": "PERMISSIVE",
       "policyname": "staff read orders",
@@ -640,9 +534,7 @@
     {
       "cmd": "SELECT",
       "qual": "supervisor_may_touch_order(id)",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "orders",
       "permissive": "PERMISSIVE",
       "policyname": "supervisor reads orders",
@@ -652,9 +544,7 @@
     {
       "cmd": "SELECT",
       "qual": "(restaurant_id = my_restaurant_id())",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "orders",
       "permissive": "PERMISSIVE",
       "policyname": "vendor reads orders",
@@ -664,9 +554,7 @@
     {
       "cmd": "SELECT",
       "qual": "(( SELECT auth.uid() AS uid) = id)",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "profiles",
       "permissive": "PERMISSIVE",
       "policyname": "read own profile",
@@ -676,9 +564,7 @@
     {
       "cmd": "ALL",
       "qual": "(profile_id = ( SELECT auth.uid() AS uid))",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "push_tokens",
       "permissive": "PERMISSIVE",
       "policyname": "user manages own push token",
@@ -688,9 +574,7 @@
     {
       "cmd": "ALL",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "regions",
       "permissive": "PERMISSIVE",
       "policyname": "admin writes regions",
@@ -700,9 +584,7 @@
     {
       "cmd": "SELECT",
       "qual": "true",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "regions",
       "permissive": "PERMISSIVE",
       "policyname": "public read regions",
@@ -712,9 +594,7 @@
     {
       "cmd": "ALL",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "restaurants",
       "permissive": "PERMISSIVE",
       "policyname": "admin writes restaurants",
@@ -724,9 +604,7 @@
     {
       "cmd": "SELECT",
       "qual": "true",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "restaurants",
       "permissive": "PERMISSIVE",
       "policyname": "public read",
@@ -736,9 +614,7 @@
     {
       "cmd": "SELECT",
       "qual": "is_supervisor()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "restaurants",
       "permissive": "PERMISSIVE",
       "policyname": "supervisor reads restaurants",
@@ -749,32 +625,31 @@
       "cmd": "ALL",
       "qual": "is_admin()",
       "roles": [
-        "public"
+        "authenticated"
       ],
       "tablename": "settings",
       "permissive": "PERMISSIVE",
-      "policyname": "admin writes settings",
+      "policyname": "admin manages settings",
       "schemaname": "public",
       "with_check": "is_admin()"
     },
     {
       "cmd": "SELECT",
-      "qual": "true",
+      "qual": "(key = ANY (ARRAY['cod_deposit_threshold_egp'::text, 'service_fee_percent'::text, 'sms_login_enabled'::text]))",
       "roles": [
-        "public"
+        "anon",
+        "authenticated"
       ],
       "tablename": "settings",
       "permissive": "PERMISSIVE",
-      "policyname": "public read settings",
+      "policyname": "public reads customer settings",
       "schemaname": "public",
       "with_check": null
     },
     {
       "cmd": "UPDATE",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "settlement_requests",
       "permissive": "PERMISSIVE",
       "policyname": "admin updates requests",
@@ -784,9 +659,7 @@
     {
       "cmd": "INSERT",
       "qual": null,
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "settlement_requests",
       "permissive": "PERMISSIVE",
       "policyname": "driver creates request",
@@ -796,9 +669,7 @@
     {
       "cmd": "SELECT",
       "qual": "(is_admin() OR (driver_id = my_driver_id()))",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "settlement_requests",
       "permissive": "PERMISSIVE",
       "policyname": "read own requests",
@@ -808,9 +679,7 @@
     {
       "cmd": "ALL",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "shift_swap_requests",
       "permissive": "PERMISSIVE",
       "policyname": "admin manages swap requests",
@@ -819,9 +688,9 @@
     },
     {
       "cmd": "SELECT",
-      "qual": "(is_admin() OR (requested_by = my_driver_id()) OR (status = 'open'::text))",
+      "qual": "(is_admin() OR (requested_by = my_driver_id()) OR ((my_driver_id() IS NOT NULL) AND (status = 'open'::text)))",
       "roles": [
-        "public"
+        "authenticated"
       ],
       "tablename": "shift_swap_requests",
       "permissive": "PERMISSIVE",
@@ -832,9 +701,7 @@
     {
       "cmd": "ALL",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "shifts",
       "permissive": "PERMISSIVE",
       "policyname": "admin writes shifts",
@@ -843,9 +710,9 @@
     },
     {
       "cmd": "SELECT",
-      "qual": "(EXISTS ( SELECT 1\n   FROM shift_swap_requests r\n  WHERE ((r.shift_id = shifts.id) AND (r.status = 'open'::text))))",
+      "qual": "((my_driver_id() IS NOT NULL) AND (EXISTS ( SELECT 1\n   FROM shift_swap_requests r\n  WHERE ((r.shift_id = shifts.id) AND (r.status = 'open'::text)))))",
       "roles": [
-        "public"
+        "authenticated"
       ],
       "tablename": "shifts",
       "permissive": "PERMISSIVE",
@@ -856,9 +723,7 @@
     {
       "cmd": "SELECT",
       "qual": "(is_admin() OR (driver_id = my_driver_id()))",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "shifts",
       "permissive": "PERMISSIVE",
       "policyname": "read shifts",
@@ -868,9 +733,7 @@
     {
       "cmd": "ALL",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "vendor_addon_library",
       "permissive": "PERMISSIVE",
       "policyname": "admin writes addon library",
@@ -880,9 +743,7 @@
     {
       "cmd": "ALL",
       "qual": "is_catalog_manager()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "vendor_addon_library",
       "permissive": "PERMISSIVE",
       "policyname": "catalog writes addon library",
@@ -892,9 +753,7 @@
     {
       "cmd": "SELECT",
       "qual": "true",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "vendor_addon_library",
       "permissive": "PERMISSIVE",
       "policyname": "public read addon library",
@@ -904,9 +763,7 @@
     {
       "cmd": "ALL",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "vendor_coverage",
       "permissive": "PERMISSIVE",
       "policyname": "admin writes coverage",
@@ -916,9 +773,7 @@
     {
       "cmd": "SELECT",
       "qual": "true",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "vendor_coverage",
       "permissive": "PERMISSIVE",
       "policyname": "public read coverage",
@@ -928,9 +783,7 @@
     {
       "cmd": "SELECT",
       "qual": "true",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "vendor_hours",
       "permissive": "PERMISSIVE",
       "policyname": "vendor_hours_read",
@@ -940,9 +793,7 @@
     {
       "cmd": "ALL",
       "qual": "is_admin()",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "wallet_transactions",
       "permissive": "PERMISSIVE",
       "policyname": "admin manages wallet tx",
@@ -952,9 +803,7 @@
     {
       "cmd": "SELECT",
       "qual": "true",
-      "roles": [
-        "public"
-      ],
+      "roles": null,
       "tablename": "zones",
       "permissive": "PERMISSIVE",
       "policyname": "public read",
