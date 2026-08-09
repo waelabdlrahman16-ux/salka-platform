@@ -1,0 +1,2 @@
+-- Historical migration marker: driver_reject_rpc_and_harden_mark_delivered
+-- The production schema is captured in supabase/baseline; this version is already applied.

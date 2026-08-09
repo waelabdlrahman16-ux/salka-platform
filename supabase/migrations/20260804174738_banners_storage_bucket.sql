@@ -1,0 +1,2 @@
+-- Historical migration marker: banners_storage_bucket
+-- The production schema is captured in supabase/baseline; this version is already applied.

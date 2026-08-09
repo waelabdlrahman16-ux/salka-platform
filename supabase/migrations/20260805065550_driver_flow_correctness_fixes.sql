@@ -1,0 +1,2 @@
+-- Historical migration marker: driver_flow_correctness_fixes
+-- The production schema is captured in supabase/baseline; this version is already applied.

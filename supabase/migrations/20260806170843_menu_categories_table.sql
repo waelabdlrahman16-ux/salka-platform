@@ -1,0 +1,2 @@
+-- Historical migration marker: menu_categories_table
+-- The production schema is captured in supabase/baseline; this version is already applied.

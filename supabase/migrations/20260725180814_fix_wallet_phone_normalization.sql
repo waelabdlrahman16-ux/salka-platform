@@ -1,0 +1,2 @@
+-- Historical migration marker: fix_wallet_phone_normalization
+-- The production schema is captured in supabase/baseline; this version is already applied.

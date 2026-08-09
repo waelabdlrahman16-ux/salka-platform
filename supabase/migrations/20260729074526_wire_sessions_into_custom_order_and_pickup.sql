@@ -1,0 +1,2 @@
+-- Historical migration marker: wire_sessions_into_custom_order_and_pickup
+-- The production schema is captured in supabase/baseline; this version is already applied.

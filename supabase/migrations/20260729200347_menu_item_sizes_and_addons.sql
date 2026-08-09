@@ -1,0 +1,2 @@
+-- Historical migration marker: menu_item_sizes_and_addons
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: driver_tips_read_policy
+-- The production schema is captured in supabase/baseline; this version is already applied.

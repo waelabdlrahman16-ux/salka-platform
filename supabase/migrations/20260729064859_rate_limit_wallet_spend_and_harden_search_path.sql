@@ -1,0 +1,2 @@
+-- Historical migration marker: rate_limit_wallet_spend_and_harden_search_path
+-- The production schema is captured in supabase/baseline; this version is already applied.

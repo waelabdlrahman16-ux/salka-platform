@@ -1,0 +1,2 @@
+-- Historical migration marker: admin_assign_reject_unpaid_orders
+-- The production schema is captured in supabase/baseline; this version is already applied.

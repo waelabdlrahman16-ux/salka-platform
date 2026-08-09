@@ -1,0 +1,2 @@
+-- Historical migration marker: submit_custom_order_slot_support
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: add_vendor_max_delivery_km
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: complaint_categories_and_driver_disputes
+-- The production schema is captured in supabase/baseline; this version is already applied.

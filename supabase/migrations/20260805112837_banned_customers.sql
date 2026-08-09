@@ -1,0 +1,2 @@
+-- Historical migration marker: banned_customers
+-- The production schema is captured in supabase/baseline; this version is already applied.

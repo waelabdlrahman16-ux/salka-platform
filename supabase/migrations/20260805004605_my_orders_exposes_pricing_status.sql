@@ -1,0 +1,2 @@
+-- Historical migration marker: my_orders_exposes_pricing_status
+-- The production schema is captured in supabase/baseline; this version is already applied.

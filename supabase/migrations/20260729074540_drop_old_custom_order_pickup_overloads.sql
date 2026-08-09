@@ -1,0 +1,2 @@
+-- Historical migration marker: drop_old_custom_order_pickup_overloads
+-- The production schema is captured in supabase/baseline; this version is already applied.

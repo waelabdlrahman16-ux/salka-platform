@@ -1,0 +1,2 @@
+-- Historical migration marker: revoke_public_execute_on_privileged_functions
+-- The production schema is captured in supabase/baseline; this version is already applied.

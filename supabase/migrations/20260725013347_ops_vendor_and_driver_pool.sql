@@ -1,0 +1,2 @@
+-- Historical migration marker: ops_vendor_and_driver_pool
+-- The production schema is captured in supabase/baseline; this version is already applied.

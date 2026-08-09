@@ -1,0 +1,2 @@
+-- Historical migration marker: fix_search_path_regression
+-- The production schema is captured in supabase/baseline; this version is already applied.

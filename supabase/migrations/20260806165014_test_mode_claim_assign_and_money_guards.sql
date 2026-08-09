@@ -1,0 +1,2 @@
+-- Historical migration marker: test_mode_claim_assign_and_money_guards
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: cancel_order_recompute_driver_availability
+-- The production schema is captured in supabase/baseline; this version is already applied.

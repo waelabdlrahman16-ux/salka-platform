@@ -1,0 +1,2 @@
+-- Historical migration marker: lock_down_anon_execute_surface_public_too
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: pickup_request_is_born_ready
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: fix_admin_daily_report_nested_aggregate
+-- The production schema is captured in supabase/baseline; this version is already applied.

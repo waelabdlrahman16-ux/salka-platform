@@ -1,0 +1,2 @@
+-- Historical migration marker: lock_down_20260804_backup_tables
+-- The production schema is captured in supabase/baseline; this version is already applied.

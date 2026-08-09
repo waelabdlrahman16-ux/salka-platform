@@ -1,0 +1,2 @@
+-- Historical migration marker: admin_customer_detail_fix_notes
+-- The production schema is captured in supabase/baseline; this version is already applied.

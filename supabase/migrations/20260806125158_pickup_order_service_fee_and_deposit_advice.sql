@@ -1,0 +1,2 @@
+-- Historical migration marker: pickup_order_service_fee_and_deposit_advice
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: revoke_truncate_from_anon_and_fix_defaults
+-- The production schema is captured in supabase/baseline; this version is already applied.

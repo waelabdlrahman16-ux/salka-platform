@@ -1,0 +1,2 @@
+-- Historical migration marker: fix_drivers_insert_and_earnings_idempotency
+-- The production schema is captured in supabase/baseline; this version is already applied.

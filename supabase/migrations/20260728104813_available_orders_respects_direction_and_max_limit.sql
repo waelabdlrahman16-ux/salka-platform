@@ -1,0 +1,2 @@
+-- Historical migration marker: available_orders_respects_direction_and_max_limit
+-- The production schema is captured in supabase/baseline; this version is already applied.

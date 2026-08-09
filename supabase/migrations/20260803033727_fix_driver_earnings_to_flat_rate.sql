@@ -1,0 +1,2 @@
+-- Historical migration marker: fix_driver_earnings_to_flat_rate
+-- The production schema is captured in supabase/baseline; this version is already applied.

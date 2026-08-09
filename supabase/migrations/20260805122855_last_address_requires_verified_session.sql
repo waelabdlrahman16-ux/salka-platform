@@ -1,0 +1,2 @@
+-- Historical migration marker: last_address_requires_verified_session
+-- The production schema is captured in supabase/baseline; this version is already applied.

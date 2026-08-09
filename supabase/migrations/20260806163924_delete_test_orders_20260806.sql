@@ -1,0 +1,2 @@
+-- Historical migration marker: delete_test_orders_20260806
+-- The production schema is captured in supabase/baseline; this version is already applied.

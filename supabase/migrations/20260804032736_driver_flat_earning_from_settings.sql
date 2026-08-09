@@ -1,0 +1,2 @@
+-- Historical migration marker: driver_flat_earning_from_settings
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: order_fns_use_compound_fee
+-- The production schema is captured in supabase/baseline; this version is already applied.

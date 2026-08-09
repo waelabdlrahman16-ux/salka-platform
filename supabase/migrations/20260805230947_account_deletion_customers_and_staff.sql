@@ -1,0 +1,2 @@
+-- Historical migration marker: account_deletion_customers_and_staff
+-- The production schema is captured in supabase/baseline; this version is already applied.

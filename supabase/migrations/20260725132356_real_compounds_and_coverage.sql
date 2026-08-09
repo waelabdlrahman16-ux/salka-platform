@@ -1,0 +1,2 @@
+-- Historical migration marker: real_compounds_and_coverage
+-- The production schema is captured in supabase/baseline; this version is already applied.

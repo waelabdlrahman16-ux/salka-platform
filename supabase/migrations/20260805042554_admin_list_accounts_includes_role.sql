@@ -1,0 +1,2 @@
+-- Historical migration marker: admin_list_accounts_includes_role
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: late_order_alert_and_ready_broadcast
+-- The production schema is captured in supabase/baseline; this version is already applied.

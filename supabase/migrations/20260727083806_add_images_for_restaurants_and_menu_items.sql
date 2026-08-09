@@ -1,0 +1,2 @@
+-- Historical migration marker: add_images_for_restaurants_and_menu_items
+-- The production schema is captured in supabase/baseline; this version is already applied.

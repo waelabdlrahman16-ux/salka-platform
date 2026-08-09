@@ -1,0 +1,2 @@
+-- Historical migration marker: drop_dead_wallet_functions
+-- The production schema is captured in supabase/baseline; this version is already applied.

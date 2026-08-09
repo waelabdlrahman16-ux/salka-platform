@@ -1,0 +1,2 @@
+-- Historical migration marker: cancel_order_also_cancels_active_assignment
+-- The production schema is captured in supabase/baseline; this version is already applied.

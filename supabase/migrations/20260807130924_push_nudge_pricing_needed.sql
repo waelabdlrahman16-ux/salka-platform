@@ -1,0 +1,2 @@
+-- Historical migration marker: push_nudge_pricing_needed
+-- The production schema is captured in supabase/baseline; this version is already applied.

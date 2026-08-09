@@ -1,0 +1,2 @@
+-- Historical migration marker: wire_shift_bonus_into_mark_delivered
+-- The production schema is captured in supabase/baseline; this version is already applied.

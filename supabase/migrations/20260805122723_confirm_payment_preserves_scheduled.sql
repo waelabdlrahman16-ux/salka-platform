@@ -1,0 +1,2 @@
+-- Historical migration marker: confirm_payment_preserves_scheduled
+-- The production schema is captured in supabase/baseline; this version is already applied.

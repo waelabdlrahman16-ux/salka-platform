@@ -1,0 +1,2 @@
+-- Historical migration marker: sla_travel_uses_real_per_compound_estimates
+-- The production schema is captured in supabase/baseline; this version is already applied.

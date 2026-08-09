@@ -1,0 +1,2 @@
+-- Historical migration marker: vendor_accept_order_prep_time_choice
+-- The production schema is captured in supabase/baseline; this version is already applied.

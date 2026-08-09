@@ -1,0 +1,2 @@
+-- Historical migration marker: hide_mcd_breakfast_pending_kiosk_prices
+-- The production schema is captured in supabase/baseline; this version is already applied.

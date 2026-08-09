@@ -1,0 +1,2 @@
+-- Historical migration marker: add_sla_to_other_order_creation_paths
+-- The production schema is captured in supabase/baseline; this version is already applied.

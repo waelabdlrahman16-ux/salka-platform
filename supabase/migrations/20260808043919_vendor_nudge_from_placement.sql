@@ -1,0 +1,2 @@
+-- Historical migration marker: vendor_nudge_from_placement
+-- The production schema is captured in supabase/baseline; this version is already applied.

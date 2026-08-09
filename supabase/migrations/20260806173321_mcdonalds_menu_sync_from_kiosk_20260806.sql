@@ -1,0 +1,2 @@
+-- Historical migration marker: mcdonalds_menu_sync_from_kiosk_20260806
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: mark_delivered_uses_real_fee
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: safety_checks_closed_restaurant
+-- The production schema is captured in supabase/baseline; this version is already applied.

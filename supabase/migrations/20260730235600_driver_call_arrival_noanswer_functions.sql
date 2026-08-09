@@ -1,0 +1,2 @@
+-- Historical migration marker: driver_call_arrival_noanswer_functions
+-- The production schema is captured in supabase/baseline; this version is already applied.

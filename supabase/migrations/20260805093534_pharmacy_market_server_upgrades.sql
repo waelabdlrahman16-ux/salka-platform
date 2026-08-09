@@ -1,0 +1,2 @@
+-- Historical migration marker: pharmacy_market_server_upgrades
+-- The production schema is captured in supabase/baseline; this version is already applied.

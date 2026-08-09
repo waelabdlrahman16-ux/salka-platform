@@ -1,0 +1,2 @@
+-- Historical migration marker: wallet_ledger
+-- The production schema is captured in supabase/baseline; this version is already applied.

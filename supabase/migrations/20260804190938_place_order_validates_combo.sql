@@ -1,0 +1,2 @@
+-- Historical migration marker: place_order_validates_combo
+-- The production schema is captured in supabase/baseline; this version is already applied.

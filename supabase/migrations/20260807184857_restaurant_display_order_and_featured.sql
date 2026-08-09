@@ -1,0 +1,2 @@
+-- Historical migration marker: restaurant_display_order_and_featured
+-- The production schema is captured in supabase/baseline; this version is already applied.

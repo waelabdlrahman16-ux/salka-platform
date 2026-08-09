@@ -1,0 +1,2 @@
+-- Historical migration marker: location_only_during_active_delivery
+-- The production schema is captured in supabase/baseline; this version is already applied.

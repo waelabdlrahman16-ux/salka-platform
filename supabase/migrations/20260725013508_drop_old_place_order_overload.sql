@@ -1,0 +1,2 @@
+-- Historical migration marker: drop_old_place_order_overload
+-- The production schema is captured in supabase/baseline; this version is already applied.

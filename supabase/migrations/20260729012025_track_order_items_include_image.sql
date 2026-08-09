@@ -1,0 +1,2 @@
+-- Historical migration marker: track_order_items_include_image
+-- The production schema is captured in supabase/baseline; this version is already applied.

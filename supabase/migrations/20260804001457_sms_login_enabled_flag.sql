@@ -1,0 +1,2 @@
+-- Historical migration marker: sms_login_enabled_flag
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: no_dispatch_before_the_kitchen_accepts
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: mark_instapay_claimed_cod_deposit
+-- The production schema is captured in supabase/baseline; this version is already applied.

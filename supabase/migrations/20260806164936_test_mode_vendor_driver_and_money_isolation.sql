@@ -1,0 +1,2 @@
+-- Historical migration marker: test_mode_vendor_driver_and_money_isolation
+-- The production schema is captured in supabase/baseline; this version is already applied.

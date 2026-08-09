@@ -1,0 +1,2 @@
+-- Historical migration marker: drop_stale_function_overloads
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: notify_admin_on_all_order_events
+-- The production schema is captured in supabase/baseline; this version is already applied.

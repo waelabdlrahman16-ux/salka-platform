@@ -1,0 +1,2 @@
+-- Historical migration marker: update_admin_driver_login_emails_to_salka_domain
+-- The production schema is captured in supabase/baseline; this version is already applied.

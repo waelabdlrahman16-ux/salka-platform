@@ -1,0 +1,2 @@
+-- Historical migration marker: admin_manage_compounds_and_drivers
+-- The production schema is captured in supabase/baseline; this version is already applied.

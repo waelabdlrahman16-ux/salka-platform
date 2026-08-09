@@ -1,0 +1,2 @@
+-- Historical migration marker: suppress_request_item_suggestions_and_slot_time_guard
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: admin_delete_menu_item
+-- The production schema is captured in supabase/baseline; this version is already applied.

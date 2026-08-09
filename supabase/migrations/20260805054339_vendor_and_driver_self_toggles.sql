@@ -1,0 +1,2 @@
+-- Historical migration marker: vendor_and_driver_self_toggles
+-- The production schema is captured in supabase/baseline; this version is already applied.

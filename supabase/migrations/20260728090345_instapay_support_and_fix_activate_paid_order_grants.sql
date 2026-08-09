@@ -1,0 +1,2 @@
+-- Historical migration marker: instapay_support_and_fix_activate_paid_order_grants
+-- The production schema is captured in supabase/baseline; this version is already applied.

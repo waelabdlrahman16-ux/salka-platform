@@ -1,0 +1,2 @@
+-- Historical migration marker: drop_hand_typed_delivery_time
+-- The production schema is captured in supabase/baseline; this version is already applied.

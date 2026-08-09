@@ -1,0 +1,2 @@
+-- Historical migration marker: all_order_paths_respect_opening_hours
+-- The production schema is captured in supabase/baseline; this version is already applied.

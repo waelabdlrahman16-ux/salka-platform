@@ -1,0 +1,2 @@
+-- Historical migration marker: never_dispatch_an_unpriced_order
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: menu_item_combos_and_addon_library
+-- The production schema is captured in supabase/baseline; this version is already applied.

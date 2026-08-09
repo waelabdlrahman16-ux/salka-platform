@@ -1,0 +1,2 @@
+-- Historical migration marker: real_vendor_data_replaces_placeholders
+-- The production schema is captured in supabase/baseline; this version is already applied.

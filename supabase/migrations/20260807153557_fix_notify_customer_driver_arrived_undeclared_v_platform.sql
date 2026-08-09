@@ -1,0 +1,2 @@
+-- Historical migration marker: fix_notify_customer_driver_arrived_undeclared_v_platform
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: remove_public_bucket_listing
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: van_rule_and_cod_deposit_rounding
+-- The production schema is captured in supabase/baseline; this version is already applied.

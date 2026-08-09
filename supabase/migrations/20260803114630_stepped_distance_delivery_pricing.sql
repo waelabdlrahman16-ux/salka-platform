@@ -1,0 +1,2 @@
+-- Historical migration marker: stepped_distance_delivery_pricing
+-- The production schema is captured in supabase/baseline; this version is already applied.

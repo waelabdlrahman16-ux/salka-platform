@@ -1,0 +1,2 @@
+-- Historical migration marker: revoke_anon_on_new_admin_fns
+-- The production schema is captured in supabase/baseline; this version is already applied.

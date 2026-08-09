@@ -1,0 +1,2 @@
+-- Historical migration marker: check_discount_conflict
+-- The production schema is captured in supabase/baseline; this version is already applied.

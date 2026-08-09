@@ -1,0 +1,2 @@
+-- Historical migration marker: revoke_internal_functions_from_public
+-- The production schema is captured in supabase/baseline; this version is already applied.

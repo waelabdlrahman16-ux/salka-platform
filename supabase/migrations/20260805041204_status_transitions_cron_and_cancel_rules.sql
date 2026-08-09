@@ -1,0 +1,2 @@
+-- Historical migration marker: status_transitions_cron_and_cancel_rules
+-- The production schema is captured in supabase/baseline; this version is already applied.

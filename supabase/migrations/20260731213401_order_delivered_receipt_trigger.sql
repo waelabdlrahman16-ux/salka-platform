@@ -1,0 +1,2 @@
+-- Historical migration marker: order_delivered_receipt_trigger
+-- The production schema is captured in supabase/baseline; this version is already applied.

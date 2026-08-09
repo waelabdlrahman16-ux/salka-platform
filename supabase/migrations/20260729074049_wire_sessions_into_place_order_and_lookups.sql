@@ -1,0 +1,2 @@
+-- Historical migration marker: wire_sessions_into_place_order_and_lookups
+-- The production schema is captured in supabase/baseline; this version is already applied.

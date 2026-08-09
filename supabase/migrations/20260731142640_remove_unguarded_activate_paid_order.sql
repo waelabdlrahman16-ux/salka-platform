@@ -1,0 +1,2 @@
+-- Historical migration marker: remove_unguarded_activate_paid_order
+-- The production schema is captured in supabase/baseline; this version is already applied.

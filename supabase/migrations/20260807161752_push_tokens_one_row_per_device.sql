@@ -1,0 +1,2 @@
+-- Historical migration marker: push_tokens_one_row_per_device
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: supervisor_role
+-- The production schema is captured in supabase/baseline; this version is already applied.

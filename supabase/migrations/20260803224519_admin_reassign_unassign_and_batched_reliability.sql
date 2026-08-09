@@ -1,0 +1,2 @@
+-- Historical migration marker: admin_reassign_unassign_and_batched_reliability
+-- The production schema is captured in supabase/baseline; this version is already applied.
