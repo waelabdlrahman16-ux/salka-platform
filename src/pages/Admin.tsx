@@ -2395,9 +2395,9 @@ export default function Admin() {
                       <input type="checkbox" className="w-5 h-5 mt-0.5 shrink-0"
                         checked={!!r.uses_delivery_slots}
                         onChange={async e => {
-                          const res = await rpc('admin_set_vendor_slots',
-                            { p_restaurant_id: r.id, p_enabled: e.target.checked },
-                            { admin_only: 'محتاج صلاحية أدمن' })
+                          const res = await adminAccountDriverAction('setVendorSlots',
+                            { restaurantId: r.id, enabled: e.target.checked },
+                            { admin_only: 'محتاج صلاحية أدمن', vendor_not_found: 'المحل مش موجود' })
                           if (!res.ok) { setActionError(res.error); return }
                           setActionError('')
                           load(true)

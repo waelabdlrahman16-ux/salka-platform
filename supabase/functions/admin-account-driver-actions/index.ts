@@ -2,10 +2,10 @@ import { withSupabase } from "@supabase/server"
 import { fail, isRateLimitError, json } from "../_shared/secure.ts"
 
 type Db = { public: { Tables: Record<string, never>; Views: Record<string, never>; Enums: Record<string, never>; CompositeTypes: Record<string, never>; Functions: Record<string, { Args: Record<string, unknown>; Returns: unknown }> } }
-type Action = "convertStaffRole" | "deleteCustomer" | "deleteCustomerByPhone" | "deleteStaff" | "resetDriverDevice" | "setCustomerBan" | "upsertDriver"
-const ACTIONS = new Set<Action>(["convertStaffRole","deleteCustomer","deleteCustomerByPhone","deleteStaff","resetDriverDevice","setCustomerBan","upsertDriver"])
+type Action = "convertStaffRole" | "deleteCustomer" | "deleteCustomerByPhone" | "deleteStaff" | "resetDriverDevice" | "setCustomerBan" | "setVendorSlots" | "upsertDriver"
+const ACTIONS = new Set<Action>(["convertStaffRole","deleteCustomer","deleteCustomerByPhone","deleteStaff","resetDriverDevice","setCustomerBan","setVendorSlots","upsertDriver"])
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-const KNOWN = ["admin_only","cannot_delete_admin","cannot_delete_self","cannot_target_self","customer_has_live_order","customer_has_wallet_balance","driver_has_live_delivery","driver_holds_cash","driver_not_found","has_live_orders","invalid_phone","invalid_payout_schedule","invalid_role","invalid_vehicle_type","name_required","no_account_for_phone","phone_already_used","phone_required","profile_not_found","target_not_convertible"]
+const KNOWN = ["admin_only","cannot_delete_admin","cannot_delete_self","cannot_target_self","customer_has_live_order","customer_has_wallet_balance","driver_has_live_delivery","driver_holds_cash","driver_not_found","has_live_orders","invalid_phone","invalid_payout_schedule","invalid_role","invalid_vehicle_type","name_required","no_account_for_phone","phone_already_used","phone_required","profile_not_found","target_not_convertible","vendor_not_found"]
 function positiveId(v: unknown): number | null { return Number.isInteger(v) && Number(v)>0 && Number(v)<=2_147_483_647 ? Number(v) : null }
 function clean(v: unknown,max: number): string | null { if(typeof v!=="string")return null;const s=v.trim();return s&&s.length<=max?s:null }
 function missing(error: { code?: string; message?: string } | null): boolean { return error?.code==="PGRST202"||!!error?.message?.includes("Could not find the function") }
@@ -38,6 +38,9 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
   }else if(action==="deleteCustomerByPhone"){
     const phone=clean(input.phone,24);if(!phone||(input.force!=null&&typeof input.force!=="boolean"))return json({error:"invalid_account_input"},400)
     fn="admin_delete_customer_by_phone";args={p_phone:phone,p_force:input.force===true}
+  }else if(action==="setVendorSlots"){
+    const restaurantId=positiveId(input.restaurantId);if(!restaurantId||typeof input.enabled!=="boolean")return json({error:"invalid_account_input"},400)
+    fn="admin_set_vendor_slots";args={p_restaurant_id:restaurantId,p_enabled:input.enabled}
   }else if(action==="resetDriverDevice"){
     const driverId=positiveId(input.driverId);if(!driverId)return json({error:"invalid_account_input"},400)
     fn="admin_reset_driver_device";args={p_driver_id:driverId}
