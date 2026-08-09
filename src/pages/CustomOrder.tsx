@@ -196,7 +196,7 @@ export default function CustomOrder() {
   // a mandatory slot step exists only after writing half a shopping list is
   // the single most annoying thing about the old flow.
   useEffect(() => {
-    const markets = vendors.filter(v => v.vendor_type === 'supermarket')
+    const markets = vendors.filter(v => v.uses_delivery_slots)
     if (!markets.length) return
     Promise.all(markets.map(v =>
       publicCatalog<Slot[]>('openSlots', { restaurantId: v.id })
@@ -249,7 +249,7 @@ export default function CustomOrder() {
     supabase.from('menu_items').select('*').eq('restaurant_id', vendor.id).eq('available', true)
       .then(({ data }) => setKnownItems((data as MenuItem[]) ?? []))
     setSlot(null)
-    if (vendor.vendor_type === 'supermarket') {
+    if (vendor.uses_delivery_slots) {
       publicCatalog<Slot[]>('openSlots', { restaurantId: vendor.id })
         .then(res => setSlots(res.ok ? res.data : []))
     } else {
@@ -304,7 +304,7 @@ export default function CustomOrder() {
   const selectedCompound = compounds.find(c => c.id === compoundId)
   const { fee: deliveryFee, quote, loading: feeLoading, failed: feeFailed, retry: retryFee } =
     useDeliveryQuote(compoundId)
-  const scheduled = vendor?.vendor_type === 'supermarket'
+  const scheduled = !!vendor?.uses_delivery_slots
 
   // Only real products are searchable or addable. is_shelf_label is now a real
   // column, so this is no longer the `name !== category` guess -- which still
@@ -428,7 +428,11 @@ export default function CustomOrder() {
         <div className="space-y-3">
           {shownVendors.map(v => {
             const art = artFor(v.vendor_type === 'pharmacy' ? 'أدوية' : 'خضار وفاكهة')
-            const isMarket = v.vendor_type === 'supermarket'
+            // Slotted or not, NOT market or not: a market with slots turned off
+            // delivers as soon as it is picked, exactly like the pharmacy, and
+            // must say so on the card rather than promising windows it no
+            // longer has.
+            const usesSlots = !!v.uses_delivery_slots
             const vSlots = vendorSlots[v.id] ?? []
             const next = vSlots[0]
             const today = next?.scheduled_date === new Date().toISOString().slice(0, 10)
@@ -449,7 +453,7 @@ export default function CustomOrder() {
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-2">
                     <span className="font-bold text-[15px] truncate">{v.name}</span>
-                    {isMarket
+                    {usesSlots
                       ? <span className="shrink-0 text-[10px] font-bold text-sandink bg-sand/20 rounded px-1.5 py-0.5">فترات محددة</span>
                       : <span className="shrink-0 text-[10px] font-bold text-sea bg-sea/10 rounded px-1.5 py-0.5">مفتوحة</span>}
                   </span>
@@ -458,7 +462,7 @@ export default function CustomOrder() {
                   )}
                   <span className="block text-xs text-mist mt-1">
                     {deliveryFee !== null ? `التوصيل ${deliveryFee} ج.م` : 'التوصيل حسب مكانك'}
-                    {isMarket
+                    {usesSlots
                       ? next ? ` · أقرب فترة ${today ? '' : 'بكرة '}${next.start_time.slice(0, 5)}` : ' · مفيش فترات دلوقتي'
                       : ` · خلال ${v.prep_minutes + 20} دقيقة تقريبًا`}
                   </span>

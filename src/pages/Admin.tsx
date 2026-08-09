@@ -2380,8 +2380,38 @@ export default function Admin() {
                     for McDonald's, all above the first item. It now sits beside
                     the category it belongs to, inside MenuItemsPanel. */}
 
-                {expanded && r.vendor_type === 'supermarket' && (
+                {/* Gated on the toggle OR the type, not the type alone: once a
+                    supermarket turns slots off it must still be able to turn
+                    them back on, and any other vendor that has them on needs
+                    the panel to switch them off. */}
+                {expanded && (r.vendor_type === 'supermarket' || r.uses_delivery_slots) && (
                   <div className="mt-4 border-t border-line pt-3">
+                    {/* The switch comes first, because it decides whether
+                        anything below it matters. Off = this vendor takes
+                        on-demand orders priced by distance like every other
+                        vendor; the slot rows stay configured underneath, so
+                        turning it back on restores them unchanged. */}
+                    <label className="flex items-start gap-2.5 mb-3 cursor-pointer">
+                      <input type="checkbox" className="w-5 h-5 mt-0.5 shrink-0"
+                        checked={!!r.uses_delivery_slots}
+                        onChange={async e => {
+                          const res = await rpc('admin_set_vendor_slots',
+                            { p_restaurant_id: r.id, p_enabled: e.target.checked },
+                            { admin_only: 'محتاج صلاحية أدمن' })
+                          if (!res.ok) { setActionError(res.error); return }
+                          setActionError('')
+                          load(true)
+                        }} />
+                      <span className="min-w-0">
+                        <span className="text-sm font-semibold block">التوصيل بفترات محددة</span>
+                        <span className="text-xs text-mist block">
+                          {r.uses_delivery_slots
+                            ? 'الزبون لازم يختار فترة قبل ما يطلب'
+                            : 'توصيل عادي بالمسافة زي باقي المحلات'}
+                        </span>
+                      </span>
+                    </label>
+                    {r.uses_delivery_slots && (<>
                     <p className="text-sm text-mist mb-2">فترات التوصيل</p>
                     <div className="space-y-2">
                       {slots.filter(sl => sl.restaurant_id === r.id).map(sl => (
@@ -2408,6 +2438,7 @@ export default function Admin() {
                     <p className="text-xs text-mist mt-2 leading-relaxed">
                       السعة = أقصى عدد طلبات في الفترة دي. اربطها بعدد المندوبين المتاحين وقتها مش بسرعة تجهيز السوبر ماركت.
                     </p>
+                    </>)}
                   </div>
                 )}
 

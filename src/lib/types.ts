@@ -20,6 +20,13 @@ export interface Restaurant {
   /** When it opens next, from vendor_next_open_at(). Null when already open. */
   next_open_at?: string | null
   vendor_type: string; prep_minutes: number
+  /** Whether this vendor delivers in fixed time windows instead of as soon as
+   *  the order is ready. The scheduling UI reads THIS, never vendor_type: the
+   *  supermarket was the only slotted vendor, so `vendor_type === 'supermarket'`
+   *  was hardcoded in three places and the toggle admin_set_vendor_slots writes
+   *  had no effect on the customer. Absent from rows fetched by an RPC that does
+   *  not select it, so treat undefined as false. */
+  uses_delivery_slots?: boolean
   order_mode: 'catalog' | 'custom_request' | 'pickup_request'
   archived: boolean; logo_url: string | null; max_delivery_km: number | null
   // Supplied by restaurants_for_compound() and restaurant_public(). `rating` is
