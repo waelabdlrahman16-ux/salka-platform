@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { supabase } from './supabase'
 import { customerSessionAccess } from './customerSessionAccess'
+import { customerAccount } from './customerAccounts'
 
 interface Customer { id: number; name: string | null; phone: string | null; email?: string | null }
 interface CustomerAuthState {
@@ -27,14 +28,14 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   async function refreshFromAuthSession(): Promise<boolean> {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return false
-    const { data, error } = await supabase.rpc('my_customer_profile')
+    const res = await customerAccount<Customer | null>('myProfile')
     // Returning false on a failed READ makes the caller fall through to the
     // legacy-token path and, on a Google/email customer who has no legacy row,
     // ends with customer === null -- i.e. a signed-in person shown the signed-out
     // app. Returning true keeps them in their existing session; the profile
     // simply refreshes on the next call.
-    if (error) return true
-    if (data) { setCustomer(data); return true }
+    if (!res.ok) return true
+    if (res.data) { setCustomer(res.data); return true }
     return false
   }
 
@@ -74,8 +75,8 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
-        const { data, error } = await supabase.rpc('my_customer_profile')
-        if (!error && data) setCustomer(data)
+        const res = await customerAccount<Customer | null>('myProfile')
+        if (res.ok && res.data) setCustomer(res.data)
       }
     })
     return () => sub.subscription.unsubscribe()
@@ -148,8 +149,8 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function updateName(name: string) {
-    const { error } = await supabase.rpc('update_my_customer_name', { p_name: name })
-    if (error) return { ok: false, error: error.message }
+    const res = await customerAccount('updateName', { name })
+    if (!res.ok) return { ok: false, error: res.error }
     setCustomer(c => c ? { ...c, name } : c)
     return { ok: true }
   }

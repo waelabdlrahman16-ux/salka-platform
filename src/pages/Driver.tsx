@@ -14,6 +14,7 @@ import SwipeToConfirm from '../components/SwipeToConfirm'
 import Toggle from '../components/Toggle'
 import { useSheets } from '../components/ActionSheets'
 import { rpc, describeError } from '../lib/rpc'
+import { staffOperation } from '../lib/staffOperations'
 import { haversineKm } from '../lib/geo'
 import { vendorNoun } from '../lib/vendorWords'
 import { getDeviceId, getDeviceLabel } from '../lib/deviceId'
@@ -289,7 +290,11 @@ export default function DriverPage() {
         withTimeout(supabase.from('shifts').select('*')
           .eq('driver_id', id).gte('shift_date', today)
           .neq('status', 'cancelled').order('shift_date').limit(10)),
-        withTimeout(supabase.rpc('open_swaps')),
+        // Mapped back to supabase's { data, error } shape on purpose: this row
+        // is one of nine destructured together below, and the swap board reads
+        // swRes.error like every sibling.
+        withTimeout(staffOperation<SwapRequest[]>('openSwaps')
+          .then(r => r.ok ? { data: r.data, error: null } : { data: null, error: new Error(r.code) })),
         withTimeout(supabase.from('shift_swap_requests').select('id, shift_id').eq('requested_by', id).eq('status', 'open')),
         withTimeout(supabase.from('shift_swap_requests').select('shift_id').eq('requested_by', id).eq('status', 'escalated')),
         withTimeout(supabase.from('settlement_requests').select('id').eq('driver_id', id).eq('status', 'pending').limit(1)),
@@ -612,29 +617,29 @@ export default function DriverPage() {
     setRequestingSettlement(true)
     // The error was never read, so a failed request still showed the success
     // message and hid the button until the next poll.
-    const { error } = await supabase.rpc('request_early_settlement')
+    const res = await staffOperation('requestEarlySettlement')
     setRequestingSettlement(false)
-    if (error) { await alertSheet('مش قادرين نبعت طلب التسوية دلوقتي، جرب تاني'); return }
+    if (!res.ok) { await alertSheet('مش قادرين نبعت طلب التسوية دلوقتي، جرب تاني'); return }
     setSettlementSent(true)
   }
 
   async function requestSwap(shiftId: number) {
-    const { error } = await supabase.rpc('request_swap', {
-      p_shift_id: shiftId, p_reason: swapReason[shiftId] || ''
+    const res = await staffOperation('requestSwap', {
+      shiftId, reason: swapReason[shiftId] || ''
     })
-    if (error) await alertSheet(describeError(error?.message))
+    if (!res.ok) await alertSheet(res.error)
     load(true)
   }
 
   async function acceptSwap(requestId: number) {
-    const { error } = await supabase.rpc('accept_swap', { p_request_id: requestId })
-    if (error) await alertSheet(error.message.includes('unavailable') ? 'حد تاني سبقك' : 'حصل خطأ')
+    const res = await staffOperation('acceptSwap', { requestId })
+    if (!res.ok) await alertSheet(res.code === 'request_unavailable' ? 'حد تاني سبقك' : 'حصل خطأ')
     load(true)
   }
 
   async function escalate(requestId: number) {
-    const { error } = await supabase.rpc('escalate_swap', { p_request_id: requestId })
-    if (error) { await alertSheet(describeError(error?.message)); return }
+    const res = await staffOperation('escalateSwap', { requestId })
+    if (!res.ok) { await alertSheet(res.error); return }
     load(true)
   }
 

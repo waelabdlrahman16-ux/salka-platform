@@ -3,10 +3,11 @@ import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
 import { customerSessionAccess } from '../lib/customerSessionAccess'
+import { customerAccount } from '../lib/customerAccounts'
 import { homeFor, useAuth } from '../lib/auth'
 import { orderStatusLabel } from '../lib/statusLabels'
 import { useSheets } from '../components/ActionSheets'
-import { describeError, rpc } from '../lib/rpc'
+import { describeError } from '../lib/rpc'
 import { SUPPORT_WHATSAPP_URL } from '../lib/support'
 import type { Compound } from '../lib/types'
 import VerifiedPhoneEditor from '../components/VerifiedPhoneEditor'
@@ -40,19 +41,19 @@ export default function Profile() {
   const [addressError, setAddressError] = useState('')
 
   async function load() {
-    const { data, error } = await supabase.rpc('my_customer_addresses')
+    const res = await customerAccount<Address[]>('myAddresses')
     // A failed read rendered as "you have no saved addresses", which is the
     // same screen as genuinely having none -- so the customer re-enters an
     // address they already saved, and now has it twice.
-    if (error) { setAddressError('مش قادرين نجيب عناوينك دلوقتي — جرب تاني'); return }
+    if (!res.ok) { setAddressError('مش قادرين نجيب عناوينك دلوقتي — جرب تاني'); return }
     setAddressError('')
-    setAddresses((data as Address[]) ?? [])
+    setAddresses(res.data ?? [])
   }
 
   useEffect(() => {
     if (!customer) return
     load()
-    supabase.rpc('my_customer_orders').then(({ data }) => setOrders((data as OrderRow[]) ?? []))
+    customerAccount<OrderRow[]>('myOrders').then(res => setOrders(res.ok ? res.data ?? [] : []))
     supabase.from('compounds').select('*').eq('active', true).order('name').then(({ data }) => setCompounds(data ?? []))
     if (customer.phone) {
       // Pass the session token like checkout does. Without it the RPC falls
@@ -81,12 +82,12 @@ export default function Profile() {
     if (!compoundId || !unit.trim()) return
     setSaving(true); setAddressError('')
     const res = editing === 'new'
-      ? await rpc('add_customer_address', {
-          p_label: label, p_compound_id: compoundId, p_unit_number: unit, p_notes: notes || null
+      ? await customerAccount('addAddress', {
+          label, compoundId, unitNumber: unit, notes: notes || null, isDefault: false
         })
       : editing
-        ? await rpc('update_customer_address', {
-            p_id: editing.id, p_label: label, p_compound_id: compoundId, p_unit_number: unit, p_notes: notes || null
+        ? await customerAccount('updateAddress', {
+            id: editing.id, label, compoundId, unitNumber: unit, notes: notes || null
           })
         : { ok: true as const, data: null }
     setSaving(false)
@@ -98,14 +99,14 @@ export default function Profile() {
   async function remove(a: Address) {
     if (!(await confirmSheet({ title: `حذف «${a.label}»؟`, danger: true, confirmLabel: 'احذف' }))) return
     setAddressError('')
-    const res = await rpc('delete_customer_address', { p_id: a.id })
+    const res = await customerAccount('deleteAddress', { id: a.id })
     if (!res.ok) { setAddressError(res.error); return }
     load()
   }
 
   async function makeDefault(a: Address) {
     setAddressError('')
-    const res = await rpc('set_default_address', { p_id: a.id })
+    const res = await customerAccount('setDefaultAddress', { id: a.id })
     if (!res.ok) { setAddressError(res.error); return }
     load()
   }

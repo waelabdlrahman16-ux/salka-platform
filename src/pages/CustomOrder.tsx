@@ -12,6 +12,7 @@ import type { Compound, MenuItem, Restaurant, Slot } from '../lib/types'
 import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
 import { publicCatalog } from '../lib/publicCatalog'
 import { customerSessionAccess } from '../lib/customerSessionAccess'
+import { customerAccount } from '../lib/customerAccounts'
 
 export default function CustomOrder() {
   const fid = useId()
@@ -101,9 +102,9 @@ export default function CustomOrder() {
 
   useEffect(() => {
     if (!customer) { setSavedAddresses([]); return }
-    supabase.rpc('my_customer_addresses').then(({ data, error: err }) => {
-      if (err) return
-      const list = (data as typeof savedAddresses) ?? []
+    customerAccount<typeof savedAddresses>('myAddresses').then(res => {
+      if (!res.ok) return
+      const list = res.data ?? []
       setSavedAddresses(list)
       const preferred = list.find(a => a.is_default) ?? list[0]
       if (!preferred) return
