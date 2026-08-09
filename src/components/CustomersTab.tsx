@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { rpc } from '../lib/rpc'
+import { adminAccountDriverAction } from '../lib/adminAccountDriverActions'
 import { orderStatusLabel } from '../lib/statusLabels'
 import Toggle from './Toggle'
 import { useSheets } from './ActionSheets'
@@ -317,7 +318,7 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
       danger: true,
     })) return
     setBanBusy(true); setBanError('')
-    const res = await rpc('admin_delete_customer_by_phone', { p_phone: c.phone }, {
+    const res = await adminAccountDriverAction('deleteCustomerByPhone', { phone: c.phone }, {
       no_account_for_phone: 'الرقم ده مالوش حساب دخول أصلًا — ده سجل طلبات بس، ومفيش حاجة تتمسح',
       customer_has_live_order: 'عنده طلب شغال دلوقتي — استنى لما يخلص',
       admin_only: 'مش من صلاحياتك',
@@ -331,7 +332,7 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
           danger: true,
         })) return
         setBanBusy(true)
-        const forced = await rpc('admin_delete_customer_by_phone', { p_phone: c.phone, p_force: true })
+        const forced = await adminAccountDriverAction('deleteCustomerByPhone', { phone: c.phone, force: true })
         setBanBusy(false)
         if (!forced.ok) { setBanError(forced.error); return }
         onClose(); onChanged()
@@ -356,7 +357,7 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
       if (reason === null) return
       setBanError('')
       setBanBusy(true)
-      const res = await rpc('admin_set_customer_ban', { p_phone: c.phone, p_banned: true, p_reason: reason })
+      const res = await adminAccountDriverAction('setCustomerBan', { phone: c.phone, banned: true, reason })
       setBanBusy(false)
       if (!res.ok) { setBanError(res.error); return }
       onChanged()
@@ -364,7 +365,7 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
     }
     setBanError('')
     setBanBusy(true)
-    const res = await rpc('admin_set_customer_ban', { p_phone: c.phone, p_banned: false })
+    const res = await adminAccountDriverAction('setCustomerBan', { phone: c.phone, banned: false })
     setBanBusy(false)
     if (!res.ok) { setBanError(res.error); return }
     onChanged()

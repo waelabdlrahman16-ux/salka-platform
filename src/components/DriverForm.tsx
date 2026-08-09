@@ -1,5 +1,5 @@
 import { useId, useState } from 'react'
-import { rpc } from '../lib/rpc'
+import { adminAccountDriverAction } from '../lib/adminAccountDriverActions'
 import type { Driver } from '../lib/types'
 import Toggle from './Toggle'
 
@@ -43,15 +43,15 @@ export default function DriverForm({ initial, onDone, onCancel }: {
 
   async function save() {
     setBusy(true); setError('')
-    const res = await rpc('admin_upsert_driver', {
-      p_id: f.id,
-      p_name: f.name.trim(),
-      p_phone: f.phone.trim(),
-      p_vehicle_type: f.vehicle_type,
-      p_vehicle_plate: f.vehicle_plate.trim(),
-      p_instapay_number: f.instapay_number.trim() || null,
-      p_payout_schedule: f.payout_schedule,
-      p_active: f.active,
+    const res = await adminAccountDriverAction('upsertDriver', {
+      id: f.id,
+      name: f.name.trim(),
+      phone: f.phone.trim(),
+      vehicleType: f.vehicle_type,
+      vehiclePlate: f.vehicle_plate.trim(),
+      instapayNumber: f.instapay_number.trim() || null,
+      payoutSchedule: f.payout_schedule,
+      active: f.active,
     }, {
       phone_already_used: 'الرقم ده مستخدم لمندوب تاني — رقمين على مندوب واحد معناه إن الدسباتش هيكلم الغلط',
       name_required: 'اكتب اسم المندوب',
