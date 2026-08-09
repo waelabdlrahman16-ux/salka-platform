@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useId } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { customerOrderCreation } from '../lib/customerOrderCreation'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
@@ -10,8 +9,6 @@ import Icon from '../components/Icon'
 import { getSessionToken, useCustomerAuth } from '../lib/customerAuth'
 import type { Compound, MenuItem, Restaurant, Slot } from '../lib/types'
 import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
-import { publicCatalog } from '../lib/publicCatalog'
-import { customerSessionAccess } from '../lib/customerSessionAccess'
 
 export default function CustomOrder() {
   const fid = useId()
@@ -23,9 +20,6 @@ export default function CustomOrder() {
   const typeFilter = searchParams.get('type')
   const vendorParam = Number(searchParams.get('vendor')) || null
   const [vendors, setVendors] = useState<Restaurant[]>([])
-  /** The vendor read failed. Distinct from "no vendor is open" -- the two
-   *  look identical on screen and mean opposite things. */
-  const [loadFailed, setLoadFailed] = useState(false)
   const [vendor, setVendor] = useState<Restaurant | null>(null)
   // The vendor's known items. Deliberately used as typing shortcuts and NOT as
   // a priced catalogue: of the supermarket's 13 rows, nine are shelf labels
@@ -121,10 +115,7 @@ export default function CustomOrder() {
   useEffect(() => {
     if (!isValidEgyptPhone(phone) || addressLoaded) return
     const t = setTimeout(async () => {
-      const result = await customerSessionAccess<{
-        customer_name: string | null; unit_number: string | null; address_notes: string | null; compound_id: number | null
-      } | null>('lastAddress', { phone, sessionToken: getSessionToken() })
-      const data = result.ok ? result.data : null
+      const { data } = await supabase.rpc('last_address_for_phone', { p_phone: phone, p_session_token: getSessionToken() })
       // Was set inside `if (data)`, so a first-time customer with no saved
       // address never latched the flag and this debounced RPC re-fired on every
       // subsequent keystroke in the phone field, forever.
@@ -141,29 +132,8 @@ export default function CustomOrder() {
   }, [phone])
 
   useEffect(() => {
-    // NOT `.eq('is_open', true)`. That column stopped being the authority when
-    // opening hours landed -- vendor_is_open_now() never reads it, and nothing
-    // resets it to true, so every live vendor sits at false permanently. This
-    // filter returned ZERO vendors while صيدلية and سوبرماركت were both open and
-    // submit_custom_order would have accepted the order: the whole custom-order
-    // revenue line, invisible. Measured 2026-08-07. The server's computed value
-    // comes back on `is_open` from vendor_open_states(), same as the home screen.
-    Promise.all([
-      supabase.from('restaurants').select('*').eq('order_mode', 'custom_request').eq('archived', false),
-      supabase.rpc('vendor_open_states'),
-    ]).then(([r, s]) => {
-      // Was `setVendors([])`, which renders the empty state -- a customer sees
-      // "nothing available" and leaves, when in fact the read failed. Offers.tsx
-      // already distinguishes the two; this screen is the custom-order revenue
-      // line and did not.
-      if (r.error || s.error) { setLoadFailed(true); return }
-      setLoadFailed(false)
-      const states = new Map(
-        ((s.data ?? []) as { id: number; is_open: boolean; next_open_at: string | null }[]).map(v => [v.id, v]))
-      setVendors(((r.data ?? []) as Restaurant[])
-        .filter(v => states.get(v.id)?.is_open)
-        .map(v => ({ ...v, is_open: true, next_open_at: states.get(v.id)?.next_open_at ?? null })))
-    })
+    supabase.from('restaurants').select('*').eq('order_mode', 'custom_request').eq('is_open', true).eq('archived', false)
+      .then(({ data }) => setVendors((data as Restaurant[]) ?? []))
     supabase.from('compounds').select('*').eq('active', true).order('direction').order('distance_km')
       .then(({ data }) => setCompounds(data ?? []))
   }, [])
@@ -196,23 +166,22 @@ export default function CustomOrder() {
   // a mandatory slot step exists only after writing half a shopping list is
   // the single most annoying thing about the old flow.
   useEffect(() => {
-    const markets = vendors.filter(v => v.vendor_type === 'supermarket')
+    const markets = vendors.filter(v => v.uses_delivery_slots === true)
     if (!markets.length) return
     Promise.all(markets.map(v =>
-      publicCatalog<Slot[]>('openSlots', { restaurantId: v.id })
-        .then(res => [v.id, res.ok ? res.data : []] as const)
+      supabase.rpc('open_slots', { p_restaurant_id: v.id })
+        .then(({ data }) => [v.id, (data as Slot[]) ?? []] as const)
     )).then(pairs => setVendorSlots(Object.fromEntries(pairs)))
   }, [vendors])
 
   useEffect(() => {
     if (!vendor) { setPopular([]); setLastRequest(null); return }
-    publicCatalog<string[]>('popularItems', { restaurantId: vendor.id })
-      .then(res => setPopular(res.ok ? res.data : []))
+    supabase.rpc('popular_request_items', { p_restaurant_id: vendor.id })
+      .then(({ data }) => setPopular((data as string[]) ?? []))
     // Returns null for anyone we cannot identify -- it refuses to answer to a
     // typed phone number, unlike every other lookup here.
-    customerSessionAccess<typeof lastRequest>('lastRequest', {
-      restaurantId: vendor.id, sessionToken: getSessionToken()
-    }).then(res => setLastRequest(res.ok ? res.data : null))
+    supabase.rpc('my_last_request', { p_restaurant_id: vendor.id, p_session_token: getSessionToken() })
+      .then(({ data }) => setLastRequest((data as typeof lastRequest) ?? null))
   }, [vendor, customer?.id])
 
   // Everything the customer has built belongs to ONE vendor. Switching vendors
@@ -249,9 +218,8 @@ export default function CustomOrder() {
     supabase.from('menu_items').select('*').eq('restaurant_id', vendor.id).eq('available', true)
       .then(({ data }) => setKnownItems((data as MenuItem[]) ?? []))
     setSlot(null)
-    if (vendor.vendor_type === 'supermarket') {
-      publicCatalog<Slot[]>('openSlots', { restaurantId: vendor.id })
-        .then(res => setSlots(res.ok ? res.data : []))
+    if (vendor.uses_delivery_slots === true) {
+      supabase.rpc('open_slots', { p_restaurant_id: vendor.id }).then(({ data }) => setSlots((data as Slot[]) ?? []))
     } else {
       setSlots([])
     }
@@ -304,7 +272,10 @@ export default function CustomOrder() {
   const selectedCompound = compounds.find(c => c.id === compoundId)
   const { fee: deliveryFee, quote, loading: feeLoading, failed: feeFailed, retry: retryFee } =
     useDeliveryQuote(compoundId)
-  const scheduled = vendor?.vendor_type === 'supermarket'
+  // Driven by the vendor's own switch. Hardcoding `vendor_type === 'supermarket'`
+  // meant slots could not be turned off for a market that no longer wanted them,
+  // and could not be turned on for anyone else.
+  const scheduled = vendor?.uses_delivery_slots === true
 
   // Only real products are searchable or addable. is_shelf_label is now a real
   // column, so this is no longer the `name !== category` guess -- which still
@@ -372,25 +343,23 @@ export default function CustomOrder() {
   async function submit() {
     if (!vendor || !valid) return
     setSaving(true); setError('')
-    const result = await customerOrderCreation<{ token: string; id: number }>('custom', {
-      restaurantId: vendor.id,
-      customerName: name.trim(),
-      customerPhone: phone.trim(),
-      zone: selectedCompound?.name ?? '',
-      unitNumber: unit.trim(),
-      addressNotes: addrNotes.trim(),
-      deliveryFee: deliveryFee ?? 0, // server recomputes and ignores this
-      items: lines,
-      requestNotes: notes.trim(),
-      compoundId,
-      sessionToken: getSessionToken(),
-      slotId: slot?.id ?? null,
-      scheduledDate: slot?.scheduled_date ?? null,
-      prescriptionPath: rxPath
+    const { data, error: err } = await supabase.rpc('submit_custom_order', {
+      p_restaurant_id: vendor.id,
+      p_customer_name: name.trim(),
+      p_customer_phone: phone.trim(),
+      p_zone: selectedCompound?.name ?? '',
+      p_unit_number: unit.trim(),
+      p_address_notes: addrNotes.trim(),
+      p_delivery_fee: deliveryFee ?? 0, // server recomputes and ignores this
+      p_request_items: lines,
+      p_request_notes: notes.trim(),
+      p_compound_id: compoundId,
+      p_session_token: getSessionToken(),
+      p_slot_id: slot?.id ?? null,
+      p_scheduled_date: slot?.scheduled_date ?? null,
+      p_prescription_path: rxPath
     })
-    const data = result.ok ? result.data : null
-    const err = result.ok ? null : { message: result.code }
-    if (!result.ok || !data?.token) {
+    if (err || !data?.token) {
       setSaving(false)
       setError(err?.message.includes('slot_full') ? 'الفترة دي اتملت، اختار فترة تانية' : 'حصل خطأ، جرب تاني')
       return
@@ -411,13 +380,6 @@ export default function CustomOrder() {
         </h1>
         <p className="text-mist text-sm mb-4">قول لنا اللي محتاجه، وإحنا هنجهزه معاك</p>
 
-        {loadFailed && (
-          <div className="card p-4 mb-4 border-sand/60 bg-sand/10">
-            <p className="text-sm text-sandink font-semibold">📡 مش قادرين نحمّل المحلات دلوقتي</p>
-            <p className="text-xs text-mist mt-1">اتأكد إن النت شغال — ده مش معناه إن كله مقفول.</p>
-          </div>
-        )}
-
         {/* Rebuilt as answer-shaped cards rather than two emoji tiles.
             The old chooser was a screen that ASKED a question ("pharmacy or
             market?") while withholding every fact needed to answer it: whether
@@ -428,7 +390,7 @@ export default function CustomOrder() {
         <div className="space-y-3">
           {shownVendors.map(v => {
             const art = artFor(v.vendor_type === 'pharmacy' ? 'أدوية' : 'خضار وفاكهة')
-            const isMarket = v.vendor_type === 'supermarket'
+            const isMarket = v.uses_delivery_slots === true
             const vSlots = vendorSlots[v.id] ?? []
             const next = vSlots[0]
             const today = next?.scheduled_date === new Date().toISOString().slice(0, 10)

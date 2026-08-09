@@ -3,16 +3,11 @@ import { supabase } from '../lib/supabase'
 import { useDismissable } from '../lib/useDismissable'
 import type { Assignment, Compound, Complaint, Driver, DeliverySlotRow, Earning, LiveDelivery, MenuItem, Order, OrderRating, Reliability, Restaurant, Setting, SettlementRequest, Shift, VendorCoverage } from '../lib/types'
 import { ping, askNotificationPermission } from '../lib/notify'
-import { audioBlocked, unlockAudio } from '../lib/audioUnlock'
 import { registerPush, persistPushToken } from '../lib/push'
 import { uploadVendorImage } from '../lib/upload'
 import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel,
-         ORDER_STATUSES, CLOSED_ORDER_STATUSES, UNPAID_ORDER_STATUSES, type OrderStatus, isCancelled, cancelReasonLabel } from '../lib/statusLabels'
+         ORDER_STATUSES, CLOSED_ORDER_STATUSES, UNPAID_ORDER_STATUSES, type OrderStatus } from '../lib/statusLabels'
 import { rpc } from '../lib/rpc'
-import { adminFinancialAction } from '../lib/adminFinancialActions'
-import { adminAccountDriverAction } from '../lib/adminAccountDriverActions'
-import { dispatchOperation } from '../lib/dispatchOperations'
-import { vendorOperation } from '../lib/vendorOperations'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import Icon from '../components/Icon'
 import BannersAdmin from '../components/BannersAdmin'
@@ -30,8 +25,6 @@ import PhoneOrderForm from '../components/PhoneOrderForm'
 import CompoundsTab from '../components/CompoundsTab'
 import DriverForm, { driverToForm } from '../components/DriverForm'
 import LiveDeliveryDetail from '../components/LiveDeliveryDetail'
-import Toggle from '../components/Toggle'
-import { useSheets } from '../components/ActionSheets'
 
 function StarRow({ n }: { n: number }) {
   return (
@@ -82,7 +75,7 @@ function AccountActionsMenu({ busy, onChangeEmail, onResetPassword, onCustomPass
   )
 }
 
-type Tab = 'daily' | 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet' | 'banners' | 'refunds' | 'customers' | 'compounds'
+type Tab = 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet' | 'banners' | 'refunds' | 'customers' | 'compounds'
 
 // What is actually owed back, decided by the server. A COD order only ever took
 // the 50% deposit, so refunding `total` would be a gift -- and that is exactly
@@ -126,7 +119,6 @@ const TABS: { key: Tab; label: string; group: TabGroup }[] = [
   { key: 'orders', label: 'كل الطلبات', group: 'now' },
   { key: 'complaints', label: 'الشكاوى', group: 'now' },
 
-  { key: 'daily', label: '📊 تقرير اليوم', group: 'money' },
   { key: 'earnings', label: 'الأرباح', group: 'money' },
   { key: 'payouts', label: 'مدفوعات المندوبين', group: 'money' },
   { key: 'refunds', label: 'الاستردادات', group: 'money' },
@@ -185,7 +177,6 @@ function shiftDayKey(key: string, delta: number): string {
 type OrderDateFilter = 'today' | 'yesterday' | 'older' | 'all'
 
 export default function Admin() {
-  const { confirmSheet, promptSheet, alertSheet, sheetElement } = useSheets()
   const [tab, setTab] = useState<Tab>('unassigned')
   const [openGroup, setOpenGroup] = useState<TabGroup>('now')
   // null = closed, undefined-id form = adding, populated = editing.
@@ -253,9 +244,6 @@ export default function Admin() {
   const [accountBusy, setAccountBusy] = useState<string | null>(null)
   const [newCreds, setNewCreds] = useState<{ email: string; password: string } | null>(null)
   const credsRef = useDismissable(() => setNewCreds(null), !!newCreds)
-  // «اتنسخ ✓» flash on the creds-modal copy button; the 1.5s timeout resets it.
-  const [credsCopied, setCredsCopied] = useState(false)
-  const [rankDraft, setRankDraft] = useState<Record<number, string>>({})
   const [newRestaurant, setNewRestaurant] = useState({ name: '', description: '', category: '', vendor_type: 'restaurant', prep_minutes: '20' })
   const [uploadingImage, setUploadingImage] = useState<string | null>(null)
   const [imageError, setImageError] = useState<string | null>(null)
@@ -517,21 +505,6 @@ export default function Admin() {
     return () => clearInterval(t)
   }, [])
 
-  // WHY THIS EXISTS. Every alert on this page fires from a polling timer, and a
-  // browser will not play a sound until the page has received a real user
-  // gesture. An admin tab is opened and then watched, not clicked -- so the
-  // AudioContext stays suspended all day, showNotification still draws the
-  // banner, and the beep is silently skipped. On 2026-08-07 a stalled-order
-  // alert appeared at 18:10 with no sound and read as a broken notification.
-  // There is no way to unlock audio without a tap, so ask for the tap.
-  const [soundBlocked, setSoundBlocked] = useState(false)
-  useEffect(() => {
-    const check = () => setSoundBlocked(audioBlocked())
-    check()
-    const t = setInterval(check, 4000)
-    return () => clearInterval(t)
-  }, [])
-
   const escalateAfter = Number(settings.find(s => s.key === 'escalate_after_minutes')?.value ?? 15)
   const isLate = (o: Order) => {
     const from = o.dispatch_at ? +new Date(o.dispatch_at) : +new Date(o.created_at)
@@ -611,7 +584,7 @@ export default function Admin() {
   // again, which is how order #41 reached attempt number 8.
   async function assign(order: Order, driver: Driver) {
     setModalError('')
-    const res = await dispatchOperation('assign', { orderId: order.id, driverId: driver.id }, {
+    const res = await rpc('admin_assign_order', { p_order_id: order.id, p_driver_id: driver.id }, {
       dispatch_rule_blocked: 'المندوب ده وصل للحد الأقصى (٣ طلبات) أو شغال في اتجاه مختلف',
       driver_already_declined: `${driver.name} رفض الطلب ده قبل كده — اختار مندوب تاني`,
       too_many_attempts: 'الطلب ده اتعرض على مندوبين ٥ مرات. ده مشكلة توزيع مش مشكلة إعادة محاولة — كلّم مندوب بنفسك أو الغِ الطلب',
@@ -634,11 +607,11 @@ export default function Admin() {
   // "admin manages drivers" already allows an admin UPDATE on this table; only
   // the field was missing.
   async function editDriverDetails(d: Driver) {
-    const name = await promptSheet({ title: 'اسم المندوب', initial: d.name ?? '' })
+    const name = prompt('اسم المندوب:', d.name ?? '')
     if (name === null) return
     if (!name.trim()) { setActionError('الاسم ماينفعش يكون فاضي'); return }
 
-    const phone = await promptSheet({ title: 'رقم موبايل المندوب', initial: d.phone ?? '', inputMode: 'tel', dir: 'ltr' })
+    const phone = prompt('رقم موبايل المندوب:', d.phone ?? '')
     if (phone === null) return
     if (!isValidEgyptPhone(phone)) { setActionError(PHONE_HINT); return }
 
@@ -664,24 +637,17 @@ export default function Admin() {
   // row frees the account to be claimed by whichever phone opens it next.
   async function resetDriverDevice(d: Driver) {
     const bound = d.device_label
-    if (!await confirmSheet({
-      title: `فك ربط الجهاز عن ${d.name}؟`,
-      body: <>{bound ? `الجهاز الحالي: ${bound}` : 'مفيش جهاز مربوط دلوقتي'}<br /><br />أول موبايل يفتح حسابه بعد كده هيتربط بيه.</>,
-    })) return
-    const res = await adminAccountDriverAction('resetDriverDevice', { driverId: d.id })
-    if (!res.ok) { await alertSheet(res.error); return }
+    if (!confirm(`فك ربط الجهاز عن ${d.name}؟\n\n${bound ? `الجهاز الحالي: ${bound}` : 'مفيش جهاز مربوط دلوقتي'}\n\nأول موبايل يفتح حسابه بعد كده هيتربط بيه.`)) return
+    const res = await rpc('admin_reset_driver_device', { p_driver_id: d.id })
+    if (!res.ok) { alert(res.error); return }
     load()
   }
 
   async function editInstapay(d: Driver) {
-    const value = await promptSheet({
-      title: 'رقم إنستاباي بتاع المندوب',
-      body: 'اسيبه فاضي لو زي رقم الموبايل',
-      initial: d.instapay_number ?? '', inputMode: 'tel', dir: 'ltr',
-    })
+    const value = prompt('رقم إنستاباي بتاع المندوب (اسيبه فاضي لو زي رقم الموبايل):', d.instapay_number ?? '')
     if (value === null) return
     const { error } = await supabase.from('drivers').update({ instapay_number: value.trim() || null }).eq('id', d.id)
-    if (error) { await alertSheet('حصل خطأ، جرب تاني'); return }
+    if (error) { alert('حصل خطأ، جرب تاني'); return }
     load(true)
   }
 
@@ -719,7 +685,7 @@ export default function Admin() {
   }>>({})
 
   async function loadOpenStates() {
-    const { data, error } = await supabase.rpc('staff_vendor_open_states')
+    const { data, error } = await supabase.rpc('vendor_open_states')
     if (error) return   // keep the last known states rather than blanking the row
     const map: typeof openStates = {}
     for (const s of (data as { id: number }[]) ?? []) map[s.id] = s as never
@@ -882,7 +848,7 @@ export default function Admin() {
     setAccountBusy(`vendor-${restaurantId}`)
     const result = await callAccountsFn({ action: 'create_vendor_login', restaurant_id: restaurantId })
     setAccountBusy(null)
-    if (result.error) { await alertSheet('حصل خطأ: ' + result.error); return }
+    if (result.error) { alert('حصل خطأ: ' + result.error); return }
     setNewCreds({ email: result.email, password: result.password })
     load(true)
   }
@@ -891,7 +857,7 @@ export default function Admin() {
     setAccountBusy(`driver-${driverId}`)
     const result = await callAccountsFn({ action: 'create_driver_login', driver_id: driverId })
     setAccountBusy(null)
-    if (result.error) { await alertSheet('حصل خطأ: ' + result.error); return }
+    if (result.error) { alert('حصل خطأ: ' + result.error); return }
     setNewCreds({ email: result.email, password: result.password })
     load(true)
   }
@@ -902,7 +868,7 @@ export default function Admin() {
     setAccountBusy('catalog-new')
     const result = await callAccountsFn({ action: 'create_catalog_login', name })
     setAccountBusy(null)
-    if (result.error) { await alertSheet('حصل خطأ: ' + result.error); return }
+    if (result.error) { alert('حصل خطأ: ' + result.error); return }
     setNewCatalogName('')
     setNewCreds({ email: result.email, password: result.password })
     // force: this branch was written against the old load() that took no
@@ -920,13 +886,9 @@ export default function Admin() {
   // or the caller themself, and refuses a driver still holding cash or mid-
   // delivery, none of which the edge function checked.
   async function removeLogin(profileId: string) {
-    if (!await confirmSheet({
-      title: 'تأكيد إلغاء الحساب؟',
-      body: <>مش هيقدر يدخل تاني.<br /><br />سجل الطلبات والأرباح هيفضل زي ما هو.</>,
-      danger: true,
-    })) return
+    if (!confirm('تأكيد إلغاء الحساب؟ مش هيقدر يدخل تاني.\n\nسجل الطلبات والأرباح هيفضل زي ما هو.')) return
     setAccountBusy(profileId)
-    const res = await adminAccountDriverAction('deleteStaff', { profileId }, {
+    const res = await rpc('admin_delete_staff', { p_profile_id: profileId }, {
       cannot_delete_self: 'مينفعش تلغي حسابك انت',
       cannot_delete_admin: 'مينفعش تلغي حساب إدارة من هنا',
       driver_has_live_delivery: 'المندوب ده معاه طلب شغال دلوقتي — سيبه يخلّصه أو اسحب الطلب منه الأول',
@@ -940,19 +902,15 @@ export default function Admin() {
       // was invisible and the operator just tapped again. This one keeps the
       // blocking dialog on purpose.
       if (res.code === 'driver_holds_cash') {
-        if (!await confirmSheet({
-          title: 'المندوب ده لسه ماسك كاش على عهدته',
-          body: 'لو ألغيت الحساب مش هتقدر تسوّي الكاش من الشاشة دي بعد كده. متأكد؟',
-          danger: true,
-        })) return
+        if (!confirm('المندوب ده لسه ماسك كاش على عهدته.\n\nلو ألغيت الحساب مش هتقدر تسوّي الكاش من الشاشة دي بعد كده. متأكد؟')) return
         setAccountBusy(profileId)
-        const forced = await adminAccountDriverAction('deleteStaff', { profileId, force: true })
+        const forced = await rpc('admin_delete_staff', { p_profile_id: profileId, p_force: true })
         setAccountBusy(null)
         if (!forced.ok) { setActionError(forced.error); return }
         setActionError(''); load(true)
         return
       }
-      setActionError(res.error); return
+      setActionError(res.error); alert(res.error); return
     }
     setActionError('')
     load(true)
@@ -962,33 +920,29 @@ export default function Admin() {
     setAccountBusy(profileId)
     const result = await callAccountsFn({ action: 'reset_password', profile_id: profileId })
     setAccountBusy(null)
-    if (result.error) { await alertSheet('حصل خطأ: ' + result.error); return }
+    if (result.error) { alert('حصل خطأ: ' + result.error); return }
     setNewCreds({ email: '(نفس الإيميل)', password: result.password })
   }
 
   async function setCustomPassword(profileId: string) {
-    const pw = await promptSheet({
-      title: 'كلمة سر مخصصة',
-      placeholder: '٨ حروف على الأقل',
-      dir: 'ltr',
-      validate: v => v.length >= 8 ? null : 'لازم ٨ حروف على الأقل',
-    })
+    const pw = prompt('اكتب كلمة السر الجديدة (8 أحرف على الأقل):')
     if (!pw) return
+    if (pw.length < 8) { alert('كلمة السر لازم تكون 8 أحرف على الأقل'); return }
     setAccountBusy(profileId)
     const result = await callAccountsFn({ action: 'reset_password', profile_id: profileId, custom_password: pw })
     setAccountBusy(null)
-    if (result.error) { await alertSheet('حصل خطأ: ' + result.error); return }
-    await alertSheet(<>تم تغيير كلمة السر — <bdi dir="ltr" className="font-mono">{pw}</bdi></>)
+    if (result.error) { alert('حصل خطأ: ' + result.error); return }
+    alert('تم تغيير كلمة السر')
   }
 
   async function changeEmail(profileId: string, currentEmail: string) {
-    const newEmail = await promptSheet({ title: 'الإيميل الجديد', initial: currentEmail, dir: 'ltr', inputMode: 'text' })
+    const newEmail = prompt('اكتب الإيميل الجديد:', currentEmail)
     if (!newEmail || newEmail.trim() === currentEmail) return
     setAccountBusy(profileId)
     const result = await callAccountsFn({ action: 'update_email', profile_id: profileId, new_email: newEmail.trim() })
     setAccountBusy(null)
-    if (result.error) { await alertSheet('حصل خطأ: ' + result.error); return }
-    await alertSheet('تم تغيير الإيميل')
+    if (result.error) { alert('حصل خطأ: ' + result.error); return }
+    alert('تم تغيير الإيميل')
     load(true)
   }
 
@@ -1019,51 +973,15 @@ export default function Admin() {
     load(true)
   }
 
-  /**
-   * Goes through an RPC rather than a direct table update, unlike the image
-   * fields beside it. Placement is a commercial lever -- it decides which vendor
-   * gets the top of the home screen -- so it gets an is_admin() gate in the
-   * database rather than relying on the RLS policy that happens to allow the
-   * update today.
-   */
-  /**
-   * One writer for both controls, always sending the rank currently in the box.
-   *
-   * `<input type="number">` yields '' for anything it cannot parse, so «1e»
-   * used to arrive as null and CLEAR the rank rather than be rejected. The
-   * draft is a string and is validated as one.
-   */
-  async function commitRank(r: Restaurant, featured: boolean | null = null) {
-    const raw = (rankDraft[r.id] ?? (r.display_order == null ? '' : String(r.display_order))).trim()
-    let order: number | null
-    if (raw === '') {
-      order = null
-    } else if (!/^\d+$/.test(raw) || Number(raw) < 1) {
-      setActionError('المركز لازم يكون رقم صحيح ١ أو أكبر')
-      setRankDraft(d => ({ ...d, [r.id]: r.display_order == null ? '' : String(r.display_order) }))
-      return
-    } else {
-      order = Number(raw)
-    }
-    if (order === (r.display_order ?? null) && featured === null) return
-
-    const res = await rpc('admin_set_restaurant_rank', {
-      p_restaurant_id: r.id, p_display_order: order, p_featured: featured,
-    }, { rank_must_be_positive: 'المركز لازم يكون ١ أو أكبر' })
-    if (!res.ok) { setActionError(res.error); return }
-    setRankDraft(d => { const n = { ...d }; delete n[r.id]; return n })
-    load(true)
-  }
-
   async function removeCover(r: Restaurant) {
-    if (!await confirmSheet({ title: 'إزالة صورة الواجهة؟', body: 'هنرجع نختار صورة تلقائيًا من القايمة.', danger: true })) return
+    if (!confirm('إزالة صورة الواجهة؟ هنرجع نختار صورة تلقائيًا من القايمة.')) return
     const { error } = await supabase.from('restaurants').update({ cover_image_url: null }).eq('id', r.id)
     if (error) { setActionError('مش قادرين نشيل الصورة دلوقتي'); return }
     load(true)
   }
 
   async function removeLogo(r: Restaurant) {
-    if (!await confirmSheet({ title: 'إزالة شعار المطعم؟', danger: true })) return
+    if (!confirm('إزالة شعار المطعم؟')) return
     const { error } = await supabase.from('restaurants').update({ logo_url: null }).eq('id', r.id)
     if (error) { setActionError('مش قادرين نشيل الصورة دلوقتي'); return }
     setActionError('')
@@ -1098,11 +1016,7 @@ export default function Admin() {
   }
 
   async function archiveRestaurant(r: Restaurant, archived: boolean) {
-    if (archived && !await confirmSheet({
-      title: `تأكيد إخفاء ${r.name}؟`,
-      body: 'هيختفي من التطبيق للعملاء بس بياناته وطلباته القديمة هتفضل موجودة.',
-      danger: true,
-    })) return
+    if (archived && !confirm(`تأكيد إخفاء ${r.name}؟ هيختفي من التطبيق للعملاء بس بياناته وطلباته القديمة هتفضل موجودة.`)) return
     const { error } = await supabase.from('restaurants').update({ archived }).eq('id', r.id)
     if (error) { setActionError('مش قادرين نأرشف المطعم دلوقتي'); return }
     setActionError('')
@@ -1114,7 +1028,7 @@ export default function Admin() {
   // waits for a driver who can never be assigned.
   async function confirmCustomOrderPrice(orderId: number, subtotal: number) {
     if (!subtotal || subtotal <= 0) { setActionError('اكتب سعر صحيح'); return }
-    const res = await vendorOperation('confirmPrice', { orderId, subtotal }, {
+    const res = await rpc('confirm_custom_order_price', { p_order_id: orderId, p_subtotal: subtotal }, {
       not_authorized: 'التسعير للإدارة بس',
       order_not_found: 'الطلب ده مش طلب خاص أو مش موجود',
       invalid_amount: 'السعر لازم يكون رقم أكبر من صفر',
@@ -1143,13 +1057,9 @@ export default function Admin() {
       .from('drivers').select('name, cash_held').eq('id', driverId).single()
     if (freshErr || !fresh) { setActionError('مش قادرين نتأكد من الكاش دلوقتي، جرب تاني'); return }
     const d = fresh
-    if (!await confirmSheet({
-      title: `تأكيد استلام ${d.cash_held ?? 0} ج.م كاش من ${d.name}؟`,
-      body: 'ده هيصفّر الكاش المسجل عليه، ومش هينفع يتراجع.',
-      danger: true,
-    })) return
+    if (!confirm(`تأكيد استلام ${d.cash_held ?? 0} ج.م كاش من ${d.name}؟\n\nده هيصفّر الكاش المسجل عليه، ومش هينفع يتراجع.`)) return
     setActionError('')
-    const res = await adminFinancialAction('settleCash', { driverId })
+    const res = await rpc('settle_driver_cash', { p_driver_id: driverId })
     if (!res.ok) { setActionError(res.error); return }
     load(true)
   }
@@ -1166,13 +1076,9 @@ export default function Admin() {
     if (freshErr) { setActionError('مش قادرين نتأكد من الأرباح دلوقتي، جرب تاني'); return }
     const unpaid = (fresh ?? []).reduce((s, e) => s + Number(e.driver_earning), 0)
     if (unpaid <= 0) { setActionError('مفيش أرباح مستحقة للمندوب ده'); return }
-    if (!await confirmSheet({
-      title: `تأكيد دفع ${unpaid} ج.م أرباح لـ ${d?.name ?? 'المندوب'}؟`,
-      body: 'مش هينفع يتراجع.',
-      danger: true,
-    })) return
+    if (!confirm(`تأكيد دفع ${unpaid} ج.م أرباح لـ ${d?.name ?? 'المندوب'}؟\n\nمش هينفع يتراجع.`)) return
     setActionError('')
-    const res = await adminFinancialAction('settleEarnings', { driverId })
+    const res = await rpc('settle_driver_earnings', { p_driver_id: driverId })
     if (!res.ok) { setActionError(res.error); return }
     load(true)
   }
@@ -1180,14 +1086,10 @@ export default function Admin() {
   // The "توصيلات جارية" tab had no actions whatsoever, so a stalled delivery
   // could be surfaced but not acted on.
   async function unassignOrder(a: Assignment) {
-    const reason = await promptSheet({
-      title: `سحب الطلب #${a.order_id} من ${a.drivers?.name ?? 'المندوب'}؟`,
-      body: 'الطلب هيرجع تاني لقائمة الطلبات المتاحة.',
-      placeholder: 'السبب (اختياري)',
-    })
+    const reason = prompt(`سحب الطلب #${a.order_id} من ${a.drivers?.name ?? 'المندوب'}؟\nالطلب هيرجع تاني لقائمة الطلبات المتاحة.\n\nالسبب (اختياري):`, '')
     if (reason === null) return
     setActionError('')
-    const res = await dispatchOperation('unassign', { orderId: a.order_id, reason: reason || 'admin_unassigned' })
+    const res = await rpc('admin_unassign_order', { p_order_id: a.order_id, p_reason: reason || 'admin_unassigned' })
     if (!res.ok) { setActionError(res.error); return }
     load(true)
   }
@@ -1201,14 +1103,13 @@ export default function Admin() {
   // and releases the driver, so this must go through the RPC and never through a
   // direct status update.
   async function cancelOrder(o: Order) {
-    if (CLOSED_ORDER_STATUSES.includes(o.status as OrderStatus)) return
-    const reason = await promptSheet({
-      title: `إلغاء الطلب #${o.id}؟`,
-      body: o.status === 'pending'
-        ? undefined
-        : <>الطلب #{o.id} حالته «{orderStatusLabel(o.status)}» — يعني اتقبل أو خرج للتوصيل بالفعل.<br /><br />الإلغاء هيسحبه من المندوب ويرجّع رصيد المحفظة لو استُخدم. لو العميل دفع، هيتسجل استرداد مطلوب.</>,
-      placeholder: 'السبب (هيتسجل على الطلب)',
-    })
+    const warn = CLOSED_ORDER_STATUSES.includes(o.status as OrderStatus)
+      ? null
+      : o.status === 'pending'
+        ? `إلغاء الطلب #${o.id}؟`
+        : `الطلب #${o.id} حالته "${orderStatusLabel(o.status)}" — يعني اتقبل أو خرج للتوصيل بالفعل.\n\nالإلغاء هيسحبه من المندوب ويرجّع رصيد المحفظة لو استُخدم. لو العميل دفع، هيتسجل استرداد مطلوب.`
+    if (warn === null) return
+    const reason = prompt(`${warn}\n\nالسبب (هيتسجل على الطلب):`, '')
     if (reason === null) return
     if (!reason.trim()) { setActionError('اكتب سبب الإلغاء'); return }
     setActionError('')
@@ -1237,22 +1138,13 @@ export default function Admin() {
   // to record a real delivery as Failed or Cancelled, which corrupts the
   // driver's stats and the day's cash reconciliation at the same time.
   async function forceDelivered(a: Assignment) {
-    const reason = await promptSheet({
-      title: `تسجيل الطلب #${a.order_id} كمُسلَّم بدل المندوب؟`,
-      body: 'استخدم ده لما المندوب يكون سلّم فعلاً ومش قادر يأكد بنفسه (بطارية، شبكة).',
-      placeholder: 'السبب',
-    })
+    const reason = prompt(`تسجيل الطلب #${a.order_id} كمُسلَّم بدل المندوب؟\n\nاستخدم ده لما المندوب يكون سلّم فعلاً ومش قادر يأكد بنفسه (بطارية، شبكة).\n\nالسبب:`, '')
     if (reason === null) return
     if (!reason.trim()) { setActionError('اكتب السبب'); return }
-    const cash = await confirmSheet({
-      title: 'المندوب استلم الكاش من العميل؟',
-      body: 'لو استلمه هيتسجل على عهدته.',
-      confirmLabel: 'أيوه استلمه',
-      cancelLabel: 'لأ',
-    })
+    const cash = confirm('المندوب استلم الكاش من العميل؟\n\nموافق = أيوه، هيتسجل على عهدته.\nإلغاء = لأ، مش هيتسجل عليه كاش.')
     setActionError('')
-    const res = await dispatchOperation('forceDelivered', {
-      orderId: a.order_id, reason: reason.trim(), cashCollected: cash,
+    const res = await rpc('admin_force_delivered', {
+      p_order_id: a.order_id, p_reason: reason.trim(), p_cash_collected: cash,
     })
     if (!res.ok) { setActionError(res.error); return }
     load(true)
@@ -1266,20 +1158,17 @@ export default function Admin() {
   // no-restaurant, no-driver roles -- it cannot mint an admin.
   async function convertStaffRole(profileId: string, role: 'catalog' | 'supervisor') {
     const label = role === 'supervisor' ? 'مشرف تشغيل' : 'موظف قوايم'
-    if (!await confirmSheet({
-      title: `تحويل الحساب ده لـ «${label}»؟`,
-      body: 'هيتغيّر اللي يقدر يشوفه ويعمله على طول.',
-    })) return
+    if (!confirm(`تحويل الحساب ده لـ "${label}"؟\n\nهيتغيّر اللي يقدر يشوفه ويعمله على طول.`)) return
     setActionError('')
-    const res = await adminAccountDriverAction('convertStaffRole', { profileId, role })
+    const res = await rpc('admin_convert_staff_role', { p_profile_id: profileId, p_role: role })
     if (!res.ok) { setActionError(res.error); return }
     load(true)
   }
 
   async function reassignOrder(a: Assignment, driver: Driver) {
     setModalError(''); setReassignBusy(true)
-    const res = await dispatchOperation('reassign', {
-      orderId: a.order_id, driverId: driver.id, reason: 'admin_reassigned'
+    const res = await rpc('admin_reassign_order', {
+      p_order_id: a.order_id, p_driver_id: driver.id, p_reason: 'admin_reassigned'
     }, {
       dispatch_rule_blocked: 'المندوب ده وصل للحد الأقصى (٣ طلبات) أو شغال في اتجاه مختلف',
       wrong_vehicle_type: 'الطلب ده محتاج فان',
@@ -1315,9 +1204,9 @@ export default function Admin() {
     setTab('wallet')
   }
   async function markRefunded(orderId: number) {
-    if (!await confirmSheet({ title: 'تأكيد إنك حوّلت المبلغ فعلاً للعميل؟' })) return
-    const result = await adminFinancialAction('markRefunded', { orderId })
-    if (!result.ok) { await alertSheet(result.error); return }
+    if (!confirm('تأكيد إنك حوّلت المبلغ فعلاً للعميل؟')) return
+    const { error } = await supabase.rpc('mark_refunded', { p_order_id: orderId })
+    if (error) { alert('حصل خطأ: ' + error.message); return }
     load(true)
   }
   async function toggleCoverage(restaurantId: number, compoundId: number) {
@@ -1326,11 +1215,7 @@ export default function Admin() {
     if (existing) {
       // Removing coverage silently stops a vendor appearing for a whole compound.
       const compound = compounds.find(c => c.id === compoundId)
-      if (!await confirmSheet({
-        title: `إلغاء تغطية ${compound?.name ?? 'المكان ده'}؟`,
-        body: 'المطعم مش هيظهر لعملاء المكان ده.',
-        danger: true,
-      })) return
+      if (!confirm(`إلغاء تغطية ${compound?.name ?? 'المكان ده'}؟\n\nالمطعم مش هيظهر لعملاء المكان ده.`)) return
       const { error } = await supabase.from('vendor_coverage').delete().eq('id', existing.id)
       if (error) { setActionError('مش قادرين نلغي التغطية دلوقتي'); return }
     } else {
@@ -1342,17 +1227,13 @@ export default function Admin() {
   async function sendWalletCredit() {
     if (!walletPhone.trim() || !walletAmount) return
     // A typo in this free-typed phone credits a stranger with no reversal path.
-    if (!await confirmSheet({
-      title: `إضافة ${walletAmount} ج.م لمحفظة ${walletPhone.trim()}؟`,
-      body: 'اتأكد من الرقم — مفيش طريقة تتراجع.',
-      danger: true,
-    })) return
-    const result = await adminFinancialAction('creditWallet', {
-      phone: walletPhone.trim(), amount: Number(walletAmount), reason: walletReason.trim() || 'admin credit',
-      orderId: walletOrderId
+    if (!confirm(`إضافة ${walletAmount} ج.م لمحفظة ${walletPhone.trim()}؟\n\nاتأكد من الرقم — مفيش طريقة تتراجع.`)) return
+    const { error } = await supabase.rpc('credit_wallet', {
+      p_phone: walletPhone.trim(), p_amount: Number(walletAmount), p_reason: walletReason.trim() || 'admin credit',
+      p_order_id: walletOrderId
     })
-    setWalletResult(!result.ok ? result.error : `تمت إضافة ${walletAmount} ج.م لمحفظة ${walletPhone}`)
-    if (result.ok) {
+    setWalletResult(error ? 'حصل خطأ، جرب تاني' : `تمت إضافة ${walletAmount} ج.م لمحفظة ${walletPhone}`)
+    if (!error) {
       setWalletPhone(''); setWalletAmount(''); setWalletReason('')
       if (walletOrderId != null) setCompensatedOrderIds(prev => new Set(prev).add(walletOrderId))
       setWalletOrderId(null)
@@ -1393,11 +1274,10 @@ export default function Admin() {
   }
 
   async function flagDriverDispute(c: Complaint) {
-    const note = await promptSheet({ title: 'ملاحظة عن المشكلة مع المندوب', placeholder: '(اختياري)' })
-    if (note === null) return
+    const note = prompt('ملاحظة عن المشكلة مع المندوب (اختياري):') ?? ''
     const { error } = await supabase.rpc('admin_flag_driver_dispute', { p_complaint_id: c.id, p_note: note })
-    if (error) { await alertSheet('حصل خطأ، جرب تاني'); return }
-    await alertSheet('اتسجلت في سجل المندوب')
+    if (error) { alert('حصل خطأ، جرب تاني'); return }
+    alert('اتسجلت في سجل المندوب')
   }
 
   // 'cancel' used to call mark_delivery_failed, which sets Failed_Delivery, pays
@@ -1406,29 +1286,21 @@ export default function Admin() {
   // money silently, under a button reading إلغاء الطلب. The two outcomes are
   // different and are now named differently.
   async function resolveNoAnswer(a: Assignment, action: 'wait' | 'contact' | 'fail' | 'refund') {
-    if (action === 'fail' && !await confirmSheet({
-      title: 'تسجيل الطلب كتوصيل فاشل؟',
-      body: 'المندوب هياخد أجره، ومفيش استرداد للعميل. لو العميل دفع، استخدم «إلغاء واسترداد» بدل ده.',
-      danger: true,
-    })) return
-    if (action === 'refund' && !await confirmSheet({
-      title: 'إلغاء الطلب واسترداد فلوس العميل؟',
-      body: 'رصيد المحفظة هيرجع، ولو العميل حوّل فلوس هيتسجل استرداد مطلوب في تبويب الاستردادات.',
-      danger: true,
-    })) return
-    const result = await dispatchOperation('resolveNoAnswer', { assignmentId: a.id, resolution: action })
-    if (!result.ok) { await alertSheet(result.error); return }
+    if (action === 'fail' && !confirm('تسجيل الطلب كتوصيل فاشل؟\n\nالمندوب هياخد أجره، ومفيش استرداد للعميل. لو العميل دفع، استخدم "إلغاء واسترداد" بدل ده.')) return
+    if (action === 'refund' && !confirm('إلغاء الطلب واسترداد فلوس العميل؟\n\nرصيد المحفظة هيرجع، ولو العميل حوّل فلوس هيتسجل استرداد مطلوب في تبويب الاستردادات.')) return
+    const { error } = await supabase.rpc('admin_resolve_no_answer', { p_assignment_id: a.id, p_action: action })
+    if (error) { alert('حصل خطأ، جرب تاني'); return }
     load(true)
   }
 
   async function confirmInstapayPayment(o: Order) {
     setAccountBusy(`instapay-${o.id}`)
-    const result = await adminFinancialAction(
-      o.cod_deposit_amount != null ? 'confirmCodDeposit' : 'confirmInstapay',
-      { orderId: o.id },
+    const { error } = await supabase.rpc(
+      o.cod_deposit_amount != null ? 'admin_confirm_cod_deposit' : 'admin_confirm_instapay_payment',
+      { p_order_id: o.id }
     )
     setAccountBusy(null)
-    if (!result.ok) { await alertSheet(result.error); return }
+    if (error) { alert('حصل خطأ، جرب تاني'); return }
     load(true)
   }
 
@@ -1445,7 +1317,7 @@ export default function Admin() {
   )
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div>
       <h1 className="text-2xl font-bold mb-4">لوحة التحكم</h1>
 
       {actionError && (
@@ -1637,17 +1509,6 @@ export default function Admin() {
         label="فعّل تنبيهات الإدارة"
       />
 
-      {/* One tap, then the alerts on this page can actually make a noise.
-          Sits next to the push button because they are the two halves of the
-          same promise and each fails on its own. */}
-      {soundBlocked && (
-        <button
-          className="w-full mb-3 rounded-xl border border-sand/50 bg-sand/15 px-3.5 py-3 text-right text-sm font-semibold text-sandink"
-          onClick={() => { unlockAudio(); setSoundBlocked(audioBlocked()) }}>
-          🔇 الصوت مقفول في التاب ده — اضغط هنا عشان التنبيهات تسمّع
-        </button>
-      )}
-
       {/* Two rows instead of one row of sixteen. The group carries the alert
           count of everything inside it, so nothing that needed you becomes
           invisible by being one level down. */}
@@ -1820,8 +1681,8 @@ export default function Admin() {
                 <span className={d.active ? 'badge-open' : 'badge-closed'}>{driverStatusLabel(d.status)}</span>
               </div>
               <div className="flex flex-wrap gap-2.5 mt-3">
-                <Toggle on={!!d.available} onChange={() => toggleDriver(d, 'available')} label="متاح" labelOff="موقوف مؤقتًا" />
-                <Toggle on={!!d.active} onChange={() => toggleDriver(d, 'active')} label="الحساب شغال" labelOff="الحساب موقوف" />
+                <button className="btn-ghost text-sm flex-1" onClick={() => toggleDriver(d, 'available')}>{d.available ? 'إيقاف مؤقت' : 'إتاحة'}</button>
+                <button className={`text-sm flex-1 ${d.active ? 'btn-danger' : 'btn-sea'}`} onClick={() => toggleDriver(d, 'active')}>{d.active ? 'إيقاف الحساب' : 'تفعيل الحساب'}</button>
                 <button className="btn-ghost text-sm flex-1" onClick={() => setDriverForm(driverToForm(d))}>تعديل البيانات</button>
                 <button className="btn-ghost text-sm flex-1" onClick={() => editInstapay(d)}>تعديل إنستاباي</button>
                 <button className="btn-ghost text-sm flex-1" onClick={() => resetDriverDevice(d)}>فك ربط الجهاز</button>
@@ -1997,20 +1858,10 @@ export default function Admin() {
                   )}
                 </h2>
                 <div className="text-left">
-                  {/* «قيد التسعير» belongs only to an order still waiting for a
-                      price. A cancelled one is not waiting for anything, and
-                      showing it in the biggest text on the card — with «ملغي»
-                      small underneath — buried the one fact that matters. */}
-                  <span className={`font-bold block ${
-                    isCancelled(o.status) ? 'text-red-600'
-                    : o.is_test ? 'text-sandink' : 'text-sea'}`}>
-                    {isCancelled(o.status) ? 'ملغي'
-                      : o.pricing_status === 'pending_quote' ? 'قيد التسعير'
-                      : `${o.total} ج.م`}
+                  <span className={`font-bold block ${o.is_test ? 'text-sandink' : 'text-sea'}`}>
+                    {o.pricing_status === 'pending_quote' ? 'قيد التسعير' : `${o.total} ج.م`}
                   </span>
-                  <span className="text-xs text-mist">
-                    {isCancelled(o.status) ? `${o.total} ج.م` : orderStatusLabel(o.status)}
-                  </span>
+                  <span className="text-xs text-mist">{orderStatusLabel(o.status)}</span>
                 </div>
               </div>
 
@@ -2038,15 +1889,7 @@ export default function Admin() {
 
               {customer(o)}
 
-              {/* `pricing_status` does NOT clear when an order is cancelled, so a
-                  cancelled custom order still reads pending_quote forever. This
-                  block was therefore offering a live price box on a dead order —
-                  and confirm_custom_order_price had no status check either, so
-                  typing a number would have rewritten the total of an order the
-                  customer had already walked away from. Order #86 was exactly
-                  this: cancelled at 14:07 and still asking to be priced. */}
-              {o.order_type === 'custom_request' && o.pricing_status === 'pending_quote'
-                && !isCancelled(o.status) && (
+              {o.order_type === 'custom_request' && o.pricing_status === 'pending_quote' && (
                 <div className="flex items-center gap-2 mt-3">
                   <input type="number" inputMode="decimal" placeholder="السعر بعد المكالمة"
                     className="field !py-1.5 text-sm" id={`quote-${o.id}`} />
@@ -2098,17 +1941,9 @@ export default function Admin() {
                       </span>
                     )}
                     <span className="bg-night border border-line rounded-lg px-2 py-1">💵 {cash}</span>
-                    {/* WHEN, not just why. The reason chip said
-                        «customer_cancelled» and nothing else, so the one
-                        question you actually ask — how long did we sit on it
-                        before they gave up — had no answer on this card. */}
-                    {o.status === 'Cancelled' && (o.cancel_reason || o.cancelled_at) && (
+                    {o.status === 'Cancelled' && o.cancel_reason && (
                       <span className="bg-red-500/10 border border-red-500/30 text-red-700 rounded-lg px-2 py-1">
-                        ✕ {cancelReasonLabel(o.cancel_reason)}
-                        {o.cancelled_at && ` · اتلغى ${fmtTime(o.cancelled_at)}`}
-                        {o.cancelled_at && o.created_at &&
-                          ` · بعد ${Math.max(0, Math.round(
-                            (new Date(o.cancelled_at).getTime() - new Date(o.created_at).getTime()) / 60000))} دقيقة`}
+                        ✕ {o.cancel_reason}
                       </span>
                     )}
                   </div>
@@ -2179,8 +2014,6 @@ export default function Admin() {
       )}
 
 
-      {tab === 'daily' && <DailyReportTab />}
-
       {tab === 'earnings' && (
         <div>
           {/* Sits above the earnings rows on purpose. Those tell you what the
@@ -2217,65 +2050,18 @@ export default function Admin() {
                       ? <img src={r.logo_url} alt="" className="w-11 h-11 rounded-xl object-cover shrink-0 border border-line" />
                       : <div className="w-11 h-11 rounded-xl bg-shellup grid place-items-center shrink-0 text-lg font-bold text-mist">{r.name.charAt(0)}</div>}
                     <div className="min-w-0">
-                      <h2 className="font-bold truncate">
-                        {r.display_order != null && (
-                          <span className="text-[10px] font-bold text-sea bg-sea/10 rounded-full px-1.5 py-0.5 ml-1.5 align-middle">#{r.display_order}</span>
-                        )}
-                        {r.name}
-                        {r.featured && <span className="text-sm align-middle"> ⭐</span>}
-                        {r.archived ? ' (متوقف)' : ''}
-                      </h2>
-                      <p className="text-sm text-mist mt-0.5">{its.length} صنف · اضغط للتعديل والترتيب</p>
+                      <h2 className="font-bold truncate">{r.name}{r.archived ? ' (متوقف)' : ''}</h2>
+                      <p className="text-sm text-mist mt-0.5">{its.length} صنف · اضغط للتعديل</p>
                     </div>
                   </button>
-                  {/* Two actions, not three. The red «إيقاف» pill used to sit
-                      here next to a red closed-status pill — two alarms side by
-                      side that meant different things. Archiving is destructive
-                      and rare, so it moved inside the expanded card. */}
                   <div className="flex items-center gap-2 shrink-0">
                     <button className="btn-ghost !py-1.5 !px-2.5 text-xs" onClick={() => setAddingItemFor(r)}>+ صنف</button>
-                    <Toggle on={openStates[r.id]?.is_open ?? true} onChange={() => toggleRestaurant(r)}
-                      label={openLabel(openStates[r.id] ?? {}).text} labelOff={openLabel(openStates[r.id] ?? {}).text} />
+                    <button className={(openStates[r.id]?.is_open ?? true) ? 'badge-open' : 'badge-closed'}
+                      onClick={() => toggleRestaurant(r)}>{openLabel(openStates[r.id] ?? {}).text}</button>
+                    <button className={`text-xs font-semibold rounded-full px-2.5 py-1 ${r.archived ? 'bg-emerald-500/15 text-emerald-700' : 'bg-red-500/15 text-red-600'}`}
+                      onClick={() => archiveRestaurant(r, !r.archived)}>{r.archived ? 'تفعيل' : 'إيقاف'}</button>
                   </div>
                 </div>
-
-                {/* WHO APPEARS FIRST — deliberately the first thing in the
-                    expanded card: it exists precisely because nobody could
-                    find it when it sat under the hours and the logo.
-
-                    Before this existed the sort fell through to the vendor's
-                    NAME -- order_ratings is empty, so the review and rating
-                    tiebreakers both collapse, and the customer list for الحجاز ٣
-                    read أرابياتا · ديڤادو · ستوديو مصر · سينابون · ماكدونالدز ·
-                    هارت أتاك. That is the Arabic alphabet, not a decision.
-
-                    No badge is shown to the customer for either control. */}
-                {expanded && (
-                  <div className="mt-3 rounded-xl bg-shellup p-3 max-w-md">
-                    <p className="text-xs font-semibold mb-2">ترتيب الظهور للعميل</p>
-                    <div className="flex items-center gap-3">
-                      {/* CONTROLLED, and the rank is read from the live input
-                          rather than from props when the toggle is tapped.
-                          Blur fires before click: typing «2» and then tapping
-                          «مميز» sent onBlur(rank=2) and then onClick with the
-                          STALE r.display_order (still null, because load()
-                          had not returned), which silently cleared the 2. */}
-                      <input
-                        type="number" min={1} inputMode="numeric"
-                        className="field !w-20 text-center"
-                        placeholder="—"
-                        value={rankDraft[r.id] ?? (r.display_order == null ? '' : String(r.display_order))}
-                        onChange={e => setRankDraft(d => ({ ...d, [r.id]: e.target.value }))}
-                        onBlur={() => commitRank(r)} />
-                      <Toggle on={!!r.featured} onChange={() => commitRank(r, !r.featured)} label="مميز ⭐" labelOff="مميز" />
-                    </div>
-                    <p className="text-[11px] text-mist mt-2 leading-relaxed">
-                      الرقم = المركز (١ يعني الأول). سيبه فاضي يعني مش مرتّب.
-                      «مميز» بيرفعه فوق غير المرتّبين من غير ما تحدد له مركز.
-                      <b className="text-sandink"> المطعم المقفول بينزل تحت في كل الأحوال.</b>
-                    </p>
-                  </div>
-                )}
 
                 {expanded && <VendorHoursRow restaurant={r} onSaved={loadOpenStates} />}
 
@@ -2307,14 +2093,11 @@ export default function Admin() {
                       <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
                         onChange={e => e.target.files?.[0] && uploadCover(r, e.target.files[0])} />
                       {r.cover_image_url
-                        ? <img src={r.cover_image_url} alt="" className="w-full aspect-[5/2] rounded-xl object-cover border border-line group-hover:opacity-80" />
-                        : <div className="w-full aspect-[5/2] rounded-xl bg-shellup border border-dashed border-linestrong grid place-items-center text-mist text-xs group-hover:opacity-80">
+                        ? <img src={r.cover_image_url} alt="" className="w-full aspect-[16/9] rounded-xl object-cover border border-line group-hover:opacity-80" />
+                        : <div className="w-full aspect-[16/9] rounded-xl bg-shellup border border-dashed border-linestrong grid place-items-center text-mist text-xs group-hover:opacity-80">
                             اضغط لرفع صورة واجهة المطعم
                           </div>}
                     </label>
-                    {/* Same 5:2 the customer sees. It previewed at 16:9 here,
-                        so a cover cropped to look right in the admin lost a
-                        strip top and bottom on the home screen. */}
                     <p className="text-xs text-mist mt-1.5">
                       {uploadingImage === `cover${r.id}`
                         ? 'جاري رفع صورة الواجهة…'
@@ -2331,24 +2114,11 @@ export default function Admin() {
                 )}
                 {imageError && expanded && <p className="text-xs text-sandink mt-1">{imageError}</p>}
 
-                {/* Archiving lives HERE, not as a red pill on every collapsed
-                    card. It is rare and destructive; giving it a permanent
-                    header slot made every closed vendor look like two alarms. */}
-                {expanded && (
-                  <div className="mt-3 pt-2.5 border-t border-line flex justify-end">
-                    <button
-                      className={`text-xs font-semibold ${r.archived ? 'text-emerald-700' : 'text-red-500'}`}
-                      onClick={() => archiveRestaurant(r, !r.archived)}>
-                      {r.archived ? '↩ تفعيل المطعم تاني' : '⛔ إيقاف المطعم — يختفي من التطبيق خالص'}
-                    </button>
-                  </div>
-                )}
-
                 {reliability[r.id] && reliability[r.id].total_orders > 0 && (
                   <p className="text-xs text-mist mt-2">
-                    ⏱ متوسط وقت القبول: <bdi dir="ltr">{reliability[r.id].avg_accept_minutes ?? '—'}</bdi> د ·
+                    ⏱ متوسط وقت القبول: {reliability[r.id].avg_accept_minutes ?? '—'} د ·
                     {' '}<span className={reliability[r.id].slow_accepts > 2 ? 'text-red-600' : 'text-mist'}>
-                      <bdi dir="ltr">{reliability[r.id].slow_accepts}</bdi> طلب اتأخر قبوله (٣٠ يوم)
+                      {reliability[r.id].slow_accepts} طلب اتأخر قبوله (٣٠ يوم)
                     </span>
                   </p>
                 )}
@@ -2380,14 +2150,44 @@ export default function Admin() {
                     for McDonald's, all above the first item. It now sits beside
                     the category it belongs to, inside MenuItemsPanel. */}
 
-                {expanded && r.vendor_type === 'supermarket' && (
+                {expanded && (r.vendor_type === 'supermarket' || r.uses_delivery_slots) && (
                   <div className="mt-4 border-t border-line pt-3">
+                    {/* The switch comes first, because it decides whether
+                        anything below it matters. Off = this vendor takes
+                        on-demand orders priced by distance like every other
+                        vendor; the slot rows stay configured underneath so
+                        turning it back on restores them. */}
+                    <label className="flex items-start gap-2.5 mb-3 cursor-pointer">
+                      <input type="checkbox" className="w-5 h-5 mt-0.5 shrink-0"
+                        checked={!!r.uses_delivery_slots}
+                        onChange={async e => {
+                          const on = e.target.checked
+                          const res = await rpc('admin_set_vendor_slots',
+                            { p_restaurant_id: r.id, p_enabled: on },
+                            { admin_only: 'محتاج صلاحية أدمن' })
+                          if (!res.ok) { setActionError(res.error); return }
+                          setActionError('')
+                          load(true)
+                        }} />
+                      <span className="min-w-0">
+                        <span className="text-sm font-semibold block">التوصيل بفترات محددة</span>
+                        <span className="text-xs text-mist block">
+                          {r.uses_delivery_slots
+                            ? 'الزبون لازم يختار فترة قبل ما يطلب'
+                            : 'توصيل عادي بالمسافة زي باقي المحلات'}
+                        </span>
+                      </span>
+                    </label>
+                    {r.uses_delivery_slots && (
+                    <>
                     <p className="text-sm text-mist mb-2">فترات التوصيل</p>
                     <div className="space-y-2">
                       {slots.filter(sl => sl.restaurant_id === r.id).map(sl => (
                         <div key={sl.id} className="flex items-center justify-between bg-night border border-line rounded-xl p-2.5 text-sm">
-                          <span><bdi dir="ltr">{sl.start_time.slice(0,5)} – {sl.end_time.slice(0,5)}</bdi> · سعة {sl.capacity}</span>
-                          <Toggle on={!!sl.active} onChange={() => toggleSlot(sl)} label="فعّالة" labelOff="موقوفة" />
+                          <span>{sl.start_time.slice(0,5)} – {sl.end_time.slice(0,5)} · سعة {sl.capacity}</span>
+                          <button className={sl.active ? 'badge-open' : 'badge-closed'} onClick={() => toggleSlot(sl)}>
+                            {sl.active ? 'فعّالة' : 'موقوفة'}
+                          </button>
                         </div>
                       ))}
                       {slots.filter(sl => sl.restaurant_id === r.id).length === 0 && (
@@ -2408,6 +2208,8 @@ export default function Admin() {
                     <p className="text-xs text-mist mt-2 leading-relaxed">
                       السعة = أقصى عدد طلبات في الفترة دي. اربطها بعدد المندوبين المتاحين وقتها مش بسرعة تجهيز السوبر ماركت.
                     </p>
+                    </>
+                    )}
                   </div>
                 )}
 
@@ -2449,10 +2251,16 @@ export default function Admin() {
             return (
               <div key={st.key} className="card p-4 flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-semibold text-sm truncate">{st.label || st.key}</p>
+                  <p className="font-semibold text-sm">{st.label || st.key}</p>
                 </div>
                 {isBool ? (
-                  <Toggle on={on} onChange={() => updateSetting(st, on ? 'false' : 'true')} label="مفعّل" labelOff="مقفول" />
+                  <button
+                    className={`shrink-0 rounded-full px-4 min-h-[44px] text-sm font-semibold transition-colors ${
+                      on ? 'bg-sea text-white' : 'bg-shellup text-mist'}`}
+                    aria-pressed={on}
+                    onClick={() => updateSetting(st, on ? 'false' : 'true')}>
+                    {on ? 'مفعّل' : 'مقفول'}
+                  </button>
                 ) : (
                   <input defaultValue={st.value} className="field !w-24 !py-1.5 text-center"
                     onBlur={e => updateSetting(st, e.target.value)} />
@@ -2701,7 +2509,7 @@ export default function Admin() {
                   <div className="min-w-0">
                     <p className="font-semibold text-sm truncate">طلب #{rt.order_id} — {rt.orders?.restaurants?.name}</p>
                     <p className="text-xs text-mist truncate flex items-center gap-1 flex-wrap">
-                      <span>{rt.orders?.customer_name} · <bdi dir="ltr">{rt.orders?.customer_phone}</bdi></span>
+                      <span>{rt.orders?.customer_name} · {rt.orders?.customer_phone}</span>
                       {rt.driver_rating != null && <span className="flex items-center gap-1">· المندوب <StarRow n={rt.driver_rating} /></span>}
                       {rt.restaurant_rating != null && <span className="flex items-center gap-1">· المطعم <StarRow n={rt.restaurant_rating} /></span>}
                     </p>
@@ -2857,7 +2665,7 @@ export default function Admin() {
                         {acc ? <p className="text-xs text-mist truncate" dir="ltr">{acc.email}</p>
                           : <p className="text-xs text-mist">مفيش حساب دخول</p>}
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex gap-1.5 shrink-0">
                         {acc ? (
                           <AccountActionsMenu
                             busy={accountBusy === acc.profile_id}
@@ -2870,7 +2678,8 @@ export default function Admin() {
                           <button className="btn-sea !py-1.5 !px-3 text-xs" disabled={accountBusy === `vendor-${r.id}`}
                             onClick={() => createVendorLogin(r.id)}>إنشاء حساب</button>
                         )}
-                        <Toggle on={!r.archived} onChange={() => archiveRestaurant(r, !r.archived)} label="ظاهر في التطبيق" labelOff="مخفي" />
+                        <button className={`!py-1.5 !px-2.5 text-xs ${r.archived ? 'btn-sea' : 'btn-ghost'}`}
+                          onClick={() => archiveRestaurant(r, !r.archived)}>{r.archived ? 'إظهار' : 'إخفاء'}</button>
                       </div>
                     </div>
                   </div>
@@ -2951,7 +2760,7 @@ export default function Admin() {
                         const checked = explicit.some(e => e.compound_id === c.id)
                         return (
                           <label key={c.id} className={`flex items-center gap-1.5 text-xs rounded-lg px-2 py-1.5 cursor-pointer ${checked ? 'bg-sea/10 text-sea font-semibold' : 'bg-shellup/50'}`}>
-                            <Toggle on={checked} onChange={() => toggleCoverage(r.id, c.id)} ariaLabel={`تغطية ${c.name} — ${r.name}`} />
+                            <input type="checkbox" className="accent-sea" checked={checked} onChange={() => toggleCoverage(r.id, c.id)} />
                             <span className="truncate">{c.name}</span>
                           </label>
                         )
@@ -2973,14 +2782,7 @@ export default function Admin() {
             <p className="font-mono text-sm bg-night border border-line rounded-lg p-2.5 mb-3" dir="ltr">{newCreds.email}</p>
             <p className="text-sm text-mist mb-1">كلمة السر</p>
             <p className="font-mono text-sm bg-night border border-line rounded-lg p-2.5 mb-4" dir="ltr">{newCreds.password}</p>
-            <div className="flex items-center gap-2 mb-4">
-              <p className="text-xs text-sandink flex-1">⚠️ ده ظاهر مرة واحدة بس — انسخه وابعته دلوقتي</p>
-              <button className="btn-sea !py-2 text-xs shrink-0" onClick={() => {
-                navigator.clipboard.writeText(`${newCreds.email}\n${newCreds.password}`)
-                setCredsCopied(true)
-                window.setTimeout(() => setCredsCopied(false), 1500)
-              }}>{credsCopied ? 'اتنسخ ✓' : '📋 نسخ'}</button>
-            </div>
+            <p className="text-xs text-sandink mb-4">⚠️ ده ظاهر مرة واحدة بس — انسخه وابعته دلوقتي</p>
             <button className="btn-sea w-full" onClick={() => setNewCreds(null)}>تمام</button>
           </div>
         </div>
@@ -3085,179 +2887,6 @@ export default function Admin() {
           onDeleted={() => { setEditingItem(null); load(true) }}
         />
       )}
-
-      {sheetElement}
-    </div>
-  )
-}
-
-
-/**
- * The end-of-day audit, live.
- *
- * Written after doing it by hand on 2026-08-07 and watching the answer change
- * within the hour. Three things it deliberately does that a naive dashboard
- * does not:
- *
- *  - It reports what SALKA KEPT, not GMV. On 6 August the app moved 8,167 ج.م
- *    of food and Salka's share of it was 737. A dashboard leading with the
- *    bigger number tells you a loss-making day was a triumph.
- *  - It counts the funnel by DEVICE, not by event. 408 arrivals from 267 phones
- *    is a denominator that flatters every rate underneath it.
- *  - It names its own assumption. Rider salary is paid outside the system --
- *    nothing in the database reads driver_daily_salary_egp -- so the figure is
- *    labelled as an assumption rather than presented as fact.
- */
-function DailyReportTab() {
-  // Was `Date.now() + 3h`, which is Cairo only during EEST -- in winter the tab
-  // opened on tomorrow's empty report between 23:00 and midnight local.
-  const [day, setDay] = useState(() =>
-    new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date()))
-  const [r, setR] = useState<any>(null)
-  const [err, setErr] = useState('')
-  const [busy, setBusy] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-    setBusy(true); setErr('')
-    supabase.rpc('admin_daily_report', { p_date: day }).then(({ data, error }) => {
-      if (cancelled) return
-      setBusy(false)
-      // setR(null) matters: without it a failed fetch left the PREVIOUS day's
-      // report rendered underneath the new date and the error banner -- a P&L
-      // screen showing yesterday's result as though it were today's.
-      if (error) { setErr(error.message); setR(null); return }
-      setR(data)
-    })
-    return () => { cancelled = true }
-  }, [day])
-
-  const n = (v: any) => Number(v ?? 0).toLocaleString('ar-EG-u-nu-latn',
-    { maximumFractionDigits: 0 })
-
-  const shift = (days: number) => {
-    const d = new Date(day + 'T12:00:00Z')
-    d.setDate(d.getDate() + days)
-    setDay(d.toISOString().slice(0, 10))
-  }
-
-  const f = r?.funnel ?? {}
-  const steps: [string, number][] = [
-    ['دخلوا التطبيق', f.arrived ?? 0],
-    ['اختاروا مكانهم', f.chose_place ?? 0],
-    ['فتحوا مطعم', f.opened_vendor ?? 0],
-    ['ضافوا صنف', f.added_item ?? 0],
-    ['بدأوا الدفع', f.checkout ?? 0],
-    ['طلبوا', f.ordered ?? 0],
-  ]
-  // Steps are counted per DEVICE over the same window, but a returning device
-  // can choose a place without a fresh `arrival`, so a later step can exceed
-  // the first. Without this the bar renders width:500% and the label «500٪».
-  const top = Math.max(...steps.map(x => x[1]), 1)
-  // `?? []` only defends against null. If the RPC ever returns an object here
-  // instead of an array, `.find` is not a function and the THROW takes down the
-  // whole Admin tree, not just this tab.
-  const browsers: any[] = Array.isArray(r?.by_browser) ? r.by_browser : []
-  const inApp = browsers.find(b => b.segment === 'in_app')
-  const normal = browsers.find(b => b.segment === 'browser')
-  const losing = Number(r?.result ?? 0) < 0
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
-        <button className="btn-ghost text-sm" onClick={() => shift(-1)}>اليوم اللي قبله ←</button>
-        <span className="font-bold text-sm">{day}</span>
-        <button className="btn-ghost text-sm" onClick={() => shift(1)}>→ اليوم اللي بعده</button>
-      </div>
-
-      {busy && <div className="card p-6 text-center text-mist">بنحسب…</div>}
-      {err && <div className="card p-4 text-red-600 text-sm">{err}</div>}
-
-      {r && !busy && (
-        <>
-          <div className={`card p-5 ${losing ? 'bg-red-500/5 border-red-500/25' : 'bg-emerald-500/5 border-emerald-500/25'}`}>
-            <p className="text-sm font-semibold mb-1">
-              {losing ? '▼ نتيجة اليوم' : '▲ نتيجة اليوم'}
-            </p>
-            <p className={`text-4xl font-bold ${losing ? 'text-red-600' : 'text-emerald-700'}`}>
-              <bdi dir="ltr">{n(r.result)}</bdi> <span className="text-lg">ج.م</span>
-            </p>
-            <p className="text-sm text-mist mt-2">
-              دخل سالكة {n(r.revenue)} ج.م − أجور {r.riders_active} مندوبين {n(r.assumed_rider_cost)} ج.م
-            </p>
-            {/* Said out loud, because nothing in the database actually pays this. */}
-            <p className="text-[11px] text-mist mt-1">
-              الأجور مفترضة من إعداد «المرتب اليومي» ({n(r.rider_daily_salary)} ج.م) — النظام نفسه مش بيصرفها
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Stat k="طلبات اتوصّلت" v={n(r.delivered)} sub={`من ${n(r.orders_created)} اتعملوا`} />
-            <Stat k="نسبة الإلغاء" v={`${n(r.cancel_pct)}٪`} sub={`${n(r.cancelled)} طلب`} warn={Number(r.cancel_pct) > 15} />
-            <Stat k="دخل سالكة للطلب" v={n(r.revenue_per_delivered)} sub="توصيل + خدمة" />
-            <Stat k="تكلفة المندوب للطلب" v={n(r.cost_per_delivered)} sub="أجور ÷ طلبات" warn />
-            <Stat k="من نقطة التعادل" v={`${n(r.pct_of_breakeven ?? 0)}٪`} sub={`محتاج ${n(r.breakeven_orders)} طلب`} warn={Number(r.pct_of_breakeven ?? 0) < 100} />
-            <Stat k="قيمة الطلبات كلها" v={n(r.gmv)} sub="أغلبها بضاعة للتجار" />
-          </div>
-
-          {(Number(r.unpriced_left_open) > 0 || Number(r.unpaid_left_open) > 0) && (
-            <div className="card p-4 bg-sand/10 border-sand/40 text-sm">
-              <b>سايبين معلّق:</b>{' '}
-              {Number(r.unpriced_left_open) > 0 && <>{n(r.unpriced_left_open)} طلب مستني تسعير. </>}
-              {Number(r.unpaid_left_open) > 0 && <>{n(r.unpaid_left_open)} طلب مستني دفع.</>}
-            </div>
-          )}
-
-          <div className="card p-4">
-            <h3 className="font-bold text-sm mb-3">من دخل التطبيق لحد ما طلب</h3>
-            {steps.map(([label, val], i) => (
-              <div key={label} className="mb-2">
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className={i === 0 ? 'font-semibold' : 'text-mist'}>{label}</span>
-                  <span className="font-bold">
-                    {n(val)}{i > 0 && <span className="text-mist font-normal"> · {Math.round(val / top * 100)}٪</span>}
-                  </span>
-                </div>
-                <div className="h-2 rounded-full bg-shellup overflow-hidden">
-                  <div className="h-full bg-sea rounded-full"
-                    style={{ width: `${Math.max(val / top * 100, val > 0 ? 1.5 : 0)}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {inApp && Number(inApp.devices) > 0 && (
-            <div className="card p-4">
-              <h3 className="font-bold text-sm mb-1">متصفح فيسبوك الداخلي</h3>
-              <p className="text-xs text-mist mb-3">
-                إعلانات فيسبوك بتفتح جوه التطبيق نفسه. لو الرقم ده فضل صفر، فلوس الإعلانات بتضيع.
-              </p>
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="rounded-xl bg-shellup p-3">
-                  <p className="text-xs text-mist">جوه فيسبوك</p>
-                  <p className="font-bold">{n(inApp.devices)} جهاز</p>
-                  <p className="text-xs text-mist">{n(inApp.chose_place)} اختاروا مكانهم · {n(inApp.ordered)} طلبوا</p>
-                </div>
-                <div className="rounded-xl bg-shellup p-3">
-                  <p className="text-xs text-mist">متصفح عادي</p>
-                  <p className="font-bold">{n(normal?.devices)} جهاز</p>
-                  <p className="text-xs text-mist">{n(normal?.chose_place)} اختاروا مكانهم · {n(normal?.ordered)} طلبوا</p>
-                </div>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  )
-}
-
-function Stat({ k, v, sub, warn }: { k: string; v: string; sub?: string; warn?: boolean }) {
-  return (
-    <div className="card p-3.5">
-      <p className="text-[11px] text-mist mb-1 min-h-[2.4em] leading-snug">{k}</p>
-      <p className={`text-xl font-bold ${warn ? 'text-red-600' : ''}`}>{v}</p>
-      {sub && <p className="text-[11px] text-mist mt-0.5">{sub}</p>}
     </div>
   )
 }

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, useId } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { customerOrderCreation } from '../lib/customerOrderCreation'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { useCart } from '../lib/cart'
 import { loadMenuOptions } from '../lib/menuOptions'
@@ -15,8 +14,6 @@ import { applyDiscount, effectiveDiscount } from '../lib/discounts'
 import LocationPreviewMap from '../components/LocationPreviewMap'
 import type { Compound, Discount, MenuItem, MenuItemAddon, MenuItemCombo, MenuItemSize, Restaurant, Slot } from '../lib/types'
 import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
-import { publicCatalog } from '../lib/publicCatalog'
-import { customerSessionAccess } from '../lib/customerSessionAccess'
 
 export default function CheckoutPage() {
   const fid = useId()
@@ -52,9 +49,6 @@ export default function CheckoutPage() {
   // The effect below is what actually delivers them.
   const [name, setName] = useState(() => customer?.name ?? '')
   const [phone, setPhone] = useState(() => customer?.phone ?? localStorage.getItem('salka_phone') ?? '')
-  // Which fields the customer has actually left, so an error appears when they
-  // move on rather than scolding an empty form on first paint.
-  const [touched, setTouched] = useState<Record<string, boolean>>({})
 
   // Fill from the account once it lands, but never overwrite something the
   // customer has already typed -- they may be ordering for someone else.
@@ -83,12 +77,12 @@ export default function CheckoutPage() {
   const [walletFailed, setWalletFailed] = useState(false)
   const [compoundsFailed, setCompoundsFailed] = useState(false)
   // null until the server answers. This used to default to 300 while
-  // settings.cod_deposit_threshold_egp says 3000, so for the moment between
+  // settings.cod_deposit_threshold_egp says 1000, so for the moment between
   // first paint and the settings fetch landing, a 451 ج.م order was told it
   // needed a 208 ج.م InstaPay deposit that it does not need -- a false
   // statement about payment terms, on the checkout screen, in the second
   // someone is deciding whether to go through with it. On a *failed* fetch it
-  // was not a flash at all: every order between 300 and 3000 kept the warning.
+  // was not a flash at all: every order between 300 and 1000 kept the warning.
   // Same rule as the delivery fee and the service fee: never guess a
   // server-owned number.
   const [codDepositThreshold, setCodDepositThreshold] = useState<number | null>(null)
@@ -126,9 +120,9 @@ export default function CheckoutPage() {
     // A failed lookup used to be indistinguishable from an empty wallet, so the
     // customer's credit was silently not offered at checkout.
     const key = `salka_wallet_seen_${phone.trim()}`
-    customerSessionAccess<number>('wallet', { phone: phone.trim(), sessionToken: getSessionToken() })
-      .then(result => {
-        if (!result.ok) {
+    supabase.rpc('wallet_balance_for_phone', { p_phone: phone.trim(), p_session_token: getSessionToken() })
+      .then(({ data, error }) => {
+        if (error) {
           // Only warn someone who has actually HAD credit.
           //
           // The banner used to fire on any failed lookup, which meant a warning
@@ -145,7 +139,7 @@ export default function CheckoutPage() {
           return
         }
         setWalletFailed(false)
-        const balance = Number(result.data) || 0
+        const balance = Number(data) || 0
         setWalletBalance(balance)
         try { localStorage.setItem(key, String(balance)) } catch { /* private mode */ }
       })
@@ -154,10 +148,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!isValidEgyptPhone(phone) || addressLoaded) return
     const t = setTimeout(async () => {
-      const result = await customerSessionAccess<{
-        customer_name: string | null; unit_number: string | null; address_notes: string | null; compound_id: number | null
-      } | null>('lastAddress', { phone, sessionToken: getSessionToken() })
-      const data = result.ok ? result.data : null
+      const { data } = await supabase.rpc('last_address_for_phone', { p_phone: phone, p_session_token: getSessionToken() })
       setAddressLoaded(true)
       if (data) {
         if (!name.trim() && data.customer_name) setName(data.customer_name)
@@ -182,8 +173,7 @@ export default function CheckoutPage() {
     // no explanation. Surface it.
     supabase.from('compounds').select('*').eq('active', true).order('direction').order('distance_km')
       .then(({ data, error }) => { setCompoundsFailed(!!error); setCompounds(data ?? []) })
-    publicCatalog<Slot[]>('openSlots', { restaurantId: cart.restaurantId })
-      .then(res => setSlots(res.ok ? res.data : []))
+    supabase.rpc('open_slots', { p_restaurant_id: cart.restaurantId }).then(({ data }) => setSlots((data as Slot[]) ?? []))
     supabase.from('discounts').select('*').eq('restaurant_id', cart.restaurantId).eq('active', true)
       .then(({ data }) => setDiscounts(data ?? []))
     // A failed read, a missing row or a value of "0" all left this null, and
@@ -231,7 +221,9 @@ export default function CheckoutPage() {
 
   const lines = useMemo(() => cart.lines.filter(l => items.some(i => i.id === l.menuItemId)), [items, cart.lines])
   const subtotal = lines.reduce((s, l) => s + priceFor(l).unit * l.qty, 0)
-  const scheduled = restaurant?.vendor_type === 'supermarket'
+  // Per-vendor switch rather than a hardcoded vendor_type check -- see
+  // Restaurant.uses_delivery_slots.
+  const scheduled = restaurant?.uses_delivery_slots === true
   const hasRx = lines.some(l => priceFor(l).item?.requires_prescription)
   const selectedCompound = compounds.find(c => c.id === compoundId)
   // Authoritative fee from the server. null while loading or on failure -- we
@@ -275,43 +267,25 @@ export default function CheckoutPage() {
     setSaving(true)
     setError('')
     const payload = lines.map(l => ({ menu_item_id: l.menuItemId, qty: l.qty, size_id: l.sizeId, combo_id: l.comboId, addon_ids: l.addonIds }))
-    const result = await customerOrderCreation<{ token: string; id: number; cod_deposit_amount?: number | null }>('catalog', {
-      restaurantId: restaurant.id,
-      customerName: name.trim(),
-      customerPhone: phone.trim(),
-      zone: selectedCompound?.name ?? '',
-      unitNumber: unit.trim(),
-      addressNotes: notes.trim(),
-      deliveryFee: deliveryFee ?? 0, // server recomputes and ignores this
-      items: payload,
-      slotId: slot?.id ?? null,
-      scheduledDate: slot?.scheduled_date ?? null,
-      compoundId,
-      paymentMethod: isInstapay ? 'instapay' : 'cod',
-      useWallet: walletBalance > 0 && useWallet,
-      sessionToken: getSessionToken(),
-      customerNote: customerNote.trim() || null
+    const { data, error: err } = await supabase.rpc('place_order', {
+      p_restaurant_id: restaurant.id,
+      p_customer_name: name.trim(),
+      p_customer_phone: phone.trim(),
+      p_zone: selectedCompound?.name ?? '',
+      p_unit_number: unit.trim(),
+      p_address_notes: notes.trim(),
+      p_delivery_fee: deliveryFee ?? 0, // server recomputes and ignores this
+      p_items: payload,
+      p_slot_id: slot?.id ?? null,
+      p_scheduled_date: slot?.scheduled_date ?? null,
+      p_compound_id: compoundId,
+      p_payment_method: isInstapay ? 'instapay' : 'cod',
+      p_use_wallet: walletBalance > 0 && useWallet,
+      p_session_token: getSessionToken(),
+      p_customer_note: customerNote.trim() || null
     })
-    const data = result.ok ? result.data : null
-    const err = result.ok ? null : { message: result.code }
-    if (!result.ok || !data?.token) {
+    if (err || !data?.token) {
       setSaving(false)
-      const reason =
-        err?.message.includes('slot_full') ? 'slot_full'
-        : err?.message.includes('invalid_combo') ? 'invalid_combo'
-        : err?.message.includes('restaurant_closed') ? 'restaurant_closed'
-        : err?.message.includes('vendor_not_covering_compound') ? 'coverage'
-        : err?.message.includes('item_not_available_now') ? 'timed_item_unavailable'
-        : err?.message.includes('item_unavailable') ? 'item_unavailable'
-        : err?.message.includes('size_required') || err?.message.includes('invalid_size') ? 'size'
-        : err?.message.includes('addon_group_min_not_met') ? 'addon_required'
-        : err?.message.includes('addon_group_max_exceeded') ? 'addon_limit'
-        : 'unknown'
-      track('checkout_blocked', {
-        restaurantId: restaurant.id,
-        compoundId,
-        props: { reason, payment: isInstapay ? 'instapay' : 'cod' },
-      })
       setError(
         err?.message.includes('slot_full') ? 'الفترة دي اتملت، اختار فترة تانية'
         : err?.message.includes('invalid_combo') ? 'فيه كومبو في عربتك مابقاش متاح — امسح الصنف وضيفه تاني'
@@ -449,17 +423,9 @@ export default function CheckoutPage() {
           </div>
         ) : (
           <>
-            {/* «(مطلوب)» rather than a bare `*` — the asterisk is a Western
-                form convention that announces as nothing and sits where an
-                Arabic reader does not look for it. */}
-            <div><label className="label" htmlFor={`${fid}-1`}>الاسم <span className="text-mist font-normal">(مطلوب)</span></label>
-              <input id={`${fid}-1`} className={`field ${touched.name && !name.trim() ? '!border-red-400' : ''}`}
-                value={name} onChange={e => setName(e.target.value)}
-                onBlur={() => setTouched(t => ({ ...t, name: true }))} placeholder="الاسم بالكامل" />
-              {touched.name && !name.trim() && (
-                <p className="text-xs text-red-600 mt-1">اكتب اسمك عشان المندوب يعرف يسأل عليك</p>
-              )}</div>
-            <div><label className="label" htmlFor={`${fid}-2`}>رقم الموبايل <span className="text-mist font-normal">(مطلوب)</span></label>
+            <div><label className="label" htmlFor={`${fid}-1`}>الاسم *</label>
+              <input id={`${fid}-1`} className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
+            <div><label className="label" htmlFor={`${fid}-2`}>رقم الموبايل *</label>
               <input id={`${fid}-2`} className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-red-400' : ''}`}
                 dir="ltr" value={phone} onChange={e => setPhone(e.target.value)}
                 placeholder="01xxxxxxxxx" maxLength={13} />
@@ -491,13 +457,8 @@ export default function CheckoutPage() {
                 <option value="">اختر مكانك…</option>
                 {compounds.map(c => <option key={c.id} value={c.id}>{c.name} (~{c.est_travel_minutes} د)</option>)}
               </select></div>
-            <div><label className="label" htmlFor={`${fid}-4`}>رقم الشاليه / الفيلا <span className="text-mist font-normal">(مطلوب)</span></label>
-              <input id={`${fid}-4`} className={`field ${touched.unit && !unit.trim() ? '!border-red-400' : ''}`}
-                value={unit} onChange={e => setUnit(e.target.value)}
-                onBlur={() => setTouched(t => ({ ...t, unit: true }))} placeholder="مثال: B4 - 204" />
-              {touched.unit && !unit.trim() && (
-                <p className="text-xs text-red-600 mt-1">من غير رقم الوحدة المندوب مش هيعرف يوصلك</p>
-              )}</div>
+            <div><label className="label" htmlFor={`${fid}-4`}>رقم الشاليه / الفيلا *</label>
+              <input id={`${fid}-4`} className="field" value={unit} onChange={e => setUnit(e.target.value)} placeholder="مثال: B4 - 204" /></div>
             {showLandmark || notes.trim() ? (
               <div><label className="label" htmlFor={`${fid}-5`}>علامة مميزة (اختياري)</label>
                 <input id={`${fid}-5`} className="field" value={notes} onChange={e => setNotes(e.target.value)} placeholder="مثال: بجوار حمام السباحة" autoFocus /></div>
@@ -592,20 +553,6 @@ export default function CheckoutPage() {
             <span className="font-semibold flex-1">InstaPay</span>
             <input type="radio" checked={paymentMethod === 'instapay'} onChange={() => setPaymentMethod('instapay')} className="accent-sea w-4 h-4" />
           </label>
-          {/* The same disclosure the cash path already gets, for the same
-              reason. An InstaPay order is BORN at awaiting_payment: the button
-              says «تأكيد الطلب · {finalTotal} ج.م», the basket is emptied, and
-              the customer lands on a full-screen transfer wall they were never
-              warned about -- and nothing is cooked until they pay. That exact
-              complaint was fixed for the cash-deposit path and left open here,
-              which is how one order can be disclosed and the next one ambushed.
-
-              Says the whole amount, not half: InstaPay is prepaid in full. */}
-          {paymentMethod === 'instapay' && serviceFee !== null && deliveryFee !== null && (
-            <p className="text-xs text-sandink -mt-1 px-1">
-              هتحوّل {finalTotal} ج.م كاملة على InstaPay قبل ما المطعم يبدأ التحضير — هنوريك الـ QR والرقم بعد التأكيد، ولو غيّرت رأيك تقدر ترجع كاش من نفس الشاشة
-            </p>
-          )}
         </div>
       </div>
 
@@ -700,31 +647,20 @@ export default function CheckoutPage() {
           sits inside a card the customer may never have opened. Verified on the
           live site: name + phone + compound filled, submit dead, page silent. */}
       {!valid && !saving && (() => {
-        // Each reason now knows WHICH control it is about, so the message is a
-        // way back to the field rather than a sentence the customer has to map
-        // onto a form they may have scrolled past.
-        const m: { text: string; field?: string; touch?: string } | null =
-          !name.trim() ? { text: 'اكتب اسمك', field: `${fid}-1`, touch: 'name' }
-          : !isValidEgyptPhone(phone) ? { text: 'اكتب رقم موبايل صحيح', field: `${fid}-2` }
-          : !selectedCompound ? { text: 'اختار مكانك', field: `${fid}-3` }
-          : !unit.trim() ? { text: 'اكتب رقم الشاليه / الفيلا', field: `${fid}-4`, touch: 'unit' }
-          : !optionsLoaded ? { text: 'بنحمّل تفاصيل الأصناف…' }
-          : deliveryFee === null ? { text: 'بنحسب رسوم التوصيل…' }
-          : serviceFee === null ? { text: 'بنحسب رسوم الخدمة…' }
-          : (scheduled && !slot) ? { text: 'اختار فترة التوصيل' }
-          : (paymentMethod === 'cod' && codThresholdFailed)
-            ? { text: 'مش قادرين نتأكد من شروط الدفع كاش — جرب تاني أو اختار InstaPay' }
+        const missing =
+          !name.trim() ? 'اكتب اسمك'
+          : !isValidEgyptPhone(phone) ? 'اكتب رقم موبايل صحيح'
+          : !selectedCompound ? 'اختار مكانك'
+          : !unit.trim() ? 'اكتب رقم الشاليه / الفيلا'
+          : !optionsLoaded ? 'بنحمّل تفاصيل الأصناف…'
+          : deliveryFee === null ? 'بنحسب رسوم التوصيل…'
+          : serviceFee === null ? 'بنحسب رسوم الخدمة…'
+          : (scheduled && !slot) ? 'اختار فترة التوصيل'
+          : (paymentMethod === 'cod' && codThresholdFailed) ? 'مش قادرين نتأكد من شروط الدفع كاش — جرب تاني أو اختار InstaPay'
           : null
-        if (!m) return null
-        const cls = 'w-full text-sm text-sandink bg-sand/10 rounded-xl p-3 mb-3 text-center'
-        return m.field ? (
-          <button className={cls} onClick={() => {
-            if (m.touch) setTouched(t => ({ ...t, [m.touch!]: true }))
-            const el = document.getElementById(m.field!)
-            el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-            ;(el as HTMLInputElement | null)?.focus({ preventScroll: true })
-          }}>{m.text} ←</button>
-        ) : <p className={cls}>{m.text}</p>
+        return missing ? (
+          <p className="text-sm text-sandink bg-sand/10 rounded-xl p-3 mb-3 text-center">{missing}</p>
+        ) : null
       })()}
 
       <button className="btn-sea w-full !py-3.5" disabled={!valid || saving} onClick={placeOrder}>
