@@ -1,0 +1,2 @@
+-- Historical migration marker: supervisor_pharmacy_supermarket_remit
+-- The production schema is captured in supabase/baseline; this version is already applied.

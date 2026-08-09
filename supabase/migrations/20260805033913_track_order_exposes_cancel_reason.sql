@@ -1,0 +1,2 @@
+-- Historical migration marker: track_order_exposes_cancel_reason
+-- The production schema is captured in supabase/baseline; this version is already applied.

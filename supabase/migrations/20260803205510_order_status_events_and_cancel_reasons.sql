@@ -1,0 +1,2 @@
+-- Historical migration marker: order_status_events_and_cancel_reasons
+-- The production schema is captured in supabase/baseline; this version is already applied.

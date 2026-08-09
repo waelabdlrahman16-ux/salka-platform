@@ -1,0 +1,2 @@
+-- Historical migration marker: tell_the_kitchen_when_an_order_is_cancelled
+-- The production schema is captured in supabase/baseline; this version is already applied.

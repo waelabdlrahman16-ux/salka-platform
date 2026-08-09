@@ -1,0 +1,2 @@
+-- Historical migration marker: add_refund_tracking
+-- The production schema is captured in supabase/baseline; this version is already applied.

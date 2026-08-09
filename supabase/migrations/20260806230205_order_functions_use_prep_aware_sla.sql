@@ -1,0 +1,2 @@
+-- Historical migration marker: order_functions_use_prep_aware_sla
+-- The production schema is captured in supabase/baseline; this version is already applied.

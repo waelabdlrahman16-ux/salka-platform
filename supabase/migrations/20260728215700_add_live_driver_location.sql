@@ -1,0 +1,2 @@
+-- Historical migration marker: add_live_driver_location
+-- The production schema is captured in supabase/baseline; this version is already applied.

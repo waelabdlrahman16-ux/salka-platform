@@ -1,0 +1,2 @@
+-- Historical migration marker: add_missing_indexes
+-- The production schema is captured in supabase/baseline; this version is already applied.

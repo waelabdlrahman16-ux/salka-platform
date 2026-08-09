@@ -1,0 +1,2 @@
+-- Historical migration marker: admin_account_management_support
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: my_orders_trust_supabase_auth
+-- The production schema is captured in supabase/baseline; this version is already applied.

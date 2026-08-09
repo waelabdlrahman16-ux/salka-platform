@@ -1,0 +1,2 @@
+-- Historical migration marker: push_token_platform_and_native_targets
+-- The production schema is captured in supabase/baseline; this version is already applied.

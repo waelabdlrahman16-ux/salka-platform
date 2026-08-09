@@ -1,0 +1,2 @@
+-- Historical migration marker: vendor_next_open_and_admin_hours_per_day
+-- The production schema is captured in supabase/baseline; this version is already applied.

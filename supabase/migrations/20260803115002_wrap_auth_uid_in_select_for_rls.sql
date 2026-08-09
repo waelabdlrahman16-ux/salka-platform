@@ -1,0 +1,2 @@
+-- Historical migration marker: wrap_auth_uid_in_select_for_rls
+-- The production schema is captured in supabase/baseline; this version is already applied.

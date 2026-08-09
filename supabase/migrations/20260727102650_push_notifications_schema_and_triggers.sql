@@ -1,0 +1,2 @@
+-- Historical migration marker: push_notifications_schema_and_triggers
+-- The production schema is captured in supabase/baseline; this version is already applied.

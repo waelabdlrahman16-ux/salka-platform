@@ -1,0 +1,2 @@
+-- Historical migration marker: driver_stats_with_bonus_progress
+-- The production schema is captured in supabase/baseline; this version is already applied.

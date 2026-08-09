@@ -1,0 +1,2 @@
+-- Historical migration marker: adjust_order_60_item_price_difference
+-- The production schema is captured in supabase/baseline; this version is already applied.

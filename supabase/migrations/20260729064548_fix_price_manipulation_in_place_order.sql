@@ -1,0 +1,2 @@
+-- Historical migration marker: fix_price_manipulation_in_place_order
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: fix_pickup_request_van_threshold
+-- The production schema is captured in supabase/baseline; this version is already applied.

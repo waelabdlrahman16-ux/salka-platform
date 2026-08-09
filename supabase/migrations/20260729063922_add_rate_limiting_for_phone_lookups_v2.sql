@@ -1,0 +1,2 @@
+-- Historical migration marker: add_rate_limiting_for_phone_lookups_v2
+-- The production schema is captured in supabase/baseline; this version is already applied.

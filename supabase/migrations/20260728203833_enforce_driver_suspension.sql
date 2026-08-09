@@ -1,0 +1,2 @@
+-- Historical migration marker: enforce_driver_suspension
+-- The production schema is captured in supabase/baseline; this version is already applied.

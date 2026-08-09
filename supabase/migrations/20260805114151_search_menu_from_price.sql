@@ -1,0 +1,2 @@
+-- Historical migration marker: search_menu_from_price
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: restaurant_public_carries_computed_open_state
+-- The production schema is captured in supabase/baseline; this version is already applied.

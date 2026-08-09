@@ -1,0 +1,2 @@
+-- Historical migration marker: sla_includes_prep_time_and_is_tunable
+-- The production schema is captured in supabase/baseline; this version is already applied.

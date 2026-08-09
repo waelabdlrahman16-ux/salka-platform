@@ -1,0 +1,2 @@
+-- Historical migration marker: extract_pure_time_window_predicate
+-- The production schema is captured in supabase/baseline; this version is already applied.

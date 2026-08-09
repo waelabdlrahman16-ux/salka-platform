@@ -1,0 +1,2 @@
+-- Historical migration marker: vendor_temporary_close_and_hours_admin
+-- The production schema is captured in supabase/baseline; this version is already applied.

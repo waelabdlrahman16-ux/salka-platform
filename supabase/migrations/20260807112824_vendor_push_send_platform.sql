@@ -1,0 +1,2 @@
+-- Historical migration marker: vendor_push_send_platform
+-- The production schema is captured in supabase/baseline; this version is already applied.

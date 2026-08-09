@@ -1,0 +1,2 @@
+-- Historical migration marker: custom_order_prescription
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: ratings_and_reliability
+-- The production schema is captured in supabase/baseline; this version is already applied.

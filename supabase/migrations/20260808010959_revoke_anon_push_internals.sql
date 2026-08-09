@@ -1,0 +1,2 @@
+-- Historical migration marker: revoke_anon_push_internals
+-- The production schema is captured in supabase/baseline; this version is already applied.

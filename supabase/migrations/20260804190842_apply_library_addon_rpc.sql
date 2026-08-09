@@ -1,0 +1,2 @@
+-- Historical migration marker: apply_library_addon_rpc
+-- The production schema is captured in supabase/baseline; this version is already applied.

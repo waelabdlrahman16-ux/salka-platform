@@ -1,0 +1,2 @@
+-- Historical migration marker: fix_activate_paid_order_public_grant
+-- The production schema is captured in supabase/baseline; this version is already applied.

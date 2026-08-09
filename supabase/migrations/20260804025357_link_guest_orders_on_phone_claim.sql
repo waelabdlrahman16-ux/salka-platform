@@ -1,0 +1,2 @@
+-- Historical migration marker: link_guest_orders_on_phone_claim
+-- The production schema is captured in supabase/baseline; this version is already applied.

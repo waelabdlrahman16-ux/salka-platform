@@ -1,0 +1,2 @@
+-- Historical migration marker: fix_phone_validation_regex
+-- The production schema is captured in supabase/baseline; this version is already applied.

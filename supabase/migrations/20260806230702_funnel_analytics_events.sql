@@ -1,0 +1,2 @@
+-- Historical migration marker: funnel_analytics_events
+-- The production schema is captured in supabase/baseline; this version is already applied.

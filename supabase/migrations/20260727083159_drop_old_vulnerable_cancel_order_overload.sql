@@ -1,0 +1,2 @@
+-- Historical migration marker: drop_old_vulnerable_cancel_order_overload
+-- The production schema is captured in supabase/baseline; this version is already applied.

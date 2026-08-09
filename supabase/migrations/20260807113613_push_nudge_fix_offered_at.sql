@@ -1,0 +1,2 @@
+-- Historical migration marker: push_nudge_fix_offered_at
+-- The production schema is captured in supabase/baseline; this version is already applied.

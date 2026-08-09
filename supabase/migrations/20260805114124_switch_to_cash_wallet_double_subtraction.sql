@@ -1,0 +1,2 @@
+-- Historical migration marker: switch_to_cash_wallet_double_subtraction
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: no_pricing_a_cancelled_order
+-- The production schema is captured in supabase/baseline; this version is already applied.

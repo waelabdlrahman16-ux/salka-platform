@@ -1,0 +1,2 @@
+-- Historical migration marker: lock_down_rate_limit_log
+-- The production schema is captured in supabase/baseline; this version is already applied.

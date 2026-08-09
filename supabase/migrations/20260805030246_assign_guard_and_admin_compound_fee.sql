@@ -1,0 +1,2 @@
+-- Historical migration marker: assign_guard_and_admin_compound_fee
+-- The production schema is captured in supabase/baseline; this version is already applied.

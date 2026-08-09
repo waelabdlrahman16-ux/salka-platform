@@ -1,0 +1,2 @@
+-- Historical migration marker: distance_based_delivery_fee
+-- The production schema is captured in supabase/baseline; this version is already applied.

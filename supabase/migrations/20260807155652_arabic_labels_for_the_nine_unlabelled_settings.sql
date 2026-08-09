@@ -1,0 +1,2 @@
+-- Historical migration marker: arabic_labels_for_the_nine_unlabelled_settings
+-- The production schema is captured in supabase/baseline; this version is already applied.

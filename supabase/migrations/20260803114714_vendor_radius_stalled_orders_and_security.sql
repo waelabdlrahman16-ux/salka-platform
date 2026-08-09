@@ -1,0 +1,2 @@
+-- Historical migration marker: vendor_radius_stalled_orders_and_security
+-- The production schema is captured in supabase/baseline; this version is already applied.

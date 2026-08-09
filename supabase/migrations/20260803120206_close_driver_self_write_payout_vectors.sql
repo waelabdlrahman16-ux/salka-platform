@@ -1,0 +1,2 @@
+-- Historical migration marker: close_driver_self_write_payout_vectors
+-- The production schema is captured in supabase/baseline; this version is already applied.

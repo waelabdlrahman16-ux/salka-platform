@@ -1,0 +1,2 @@
+-- Historical migration marker: supermarket_slots_and_per_order_vehicle_rule
+-- The production schema is captured in supabase/baseline; this version is already applied.

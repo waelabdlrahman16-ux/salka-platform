@@ -1,0 +1,2 @@
+-- Historical migration marker: shifts_and_swaps
+-- The production schema is captured in supabase/baseline; this version is already applied.

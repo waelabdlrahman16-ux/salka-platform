@@ -1,0 +1,2 @@
+-- Historical migration marker: remove_chalets_harden_search_path
+-- The production schema is captured in supabase/baseline; this version is already applied.

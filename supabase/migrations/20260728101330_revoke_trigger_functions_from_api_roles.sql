@@ -1,0 +1,2 @@
+-- Historical migration marker: revoke_trigger_functions_from_api_roles
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: customer_push_token_platform_and_feedback
+-- The production schema is captured in supabase/baseline; this version is already applied.

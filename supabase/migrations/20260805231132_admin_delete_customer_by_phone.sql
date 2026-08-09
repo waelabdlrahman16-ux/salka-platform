@@ -1,0 +1,2 @@
+-- Historical migration marker: admin_delete_customer_by_phone
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: my_customer_profile
+-- The production schema is captured in supabase/baseline; this version is already applied.

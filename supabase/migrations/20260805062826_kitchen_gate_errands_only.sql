@@ -1,0 +1,2 @@
+-- Historical migration marker: kitchen_gate_errands_only
+-- The production schema is captured in supabase/baseline; this version is already applied.

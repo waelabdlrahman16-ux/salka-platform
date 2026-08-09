@@ -1,0 +1,2 @@
+-- Historical migration marker: notify_admin_includes_supervisor
+-- The production schema is captured in supabase/baseline; this version is already applied.

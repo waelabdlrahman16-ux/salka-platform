@@ -1,0 +1,2 @@
+-- Historical migration marker: relax_phone_lookups_but_gate_public_token
+-- The production schema is captured in supabase/baseline; this version is already applied.

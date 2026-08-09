@@ -1,0 +1,2 @@
+-- Historical migration marker: pharmacy_type_and_vehicle_matching
+-- The production schema is captured in supabase/baseline; this version is already applied.

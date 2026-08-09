@@ -1,0 +1,2 @@
+-- Historical migration marker: fix_mark_delivered_restore_driver_update
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: launch_dispatch_clock_and_slots
+-- The production schema is captured in supabase/baseline; this version is already applied.

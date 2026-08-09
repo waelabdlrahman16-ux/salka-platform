@@ -1,0 +1,2 @@
+-- Historical migration marker: critical_slot_timezone_and_wallet_ownership
+-- The production schema is captured in supabase/baseline; this version is already applied.

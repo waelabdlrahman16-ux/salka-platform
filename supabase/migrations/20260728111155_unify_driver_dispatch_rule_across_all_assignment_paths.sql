@@ -1,0 +1,2 @@
+-- Historical migration marker: unify_driver_dispatch_rule_across_all_assignment_paths
+-- The production schema is captured in supabase/baseline; this version is already applied.

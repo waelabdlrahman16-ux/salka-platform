@@ -1,0 +1,2 @@
+-- Historical migration marker: dispatch_payment_and_notification_fixes
+-- The production schema is captured in supabase/baseline; this version is already applied.

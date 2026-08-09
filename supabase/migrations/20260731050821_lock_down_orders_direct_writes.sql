@@ -1,0 +1,2 @@
+-- Historical migration marker: lock_down_orders_direct_writes
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: cap_push_tokens_per_profile
+-- The production schema is captured in supabase/baseline; this version is already applied.

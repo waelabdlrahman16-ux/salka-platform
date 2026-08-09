@@ -1,0 +1,2 @@
+-- Historical migration marker: money_fixes_wallet_instapay_deposit
+-- The production schema is captured in supabase/baseline; this version is already applied.

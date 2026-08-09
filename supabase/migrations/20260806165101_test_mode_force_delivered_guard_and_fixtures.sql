@@ -1,0 +1,2 @@
+-- Historical migration marker: test_mode_force_delivered_guard_and_fixtures
+-- The production schema is captured in supabase/baseline; this version is already applied.

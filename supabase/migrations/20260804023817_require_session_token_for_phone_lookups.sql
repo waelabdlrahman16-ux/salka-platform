@@ -1,0 +1,2 @@
+-- Historical migration marker: require_session_token_for_phone_lookups
+-- The production schema is captured in supabase/baseline; this version is already applied.

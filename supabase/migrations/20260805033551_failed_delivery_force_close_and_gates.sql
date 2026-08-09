@@ -1,0 +1,2 @@
+-- Historical migration marker: failed_delivery_force_close_and_gates
+-- The production schema is captured in supabase/baseline; this version is already applied.

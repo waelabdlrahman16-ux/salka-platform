@@ -1,0 +1,2 @@
+-- Historical migration marker: search_menu_for_compound
+-- The production schema is captured in supabase/baseline; this version is already applied.

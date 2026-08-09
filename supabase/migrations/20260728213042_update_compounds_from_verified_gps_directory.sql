@@ -1,0 +1,2 @@
+-- Historical migration marker: update_compounds_from_verified_gps_directory
+-- The production schema is captured in supabase/baseline; this version is already applied.

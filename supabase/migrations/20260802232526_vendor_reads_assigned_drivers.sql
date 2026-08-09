@@ -1,0 +1,2 @@
+-- Historical migration marker: vendor_reads_assigned_drivers
+-- The production schema is captured in supabase/baseline; this version is already applied.

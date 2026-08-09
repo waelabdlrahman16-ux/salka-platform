@@ -1,0 +1,2 @@
+-- Historical migration marker: available_orders_add_dest_coords
+-- The production schema is captured in supabase/baseline; this version is already applied.

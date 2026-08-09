@@ -1,0 +1,2 @@
+-- Historical migration marker: restaurant_public_with_review_count
+-- The production schema is captured in supabase/baseline; this version is already applied.

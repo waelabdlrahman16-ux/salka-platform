@@ -1,0 +1,2 @@
+-- Historical migration marker: drop_backup_tables_holding_customer_pii
+-- The production schema is captured in supabase/baseline; this version is already applied.

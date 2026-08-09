@@ -1,0 +1,2 @@
+-- Historical migration marker: driver_shift_bonus_tiers
+-- The production schema is captured in supabase/baseline; this version is already applied.

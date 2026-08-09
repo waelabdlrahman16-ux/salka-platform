@@ -1,0 +1,2 @@
+-- Historical migration marker: mark_delivery_failed_recompute_availability
+-- The production schema is captured in supabase/baseline; this version is already applied.

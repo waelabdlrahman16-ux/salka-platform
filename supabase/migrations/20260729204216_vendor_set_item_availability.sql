@@ -1,0 +1,2 @@
+-- Historical migration marker: vendor_set_item_availability
+-- The production schema is captured in supabase/baseline; this version is already applied.

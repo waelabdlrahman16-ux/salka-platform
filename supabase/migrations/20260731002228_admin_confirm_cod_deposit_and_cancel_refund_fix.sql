@@ -1,0 +1,2 @@
+-- Historical migration marker: admin_confirm_cod_deposit_and_cancel_refund_fix
+-- The production schema is captured in supabase/baseline; this version is already applied.

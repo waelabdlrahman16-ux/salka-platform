@@ -1,0 +1,2 @@
+-- Historical migration marker: customer_auth_trigger_and_helper
+-- The production schema is captured in supabase/baseline; this version is already applied.

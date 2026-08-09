@@ -1,0 +1,2 @@
+-- Historical migration marker: driver_validated_status_transitions
+-- The production schema is captured in supabase/baseline; this version is already applied.

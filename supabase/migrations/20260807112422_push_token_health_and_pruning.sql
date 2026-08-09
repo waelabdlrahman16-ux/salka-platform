@@ -1,0 +1,2 @@
+-- Historical migration marker: push_token_health_and_pruning
+-- The production schema is captured in supabase/baseline; this version is already applied.

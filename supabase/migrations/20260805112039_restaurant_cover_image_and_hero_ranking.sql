@@ -1,0 +1,2 @@
+-- Historical migration marker: restaurant_cover_image_and_hero_ranking
+-- The production schema is captured in supabase/baseline; this version is already applied.

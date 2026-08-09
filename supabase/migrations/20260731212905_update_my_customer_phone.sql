@@ -1,0 +1,2 @@
+-- Historical migration marker: update_my_customer_phone
+-- The production schema is captured in supabase/baseline; this version is already applied.

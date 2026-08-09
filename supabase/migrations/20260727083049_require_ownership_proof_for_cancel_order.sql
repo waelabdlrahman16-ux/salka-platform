@@ -1,0 +1,2 @@
+-- Historical migration marker: require_ownership_proof_for_cancel_order
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: driver_cash_confirmation_gate
+-- The production schema is captured in supabase/baseline; this version is already applied.

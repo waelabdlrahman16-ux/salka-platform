@@ -1,0 +1,2 @@
+-- Historical migration marker: admin_daily_report
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: fawaterak_online_payment
+-- The production schema is captured in supabase/baseline; this version is already applied.

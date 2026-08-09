@@ -1,0 +1,2 @@
+-- Historical migration marker: reset_stale_driver_stats
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: restaurants_for_compound_sort_open_first
+-- The production schema is captured in supabase/baseline; this version is already applied.

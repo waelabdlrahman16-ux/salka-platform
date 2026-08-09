@@ -1,0 +1,2 @@
+-- Historical migration marker: scheduled_only_for_slot_orders
+-- The production schema is captured in supabase/baseline; this version is already applied.

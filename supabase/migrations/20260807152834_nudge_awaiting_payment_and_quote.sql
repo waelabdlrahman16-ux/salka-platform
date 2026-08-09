@@ -1,0 +1,2 @@
+-- Historical migration marker: nudge_awaiting_payment_and_quote
+-- The production schema is captured in supabase/baseline; this version is already applied.

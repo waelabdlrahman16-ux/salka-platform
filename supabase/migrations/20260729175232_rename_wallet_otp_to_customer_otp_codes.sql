@@ -1,0 +1,2 @@
+-- Historical migration marker: rename_wallet_otp_to_customer_otp_codes
+-- The production schema is captured in supabase/baseline; this version is already applied.

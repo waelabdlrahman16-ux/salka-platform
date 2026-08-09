@@ -1,0 +1,2 @@
+-- Historical migration marker: fix_adjust_order_for_orders_without_line_items
+-- The production schema is captured in supabase/baseline; this version is already applied.

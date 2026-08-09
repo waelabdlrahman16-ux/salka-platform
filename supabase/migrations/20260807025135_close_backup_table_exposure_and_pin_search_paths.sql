@@ -1,0 +1,2 @@
+-- Historical migration marker: close_backup_table_exposure_and_pin_search_paths
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: popular_items_exclude_shelf_labels_from_history
+-- The production schema is captured in supabase/baseline; this version is already applied.

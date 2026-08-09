@@ -1,0 +1,2 @@
+-- Historical migration marker: request_pickup_any_vendor
+-- The production schema is captured in supabase/baseline; this version is already applied.

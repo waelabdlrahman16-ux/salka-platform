@@ -1,0 +1,2 @@
+-- Historical migration marker: driver_tips_and_track_order_update
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: catalog_role_and_role_capability_coupling
+-- The production schema is captured in supabase/baseline; this version is already applied.

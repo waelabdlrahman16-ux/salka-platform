@@ -1,0 +1,2 @@
+-- Historical migration marker: drop_ambiguous_single_arg_delivery_quote
+-- The production schema is captured in supabase/baseline; this version is already applied.

@@ -1,0 +1,2 @@
+-- Historical migration marker: add_wallet_usage_at_checkout
+-- The production schema is captured in supabase/baseline; this version is already applied.
