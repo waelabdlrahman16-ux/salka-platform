@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { rpc } from '../lib/rpc'
 import { dispatchOperation } from '../lib/dispatchOperations'
+import { vendorOperation } from '../lib/vendorOperations'
 import { useAuth } from '../lib/auth'
 import { useDismissable } from '../lib/useDismissable'
 import { ping, askNotificationPermission } from '../lib/notify'
@@ -127,10 +128,10 @@ export default function Supervisor() {
   }
 
   const accept = (o: Order, mins: number) =>
-    run(`accept:${o.id}`, () => rpc('vendor_accept_order', { p_order_id: o.id, p_prep_minutes: mins }))
+    run(`accept:${o.id}`, () => vendorOperation('accept', { orderId: o.id, prepMinutes: mins }))
 
   const markReady = (o: Order) =>
-    run(`ready:${o.id}`, () => rpc('vendor_ready', { p_order_id: o.id }))
+    run(`ready:${o.id}`, () => vendorOperation('ready', { orderId: o.id }))
 
   // The supervisor shopped the order and is holding the receipt, so they type
   // the goods total and nothing else. The service fee, the delivery fee, the
@@ -140,7 +141,7 @@ export default function Supervisor() {
   // "cash to collect" figures in Track/Driver/Admin happened.
   const confirmPrice = (o: Order, subtotal: number) =>
     run(`price:${o.id}`, () =>
-      rpc('confirm_custom_order_price', { p_order_id: o.id, p_subtotal: subtotal }))
+      vendorOperation('confirmPrice', { orderId: o.id, subtotal }))
 
   async function cancelOrder(o: Order) {
     const reason = await promptSheet({

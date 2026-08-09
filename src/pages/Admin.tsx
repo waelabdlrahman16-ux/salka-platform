@@ -12,6 +12,7 @@ import { rpc } from '../lib/rpc'
 import { adminFinancialAction } from '../lib/adminFinancialActions'
 import { adminAccountDriverAction } from '../lib/adminAccountDriverActions'
 import { dispatchOperation } from '../lib/dispatchOperations'
+import { vendorOperation } from '../lib/vendorOperations'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import Icon from '../components/Icon'
 import BannersAdmin from '../components/BannersAdmin'
@@ -1113,7 +1114,7 @@ export default function Admin() {
   // waits for a driver who can never be assigned.
   async function confirmCustomOrderPrice(orderId: number, subtotal: number) {
     if (!subtotal || subtotal <= 0) { setActionError('اكتب سعر صحيح'); return }
-    const res = await rpc('confirm_custom_order_price', { p_order_id: orderId, p_subtotal: subtotal }, {
+    const res = await vendorOperation('confirmPrice', { orderId, subtotal }, {
       not_authorized: 'التسعير للإدارة بس',
       order_not_found: 'الطلب ده مش طلب خاص أو مش موجود',
       invalid_amount: 'السعر لازم يكون رقم أكبر من صفر',

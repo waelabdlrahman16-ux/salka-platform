@@ -11,6 +11,7 @@ import { registerPush, persistPushToken } from '../lib/push'
 import { orderStatusLabel } from '../lib/statusLabels'
 import { rpc } from '../lib/rpc'
 import { customerOrderCreation } from '../lib/customerOrderCreation'
+import { vendorOperation } from '../lib/vendorOperations'
 import PrescriptionLink from '../components/PrescriptionLink'
 import EnablePushButton from '../components/EnablePushButton'
 import type { Compound, MenuItem, Order, OrderItem, Restaurant } from '../lib/types'
@@ -513,8 +514,9 @@ function KitchenVendor({ rid }: { rid: number }) {
       for (const it of its ?? []) (grouped[it.order_id] ??= []).push(it)
       setItems(grouped)
 
-      const { data: das, error: dasErr } = await supabase.rpc('vendor_delivery_overview', { p_order_ids: allIds })
-      if (dasErr) { setLoadError('مش قادرين نجيب بيانات المندوب دلوقتي — حالة التوصيل ممكن تكون قديمة'); return }
+      const overview = await vendorOperation<any[]>('deliveryOverview', { orderIds: allIds })
+      if (!overview.ok) { setLoadError('مش قادرين نجيب بيانات المندوب دلوقتي — حالة التوصيل ممكن تكون قديمة'); return }
+      const das = overview.data
       const delivMap: typeof deliveryByOrder = {}
       for (const d of das ?? []) {
         delivMap[d.order_id] = {
@@ -547,11 +549,11 @@ function KitchenVendor({ rid }: { rid: number }) {
 
   async function toggleStock(it: MenuItem) {
     setTogglingId(it.id)
-    const { error } = await supabase.rpc('vendor_set_item_availability', { p_item_id: it.id, p_available: !it.available })
+    const result = await vendorOperation('setItemAvailability', { itemId: it.id, available: !it.available })
     setTogglingId(null)
     // Judgment call per ActionSheets: this screen already has a styled board
     // error banner, so route the failure there instead of a native alert.
-    if (error) { setBoardError(`${it.name}: حصل خطأ، جرب تاني`); return }
+    if (!result.ok) { setBoardError(`${it.name}: ${result.error}`); return }
     setMenu(prev => prev.map(m => m.id === it.id ? { ...m, available: !m.available } : m))
   }
 
@@ -567,8 +569,8 @@ function KitchenVendor({ rid }: { rid: number }) {
     setBusyOrder(o.id); setBoardError('')
     if (navigator.vibrate) navigator.vibrate(15)
     const res = next === 'ready'
-      ? await rpc('vendor_ready', { p_order_id: o.id })
-      : await rpc('vendor_accept_order', { p_order_id: o.id, p_prep_minutes: prepMinutes ?? null }, {
+      ? await vendorOperation('ready', { orderId: o.id })
+      : await vendorOperation('accept', { orderId: o.id, prepMinutes: prepMinutes ?? null }, {
           order_not_priced: 'الطلب ده لسه محتاج تسعير من الإدارة — استنى مكالمتهم',
         })
     if (!res.ok) { setBusyOrder(null); setBoardError(`طلب #${o.id}: ${res.error}`); return }
@@ -599,7 +601,7 @@ function KitchenVendor({ rid }: { rid: number }) {
       confirmLabel: 'اقفل',
     })) return
     setBoardError('')
-    const res = await rpc('vendor_set_open', { p_open: next })
+    const res = await vendorOperation('setOpen', { open: next })
     if (!res.ok) { setBoardError(res.error); return }
     setIsOpen(next)
     load()
@@ -612,7 +614,7 @@ function KitchenVendor({ rid }: { rid: number }) {
     // regardless, so the vendor reads an unchanged ticket as a missed tap and
     // presses again -- while the customer's ETA has not moved and the SLA badge
     // is about to flip to متأخر.
-    const res = await rpc('vendor_delay', { p_order_id: o.id, p_minutes: 5 }, {
+    const res = await vendorOperation('delay', { orderId: o.id, minutes: 5 }, {
       delay_limit_reached: 'وصلت لأقصى عدد تأجيلات مسموح (3) للطلب ده',
       wrong_stage: 'الطلب اتحرك خلاص — مش هينفع تأجله دلوقتي',
       not_your_order: 'الطلب ده مش بتاع مطعمك',

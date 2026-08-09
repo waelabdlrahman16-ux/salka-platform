@@ -1,0 +1,1 @@
+import{edgeAction,type RpcResult}from'./rpc';export type VendorAction='accept'|'confirmPrice'|'delay'|'deliveryOverview'|'ready'|'setItemAvailability'|'setOpen';export const vendorOperation=<T=unknown>(action:VendorAction,input:Record<string,unknown>,overrides?:Record<string,string>):Promise<RpcResult<T>>=>edgeAction<T>('vendor-operations',{action,...input},overrides)
