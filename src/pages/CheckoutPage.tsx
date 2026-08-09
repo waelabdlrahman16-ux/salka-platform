@@ -231,7 +231,7 @@ export default function CheckoutPage() {
 
   const lines = useMemo(() => cart.lines.filter(l => items.some(i => i.id === l.menuItemId)), [items, cart.lines])
   const subtotal = lines.reduce((s, l) => s + priceFor(l).unit * l.qty, 0)
-  const scheduled = restaurant?.vendor_type === 'supermarket'
+  const scheduled = !!restaurant?.uses_delivery_slots
   const hasRx = lines.some(l => priceFor(l).item?.requires_prescription)
   const selectedCompound = compounds.find(c => c.id === compoundId)
   // Authoritative fee from the server. null while loading or on failure -- we
