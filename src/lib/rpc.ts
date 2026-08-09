@@ -49,6 +49,13 @@ export const ERROR_AR: Record<string, string> = {
   order_not_delivered: 'الطلب لسه ما اتسلّمش',
   order_closed: 'الطلب ده خلص أو اتلغى قبل كده',
   order_not_priced: 'الطلب لسه محتاج تسعير قبل ما يتعيّن لمندوب',
+  invalid_items: 'الأصناف المضافة مش مظبوطة — راجعها وجرب تاني',
+  invalid_item_count: 'ضيف من صنف واحد لحد 20 صنف في المرة',
+  too_many_order_items: 'الطلب وصل للحد الأقصى من الأصناف',
+  invalid_merged_item: 'في صنف بعد الإضافة كميته مش مظبوطة',
+  order_edit_rate_limit: 'حاولت تضيف أصناف كتير — استنى شوية وجرب تاني',
+  daily_order_edit_limit: 'وصلت للحد اليومي لإضافة الأصناف — كلّمنا عشان نساعدك',
+  order_edit_failed: 'مقدرناش نضيف الصنف — جرب تاني أو كلّمنا',
 
   // dispatch / driver
   already_taken: 'الطلب اتاخد من مندوب تاني',

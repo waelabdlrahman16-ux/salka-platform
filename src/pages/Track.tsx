@@ -171,12 +171,14 @@ export default function Track() {
   async function addForgottenItem() {
     if (!token || !extraItem.trim()) return
     setExtraSaving(true); setActionError(null)
-    const res = await rpc('append_request_items', {
-      p_token: token, p_items: [{ name: extraItem.trim(), qty: 1 }],
+    const res = await edgeAction('customer-order-editing', {
+      token, items: [{ name: extraItem.trim(), qty: 1 }],
     }, {
       order_not_priced: 'الطلب اتسعّر خلاص — كلّمنا عشان نضيفه',
       wrong_stage: 'بدأنا نجهّز الطلب — كلّمنا عشان نضيفه',
       already_assigned: 'المندوب في الطريق — كلّمنا عشان نضيفه',
+      order_edit_rate_limit: 'حاولت تضيف أصناف كتير — استنى شوية وجرب تاني',
+      daily_order_edit_limit: 'وصلت للحد اليومي لإضافة الأصناف — كلّمنا عشان نساعدك',
     })
     setExtraSaving(false)
     if (!res.ok) { setActionError({ scope: 'extra', message: res.error }); return }
