@@ -21,6 +21,15 @@ Read-only snapshot of the production `public` schema for project `pqpnwxyevrsipk
 - `migration-history.json`: migration history reported by the production project.
 - `manifest.json`: capture metadata and object counts.
 
+## `supabase db push` is not safe on this repo
+
+`supabase/migrations` is a record, not a runnable sequence. Two things break a replay:
+
+- Almost every file is a `Historical migration marker` comment with the real SQL discarded, so replaying them builds nothing.
+- The files added on 2026-08-09 are the exception: they contain live executable SQL, and none of their filename versions match the versions recorded in `supabase_migrations.schema_migrations` — the migrations were applied through the Supabase MCP connection, which stamps its own timestamp. A push would therefore treat all of them as unapplied and re-run them, and several would fail outright (for example moving `vendor_accept_order` into `private` when it is already there).
+
+Recover from this directory and the snapshot files, not from a push. If a replayable sequence is ever needed, generate it from a real CLI dump.
+
 ## Refresh procedure
 
 Regenerate every file from the same production project using read-only Supabase catalog access. Review the diff for secrets and unexpected privilege changes before committing. A future canonical SQL dump should be produced with the official Supabase CLI after project linking and database credentials are available; keep that dump outside `supabase/migrations` unless it is intentionally converted into reviewed migrations.
