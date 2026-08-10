@@ -180,13 +180,22 @@ export default function DriverPage() {
   // Declared here, not further down, because the effect below reads
   // liveAssignments.length in its dependency array -- which is evaluated during
   // render, so a const defined later would still be in its temporal dead zone.
+  // Offered needs an immediate accept/reject before it goes to someone else --
+  // always most urgent regardless of anything else. Among assignments already
+  // taken, further-along stages are closer to a customer/cash action, so they
+  // sort ahead of one just accepted and not yet moving. With 2-3 concurrent
+  // orders, this used to be plain id-desc (arrival order), so a driver had to
+  // read every stage bar to find which one needed them next.
+  const URGENCY_RANK: Record<string, number> = {
+    Offered: 0, Out_for_Delivery: 1, Picked_Up: 2, Accepted: 3,
+  }
   const liveAssignments = assignments.filter(a =>
     a.status !== 'Delivered' &&
     // Dead rows only survive here if terminalNotice() says they are still worth
     // the driver's attention. Everything else drops off the screen on the next
     // poll, which is what a driver expects of a job that is no longer theirs.
     (a.status !== 'Cancelled' && a.status !== 'Failed' ? true : terminalNotice(a) !== null)
-  )
+  ).sort((a, b) => (URGENCY_RANK[a.status] ?? 9) - (URGENCY_RANK[b.status] ?? 9))
   const doneAssignments = assignments.filter(a => a.status === 'Delivered')
   // Never strand the driver on an empty history tab -- the tab bar hides itself
   // when there is nothing finished, and the selection has to follow it.
@@ -208,6 +217,13 @@ export default function DriverPage() {
     ...pool.map(o => `p${o.id}`),
   ].sort().join(',')
   const seenClaimableRef = useRef<Set<string> | null>(null)
+  // A new Offered assignment now sorts to the top of `shown` (see
+  // URGENCY_RANK above), but the header, push-enable button, and any
+  // stale-sync/GPS banners can still push it below the fold on a short
+  // screen -- tapping a notification landed on the right tab but not
+  // necessarily on the thing to act on. Scroll the list into view whenever
+  // something new to claim shows up, notification-driven or not.
+  const orderListRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const ids = new Set(claimableKey ? claimableKey.split(',') : [])
     const prev = seenClaimableRef.current
@@ -215,7 +231,11 @@ export default function DriverPage() {
     // null on first run: everything is "new" on mount, which is not a reason to
     // yank the tab -- the driver has not been shown anything yet.
     if (prev === null) return
-    for (const k of ids) if (!prev.has(k)) { setTab('active'); return }
+    for (const k of ids) if (!prev.has(k)) {
+      setTab('active')
+      orderListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      return
+    }
   }, [claimableKey])
 
   // Reset rather than mask. `activeTab` falls back to 'live' while the tab bar
@@ -875,7 +895,7 @@ export default function DriverPage() {
         <p className="card p-5 text-center text-mist text-sm mb-3">مفيش شغل دلوقتي — كل الطلبات اتسلمت ✅</p>
       )}
 
-      <div className="space-y-3">
+      <div className="space-y-3" ref={orderListRef}>
         {shown.map(a => {
           const o = a.orders
           if (!o) return null
@@ -996,7 +1016,11 @@ export default function DriverPage() {
                       return (
                         <div key={s.key} className="flex flex-col items-center gap-1" style={{ width: `${100 / stages.length}%` }}>
                           <div className={`w-2.5 h-2.5 rounded-full ${dotColor}`} />
-                          <span className={`text-[10px] font-semibold text-center ${labelColor}`}>{s.label}</span>
+                          {/* 10px was below comfortable at-a-glance size for
+                              text a driver reads while riding to confirm
+                              which stage a delivery is on -- bumped to the
+                              smallest size Tailwind still calls legible. */}
+                          <span className={`text-[11px] font-semibold text-center ${labelColor}`}>{s.label}</span>
                         </div>
                       )
                     })}
@@ -1085,7 +1109,14 @@ export default function DriverPage() {
                     <button className="btn-sea flex-1" disabled={isBusy(`accept:${a.id}`)} onClick={() => setStatus(a, 'Accepted')}>
                       {isBusy(`accept:${a.id}`) ? 'لحظة…' : 'قبول'}
                     </button>
-                    <button className="btn-danger flex-1" onClick={() => setRejecting(a)}>رفض</button>
+                    {/* Reject is reversible (the order just goes to another
+                        driver) and rarely the right tap in the second a
+                        driver has to decide -- btn-danger's red made it read
+                        as the more urgent/prominent of the two buttons,
+                        backwards from what the decision actually calls for.
+                        btn-ghost keeps it clearly tappable without competing
+                        with Accept for attention. */}
+                    <button className="btn-ghost flex-1" onClick={() => setRejecting(a)}>رفض</button>
                   </div>
                 )}
                 {a.status === 'Accepted' && !a.arrived_at_restaurant_at && (
