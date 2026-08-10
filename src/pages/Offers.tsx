@@ -83,9 +83,18 @@ export default function Offers() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">العروض والخصومات</h1>
+      <h1 className="text-2xl font-bold mb-1">العروض والخصومات</h1>
+      {/* Each card already states its scope via describe() ("على قسم X" /
+          "على صنف معيّن"), but a customer skimming a list of restaurant cards
+          with a bold "خصم 20%" headline could still read that as storewide --
+          it's a discount scoped to one item or category, applied
+          automatically, not a coupon. This line sets that expectation once,
+          up front, rather than relying on each card's fine print alone. */}
+      {offers && offers.length > 0 && !failed && (
+        <p className="text-xs text-mist mb-4">الخصم بيتطبق تلقائي على الصنف أو القسم المحدد بس، مش على الطلب كله</p>
+      )}
 
-      {offers === null && <p className="text-mist">جاري التحميل…</p>}
+      {offers === null && <p className="text-mist mt-3">جاري التحميل…</p>}
 
       {/* Order matters: the failure state has to win. Both branches are reached
           with offers === [], and telling someone there are no offers when we
