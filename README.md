@@ -1,7 +1,7 @@
 # سالكة — Salka Platform (Pilot)
 
-Village marketplace for Telal El Sokhna: restaurant delivery + chalet bookings + full driver system.
-Your code, your data — free hosting (Vercel + Supabase free tiers).
+Delivery for food, grocery and more in El Sokhna: restaurant delivery and full driver system.
+Your code, your data — free hosting (Vercel + Supabase).
 
 ## Architecture rule (do not break)
 Driver NEVER goes on `orders`. The chain is always:
