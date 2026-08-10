@@ -274,6 +274,7 @@ export default function Admin() {
   const [credsCopied, setCredsCopied] = useState(false)
   const [rankDraft, setRankDraft] = useState<Record<number, string>>({})
   const [newRestaurant, setNewRestaurant] = useState({ name: '', description: '', category: '', vendor_type: 'restaurant', prep_minutes: '20' })
+  const [showAddRestaurant, setShowAddRestaurant] = useState(false)
   const [uploadingImage, setUploadingImage] = useState<string | null>(null)
   const [imageError, setImageError] = useState<string | null>(null)
   const [stalled, setStalled] = useState<StalledOrder[]>([])
@@ -311,6 +312,16 @@ export default function Admin() {
   const reassigningRef = useDismissable(() => setReassigning(null), !!reassigning)
   const [reassignBusy, setReassignBusy] = useState(false)
   const [actionError, setActionError] = useState('')
+  // actionError is set from ~40 call sites across this file, many of them
+  // buttons far down a scrolled list (deleting a menu item, editing a
+  // compound fee near the bottom of settings). The banner itself renders
+  // fixed at the very top of the page, above both tab rows, so a failure
+  // fired from deep in the page previously updated state entirely off-screen
+  // -- no visible feedback at the point of the tap, easy to miss.
+  const actionErrorRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (actionError) actionErrorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [actionError])
   // Rendered INSIDE the reassign modal. The page-level banner sits at the very
   // top behind a fixed inset-0 overlay, so a failed reassign produced no visible
   // feedback at all while the modal stayed open -- the operator just kept tapping.
@@ -1498,7 +1509,7 @@ export default function Admin() {
       <h1 className="text-2xl font-bold mb-4">لوحة التحكم</h1>
 
       {actionError && (
-        <div className="card p-3 mb-4 border-red-400/50 bg-red-500/5 flex items-center justify-between gap-3">
+        <div ref={actionErrorRef} className="card p-3 mb-4 border-red-400/50 bg-red-500/5 flex items-center justify-between gap-3">
           <p className="text-sm text-red-700 font-semibold">{actionError}</p>
           <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0" onClick={() => setActionError('')}>تمام</button>
         </div>
@@ -2255,6 +2266,42 @@ export default function Admin() {
 
       {tab === 'menu' && (
         <div className="space-y-3">
+          {/* This used to live under "حسابات الدخول" (login accounts), mixed
+              in with vendor/driver/catalog credential management. Every other
+              restaurant-level control -- rank, featured, hours, images --
+              already lives in this tab, so an admin looking to add or hide a
+              restaurant would reasonably check here first and not find it. */}
+          {showAddRestaurant ? (
+            <div className="card p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="font-semibold">إضافة مطعم/متجر جديد</p>
+                <button className="btn-ghost !py-1 !px-2.5 text-xs" onClick={() => setShowAddRestaurant(false)}>إلغاء</button>
+              </div>
+              <div className="space-y-2.5">
+                <input className="field" placeholder="الاسم" aria-label="اسم المطعم/المتجر" value={newRestaurant.name}
+                  onChange={e => setNewRestaurant({ ...newRestaurant, name: e.target.value })} />
+                <input className="field" placeholder="وصف قصير" aria-label="وصف قصير" value={newRestaurant.description}
+                  onChange={e => setNewRestaurant({ ...newRestaurant, description: e.target.value })} />
+                <div className="flex gap-2">
+                  <input className="field" placeholder="التصنيف (مثال: فاست فود)" aria-label="التصنيف" value={newRestaurant.category}
+                    onChange={e => setNewRestaurant({ ...newRestaurant, category: e.target.value })} />
+                  <select className="field !w-auto" value={newRestaurant.vendor_type}
+                    onChange={e => setNewRestaurant({ ...newRestaurant, vendor_type: e.target.value })}>
+                    <option value="restaurant">🍽️ مطعم</option>
+                    <option value="supermarket">🛒 سوبر ماركت</option>
+                    <option value="pharmacy">💊 صيدلية</option>
+                  </select>
+                </div>
+                <button className="btn-sea w-full" disabled={!newRestaurant.name.trim()}
+                  onClick={() => { addRestaurant(); setShowAddRestaurant(false) }}>
+                  إضافة
+                </button>
+                <p className="text-xs text-mist">تقدر بعد كده تظبط وقت التحضير ونوع الطلب (طلب من القايمة / طلب خاص / طلب مندوب بس) من هنا برضه</p>
+              </div>
+            </div>
+          ) : (
+            <button className="btn-ghost w-full" onClick={() => setShowAddRestaurant(true)}>+ مطعم/متجر جديد</button>
+          )}
           {restaurants.map(r => {
             const its = menu.filter(m => m.restaurant_id === r.id)
             const expanded = openRest === r.id
@@ -2802,8 +2849,18 @@ export default function Admin() {
             </button>
           </div>
 
+          {/* "لا توجد شكاوى" (no complaints exist) was shown for BOTH "there
+              are genuinely none" and "there are some, they're just hidden by
+              this filter" -- the exact confident-false-negative the orders
+              tab's own empty state deliberately avoids elsewhere on this
+              page. An admin scanning for a complaint they know was filed
+              could read this as "it never happened." */}
           {complaints.filter(c => showResolvedComplaints || c.status !== 'resolved').length === 0 && (
-            <div className="card p-6 text-center text-mist">لا توجد شكاوى</div>
+            <div className="card p-6 text-center text-mist">
+              {complaints.length === 0
+                ? 'لا توجد شكاوى'
+                : 'مفيش شكاوى مفتوحة — كل الشكاوى الموجودة اتحلّت'}
+            </div>
           )}
           {complaints.filter(c => showResolvedComplaints || c.status !== 'resolved').map(c => (
             <div key={c.id} className="card p-4">
@@ -2838,30 +2895,6 @@ export default function Admin() {
 
       {tab === 'accounts' && (
         <div className="space-y-6">
-          <div className="card p-4">
-            <p className="font-semibold mb-3">إضافة مطعم/متجر جديد</p>
-            <div className="space-y-2.5">
-              <input className="field" placeholder="الاسم" aria-label="اسم المطعم/المتجر" value={newRestaurant.name}
-                onChange={e => setNewRestaurant({ ...newRestaurant, name: e.target.value })} />
-              <input className="field" placeholder="وصف قصير" aria-label="وصف قصير" value={newRestaurant.description}
-                onChange={e => setNewRestaurant({ ...newRestaurant, description: e.target.value })} />
-              <div className="flex gap-2">
-                <input className="field" placeholder="التصنيف (مثال: فاست فود)" aria-label="التصنيف" value={newRestaurant.category}
-                  onChange={e => setNewRestaurant({ ...newRestaurant, category: e.target.value })} />
-                <select className="field !w-auto" value={newRestaurant.vendor_type}
-                  onChange={e => setNewRestaurant({ ...newRestaurant, vendor_type: e.target.value })}>
-                  <option value="restaurant">🍽️ مطعم</option>
-                  <option value="supermarket">🛒 سوبر ماركت</option>
-                  <option value="pharmacy">💊 صيدلية</option>
-                </select>
-              </div>
-              <button className="btn-sea w-full" disabled={!newRestaurant.name.trim()} onClick={addRestaurant}>
-                إضافة
-              </button>
-              <p className="text-xs text-mist">تقدر بعد كده تظبط وقت التحضير ونوع الطلب (طلب من القايمة / طلب خاص / طلب مندوب بس) من تبويب "المطاعم والمنيو"</p>
-            </div>
-          </div>
-
           <div className="mb-6">
             <p className="font-semibold mb-1">موظفي القوايم</p>
             <p className="text-xs text-mist mb-3">
