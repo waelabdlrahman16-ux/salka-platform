@@ -1,8 +1,8 @@
 # Accepted security-advisor warnings
 
-Captured 2026-08-09. Every claim below was verified against production by query, not assumed.
+Captured 2026-08-09, updated 2026-08-10 after batches 8 and 9 closed the 43-function finding below. Every claim in this file was verified against production by query, not assumed.
 
-Advisor total at capture: **63** — 50 `authenticated_security_definer_function_executable`, 12 `rls_enabled_no_policy` (INFO), 1 `extension_in_public`.
+Advisor total as of 2026-08-10: **20** — 7 `authenticated_security_definer_function_executable` (exactly the seven protected predicates in §1, nothing else), 12 `rls_enabled_no_policy` (INFO), 1 `extension_in_public`. This is the theoretical floor: every function this file once listed as "NOT accepted" is now closed. See §5.
 
 ---
 
@@ -33,7 +33,7 @@ Only the extension's registered namespace is in `public`; no callable surface is
 
 ## 3. `private` schema USAGE for `authenticated` — accepted, documented
 
-`authenticated` holds USAGE on `private` and EXECUTE on exactly one function there: `private.cancel_order`. All other 55 private functions are revoked from `authenticated`. `anon` has no USAGE at all.
+`authenticated` holds USAGE on `private` and EXECUTE on exactly one function there: `private.cancel_order`. All other 98 private functions (56 at batch 7, +43 from batches 8-9) are revoked from `authenticated`. `anon` has no USAGE at all.
 
 This is deliberate. `public.cancel_order` is **SECURITY INVOKER** and delegates to `private.cancel_order`, which is how staff cancel directly from the Admin, Supervisor and Vendor screens while customers go through the rate-limited `cancel-order` Edge Function.
 
@@ -64,16 +64,14 @@ The tables stay policy-free by design: all access is through `SECURITY DEFINER` 
 
 ---
 
-## NOT accepted — deferred work, not intentional design
+## 5. CLOSED 2026-08-10 — the 43-function finding from batches 8 and 9
 
-43 of the 50 flagged functions have **0 RLS policies and 0 internal callers**. They are frontend leaves, identical in shape to everything batches 1–6 moved behind Edge Functions. They are unfinished, not intentional.
+This section originally listed 43 functions with **0 RLS policies and 0 internal callers** as deferred, not-accepted work. All 43 are now moved into `private` behind service-role-only wrappers, following the same pattern as batches 1–7. Both batches followed the full rollout sequence (Edge Function deployed first, frontend merged second, migration applied separately) and were verified live: `anon` executes zero `SECURITY DEFINER` functions in `public`, `authenticated` executes exactly the seven in §1, data integrity and role-scoped reads all matched the pre-migration baseline with zero leakage.
 
-- **Admin panel (20):** admin_add_menu_category, admin_customer_detail, admin_customers, admin_daily_report, admin_delete_menu_category, admin_delete_menu_item, admin_flag_driver_dispute, admin_funnel, admin_list_accounts, admin_live_deliveries, admin_pending_refunds, admin_push_health, admin_rename_menu_category, admin_reorder_menu_categories, admin_set_compound_fee, admin_set_restaurant_rank, admin_set_vendor_hours, admin_stalled_orders, admin_upsert_compound, admin_vendors_without_items
-- **Driver self-service (17):** available_orders, claim_order, clear_my_location, driver_accept_assignment, driver_arrived_at_customer, driver_arrived_at_restaurant, driver_called_customer, driver_claim_device, driver_confirm_cash_received, driver_mark_out_for_delivery, driver_mark_picked_up, driver_reject_assignment, driver_report_no_answer, driver_report_problem, driver_set_available, mark_delivered, my_driver_stats
-- **Catalog (2):** apply_library_addon, check_discount_conflict
-- **Misc (4):** restaurant_reliability, restaurants_reliability_all, save_my_push_token, update_my_location
+- **Admin panel (20) — batch 8, PR #56, migration `route_admin_panel_actions_through_edge`:** admin_add_menu_category, admin_customer_detail, admin_customers, admin_daily_report, admin_delete_menu_category, admin_delete_menu_item, admin_flag_driver_dispute, admin_funnel, admin_list_accounts, admin_live_deliveries, admin_pending_refunds, admin_push_health, admin_rename_menu_category, admin_reorder_menu_categories, admin_set_compound_fee, admin_set_restaurant_rank, admin_set_vendor_hours, admin_stalled_orders, admin_upsert_compound, admin_vendors_without_items
+- **Driver assignment, self-service, catalog and misc (23) — batch 9, PR #57, migration `route_driver_catalog_actions_through_edge`:** apply_library_addon, available_orders, check_discount_conflict, claim_order, clear_my_location, driver_accept_assignment, driver_arrived_at_customer, driver_arrived_at_restaurant, driver_called_customer, driver_claim_device, driver_confirm_cash_received, driver_mark_out_for_delivery, driver_mark_picked_up, driver_reject_assignment, driver_report_no_answer, driver_report_problem, driver_set_available, mark_delivered, my_driver_stats, restaurant_reliability, restaurants_reliability_all, save_my_push_token, update_my_location
 
-Recommended as **batch 8 (admin panel)** and **batch 9 (driver self-service + catalog + misc)**. The realistic floor for this advisor is **7**, not 50.
+The advisor floor for this project is **7** (the protected predicates in §1) plus the 12 INFO notices in §4 plus the 1 accepted `pg_net` warning in §2 — **20 total**, and that is exactly what production shows as of this capture. There is no more deferred work from the original audit.
 
 ## Separate future maintenance batch
 

@@ -1,8 +1,8 @@
 {
   "project_ref": "pqpnwxyevrsipklzmwex",
   "schemas": ["public", "private"],
-  "captured_at": "2026-08-10T00:00:33+00:00",
-  "previous_capture": "2026-08-09T23:20:08+00:00",
+  "captured_at": "2026-08-10T10:30:41+00:00",
+  "previous_capture": "2026-08-10T00:00:33+00:00",
   "postgres_version": "17.6",
   "snapshot_only": true,
   "includes_data_rows": false,
@@ -10,35 +10,41 @@
     "tables": 48,
     "views": 0,
     "functions_public": 163,
-    "functions_private": 56,
-    "functions_total": 219,
-    "functions_security_definer": 200,
+    "functions_private": 99,
+    "functions_total": 262,
+    "functions_security_definer": 243,
     "policies": 79,
     "triggers": 14,
     "indexes": 119,
-    "migrations": 312
+    "migrations": 321
   },
   "drift_since_previous_capture": {
-    "reason": "The 2026-08-09T23:20 capture was taken BEFORE batch 7's own migration was applied, so it recorded a database state that existed for about thirteen minutes. This capture is post-migration.",
-    "migrations": "+3 (route_admin_vendor_slots_through_edge, route_customer_accounts_and_swaps_through_edge, revoke_unused_grants_on_policyless_tables) — 309 to 312, matching production",
-    "table_grants": "-14 — SELECT revoked from anon and authenticated on the 7 RLS-enabled, policy-free tables (7 tables x 2 roles)",
+    "reason": "Batches 8 and 9 (the final two batches of the security-hardening programme) applied since the previous capture: 43 more privileged functions moved into `private`. The remaining 43 functions flagged by the original 43-function finding are now closed — 20 admin-panel functions in batch 8 (PR #56, migration route_admin_panel_actions_through_edge), 23 driver/catalog functions in batch 9 (PR #57, migration route_driver_catalog_actions_through_edge). Both followed the deploy-Edge-Function-first, migrate-separately sequence.",
+    "migrations": "+9 (route_admin_panel_actions_through_edge, route_driver_catalog_actions_through_edge, plus 7 unrelated feature/fix migrations) — 312 to 321, matching production",
+    "functions_private": "+43 (56 to 99) — the 20 admin-panel and 23 driver/catalog/self-service cores",
+    "functions_security_definer": "+43 (200 to 243) — same 43, each now has a private core plus a public service-role-only wrapper, both SECURITY DEFINER",
     "tables": "unchanged (48)",
     "policies": "unchanged (79)",
     "triggers": "unchanged (14)",
     "indexes": "unchanged (119)",
-    "routines": "unchanged (219: 163 public, 56 private)"
+    "functions_public": "unchanged (163) — every relocated core kept a same-named public wrapper, so the public function count does not move even though 43 signatures changed (gained a trailing p_auth_user_id, execute narrowed to service_role)"
   },
   "verified_at_capture": {
     "policyless_tables_readable_by_anon_or_authenticated": 0,
     "residual_anon_or_authenticated_select_on_the_7_tables": 0,
     "rls_predicates_holding_authenticated_execute": 7,
-    "service_role_only_wrappers_leaking": 0
+    "service_role_only_wrappers_leaking": 0,
+    "anon_executable_security_definer_functions_in_public": 0,
+    "authenticated_executable_security_definer_functions_in_public": 7,
+    "advisor_warnings_total": 20,
+    "advisor_floor_note": "12 rls_enabled_no_policy (INFO, intentional) + 1 extension_in_public (pg_net, not remediated per ACCEPTED-WARNINGS.md) + exactly the 7 protected RLS predicates. This is the theoretical floor — every other originally-flagged function is closed."
   },
   "notes": [
     "routines.json carries schema, per-role execute grants and full definitions for BOTH public and private.",
     "grants.json records schema-level USAGE as well as table and routine grants.",
     "No public routine was removed by name: every core relocated to private kept a same-named public wrapper, so name-level comparison understates the change. Signatures gained a trailing p_auth_user_id and execute was narrowed to service_role.",
     "database.types.ts covers the public schema ONLY. The Supabase type generator emits public by default and was not asked to include private, so it is not a complete picture of the database. routines.json is the authoritative record for private.",
-    "The `Supabase Preview` CI check fails on every merge to main with 'Remote migration versions not found in local migrations directory'. That is the migration-filename vs recorded-version mismatch documented in supabase/baseline/README.md; migration-history.json is the reconciled record. Realigning this file does not by itself rename the migration files, so the check may continue to fail until the filenames and recorded versions are reconciled."
+    "The `Supabase Preview` CI check fails on every merge to main with 'Remote migration versions not found in local migrations directory'. That is the migration-filename vs recorded-version mismatch documented in supabase/baseline/README.md; migration-history.json is the reconciled record. Realigning this file does not by itself rename the migration files, so the check may continue to fail until the filenames and recorded versions are reconciled.",
+    "This capture closes the original 43-function finding from the audit closure report (batch 8: 20 admin-panel functions, batch 9: 23 driver/catalog functions). The security-hardening programme (batches 1-9) is complete; the only remaining authenticated_security_definer_function_executable warnings are the 7 protected RLS predicates, which must never lose authenticated EXECUTE."
   ]
 }

@@ -1,8 +1,8 @@
 # Production database baseline
 
-Read-only snapshot of the production `public` **and `private`** schemas for project `pqpnwxyevrsipklzmwex`, refreshed 2026-08-09 (previous capture 2026-08-08).
+Read-only snapshot of the production `public` **and `private`** schemas for project `pqpnwxyevrsipklzmwex`, refreshed 2026-08-10 (previous capture 2026-08-10 00:00, before that 2026-08-09).
 
-`private` is in scope as of this refresh. Security batches 1–6 moved 56 privileged cores into it, and a snapshot that records only `public` describes a permission model that no longer exists.
+`private` is in scope as of this refresh. Security batches 1–9 (the complete programme) moved 99 privileged cores into it, and a snapshot that records only `public` describes a permission model that no longer exists.
 
 Accepted advisor warnings, and the functions that must never lose `authenticated` EXECUTE, are documented in `ACCEPTED-WARNINGS.md`.
 

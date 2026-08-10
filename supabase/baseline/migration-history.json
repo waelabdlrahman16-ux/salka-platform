@@ -1247,6 +1247,42 @@
     {
       "version": "20260809233338",
       "name": "revoke_unused_grants_on_policyless_tables"
+    },
+    {
+      "version": "20260810021459",
+      "name": "vendor_card_signals_and_open_reminders"
+    },
+    {
+      "version": "20260810022022",
+      "name": "fix_duplicate_open_reminders_on_null_contact"
+    },
+    {
+      "version": "20260810022738",
+      "name": "vendor_open_reminder_notifier_and_states"
+    },
+    {
+      "version": "20260810022819",
+      "name": "remind_me_when_open_takes_platform"
+    },
+    {
+      "version": "20260810023256",
+      "name": "revert_card_redesign_from_production"
+    },
+    {
+      "version": "20260810031422",
+      "name": "fix_customer_arrival_push_sending_customers_to_driver_login"
+    },
+    {
+      "version": "20260810031515",
+      "name": "fix_all_customer_pushes_landing_on_driver_login"
+    },
+    {
+      "version": "20260810092518",
+      "name": "route_admin_panel_actions_through_edge"
+    },
+    {
+      "version": "20260810101026",
+      "name": "route_driver_catalog_actions_through_edge"
     }
   ]
 }

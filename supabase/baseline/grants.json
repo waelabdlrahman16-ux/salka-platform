@@ -4001,6 +4001,16 @@
         "privilege_type": "EXECUTE"
       },
       {
+        "grantee": "postgres",
+        "routine_name": "private.admin_add_menu_category",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.admin_add_menu_category",
+        "privilege_type": "EXECUTE"
+      },
+      {
         "grantee": "service_role",
         "routine_name": "private.admin_adjust_order",
         "privilege_type": "EXECUTE"
@@ -4026,6 +4036,36 @@
         "privilege_type": "EXECUTE"
       },
       {
+        "grantee": "postgres",
+        "routine_name": "private.admin_customer_detail",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.admin_customer_detail",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.admin_customers",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.admin_customers",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.admin_daily_report",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.admin_daily_report",
+        "privilege_type": "EXECUTE"
+      },
+      {
         "grantee": "service_role",
         "routine_name": "private.admin_delete_customer",
         "privilege_type": "EXECUTE"
@@ -4036,8 +4076,38 @@
         "privilege_type": "EXECUTE"
       },
       {
+        "grantee": "postgres",
+        "routine_name": "private.admin_delete_menu_category",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.admin_delete_menu_category",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.admin_delete_menu_item",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.admin_delete_menu_item",
+        "privilege_type": "EXECUTE"
+      },
+      {
         "grantee": "service_role",
         "routine_name": "private.admin_delete_staff",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.admin_flag_driver_dispute",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.admin_flag_driver_dispute",
         "privilege_type": "EXECUTE"
       },
       {
@@ -4046,8 +4116,78 @@
         "privilege_type": "EXECUTE"
       },
       {
+        "grantee": "postgres",
+        "routine_name": "private.admin_funnel",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.admin_funnel",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.admin_list_accounts",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.admin_list_accounts",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.admin_live_deliveries",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.admin_live_deliveries",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.admin_pending_refunds",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.admin_pending_refunds",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.admin_push_health",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.admin_push_health",
+        "privilege_type": "EXECUTE"
+      },
+      {
         "grantee": "service_role",
         "routine_name": "private.admin_reassign_order",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.admin_rename_menu_category",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.admin_rename_menu_category",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.admin_reorder_menu_categories",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.admin_reorder_menu_categories",
         "privilege_type": "EXECUTE"
       },
       {
@@ -4061,8 +4201,38 @@
         "privilege_type": "EXECUTE"
       },
       {
+        "grantee": "postgres",
+        "routine_name": "private.admin_set_compound_fee",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.admin_set_compound_fee",
+        "privilege_type": "EXECUTE"
+      },
+      {
         "grantee": "service_role",
         "routine_name": "private.admin_set_customer_ban",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.admin_set_restaurant_rank",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.admin_set_restaurant_rank",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.admin_set_vendor_hours",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.admin_set_vendor_hours",
         "privilege_type": "EXECUTE"
       },
       {
@@ -4071,8 +4241,28 @@
         "privilege_type": "EXECUTE"
       },
       {
+        "grantee": "postgres",
+        "routine_name": "private.admin_stalled_orders",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.admin_stalled_orders",
+        "privilege_type": "EXECUTE"
+      },
+      {
         "grantee": "service_role",
         "routine_name": "private.admin_unassign_order",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.admin_upsert_compound",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.admin_upsert_compound",
         "privilege_type": "EXECUTE"
       },
       {
@@ -4081,8 +4271,38 @@
         "privilege_type": "EXECUTE"
       },
       {
+        "grantee": "postgres",
+        "routine_name": "private.admin_vendors_without_items",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.admin_vendors_without_items",
+        "privilege_type": "EXECUTE"
+      },
+      {
         "grantee": "service_role",
         "routine_name": "private.append_request_items_secure",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.apply_library_addon",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.apply_library_addon",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.available_orders",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.available_orders",
         "privilege_type": "EXECUTE"
       },
       {
@@ -4093,6 +4313,36 @@
       {
         "grantee": "service_role",
         "routine_name": "private.cancel_order",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.check_discount_conflict",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.check_discount_conflict",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.claim_order",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.claim_order",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.clear_my_location",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.clear_my_location",
         "privilege_type": "EXECUTE"
       },
       {
@@ -4111,6 +4361,126 @@
         "privilege_type": "EXECUTE"
       },
       {
+        "grantee": "postgres",
+        "routine_name": "private.driver_accept_assignment",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.driver_accept_assignment",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.driver_arrived_at_customer",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.driver_arrived_at_customer",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.driver_arrived_at_restaurant",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.driver_arrived_at_restaurant",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.driver_called_customer",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.driver_called_customer",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.driver_claim_device",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.driver_claim_device",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.driver_confirm_cash_received",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.driver_confirm_cash_received",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.driver_mark_out_for_delivery",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.driver_mark_out_for_delivery",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.driver_mark_picked_up",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.driver_mark_picked_up",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.driver_reject_assignment",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.driver_reject_assignment",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.driver_report_no_answer",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.driver_report_no_answer",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.driver_report_problem",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.driver_report_problem",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.driver_set_available",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.driver_set_available",
+        "privilege_type": "EXECUTE"
+      },
+      {
         "grantee": "service_role",
         "routine_name": "private.escalate_swap",
         "privilege_type": "EXECUTE"
@@ -4118,6 +4488,16 @@
       {
         "grantee": "service_role",
         "routine_name": "private.log_app_event",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.mark_delivered",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.mark_delivered",
         "privilege_type": "EXECUTE"
       },
       {
@@ -4151,6 +4531,16 @@
         "privilege_type": "EXECUTE"
       },
       {
+        "grantee": "postgres",
+        "routine_name": "private.my_driver_stats",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.my_driver_stats",
+        "privilege_type": "EXECUTE"
+      },
+      {
         "grantee": "service_role",
         "routine_name": "private.open_swaps",
         "privilege_type": "EXECUTE"
@@ -4176,8 +4566,38 @@
         "privilege_type": "EXECUTE"
       },
       {
+        "grantee": "postgres",
+        "routine_name": "private.restaurant_reliability",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.restaurant_reliability",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.restaurants_reliability_all",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.restaurants_reliability_all",
+        "privilege_type": "EXECUTE"
+      },
+      {
         "grantee": "service_role",
         "routine_name": "private.save_customer_push_token",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "postgres",
+        "routine_name": "private.save_my_push_token",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.save_my_push_token",
         "privilege_type": "EXECUTE"
       },
       {
@@ -4246,6 +4666,16 @@
         "privilege_type": "EXECUTE"
       },
       {
+        "grantee": "postgres",
+        "routine_name": "private.update_my_location",
+        "privilege_type": "EXECUTE"
+      },
+      {
+        "grantee": "service_role",
+        "routine_name": "private.update_my_location",
+        "privilege_type": "EXECUTE"
+      },
+      {
         "grantee": "service_role",
         "routine_name": "private.vendor_accept_order",
         "privilege_type": "EXECUTE"
@@ -4286,7 +4716,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.admin_add_menu_category",
         "privilege_type": "EXECUTE"
       },
@@ -4321,7 +4751,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.admin_customer_detail",
         "privilege_type": "EXECUTE"
       },
@@ -4331,7 +4761,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.admin_customers",
         "privilege_type": "EXECUTE"
       },
@@ -4341,7 +4771,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.admin_daily_report",
         "privilege_type": "EXECUTE"
       },
@@ -4361,7 +4791,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.admin_delete_menu_category",
         "privilege_type": "EXECUTE"
       },
@@ -4371,7 +4801,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.admin_delete_menu_item",
         "privilege_type": "EXECUTE"
       },
@@ -4386,7 +4816,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.admin_flag_driver_dispute",
         "privilege_type": "EXECUTE"
       },
@@ -4401,7 +4831,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.admin_funnel",
         "privilege_type": "EXECUTE"
       },
@@ -4411,7 +4841,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.admin_list_accounts",
         "privilege_type": "EXECUTE"
       },
@@ -4421,7 +4851,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.admin_live_deliveries",
         "privilege_type": "EXECUTE"
       },
@@ -4431,7 +4861,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.admin_pending_refunds",
         "privilege_type": "EXECUTE"
       },
@@ -4441,7 +4871,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.admin_push_health",
         "privilege_type": "EXECUTE"
       },
@@ -4456,7 +4886,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.admin_rename_menu_category",
         "privilege_type": "EXECUTE"
       },
@@ -4466,7 +4896,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.admin_reorder_menu_categories",
         "privilege_type": "EXECUTE"
       },
@@ -4486,7 +4916,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.admin_set_compound_fee",
         "privilege_type": "EXECUTE"
       },
@@ -4501,7 +4931,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.admin_set_restaurant_rank",
         "privilege_type": "EXECUTE"
       },
@@ -4511,7 +4941,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.admin_set_vendor_hours",
         "privilege_type": "EXECUTE"
       },
@@ -4526,7 +4956,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.admin_stalled_orders",
         "privilege_type": "EXECUTE"
       },
@@ -4541,7 +4971,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.admin_upsert_compound",
         "privilege_type": "EXECUTE"
       },
@@ -4556,7 +4986,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.admin_vendors_without_items",
         "privilege_type": "EXECUTE"
       },
@@ -4571,7 +5001,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.apply_library_addon",
         "privilege_type": "EXECUTE"
       },
@@ -4581,7 +5011,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.available_orders",
         "privilege_type": "EXECUTE"
       },
@@ -4606,7 +5036,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.check_discount_conflict",
         "privilege_type": "EXECUTE"
       },
@@ -4626,7 +5056,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.claim_order",
         "privilege_type": "EXECUTE"
       },
@@ -4636,7 +5066,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.clear_my_location",
         "privilege_type": "EXECUTE"
       },
@@ -4706,7 +5136,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.driver_accept_assignment",
         "privilege_type": "EXECUTE"
       },
@@ -4716,7 +5146,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.driver_arrived_at_customer",
         "privilege_type": "EXECUTE"
       },
@@ -4726,7 +5156,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.driver_arrived_at_restaurant",
         "privilege_type": "EXECUTE"
       },
@@ -4736,7 +5166,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.driver_called_customer",
         "privilege_type": "EXECUTE"
       },
@@ -4751,7 +5181,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.driver_claim_device",
         "privilege_type": "EXECUTE"
       },
@@ -4761,7 +5191,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.driver_confirm_cash_received",
         "privilege_type": "EXECUTE"
       },
@@ -4771,7 +5201,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.driver_mark_out_for_delivery",
         "privilege_type": "EXECUTE"
       },
@@ -4781,7 +5211,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.driver_mark_picked_up",
         "privilege_type": "EXECUTE"
       },
@@ -4791,7 +5221,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.driver_reject_assignment",
         "privilege_type": "EXECUTE"
       },
@@ -4801,7 +5231,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.driver_report_no_answer",
         "privilege_type": "EXECUTE"
       },
@@ -4811,7 +5241,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.driver_report_problem",
         "privilege_type": "EXECUTE"
       },
@@ -4821,7 +5251,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.driver_set_available",
         "privilege_type": "EXECUTE"
       },
@@ -4926,7 +5356,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.mark_delivered",
         "privilege_type": "EXECUTE"
       },
@@ -4986,7 +5416,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.my_driver_stats",
         "privilege_type": "EXECUTE"
       },
@@ -5151,7 +5581,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.restaurant_reliability",
         "privilege_type": "EXECUTE"
       },
@@ -5166,7 +5596,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.restaurants_reliability_all",
         "privilege_type": "EXECUTE"
       },
@@ -5181,7 +5611,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.save_my_push_token",
         "privilege_type": "EXECUTE"
       },
@@ -5391,7 +5821,7 @@
         "privilege_type": "EXECUTE"
       },
       {
-        "grantee": "authenticated",
+        "grantee": "postgres",
         "routine_name": "public.update_my_location",
         "privilege_type": "EXECUTE"
       },
