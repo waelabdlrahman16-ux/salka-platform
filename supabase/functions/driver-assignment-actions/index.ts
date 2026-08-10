@@ -7,7 +7,6 @@ const ACTIONS = new Set<Action>(["claimOrder","acceptAssignment","arrivedAtResta
 const KNOWN = ["not_a_driver","driver_suspended","not_your_pool","not_ready_yet","already_taken","kitchen_not_accepted_yet","order_not_priced","wrong_vehicle_type","dispatch_rule_blocked","not_your_assignment","wrong_stage","must_arrive_first","order_not_ready","must_call_customer_first","too_early","reason_required","must_confirm_cash_first"]
 function positiveId(v: unknown): number | null { return Number.isInteger(v) && Number(v)>0 && Number(v)<=2_147_483_647 ? Number(v) : null }
 function clean(v: unknown,max: number): string | null { if(typeof v!=="string")return null;const s=v.trim();return s&&s.length<=max?s:null }
-function missing(error: { code?: string; message?: string } | null): boolean { return error?.code==="PGRST202"||!!error?.message?.includes("Could not find the function") }
 async function digest(v:string):Promise<string>{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,"0")).join("")}
 
 const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
@@ -65,8 +64,7 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
     if(!assignmentId||!orderId)return json({error:"invalid_assignment_input"},400)
     fn="mark_delivered";args={p_assignment_id:assignmentId,p_order_id:orderId}
   }
-  let result=await ctx.supabaseAdmin.rpc(fn,{...args,p_auth_user_id:userId})
-  if(missing(result.error))result=await ctx.supabase.rpc(fn,args)
+  const result=await ctx.supabaseAdmin.rpc(fn,{...args,p_auth_user_id:userId})
   if(result.error){const known=KNOWN.find(c=>result.error?.message?.includes(c));if(known)return json({error:known},400);return fail("driver-assignment-actions","assignment_action_failed",500,result.error)}
   return json({ok:true,data:result.data??null})
 })

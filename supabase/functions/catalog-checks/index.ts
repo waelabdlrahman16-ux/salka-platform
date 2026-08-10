@@ -7,7 +7,6 @@ const ACTIONS = new Set<Action>(["applyLibraryAddon","checkDiscountConflict","re
 const KNOWN = ["not_authorised","library_item_not_found","group_name_required","menu_item_not_found","item_belongs_to_another_vendor","admin_only","invalid_scope","restaurant_required","not_authorized"]
 function positiveId(v: unknown): number | null { return Number.isInteger(v) && Number(v)>0 && Number(v)<=2_147_483_647 ? Number(v) : null }
 function clean(v: unknown,max: number): string | null { if(typeof v!=="string")return null;const s=v.trim();return s&&s.length<=max?s:null }
-function missing(error: { code?: string; message?: string } | null): boolean { return error?.code==="PGRST202"||!!error?.message?.includes("Could not find the function") }
 async function digest(v:string):Promise<string>{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,"0")).join("")}
 
 const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
@@ -52,8 +51,7 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
   }else{
     fn="restaurants_reliability_all";args={}
   }
-  let result=await ctx.supabaseAdmin.rpc(fn,{...args,p_auth_user_id:userId})
-  if(missing(result.error))result=await ctx.supabase.rpc(fn,args)
+  const result=await ctx.supabaseAdmin.rpc(fn,{...args,p_auth_user_id:userId})
   if(result.error){const known=KNOWN.find(c=>result.error?.message?.includes(c));if(known)return json({error:known},known==="admin_only"?403:400);return fail("catalog-checks","catalog_check_failed",500,result.error)}
   return json({ok:true,data:result.data??null})
 })

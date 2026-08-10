@@ -8,7 +8,6 @@ const KNOWN = ["admin_only","compound_not_found","complaint_not_found","delivery
 function positiveId(v: unknown): number | null { return Number.isInteger(v) && Number(v)>0 && Number(v)<=2_147_483_647 ? Number(v) : null }
 function clean(v: unknown,max: number): string | null { if(typeof v!=="string")return null;const s=v.trim();return s&&s.length<=max?s:null }
 function finiteNum(v: unknown): number | null { return typeof v==="number"&&Number.isFinite(v)?v:null }
-function missing(error: { code?: string; message?: string } | null): boolean { return error?.code==="PGRST202"||!!error?.message?.includes("Could not find the function") }
 async function digest(v:string):Promise<string>{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,"0")).join("")}
 
 const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
@@ -38,8 +37,7 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
     if(!complaintId||note===undefined||note.length>1000)return json({error:"invalid_dispatch_input"},400)
     fn="admin_flag_driver_dispute";args={p_complaint_id:complaintId,p_note:note}
   }
-  let result=await ctx.supabaseAdmin.rpc(fn,{...args,p_auth_user_id:userId})
-  if(missing(result.error))result=await ctx.supabase.rpc(fn,args)
+  const result=await ctx.supabaseAdmin.rpc(fn,{...args,p_auth_user_id:userId})
   if(result.error){const known=KNOWN.find(c=>result.error?.message?.includes(c));if(known)return json({error:known},known==="admin_only"?403:400);return fail("admin-compound-actions","compound_action_failed",500,result.error)}
   return json({ok:true,data:result.data??null})
 })

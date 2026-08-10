@@ -12,7 +12,6 @@ async function hmac(value: string): Promise<string> {
   const bytes = await crypto.subtle.sign("HMAC",key,new TextEncoder().encode(value))
   return Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,"0")).join("")
 }
-function missingOverload(error: { code?: string; message?: string } | null): boolean { return error?.code === "PGRST202" || !!error?.message?.includes("Could not find the function") }
 
 const handler = withSupabase<Db>({ auth: ["user","publishable"] }, async (req,ctx) => {
   if (req.method !== "POST") return json({error:"method_not_allowed"},405)
@@ -32,8 +31,7 @@ const handler = withSupabase<Db>({ auth: ["user","publishable"] }, async (req,ct
     if(error){if(isRateLimitError(error))return json({error:"rate_limited"},429);return fail("analytics-ingestion","rate_limit_check_failed",500,error)}
   }
   const args={p_event:event,p_device_id:deviceId,p_session_id:sessionId,p_compound_id:compoundId,p_restaurant_id:restaurantId,p_order_id:orderId,p_props:props}
-  let result=await ctx.supabaseAdmin.rpc("log_app_event",{...args,p_auth_user_id:ctx.userClaims?.id??null})
-  if(missingOverload(result.error))result=await ctx.supabase.rpc("log_app_event",args)
+  const result=await ctx.supabaseAdmin.rpc("log_app_event",{...args,p_auth_user_id:ctx.userClaims?.id??null})
   if(result.error)return fail("analytics-ingestion","analytics_write_failed",500,result.error)
   return json({ok:true,data:null})
 })

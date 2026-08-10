@@ -51,9 +51,6 @@ function sessionToken(value: unknown): string | null | undefined {
   if (value == null || value === "") return null
   return typeof value === "string" && UUID.test(value) ? value : undefined
 }
-function missingNewOverload(error: { code?: string; message?: string } | null): boolean {
-  return error?.code === "PGRST202" || !!error?.message?.includes("Could not find the function")
-}
 async function digest(value: string): Promise<string> {
   const pepper = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
   if (!pepper) throw new Error("missing_rate_limit_pepper")
@@ -148,8 +145,7 @@ const customerOrderCreation = withSupabase<OrderDatabase>(
       args = { ...common, p_payment_mode: body.paymentMode, p_collect_amount: collect, p_request_notes: notes ?? "" }
     }
 
-    let result = await ctx.supabaseAdmin.rpc(fn, { ...args, p_rate_key: rateKey, p_auth_user_id: ctx.userClaims?.id ?? null })
-    if (missingNewOverload(result.error)) result = await ctx.supabase.rpc(fn, args)
+    const result = await ctx.supabaseAdmin.rpc(fn, { ...args, p_rate_key: rateKey, p_auth_user_id: ctx.userClaims?.id ?? null })
     if (result.error) {
       const code = publicError(result.error.message)
       if (code) return json({ error: code }, code.includes("rate_limit") ? 429 : 400)

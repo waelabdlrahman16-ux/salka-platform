@@ -7,7 +7,6 @@ const ACTIONS=new Set<Action>(["acceptSwap","escalateSwap","openSwaps","requestE
 const READS=new Set<Action>(["openSwaps","vendorOpenStates"])
 const KNOWN=["already_requested","cannot_accept_own_request","not_a_driver","not_authorized","not_your_request","not_your_shift","request_unavailable"]
 const id=(v:unknown)=>Number.isInteger(v)&&Number(v)>0&&Number(v)<=2147483647?Number(v):null
-const missing=(e:{code?:string;message?:string}|null)=>e?.code==="PGRST202"||!!e?.message?.includes("Could not find the function")
 async function digest(v:string){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,"0")).join("")}
 const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{if(req.method!=="POST")return json({error:"method_not_allowed"},405);if(Number(req.headers.get("content-length")??0)>8192)return json({error:"request_too_large"},413)
  let b:unknown;try{b=await req.json()}catch{return json({error:"invalid_json"},400)}if(!b||typeof b!=="object"||Array.isArray(b))return json({error:"invalid_request"},400)
@@ -24,6 +23,6 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{if(req.method!=="P
  else{const shiftId=id(x.shiftId),reason=x.reason==null?"":(typeof x.reason==="string"?x.reason.trim():undefined)
   if(!shiftId||reason===undefined||reason.length>500)return json({error:"invalid_staff_input"},400)
   fn="request_swap";args={p_shift_id:shiftId,p_reason:reason}}
- let result=await ctx.supabaseAdmin.rpc(fn,{...args,p_auth_user_id:uid});if(missing(result.error))result=await ctx.supabase.rpc(fn,args)
+ const result=await ctx.supabaseAdmin.rpc(fn,{...args,p_auth_user_id:uid})
  if(result.error){const known=KNOWN.find(c=>result.error?.message?.includes(c));if(known)return json({error:known},known==="not_a_driver"||known==="not_authorized"?403:400);return fail("staff-operations","staff_action_failed",500,result.error)}
  return json({ok:true,data:result.data??null})});export default{fetch:handler}

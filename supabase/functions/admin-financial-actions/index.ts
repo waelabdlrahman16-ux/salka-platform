@@ -6,7 +6,6 @@ type Action = "adjustOrder" | "confirmCodDeposit" | "confirmInstapay" | "creditW
 const ACTIONS = new Set<Action>(["adjustOrder","confirmCodDeposit","confirmInstapay","creditWallet","markRefunded","settleCash","settleEarnings"])
 const KNOWN = ["admin_only","already_confirmed","deposit_not_required","driver_not_found","invalid_credit_amount","invalid_phone","negative_total","order_cancelled","order_not_found","payment_not_claimed","reason_required","reason_too_long","refund_not_pending"]
 function positiveId(v: unknown): number | null { return Number.isInteger(v) && Number(v) > 0 && Number(v) <= 2_147_483_647 ? Number(v) : null }
-function missing(error: { code?: string; message?: string } | null): boolean { return error?.code === "PGRST202" || !!error?.message?.includes("Could not find the function") }
 async function digest(v: string): Promise<string> { const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v)); return Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,"0")).join("") }
 
 const handler = withSupabase<Db>({ auth: "user" }, async (req,ctx) => {
@@ -40,8 +39,7 @@ const handler = withSupabase<Db>({ auth: "user" }, async (req,ctx) => {
     else if(action==="settleCash"){fn="settle_driver_cash";args={p_driver_id:targetId}}
     else{fn="settle_driver_earnings";args={p_driver_id:targetId}}
   }
-  let result=await ctx.supabaseAdmin.rpc(fn,{...args,p_auth_user_id:userId})
-  if(missing(result.error))result=await ctx.supabase.rpc(fn,args)
+  const result=await ctx.supabaseAdmin.rpc(fn,{...args,p_auth_user_id:userId})
   if(result.error){const known=KNOWN.find(c=>result.error?.message?.includes(c));if(known)return json({error:known},known==="admin_only"?403:400);return fail("admin-financial-actions","financial_action_failed",500,result.error)}
   return json({ok:true,data:result.data??null})
 })
