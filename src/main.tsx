@@ -62,9 +62,24 @@ if (SENTRY_DSN) {
     // absence of a stack is not evidence of foreign code. And this only drops
     // when EVERY frame is foreign -- one frame of ours anywhere in the stack
     // means we want to see it.
+    //
+    // Except that check alone missed a real one: Sentry patches
+    // window.addEventListener globally for its own instrumentation, so an
+    // error thrown INSIDE a listener Facebook's in-app browser registered
+    // still shows one frame pointing at our bundle (the wrapped
+    // addEventListener call itself, mechanism
+    // "auto.browser.browserapierrors.addEventListener") even though every
+    // OTHER frame -- the actual failure -- is entirely Facebook's injected
+    // script. Seen live: "Error invoking enableDidUserTypeOnKeyboardLogging:
+    // Java object is gone" at iabjs://navigation_performance_logger_android,
+    // kept by the /assets/ check alone. `iabjs://` is Facebook's own protocol
+    // scheme for that injected script -- unambiguous regardless of which
+    // frame Sentry's own wrapper adds on top, so it overrides the /assets/
+    // check rather than needing every individual function name enumerated.
     beforeSend(event) {
       const frames = event.exception?.values?.flatMap(v => v.stacktrace?.frames ?? []) ?? []
       if (frames.length === 0) return event
+      if (frames.some(f => (f.filename ?? '').startsWith('iabjs://'))) return null
       const touchesOurCode = frames.some(f => (f.filename ?? '').includes('/assets/'))
       return touchesOurCode ? event : null
     },
