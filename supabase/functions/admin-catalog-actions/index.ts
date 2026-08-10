@@ -7,7 +7,6 @@ const ACTIONS = new Set<Action>(["addMenuCategory","renameMenuCategory","deleteM
 const KNOWN = ["admin_only","category_exists","category_not_empty","hours_incomplete","invalid_day","item_has_order_history","name_required","not_authorized","rank_must_be_positive","restaurant_not_found"]
 function positiveId(v: unknown): number | null { return Number.isInteger(v) && Number(v)>0 && Number(v)<=2_147_483_647 ? Number(v) : null }
 function clean(v: unknown,max: number): string | null { if(typeof v!=="string")return null;const s=v.trim();return s&&s.length<=max?s:null }
-function missing(error: { code?: string; message?: string } | null): boolean { return error?.code==="PGRST202"||!!error?.message?.includes("Could not find the function") }
 async function digest(v:string):Promise<string>{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,"0")).join("")}
 
 const DAY_RE = /^[0-6]$/
@@ -70,8 +69,7 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
     if(!restaurantId||(input.displayOrder!=null&&!displayOrder)||(input.featured!=null&&typeof input.featured!=="boolean"))return json({error:"invalid_vendor_input"},400)
     fn="admin_set_restaurant_rank";args={p_restaurant_id:restaurantId,p_display_order:displayOrder,p_featured:input.featured??null}
   }
-  let result=await ctx.supabaseAdmin.rpc(fn,{...args,p_auth_user_id:userId})
-  if(missing(result.error))result=await ctx.supabase.rpc(fn,args)
+  const result=await ctx.supabaseAdmin.rpc(fn,{...args,p_auth_user_id:userId})
   if(result.error){const known=KNOWN.find(c=>result.error?.message?.includes(c));if(known)return json({error:known},known==="admin_only"||known==="not_authorized"?403:400);return fail("admin-catalog-actions","catalog_action_failed",500,result.error)}
   return json({ok:true,data:result.data??null})
 })

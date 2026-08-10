@@ -7,7 +7,6 @@ const ACTIONS = new Set<Action>(["setAvailable","claimDevice","savePushToken","u
 const KNOWN = ["not_a_driver","invalid_state","driver_suspended","finish_your_orders_first","invalid_device","device_locked","not_authenticated","bad_platform","empty_token"]
 function clean(v: unknown,max: number): string | null { if(typeof v!=="string")return null;const s=v.trim();return s&&s.length<=max?s:null }
 function finiteNum(v: unknown): number | null { return typeof v==="number" && Number.isFinite(v) ? v : null }
-function missing(error: { code?: string; message?: string } | null): boolean { return error?.code==="PGRST202"||!!error?.message?.includes("Could not find the function") }
 async function digest(v:string):Promise<string>{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,"0")).join("")}
 
 const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
@@ -59,8 +58,7 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
   }else{
     fn="available_orders";args={}
   }
-  let result=await ctx.supabaseAdmin.rpc(fn,{...args,p_auth_user_id:userId})
-  if(missing(result.error))result=await ctx.supabase.rpc(fn,args)
+  const result=await ctx.supabaseAdmin.rpc(fn,{...args,p_auth_user_id:userId})
   if(result.error){const known=KNOWN.find(c=>result.error?.message?.includes(c));if(known)return json({error:known},400);return fail("driver-self-service","driver_action_failed",500,result.error)}
   return json({ok:true,data:result.data??null})
 })

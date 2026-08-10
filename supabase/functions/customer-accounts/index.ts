@@ -10,7 +10,6 @@ const KNOWN=["invalid_name","name_required","not_logged_in","not_your_address","
 const id=(v:unknown)=>Number.isInteger(v)&&Number(v)>0&&Number(v)<=2147483647?Number(v):null
 const text=(v:unknown,max:number)=>typeof v==="string"&&v.trim().length<=max?v.trim():null
 const optText=(v:unknown,max:number)=>v==null?null:(typeof v==="string"&&v.trim().length<=max?v.trim():undefined)
-const missing=(e:{code?:string;message?:string}|null)=>e?.code==="PGRST202"||!!e?.message?.includes("Could not find the function")
 async function digest(v:string){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,"0")).join("")}
 const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{if(req.method!=="POST")return json({error:"method_not_allowed"},405);if(Number(req.headers.get("content-length")??0)>8192)return json({error:"request_too_large"},413)
  let b:unknown;try{b=await req.json()}catch{return json({error:"invalid_json"},400)}if(!b||typeof b!=="object"||Array.isArray(b))return json({error:"invalid_request"},400)
@@ -31,6 +30,6 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{if(req.method!=="P
  else{const label=optText(x.label,60),compoundId=id(x.compoundId),unit=text(x.unitNumber,120),notes=optText(x.notes,500)
   if(!addressId||label===undefined||notes===undefined||!compoundId||!unit)return json({error:"invalid_account_input"},400)
   fn="update_customer_address";args={p_id:addressId,p_label:label,p_compound_id:compoundId,p_unit_number:unit,p_notes:notes}}
- let result=await ctx.supabaseAdmin.rpc(fn,{...args,p_auth_user_id:uid});if(missing(result.error))result=await ctx.supabase.rpc(fn,args)
+ const result=await ctx.supabaseAdmin.rpc(fn,{...args,p_auth_user_id:uid})
  if(result.error){const known=KNOWN.find(c=>result.error?.message?.includes(c));if(known)return json({error:known},known==="not_logged_in"?401:known==="not_your_address"?403:400);return fail("customer-accounts","customer_account_action_failed",500,result.error)}
  return json({ok:true,data:result.data??null})});export default{fetch:handler}

@@ -11,10 +11,6 @@ async function tokenDigest(token: string): Promise<string> {
   const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token))
   return Array.from(new Uint8Array(bytes), b => b.toString(16).padStart(2, "0")).join("")
 }
-function missingOverload(error: { code?: string; message?: string } | null): boolean {
-  return error?.code === "PGRST202" || !!error?.message?.includes("Could not find the function")
-}
-
 const handler = withSupabase<Db>({ auth: ["user", "publishable"] }, async (req, ctx) => {
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405)
   if (Number(req.headers.get("content-length") ?? 0) > 8192) return json({ error: "request_too_large" }, 413)
@@ -48,14 +44,12 @@ const handler = withSupabase<Db>({ auth: ["user", "publishable"] }, async (req, 
     const platform = input.platform
     if (!pushToken || pushToken.length > 4096 || !["web","android","ios"].includes(String(platform))) return json({ error: "invalid_push_input" }, 400)
     result = await ctx.supabaseAdmin.rpc("save_customer_push_token", { p_token: token, p_push_token: pushToken, p_platform: platform, p_auth_user_id: ctx.userClaims?.id ?? null })
-    if (missingOverload(result.error)) result = await ctx.supabase.rpc("save_customer_push_token", { p_token: token, p_push_token: pushToken, p_platform: platform })
   } else if (safeAction === "rating") {
     const driver = input.driverRating == null ? null : Number(input.driverRating)
     const restaurant = input.restaurantRating == null ? null : Number(input.restaurantRating)
     const comment = typeof input.comment === "string" ? input.comment.trim() : ""
     if ((driver == null && restaurant == null) || (driver != null && (!Number.isInteger(driver) || driver < 1 || driver > 5)) || (restaurant != null && (!Number.isInteger(restaurant) || restaurant < 1 || restaurant > 5)) || comment.length > 1000) return json({ error: "invalid_rating_input" }, 400)
     result = await ctx.supabaseAdmin.rpc("submit_rating", { p_token: token, p_driver_rating: driver, p_restaurant_rating: restaurant, p_comment: comment, p_auth_user_id: ctx.userClaims?.id ?? null })
-    if (missingOverload(result.error)) result = await ctx.supabase.rpc("submit_rating", { p_token: token, p_driver_rating: driver, p_restaurant_rating: restaurant, p_comment: comment })
   } else {
     const description = typeof input.description === "string" ? input.description.trim() : ""
     const category = typeof input.category === "string" ? input.category : "other"

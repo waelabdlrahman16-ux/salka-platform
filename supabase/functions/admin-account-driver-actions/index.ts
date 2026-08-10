@@ -8,7 +8,6 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 const KNOWN = ["admin_only","cannot_delete_admin","cannot_delete_self","cannot_target_self","customer_has_live_order","customer_has_wallet_balance","driver_has_live_delivery","driver_holds_cash","driver_not_found","has_live_orders","invalid_phone","invalid_payout_schedule","invalid_role","invalid_vehicle_type","name_required","no_account_for_phone","phone_already_used","phone_required","profile_not_found","target_not_convertible","vendor_not_found"]
 function positiveId(v: unknown): number | null { return Number.isInteger(v) && Number(v)>0 && Number(v)<=2_147_483_647 ? Number(v) : null }
 function clean(v: unknown,max: number): string | null { if(typeof v!=="string")return null;const s=v.trim();return s&&s.length<=max?s:null }
-function missing(error: { code?: string; message?: string } | null): boolean { return error?.code==="PGRST202"||!!error?.message?.includes("Could not find the function") }
 async function digest(v:string):Promise<string>{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,"0")).join("")}
 
 const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
@@ -53,8 +52,7 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
     if((input.id!=null&&!id)||!name||!phone||(vehicle!=="motorcycle"&&vehicle!=="van")||plate.length>40||instapay===undefined||(instapay?.length??0)>80||(schedule!=="daily"&&schedule!=="weekly")||(input.active!=null&&typeof input.active!=="boolean"))return json({error:"invalid_account_input"},400)
     fn="admin_upsert_driver";args={p_id:id,p_name:name,p_phone:phone,p_vehicle_type:vehicle,p_vehicle_plate:plate,p_instapay_number:instapay||null,p_payout_schedule:schedule,p_active:input.active!==false}
   }
-  let result=await ctx.supabaseAdmin.rpc(fn,{...args,p_auth_user_id:userId})
-  if(missing(result.error))result=await ctx.supabase.rpc(fn,args)
+  const result=await ctx.supabaseAdmin.rpc(fn,{...args,p_auth_user_id:userId})
   if(result.error){const known=KNOWN.find(c=>result.error?.message?.includes(c));if(known)return json({error:known},known==="admin_only"?403:400);return fail("admin-account-driver-actions","account_action_failed",500,result.error)}
   return json({ok:true,data:result.data??null})
 })

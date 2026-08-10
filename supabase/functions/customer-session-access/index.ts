@@ -11,29 +11,21 @@ type SessionDatabase = {
         Returns: undefined
       }
       last_address_for_phone: {
-        Args:
-          | { p_phone: string; p_session_token: string | null; p_auth_user_id: string | null }
-          | { p_phone: string; p_session_token: string | null }
+        Args: { p_phone: string; p_session_token: string | null; p_auth_user_id: string | null }
         Returns: unknown
       }
       my_last_request: {
-        Args:
-          | { p_restaurant_id: number; p_session_token: string | null; p_auth_user_id: string | null }
-          | { p_restaurant_id: number; p_session_token: string | null }
+        Args: { p_restaurant_id: number; p_session_token: string | null; p_auth_user_id: string | null }
         Returns: unknown
       }
       my_orders: {
-        Args:
-          | { p_phone: string; p_session_token: string | null; p_auth_user_id: string | null }
-          | { p_phone: string; p_session_token: string | null }
+        Args: { p_phone: string; p_session_token: string | null; p_auth_user_id: string | null }
         Returns: unknown
       }
       session_logout: { Args: { p_token: string }; Returns: undefined }
       session_whoami: { Args: { p_token: string }; Returns: unknown }
       wallet_balance_for_phone: {
-        Args:
-          | { p_phone: string; p_session_token: string | null; p_auth_user_id: string | null }
-          | { p_phone: string; p_session_token: string | null }
+        Args: { p_phone: string; p_session_token: string | null; p_auth_user_id: string | null }
         Returns: number
       }
     }
@@ -69,10 +61,6 @@ function phone(value: unknown): string | null {
 function positiveId(value: unknown): number | null {
   return Number.isInteger(value) && Number(value) > 0 && Number(value) <= 2_147_483_647
     ? Number(value) : null
-}
-
-function missingNewOverload(error: { code?: string; message?: string } | null): boolean {
-  return error?.code === "PGRST202" || !!error?.message?.includes("Could not find the function")
 }
 
 async function identityDigest(req: Request, identity: string): Promise<string> {
@@ -149,12 +137,6 @@ const customerSessionAccess = withSupabase<SessionDatabase>(
         p_session_token: token,
         p_auth_user_id: authUserId,
       })
-      if (missingNewOverload(result.error)) {
-        result = await ctx.supabase.rpc("my_last_request", {
-          p_restaurant_id: restaurantId,
-          p_session_token: token,
-        })
-      }
     } else {
       const customerPhone = phone(input.phone)
       if (!customerPhone) return json({ error: "invalid_phone" }, 400)
@@ -164,36 +146,18 @@ const customerSessionAccess = withSupabase<SessionDatabase>(
           p_session_token: token,
           p_auth_user_id: authUserId,
         })
-        if (missingNewOverload(result.error)) {
-          result = await ctx.supabase.rpc("last_address_for_phone", {
-            p_phone: customerPhone,
-            p_session_token: token,
-          })
-        }
       } else if (safeAction === "orders") {
         result = await ctx.supabaseAdmin.rpc("my_orders", {
           p_phone: customerPhone,
           p_session_token: token,
           p_auth_user_id: authUserId,
         })
-        if (missingNewOverload(result.error)) {
-          result = await ctx.supabase.rpc("my_orders", {
-            p_phone: customerPhone,
-            p_session_token: token,
-          })
-        }
       } else {
         result = await ctx.supabaseAdmin.rpc("wallet_balance_for_phone", {
           p_phone: customerPhone,
           p_session_token: token,
           p_auth_user_id: authUserId,
         })
-        if (missingNewOverload(result.error)) {
-          result = await ctx.supabase.rpc("wallet_balance_for_phone", {
-            p_phone: customerPhone,
-            p_session_token: token,
-          })
-        }
       }
     }
 
