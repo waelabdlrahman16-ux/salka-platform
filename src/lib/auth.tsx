@@ -114,7 +114,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
-    await supabase.auth.signOut()
+    // Default scope is 'global': it revokes the refresh token server-side for
+    // this auth.users row, not just this tab's session. Staff and customer
+    // sessions already live under separate localStorage keys/BroadcastChannels
+    // (see supabase.ts), so a global sign-out here isn't needed to clear this
+    // tab -- and if the same person is signed into both a staff portal and the
+    // customer store as the same account, it silently logs the OTHER tab out
+    // too on its next token refresh.
+    await supabase.auth.signOut({ scope: 'local' })
     setProfile(null)
   }
 
