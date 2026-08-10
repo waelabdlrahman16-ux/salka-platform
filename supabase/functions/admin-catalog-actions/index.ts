@@ -72,7 +72,7 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
   }
   let result=await ctx.supabaseAdmin.rpc(fn,{...args,p_auth_user_id:userId})
   if(missing(result.error))result=await ctx.supabase.rpc(fn,args)
-  if(result.error){const known=KNOWN.find(c=>result.error?.message?.includes(c));if(known)return json({error:known},known==="admin_only"||known==="not_authorized"?403:400);return fail("admin-catalog-actions","vendor_action_failed",500,result.error)}
+  if(result.error){const known=KNOWN.find(c=>result.error?.message?.includes(c));if(known)return json({error:known},known==="admin_only"||known==="not_authorized"?403:400);return fail("admin-catalog-actions","catalog_action_failed",500,result.error)}
   return json({ok:true,data:result.data??null})
 })
 export default {fetch:handler}

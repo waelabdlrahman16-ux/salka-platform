@@ -127,3 +127,21 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/staff-operations/deno.json"
 entrypoint = "./functions/staff-operations/index.ts"
+
+[functions.admin-catalog-actions]
+enabled = true
+verify_jwt = true
+import_map = "./functions/admin-catalog-actions/deno.json"
+entrypoint = "./functions/admin-catalog-actions/index.ts"
+
+[functions.admin-compound-actions]
+enabled = true
+verify_jwt = true
+import_map = "./functions/admin-compound-actions/deno.json"
+entrypoint = "./functions/admin-compound-actions/index.ts"
+
+[functions.admin-reports]
+enabled = true
+verify_jwt = true
+import_map = "./functions/admin-reports/deno.json"
+entrypoint = "./functions/admin-reports/index.ts"
