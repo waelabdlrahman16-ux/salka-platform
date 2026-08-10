@@ -6,6 +6,7 @@ import { ping, askNotificationPermission } from '../lib/notify'
 import { audioBlocked, unlockAudio } from '../lib/audioUnlock'
 import { registerPush, persistPushToken } from '../lib/push'
 import { uploadVendorImage } from '../lib/upload'
+import { SkeletonBlock, SkeletonCard } from '../components/Skeleton'
 import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel,
          ORDER_STATUSES, CLOSED_ORDER_STATUSES, UNPAID_ORDER_STATUSES, type OrderStatus, isCancelled, cancelReasonLabel } from '../lib/statusLabels'
 import { rpc, type RpcResult } from '../lib/rpc'
@@ -318,6 +319,11 @@ export default function Admin() {
   const [syncFailed, setSyncFailed] = useState(false)
   const [lastSyncAt, setLastSyncAt] = useState<number | null>(null)
   const [refreshing, setRefreshing] = useState(false)
+  // `refreshing` only covers manualRefresh() -- the initial mount fetch (~20
+  // queries, up to LOAD_TIMEOUT_MS) sets no loading flag at all, so the page
+  // rendered its full layout against empty arrays and looked blank until data
+  // arrived. This tracks that first fetch specifically, for a skeleton instead.
+  const [firstLoad, setFirstLoad] = useState(true)
 
   // A plain `if (inFlight) return` guard makes every post-mutation refresh a
   // silent no-op whenever the poll happens to be running -- and this page fires
@@ -532,7 +538,7 @@ export default function Admin() {
   useEffect(() => {
     askNotificationPermission()
     registerPush(persistPushToken)
-    load()
+    load().finally(() => setFirstLoad(false))
     const t = setInterval(load, 15000)
     return () => clearInterval(t)
   }, [])
@@ -1463,6 +1469,23 @@ export default function Admin() {
       {o.customer_note && <p className="text-sandink">📝 {o.customer_note}</p>}
     </div>
   )
+
+  if (firstLoad) {
+    return (
+      <div className="max-w-5xl mx-auto">
+        <h1 className="text-2xl font-bold mb-4">لوحة التحكم</h1>
+        <div className="grid grid-cols-3 gap-2.5 mb-4">
+          <SkeletonBlock className="h-16" />
+          <SkeletonBlock className="h-16" />
+          <SkeletonBlock className="h-16" />
+        </div>
+        <SkeletonBlock className="h-9 w-full mb-4" />
+        <div className="space-y-2.5">
+          {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-5xl mx-auto">
