@@ -2231,14 +2231,14 @@ export default function Admin() {
               visitors never became one. The second number is the one that can
               still be changed. */}
           <div className="mb-4"><FunnelPanel /></div>
-          <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
             <div className="card p-4 text-center"><p className="text-sm text-mist">التوصيلات (آخر 300)</p><p className="text-2xl font-bold mt-1">{earnings.length}</p></div>
             <div className="card p-4 text-center"><p className="text-sm text-mist">أرباح المندوبين</p><p className="text-2xl font-bold mt-1 text-sea">{totalDriver} ج.م</p></div>
             <div className="card p-4 text-center"><p className="text-sm text-mist">أرباح الإدارة</p><p className="text-2xl font-bold mt-1 text-sandink">{totalAdmin} ج.م</p></div>
           </div>
           <div className="space-y-2.5">
             {earnings.map(e => (
-              <div key={e.id} className="card p-3.5 flex items-center justify-between text-sm">
+              <div key={e.id} className="card p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-sm">
                 <span className="font-semibold">{e.drivers?.name} — طلب #{e.order_id}</span>
                 <span className="text-mist">رسوم: {e.delivery_fee} · <span className="text-sea">مندوب: {e.driver_earning}</span> · <span className="text-sandink">إدارة: {e.admin_amount}</span></span>
               </div>
@@ -3266,7 +3266,7 @@ function DailyReportTab() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Stat k="طلبات اتوصّلت" v={n(r.delivered)} sub={`من ${n(r.orders_created)} اتعملوا`} />
             <Stat k="نسبة الإلغاء" v={`${n(r.cancel_pct)}٪`} sub={`${n(r.cancelled)} طلب`} warn={Number(r.cancel_pct) > 15} />
             <Stat k="دخل سالكة للطلب" v={n(r.revenue_per_delivered)} sub="توصيل + خدمة" />
