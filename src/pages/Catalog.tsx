@@ -166,6 +166,7 @@ export default function Catalog() {
         <MenuItemEditor
           item={editing}
           canManageDiscounts={isAdmin}
+          restaurantName={restaurants.find(r => r.id === editing.restaurant_id)?.name}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); load() }}
           onDeleted={() => { setEditing(null); load() }}

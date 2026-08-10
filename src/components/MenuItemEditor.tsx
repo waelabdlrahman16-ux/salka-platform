@@ -11,7 +11,7 @@ import DangerZoneCard from './menuItemEditor/DangerZoneCard'
 import DiscountManager from './DiscountManager'
 import type { MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemCombo, MenuItemSize, VendorAddonLibraryItem } from '../lib/types'
 
-export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canManageDiscounts = true }: {
+export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canManageDiscounts = true, restaurantName }: {
   item: MenuItem
   onClose: () => void
   onSaved: () => void
@@ -19,6 +19,13 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
   /** Discounts move margin, so they stay admin-only -- a catalog user gets the
    *  rest of the editor without a section whose writes RLS would reject. */
   canManageDiscounts?: boolean
+  /** The catalog role manages multiple restaurants and switches between them
+   *  without being on-site; the list screen names the restaurant but nothing
+   *  inside this editor did, so after switching restaurants the only cue you
+   *  were now editing a different one's menu was a header line already
+   *  scrolled past. A wrong price save here is silent to the person making
+   *  it -- it only surfaces to a customer later as the wrong charge. */
+  restaurantName?: string
 }) {
   const overlayRef = useDismissable(onClose)
   const { confirmSheet, sheetElement } = useSheets()
@@ -357,8 +364,11 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
           </div>
         )}
         <div className="flex items-center justify-between mb-3 px-1">
-          <h2 className="font-bold text-lg text-foam">تعديل الصنف</h2>
-          <button className="text-mist text-sm bg-shell rounded-full px-3 py-1" onClick={onClose}>✗ إغلاق</button>
+          <div className="min-w-0">
+            <h2 className="font-bold text-lg text-foam">تعديل الصنف</h2>
+            {restaurantName && <p className="text-xs text-mist truncate">🏪 {restaurantName}</p>}
+          </div>
+          <button className="text-mist text-sm bg-shell rounded-full px-3 py-1 shrink-0" onClick={onClose}>✗ إغلاق</button>
         </div>
 
         <BasicInfoCard
