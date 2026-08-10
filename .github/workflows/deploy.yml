@@ -7,8 +7,11 @@ name: Deploy
 # silently. Building in a clean runner from `npm ci` removes both problems.
 #
 # Nothing here needs a .env file: src/lib/supabase.ts falls back to the project
-# URL and the publishable anon key, and VITE_SENTRY_DSN is optional (Sentry
-# stays inert without it). Add repo secrets only if that ever changes.
+# URL and the publishable anon key. VITE_SENTRY_DSN and VITE_FIREBASE_VAPID_KEY
+# are optional in the sense that a build without them still succeeds -- Sentry
+# stays inert and the push opt-in button hides itself -- but both are set as
+# repo secrets today and should stay that way; see the comments at their env:
+# line below for what silently breaks if either one goes missing again.
 #
 # Required repo secret (Settings -> Secrets and variables -> Actions):
 #   CLOUDFLARE_API_TOKEN -- dash.cloudflare.com/profile/api-tokens,
@@ -60,10 +63,16 @@ jobs:
       # This key is the PUBLIC half of a VAPID pair and ships inside the client
       # bundle by design; it is a secret here only so it is configured in one
       # place rather than committed.
+      # VITE_SENTRY_DSN was never set either, so main.tsx's Sentry.init() guard
+      # (`if (SENTRY_DSN)`) never ran -- error monitoring has been completely
+      # inert since the SDK was first added. Same pattern as the VAPID key
+      # above: this is the DSN half of a Sentry client key, meant to ship in
+      # the bundle, not a credential that grants access on its own.
       - name: Build
         run: npm run build
         env:
           VITE_FIREBASE_VAPID_KEY: ${{ secrets.VITE_FIREBASE_VAPID_KEY }}
+          VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
 
       # Wrangler is pinned exactly in package.json and installed by `npm ci`, so
       # the deploy uses the same version that `wrangler deploy --dry-run`
