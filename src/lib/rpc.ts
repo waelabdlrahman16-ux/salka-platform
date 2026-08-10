@@ -244,64 +244,99 @@ export function describeError(message?: string | null, overrides?: Record<string
   return overrides?.[code] ?? ERROR_AR[code] ?? GENERIC_AR
 }
 
+// Backoff between automatic retries. Short and few: this is for a dropped
+// packet or a momentary radio drop-out, not a strategy for a genuinely
+// offline device -- retrying into no connectivity at all just burns the
+// user's patience three times instead of once.
+const RETRY_DELAYS_MS = [500, 1500]
+
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+// Retrying is opt-in (`retries` defaults to 0, i.e. today's behaviour)
+// because it is only safe for calls the server treats idempotently. A
+// transport failure here does not mean the request never reached the
+// server -- postgrest/edge functions can process a write and have the
+// *response* get lost, in which case a naive blind retry double-submits
+// it. This app's write RPCs are mostly single-column status transitions
+// guarded by a stage check (`wrong_stage`, `already_taken`, ...), so a
+// retry after a successful-but-unacknowledged first attempt just gets a
+// harmless business-error rejection back -- but that is a property of the
+// specific RPC being called, not something this generic wrapper can know.
+// Callers must confirm that before passing retries > 0; see
+// driverAssignmentActions.ts for the reasoning on the one place this is
+// turned on today.
 export async function rpc<T = unknown>(
   name: string,
   args?: Record<string, unknown>,
-  overrides?: Record<string, string>
+  overrides?: Record<string, string>,
+  retries = 0
 ): Promise<RpcResult<T>> {
-  try {
-    const { data, error, status } = await supabase.rpc(name, args)
-    if (error) {
-      const transport = isTransportFailure(error.message, status)
-      return {
-        ok: false,
-        code: transport ? 'network' : extractCode(error.message),
-        error: transport ? OFFLINE_AR : describeError(error.message, overrides),
-        offline: transport,
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const { data, error, status } = await supabase.rpc(name, args)
+      if (error) {
+        const transport = isTransportFailure(error.message, status)
+        if (transport && attempt < retries) { await delay(RETRY_DELAYS_MS[attempt] ?? 1500); continue }
+        return {
+          ok: false,
+          code: transport ? 'network' : extractCode(error.message),
+          error: transport ? OFFLINE_AR : describeError(error.message, overrides),
+          offline: transport,
+        }
       }
+      return { ok: true, data: data as T }
+    } catch {
+      // supabase-js normally surfaces transport failures via `error`, but a
+      // hard network drop can reject instead. Treat it as offline rather
+      // than generic.
+      if (attempt < retries) { await delay(RETRY_DELAYS_MS[attempt] ?? 1500); continue }
+      return { ok: false, code: 'network', error: OFFLINE_AR, offline: true }
     }
-    return { ok: true, data: data as T }
-  } catch {
-    // supabase-js normally surfaces transport failures via `error`, but a hard
-    // network drop can reject instead. Treat it as offline rather than generic.
-    return { ok: false, code: 'network', error: OFFLINE_AR, offline: true }
   }
 }
 
 /**
  * Same result contract as rpc(), but for privileged customer actions that now
  * enter through an Edge Function rather than an anonymous database RPC.
+ * `retries` carries the same idempotency caveat as rpc() above.
  */
 export async function edgeAction<T = unknown>(
   name: string,
   body: Record<string, unknown>,
-  overrides?: Record<string, string>
+  overrides?: Record<string, string>,
+  retries = 0
 ): Promise<RpcResult<T>> {
-  try {
-    const { data, error } = await supabase.functions.invoke(name, { body })
-    if (error || data?.error || !data?.ok) {
-      let serverMessage = typeof data?.error === 'string' ? data.error : error?.message
-      if (error && 'context' in error && error.context instanceof Response) {
-        const payload = await error.context.clone().json().catch(() => null)
-        if (typeof payload?.error === 'string') serverMessage = payload.error
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const { data, error } = await supabase.functions.invoke(name, { body })
+      if (error || data?.error || !data?.ok) {
+        let serverMessage = typeof data?.error === 'string' ? data.error : error?.message
+        if (error && 'context' in error && error.context instanceof Response) {
+          const payload = await error.context.clone().json().catch(() => null)
+          if (typeof payload?.error === 'string') serverMessage = payload.error
+        }
+        const transport = isTransportFailure(serverMessage)
+        if (transport && attempt < retries) { await delay(RETRY_DELAYS_MS[attempt] ?? 1500); continue }
+        return {
+          ok: false,
+          code: transport ? 'network' : extractCode(serverMessage),
+          error: transport ? OFFLINE_AR : describeError(serverMessage, overrides),
+          offline: transport,
+        }
       }
-      const transport = isTransportFailure(serverMessage)
+      return { ok: true, data: data.data as T }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : null
+      const transport = isTransportFailure(message)
+      if (transport && attempt < retries) { await delay(RETRY_DELAYS_MS[attempt] ?? 1500); continue }
       return {
         ok: false,
-        code: transport ? 'network' : extractCode(serverMessage),
-        error: transport ? OFFLINE_AR : describeError(serverMessage, overrides),
+        code: transport ? 'network' : 'unknown',
+        error: transport ? OFFLINE_AR : GENERIC_AR,
         offline: transport,
       }
-    }
-    return { ok: true, data: data.data as T }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : null
-    const transport = isTransportFailure(message)
-    return {
-      ok: false,
-      code: transport ? 'network' : 'unknown',
-      error: transport ? OFFLINE_AR : GENERIC_AR,
-      offline: transport,
     }
   }
 }
