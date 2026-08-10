@@ -19,9 +19,11 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
   if(typeof action!=="string"||!ACTIONS.has(action as Action))return json({error:"invalid_action"},400)
   const userId=ctx.userClaims?.id;if(!userId)return json({error:"not_logged_in"},401)
   const who=await digest(userId)
-  // updateLocation is polled every 20s per driver, and availableOrders/myStats
-  // poll every 10s -- their per-user caps are wider than the write actions'.
-  const perUserMax = action==="updateLocation" ? 40 : (action==="availableOrders"||action==="myStats") ? 40 : 20
+  // updateLocation is polled every 20s per driver (<=30/10min). availableOrders
+  // and myStats are polled together every 10s via the same load() tick
+  // (<=60/10min each) -- their per-user caps need headroom above that, not just
+  // above the write actions'.
+  const perUserMax = action==="updateLocation" ? 40 : (action==="availableOrders"||action==="myStats") ? 90 : 20
   for(const [bucket,max,window] of [[`driver-self:${action}:${who}`,perUserMax,"10 minutes"],["driver-self-global",4000,"10 minutes"]] as const){
     const {error}=await ctx.supabaseAdmin.rpc("check_rate_limit",{p_bucket:bucket,p_max:max,p_window:window})
     if(error){if(isRateLimitError(error))return json({error:"rate_limited"},429);return fail("driver-self-service","rate_limit_check_failed",500,error)}
