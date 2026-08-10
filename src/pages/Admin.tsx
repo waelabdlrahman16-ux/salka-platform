@@ -8,9 +8,12 @@ import { registerPush, persistPushToken } from '../lib/push'
 import { uploadVendorImage } from '../lib/upload'
 import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel,
          ORDER_STATUSES, CLOSED_ORDER_STATUSES, UNPAID_ORDER_STATUSES, type OrderStatus, isCancelled, cancelReasonLabel } from '../lib/statusLabels'
-import { rpc } from '../lib/rpc'
+import { rpc, type RpcResult } from '../lib/rpc'
 import { adminFinancialAction } from '../lib/adminFinancialActions'
 import { adminAccountDriverAction } from '../lib/adminAccountDriverActions'
+import { adminReport } from '../lib/adminReports'
+import { adminCatalogAction } from '../lib/adminCatalogActions'
+import { adminCompoundAction } from '../lib/adminCompoundActions'
 import { staffOperation } from '../lib/staffOperations'
 import { dispatchOperation } from '../lib/dispatchOperations'
 import { vendorOperation } from '../lib/vendorOperations'
@@ -33,6 +36,17 @@ import DriverForm, { driverToForm } from '../components/DriverForm'
 import LiveDeliveryDetail from '../components/LiveDeliveryDetail'
 import Toggle from '../components/Toggle'
 import { useSheets } from '../components/ActionSheets'
+
+/**
+ * The batch load below is a `Promise.all` of raw postgrest queries, each
+ * settling to `{ data, error }`. The admin-panel reads that now go through
+ * `admin-reports` settle to `RpcResult` (`{ ok, data, error }`) instead --
+ * this adapts one to the other so every entry in that array can keep sharing
+ * the same `withTimeout` / `if (!x.error)` shape.
+ */
+function toDataError<T>(p: Promise<RpcResult<T>>): Promise<{ data: T | null; error: Error | null }> {
+  return p.then(res => res.ok ? { data: res.data, error: null } : { data: null, error: new Error(res.error) })
+}
 
 function StarRow({ n }: { n: number }) {
   return (
@@ -382,12 +396,12 @@ export default function Admin() {
         withTimeout(supabase.from('order_ratings').select('*, orders(customer_name, customer_phone, restaurants(name))')
           .or('driver_rating.lte.2,restaurant_rating.lte.2').order('id', { ascending: false }).limit(30)),
         withTimeout(supabase.from('wallet_transactions').select('order_id').not('order_id', 'is', null).ilike('reason', 'تعويض%')),
-        withTimeout(supabase.rpc('admin_stalled_orders')),
-        withTimeout(supabase.rpc('admin_pending_refunds')),
+        withTimeout(toDataError(adminReport<StalledOrder[]>('stalledOrders'))),
+        withTimeout(toDataError(adminReport<PendingRefund[]>('pendingRefunds'))),
         // Was an N+1: restaurant_reliability() once per restaurant, sequentially
         // awaited, inside the same 15s cycle.
         withTimeout(supabase.rpc('restaurants_reliability_all')),
-        withTimeout(supabase.rpc('admin_live_deliveries')),
+        withTimeout(toDataError(adminReport<LiveDelivery[]>('liveDeliveries'))),
       ])
 
       const byId = <T extends { id: number }>(...lists: (T[] | null | undefined)[]): T[] => {
@@ -435,11 +449,15 @@ export default function Admin() {
         setLiveById(next)
       }
 
-      const { data: accounts, error: accErr } = await supabase.rpc('admin_list_accounts')
-      if (!accErr) {
-        setVendorAccounts(accounts?.vendors ?? [])
-        setDriverAccounts(accounts?.drivers ?? [])
-        setCatalogAccounts(accounts?.catalog ?? [])
+      const accountsRes = await adminReport<{
+        vendors: { profile_id: string; restaurant_id: number; email: string }[]
+        drivers: { profile_id: string; driver_id: number; email: string }[]
+        catalog: { profile_id: string; name: string; email: string; role: 'catalog' | 'supervisor' }[]
+      }>('listAccounts')
+      if (accountsRes.ok) {
+        setVendorAccounts(accountsRes.data?.vendors ?? [])
+        setDriverAccounts(accountsRes.data?.drivers ?? [])
+        setCatalogAccounts(accountsRes.data?.catalog ?? [])
       }
 
       setSyncFailed(coreFailed)
@@ -1048,8 +1066,8 @@ export default function Admin() {
     }
     if (order === (r.display_order ?? null) && featured === null) return
 
-    const res = await rpc('admin_set_restaurant_rank', {
-      p_restaurant_id: r.id, p_display_order: order, p_featured: featured,
+    const res = await adminCatalogAction('setRestaurantRank', {
+      restaurantId: r.id, displayOrder: order, featured,
     }, { rank_must_be_positive: 'المركز لازم يكون ١ أو أكبر' })
     if (!res.ok) { setActionError(res.error); return }
     setRankDraft(d => { const n = { ...d }; delete n[r.id]; return n })
@@ -1228,7 +1246,7 @@ export default function Admin() {
     if (raw.trim() === '' || !Number.isFinite(fee)) { setActionError('اكتب رقم صحيح'); return }
     if (fee === Number(c.delivery_fee)) return
     setActionError('')
-    const res = await rpc('admin_set_compound_fee', { p_compound_id: c.id, p_fee: fee })
+    const res = await adminCompoundAction('setCompoundFee', { compoundId: c.id, fee })
     if (!res.ok) { setActionError(res.error); return }
     load(true)
   }
@@ -1396,8 +1414,8 @@ export default function Admin() {
   async function flagDriverDispute(c: Complaint) {
     const note = await promptSheet({ title: 'ملاحظة عن المشكلة مع المندوب', placeholder: '(اختياري)' })
     if (note === null) return
-    const { error } = await supabase.rpc('admin_flag_driver_dispute', { p_complaint_id: c.id, p_note: note })
-    if (error) { await alertSheet('حصل خطأ، جرب تاني'); return }
+    const res = await adminCompoundAction('flagDriverDispute', { complaintId: c.id, note })
+    if (!res.ok) { await alertSheet('حصل خطأ، جرب تاني'); return }
     await alertSheet('اتسجلت في سجل المندوب')
   }
 
@@ -3152,13 +3170,14 @@ function DailyReportTab() {
   useEffect(() => {
     let cancelled = false
     setBusy(true); setErr('')
-    supabase.rpc('admin_daily_report', { p_date: day }).then(({ data, error }) => {
+    adminReport('dailyReport', { date: day }).then(res => {
       if (cancelled) return
       setBusy(false)
       // setR(null) matters: without it a failed fetch left the PREVIOUS day's
       // report rendered underneath the new date and the error banner -- a P&L
       // screen showing yesterday's result as though it were today's.
-      if (error) { setErr(error.message); setR(null); return }
+      if (!res.ok) { setErr(res.error); setR(null); return }
+      const { data } = res
       setR(data)
     })
     return () => { cancelled = true }

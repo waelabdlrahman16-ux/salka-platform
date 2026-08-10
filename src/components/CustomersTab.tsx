@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { rpc } from '../lib/rpc'
 import { adminAccountDriverAction } from '../lib/adminAccountDriverActions'
+import { adminReport } from '../lib/adminReports'
 import { orderStatusLabel } from '../lib/statusLabels'
 import Toggle from './Toggle'
 import { useSheets } from './ActionSheets'
@@ -126,7 +126,7 @@ export default function CustomersTab() {
 
   async function load() {
     setLoading(true)
-    const res = await rpc<Customer[]>('admin_customers')
+    const res = await adminReport<Customer[]>('customers')
     setLoading(false)
     if (!res.ok) { setError(res.error); return }
     setError('')
@@ -139,7 +139,7 @@ export default function CustomersTab() {
     if (!open) { setDetail(null); setDetailError(''); return }
     let cancelled = false
     setDetail(null); setDetailError('')
-    rpc<Detail>('admin_customer_detail', { p_phone: open.phone }).then(res => {
+    adminReport<Detail>('customerDetail', { phone: open.phone }).then(res => {
       if (cancelled) return
       if (!res.ok) { setDetailError(res.error); return }
       setDetail(res.data)

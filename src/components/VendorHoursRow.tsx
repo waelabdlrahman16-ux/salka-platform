@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Toggle from './Toggle'
 import { supabase } from '../lib/supabase'
+import { adminCatalogAction } from '../lib/adminCatalogActions'
 import { WEEK, type DayHours } from '../lib/vendorHours'
 import type { Restaurant } from '../lib/types'
 
@@ -79,12 +80,12 @@ export default function VendorHoursRow({ restaurant, onSaved }: {
         closed: draft[d.dow].closed,
       }))
 
-    const { error: err } = await supabase.rpc('admin_set_vendor_hours', {
-      p_restaurant_id: restaurant.id, p_days: payload,
+    const res = await adminCatalogAction('setVendorHours', {
+      restaurantId: restaurant.id, days: payload,
     })
     setSaving(false)
-    if (err) {
-      setError(err.message.includes('hours_incomplete')
+    if (!res.ok) {
+      setError(res.code === 'hours_incomplete'
         ? 'لازم تحدد الفتح والقفل مع بعض'
         : 'الحفظ فشل — جرب تاني')
       return
