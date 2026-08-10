@@ -17,9 +17,15 @@ interface Props {
   showRoute?: boolean
   heightPx?: number
   myPos: { lat: number; lng: number } | null
+  // Without this the map showed "جاري تحديد موقعك…" (still locating) forever
+  // when location was actually denied -- contradicting the "الموقع مقفول"
+  // banner rendered above it on the page, which correctly said permission was
+  // off. Same failure, two components disagreeing about what to tell the
+  // driver.
+  locationDenied?: boolean
 }
 
-export default function DriverActiveMap({ destLat, destLng, showRoute, heightPx = 180, myPos }: Props) {
+export default function DriverActiveMap({ destLat, destLng, showRoute, heightPx = 180, myPos, locationDenied }: Props) {
   const mapRef = useRef<L.Map | null>(null)
   const driverMarkerRef = useRef<L.Marker | null>(null)
   const destMarkerRef = useRef<L.Marker | null>(null)
@@ -64,7 +70,9 @@ export default function DriverActiveMap({ destLat, destLng, showRoute, heightPx 
     <div className="relative rounded-2xl overflow-hidden border border-line" style={{ height: heightPx }}>
       <div ref={containerRef} className="w-full h-full" />
       {!myPos && (
-        <div className="absolute inset-0 bg-shellup grid place-items-center text-sm text-mist">جاري تحديد موقعك…</div>
+        <div className="absolute inset-0 bg-shellup grid place-items-center text-sm text-mist text-center px-4">
+          {locationDenied ? 'الموقع مقفول — فعّله من إعدادات الموبايل' : 'جاري تحديد موقعك…'}
+        </div>
       )}
       <button onClick={recenter} aria-label="رجّع للموقع" className="absolute bottom-2.5 left-2.5 bg-white rounded-full w-9 h-9 grid place-items-center shadow-sm">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#0A5F5E" strokeWidth="2">
