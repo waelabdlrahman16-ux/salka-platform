@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { rpc } from '../lib/rpc'
+import { adminCatalogAction } from '../lib/adminCatalogActions'
 import DiscountManager from './DiscountManager'
 import Toggle from './Toggle'
 import { useSheets } from './ActionSheets'
@@ -125,8 +125,8 @@ export default function MenuItemsPanel({
     const n = name.trim()
     if (!n) return
     setBusy(true); setCatError('')
-    const res = await rpc('admin_add_menu_category',
-      { p_restaurant_id: restaurant.id, p_name: n },
+    const res = await adminCatalogAction('addMenuCategory',
+      { restaurantId: restaurant.id, name: n },
       { category_exists: 'القسم ده موجود بالفعل', name_required: 'اكتب اسم القسم',
         not_authorized: 'مش من صلاحياتك' })
     setBusy(false)
@@ -139,8 +139,8 @@ export default function MenuItemsPanel({
   async function renameCategory(oldName: string) {
     const next = await promptSheet({ title: 'الاسم الجديد للقسم', initial: oldName })
     if (!next || next.trim() === oldName) return
-    const res = await rpc('admin_rename_menu_category',
-      { p_restaurant_id: restaurant.id, p_old: oldName, p_new: next.trim() },
+    const res = await adminCatalogAction('renameMenuCategory',
+      { restaurantId: restaurant.id, oldName, newName: next.trim() },
       { category_exists: 'في قسم بالاسم ده بالفعل', not_authorized: 'مش من صلاحياتك' })
     if (!res.ok) { setCatError(res.error); return }
     setActive(next.trim())
@@ -150,14 +150,15 @@ export default function MenuItemsPanel({
 
   async function deleteCategory(name: string) {
     if (!await confirmSheet({ title: `حذف قسم «${name}»؟`, danger: true })) return
-    const res = await rpc('admin_delete_menu_category',
-      { p_restaurant_id: restaurant.id, p_name: name },
+    const res = await adminCatalogAction('deleteMenuCategory',
+      { restaurantId: restaurant.id, name },
       { not_authorized: 'مش من صلاحياتك' })
-    // The server refuses while items still use it and says how many, rather
-    // than orphaning them out of every tab.
+    // The server refuses while items still use it. It used to report exactly
+    // how many, but that count no longer survives the trip through the edge
+    // function's fixed error-code allowlist -- category_not_empty now carries
+    // a generic Arabic message instead (see rpc.ts ERROR_AR).
     if (!res.ok) {
-      const m = /category_not_empty:(\d+)/.exec(res.error)
-      setCatError(m ? `فيه ${m[1]} صنف في القسم ده — انقلهم أو احذفهم الأول` : res.error)
+      setCatError(res.error)
       return
     }
     setActive(null)

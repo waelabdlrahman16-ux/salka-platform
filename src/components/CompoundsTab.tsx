@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { rpc } from '../lib/rpc'
+import { adminCompoundAction } from '../lib/adminCompoundActions'
 
 /**
  * Compounds — the places Salka delivers to, and what delivery costs to each.
@@ -60,16 +60,16 @@ export default function CompoundsTab() {
 
   async function save() {
     setBusy(true); setError('')
-    const res = await rpc('admin_upsert_compound', {
-      p_id: f.id,
-      p_name: f.name.trim(),
-      p_region_id: Number(f.region_id),
-      p_delivery_fee: Number(f.delivery_fee),
-      p_distance_km: f.distance_km === '' ? null : Number(f.distance_km),
-      p_direction: f.direction || null,
-      p_latitude: f.latitude === '' ? null : Number(f.latitude),
-      p_longitude: f.longitude === '' ? null : Number(f.longitude),
-      p_active: f.active,
+    const res = await adminCompoundAction('upsertCompound', {
+      id: f.id,
+      name: f.name.trim(),
+      regionId: Number(f.region_id),
+      deliveryFee: Number(f.delivery_fee),
+      distanceKm: f.distance_km === '' ? null : Number(f.distance_km),
+      direction: f.direction || null,
+      latitude: f.latitude === '' ? null : Number(f.latitude),
+      longitude: f.longitude === '' ? null : Number(f.longitude),
+      active: f.active,
     }, {
       delivery_fee_required: 'لازم تحط سعر توصيل أكبر من صفر — من غيره العميل هيشوف المكان ومش هيقدر يطلب',
       name_required: 'اكتب اسم الكومباوند',

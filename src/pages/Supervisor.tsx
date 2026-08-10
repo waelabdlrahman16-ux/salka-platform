@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { rpc } from '../lib/rpc'
+import { adminReport } from '../lib/adminReports'
 import { dispatchOperation } from '../lib/dispatchOperations'
 import { vendorOperation } from '../lib/vendorOperations'
 import { useAuth } from '../lib/auth'
@@ -77,7 +78,7 @@ export default function Supervisor() {
       supabase.from('delivery_assignments').select('*, orders(*, restaurants(name)), drivers(*)')
         .in('status', ACTIVE_STATUSES).order('id', { ascending: false }),
       supabase.from('drivers').select('*').eq('active', true).order('name'),
-      supabase.rpc('admin_live_deliveries'),
+      adminReport<LiveDelivery[]>('liveDeliveries'),
     ])
     if (o.error || a.error || d.error) {
       setError('مش قادرين نحمّل الطلبات دلوقتي — اتأكد من النت')
@@ -100,9 +101,9 @@ export default function Supervisor() {
     setDrivers((d.data ?? []) as Driver[])
     // Left out of the error check above on purpose: losing this costs the items
     // and the map, not the board. The supervisor keeps every action.
-    if (!live.error) {
+    if (live.ok) {
       const next: Record<number, LiveDelivery> = {}
-      for (const row of ((live.data as LiveDelivery[]) ?? [])) next[row.assignment_id] = row
+      for (const row of (live.data ?? [])) next[row.assignment_id] = row
       setLiveById(next)
     }
     setError('')

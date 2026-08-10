@@ -1,0 +1,58 @@
+import { withSupabase } from "@supabase/server"
+import { fail, isRateLimitError, json } from "../_shared/secure.ts"
+
+type Db = { public: { Tables: Record<string, never>; Views: Record<string, never>; Enums: Record<string, never>; CompositeTypes: Record<string, never>; Functions: Record<string, { Args: Record<string, unknown>; Returns: unknown }> } }
+type Action = "customerDetail" | "customers" | "dailyReport" | "funnel" | "listAccounts" | "liveDeliveries" | "pendingRefunds" | "pushHealth" | "stalledOrders" | "vendorsWithoutItems"
+const ACTIONS = new Set<Action>(["customerDetail","customers","dailyReport","funnel","listAccounts","liveDeliveries","pendingRefunds","pushHealth","stalledOrders","vendorsWithoutItems"])
+const KNOWN = ["admin_only","not_authorized"]
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+function clean(v: unknown,max: number): string | null { if(typeof v!=="string")return null;const s=v.trim();return s&&s.length<=max?s:null }
+function missing(error: { code?: string; message?: string } | null): boolean { return error?.code==="PGRST202"||!!error?.message?.includes("Could not find the function") }
+async function digest(v:string):Promise<string>{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,"0")).join("")}
+
+const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
+  if(req.method!=="POST")return json({error:"method_not_allowed"},405)
+  if(Number(req.headers.get("content-length")??0)>4096)return json({error:"request_too_large"},413)
+  let body:unknown;try{body=await req.json()}catch{return json({error:"invalid_json"},400)}
+  if(!body||typeof body!=="object"||Array.isArray(body))return json({error:"invalid_request"},400)
+  const input=body as Record<string,unknown>,action=input.action
+  if(typeof action!=="string"||!ACTIONS.has(action as Action))return json({error:"invalid_action"},400)
+  const userId=ctx.userClaims?.id;if(!userId)return json({error:"not_logged_in"},401)
+  const who=await digest(userId)
+  for(const [bucket,max,window] of [[`admin-reports:${action}:${who}`,30,"10 minutes"],["admin-reports-global",600,"10 minutes"]] as const){
+    const {error}=await ctx.supabaseAdmin.rpc("check_rate_limit",{p_bucket:bucket,p_max:max,p_window:window})
+    if(error){if(isRateLimitError(error))return json({error:"rate_limited"},429);return fail("admin-reports","rate_limit_check_failed",500,error)}
+  }
+  let fn="",args:Record<string,unknown>={}
+  if(action==="customerDetail"){
+    const phone=clean(input.phone,24);if(!phone)return json({error:"invalid_phone"},400)
+    fn="admin_customer_detail";args={p_phone:phone}
+  }else if(action==="customers"){
+    fn="admin_customers";args={}
+  }else if(action==="dailyReport"){
+    const date=input.date==null?null:clean(input.date,10)
+    if(input.date!=null&&(!date||!DATE_RE.test(date)))return json({error:"invalid_request"},400)
+    fn="admin_daily_report";args={p_date:date}
+  }else if(action==="funnel"){
+    const days=input.days==null?7:Number(input.days)
+    if(!Number.isInteger(days)||days<1||days>365)return json({error:"invalid_request"},400)
+    fn="admin_funnel";args={p_days:days}
+  }else if(action==="listAccounts"){
+    fn="admin_list_accounts";args={}
+  }else if(action==="liveDeliveries"){
+    fn="admin_live_deliveries";args={}
+  }else if(action==="pendingRefunds"){
+    fn="admin_pending_refunds";args={}
+  }else if(action==="pushHealth"){
+    fn="admin_push_health";args={}
+  }else if(action==="stalledOrders"){
+    fn="admin_stalled_orders";args={}
+  }else{
+    fn="admin_vendors_without_items";args={}
+  }
+  let result=await ctx.supabaseAdmin.rpc(fn,{...args,p_auth_user_id:userId})
+  if(missing(result.error))result=await ctx.supabase.rpc(fn,args)
+  if(result.error){const known=KNOWN.find(c=>result.error?.message?.includes(c));if(known)return json({error:known},403);return fail("admin-reports","report_action_failed",500,result.error)}
+  return json({ok:true,data:result.data??null})
+})
+export default {fetch:handler}

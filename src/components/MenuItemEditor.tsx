@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { adminCatalogAction } from '../lib/adminCatalogActions'
 import { uploadVendorImage } from '../lib/upload'
 import { useDismissable } from '../lib/useDismissable'
 import { useSheets } from './ActionSheets'
@@ -157,11 +158,11 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
   async function deleteItem() {
     if (!(await confirmSheet({ title: `حذف «${item.name}» نهائيًا؟`, body: 'الإجراء ده مينفعش يتراجع فيه.', danger: true, confirmLabel: 'احذف' }))) return
     setDeleting(true); setDeleteBlockedReason('')
-    const { error } = await supabase.rpc('admin_delete_menu_item', { p_item_id: item.id })
+    const res = await adminCatalogAction('deleteMenuItem', { itemId: item.id })
     setDeleting(false)
-    if (error) {
+    if (!res.ok) {
       setDeleteBlockedReason(
-        error.message.includes('item_has_order_history')
+        res.code === 'item_has_order_history'
           ? 'الصنف ده اتطلب قبل كده فمينفعش يتمسح خالص — علّمه "غير متاح" بدل كده عشان محدش يقدر يطلبه تاني.'
           : 'حصل خطأ، جرب تاني'
       )

@@ -80,6 +80,20 @@ export const ERROR_AR: Record<string, string> = {
   invalid_vehicle_type: 'النوع لازم يكون موتوسيكل أو فان',
   invalid_payout_schedule: 'ميعاد صرف الأرباح مش صحيح',
 
+  // admin panel — catalog / compound / reports
+  category_exists: 'في قسم بالاسم ده بالفعل',
+  category_not_empty: 'فيه أصناف لسه في القسم ده — انقلهم أو احذفهم الأول',
+  item_has_order_history: 'الصنف ده اتباع قبل كده، مينفعش يتمسح',
+  complaint_not_found: 'الشكوى دي مش موجودة',
+  no_driver_on_this_complaint: 'مفيش مندوب متسجل على الشكوى دي',
+  rank_must_be_positive: 'المركز لازم يكون ١ أو أكبر',
+  restaurant_not_found: 'المطعم ده مش موجود',
+  invalid_day: 'يوم الأسبوع مش مظبوط',
+  hours_incomplete: 'لازم تحدد الفتح والقفل مع بعض',
+  delivery_fee_required: 'لازم تحدد رسوم توصيل أكبر من صفر',
+  region_not_found: 'المنطقة دي مش موجودة',
+  invalid_direction: 'الاتجاه المطلوب مش صحيح',
+
   // order lifecycle
   order_not_found: 'الطلب ده مش موجود',
   not_authorized: 'مش مسموح بالعملية دي',

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { adminReport } from '../lib/adminReports'
 
 // The read side of the funnel instrumentation.
 //
@@ -72,13 +72,13 @@ export default function FunnelPanel() {
 
   async function load(d: number) {
     setLoading(true); setError('')
-    const { data: res, error: err } = await supabase.rpc('admin_funnel', { p_days: d })
+    const res = await adminReport<Funnel>('funnel', { days: d })
     setLoading(false)
     // Checked, not discarded. A funnel that silently renders zeroes on a failed
     // read is worse than one that says it could not load -- zeroes look like a
     // finding, and someone will act on them.
-    if (err) { setError(`مش قادرين نحمّل الأرقام — ${err.message}`); return }
-    setData(res as Funnel)
+    if (!res.ok) { setError(`مش قادرين نحمّل الأرقام — ${res.error}`); return }
+    setData(res.data)
   }
 
   useEffect(() => { load(days) }, [days])
