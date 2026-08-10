@@ -13,8 +13,9 @@ import DriverPoolMap from '../components/DriverPoolMap'
 import SwipeToConfirm from '../components/SwipeToConfirm'
 import Toggle from '../components/Toggle'
 import { useSheets } from '../components/ActionSheets'
-import { rpc, describeError } from '../lib/rpc'
 import { staffOperation } from '../lib/staffOperations'
+import { driverAssignmentAction } from '../lib/driverAssignmentActions'
+import { driverSelfService } from '../lib/driverSelfService'
 import { haversineKm } from '../lib/geo'
 import { vendorNoun } from '../lib/vendorWords'
 import { getDeviceId, getDeviceLabel } from '../lib/deviceId'
@@ -276,7 +277,7 @@ export default function DriverPage() {
 
       const [dRes, statsRes, aRes, pRes, shRes, swRes, mineRes, escRes, reqRes] = await Promise.all([
         withTimeout(supabase.from('drivers').select('*').eq('id', id).single()),
-        withTimeout(supabase.rpc('my_driver_stats')),
+        withTimeout(driverSelfService('myStats').then(r => r.ok ? { data: r.data, error: null } : { data: null, error: new Error(r.error) })),
         withTimeout(supabase.from('delivery_assignments')
           .select('*, orders(*, restaurants(name, vendor_type), compounds(name, latitude, longitude))').eq('driver_id', id)
           // Cancelled and Failed are here on purpose. Without them, an order
@@ -286,7 +287,7 @@ export default function DriverPage() {
           // trigger swallows on any error, to a token most drivers do not have.
           .in('status', ['Offered', 'Accepted', 'Picked_Up', 'Out_for_Delivery', 'Delivered', 'Cancelled', 'Failed'])
           .order('id', { ascending: false }).limit(20)),
-        withTimeout(supabase.rpc('available_orders')),
+        withTimeout(driverSelfService('availableOrders').then(r => r.ok ? { data: r.data, error: null } : { data: null, error: new Error(r.error) })),
         withTimeout(supabase.from('shifts').select('*')
           .eq('driver_id', id).gte('shift_date', today)
           .neq('status', 'cancelled').order('shift_date').limit(10)),
@@ -367,7 +368,7 @@ export default function DriverPage() {
     //
     // Claim first; only register for push once this phone is the one allowed
     // to work.
-    rpc('driver_claim_device', { p_device_id: getDeviceId(), p_label: getDeviceLabel() })
+    driverSelfService('claimDevice', { deviceId: getDeviceId(), label: getDeviceLabel() })
       .then(res => {
         const locked = !res.ok && res.code === 'device_locked'
         setDeviceLocked(locked)
@@ -454,9 +455,9 @@ export default function DriverPage() {
     if (!id) return
     if (status === 'Accepted') {
       await runAction(`accept:${a.id}`, async () => {
-        const { error } = await supabase.rpc('driver_accept_assignment', { p_assignment_id: a.id, p_order_id: a.order_id })
-        if (error) {
-          await alertSheet(error.message.includes('dispatch_rule_blocked')
+        const res = await driverAssignmentAction('acceptAssignment', { assignmentId: a.id, orderId: a.order_id })
+        if (!res.ok) {
+          await alertSheet(res.code === 'dispatch_rule_blocked'
             ? 'وصلت للحد الأقصى (٣ طلبات) أو الطلب ده في اتجاه مختلف عن طلباتك الحالية'
             : 'حصل خطأ، جرب تاني')
           return
@@ -467,8 +468,8 @@ export default function DriverPage() {
     }
     if (status === 'Delivered') {
       await runAction(`deliver:${a.id}`, async () => {
-        const { error } = await supabase.rpc('mark_delivered', { p_assignment_id: a.id, p_order_id: a.order_id })
-        if (error) { await alertSheet(describeError(error?.message)); return }
+        const res = await driverAssignmentAction('markDelivered', { assignmentId: a.id, orderId: a.order_id })
+        if (!res.ok) { await alertSheet(res.error); return }
         // Show it immediately -- gating on load() left the driver swiping a
         // control that gave no sign of life for several seconds on mobile data.
         // The totals inside refresh when the reload lands, still within the 3s.
@@ -483,8 +484,8 @@ export default function DriverPage() {
   async function markArrived(a: Assignment) {
     await runAction(`arrived:${a.id}`, async () => {
       if (navigator.vibrate) navigator.vibrate(15)
-      const { error } = await supabase.rpc('driver_arrived_at_restaurant', { p_assignment_id: a.id })
-      if (error) { await alertSheet(describeError(error?.message)); return }
+      const res = await driverAssignmentAction('arrivedAtRestaurant', { assignmentId: a.id })
+      if (!res.ok) { await alertSheet(res.error); return }
       await load(true)
     })
   }
@@ -492,11 +493,11 @@ export default function DriverPage() {
   async function markPickedUp(a: Assignment) {
     await runAction(`pickup:${a.id}`, async () => {
       if (navigator.vibrate) navigator.vibrate(15)
-      const { error } = await supabase.rpc('driver_mark_picked_up', { p_assignment_id: a.id })
-      if (error) {
+      const res = await driverAssignmentAction('markPickedUp', { assignmentId: a.id })
+      if (!res.ok) {
         await alertSheet(
-          error.message.includes('order_not_ready') ? 'الطلب لسه بيتجهز — استنى لحد ما يبقى جاهز'
-          : error.message.includes('must_arrive_first') ? 'لازم تسجل إنك وصلت المكان الأول'
+          res.code === 'order_not_ready' ? 'الطلب لسه بيتجهز — استنى لحد ما يبقى جاهز'
+          : res.code === 'must_arrive_first' ? 'لازم تسجل إنك وصلت المكان الأول'
           : 'حصل خطأ، جرب تاني'
         )
         return
@@ -508,8 +509,8 @@ export default function DriverPage() {
   async function markOutForDelivery(a: Assignment) {
     await runAction(`out:${a.id}`, async () => {
       if (navigator.vibrate) navigator.vibrate(15)
-      const { error } = await supabase.rpc('driver_mark_out_for_delivery', { p_assignment_id: a.id })
-      if (error) { await alertSheet(describeError(error?.message)); return }
+      const res = await driverAssignmentAction('markOutForDelivery', { assignmentId: a.id })
+      if (!res.ok) { await alertSheet(res.error); return }
       await load(true)
     })
   }
@@ -527,10 +528,10 @@ export default function DriverPage() {
     await runAction(`cash:${a.id}`, async () => {
       if (navigator.vibrate) navigator.vibrate(15)
       setCashConfirmed(s => new Set(s).add(a.id)) // optimistic
-      const { error } = await supabase.rpc('driver_confirm_cash_received', { p_assignment_id: a.id })
-      if (error) {
+      const res = await driverAssignmentAction('confirmCashReceived', { assignmentId: a.id })
+      if (!res.ok) {
         setCashConfirmed(s => { const next = new Set(s); next.delete(a.id); return next })
-        await alertSheet(describeError(error?.message))
+        await alertSheet(res.error)
         return
       }
       await load(true)
@@ -544,8 +545,8 @@ export default function DriverPage() {
   async function markArrivedAtCustomer(a: Assignment) {
     await runAction(`arrived:${a.id}`, async () => {
       if (navigator.vibrate) navigator.vibrate(15)
-      const { error } = await supabase.rpc('driver_arrived_at_customer', { p_assignment_id: a.id })
-      if (error) { await alertSheet(describeError(error?.message)); return }
+      const res = await driverAssignmentAction('arrivedAtCustomer', { assignmentId: a.id })
+      if (!res.ok) { await alertSheet(res.error); return }
       await load(true)
     })
   }
@@ -563,10 +564,10 @@ export default function DriverPage() {
     })
     if (!reason?.trim()) return
     await runAction(`problem:${a.id}`, async () => {
-      const { error } = await supabase.rpc('driver_report_problem', {
-        p_assignment_id: a.id, p_reason: reason.trim(),
+      const res = await driverAssignmentAction('reportProblem', {
+        assignmentId: a.id, reason: reason.trim(),
       })
-      if (error) { await alertSheet(describeError(error?.message)); return }
+      if (!res.ok) { await alertSheet(res.error); return }
       await load(true)
     })
   }
@@ -580,7 +581,7 @@ export default function DriverPage() {
   async function toggleAvailable() {
     const next = !driver?.available
     await runAction('availability', async () => {
-      const res = await rpc('driver_set_available', { p_available: next }, {
+      const res = await driverSelfService('setAvailable', { available: next }, {
         finish_your_orders_first: 'خلّص الطلبات اللي معاك الأول',
         driver_suspended: 'حسابك موقوف — كلّم الإدارة',
       })
@@ -592,19 +593,19 @@ export default function DriverPage() {
   async function markCalledCustomer(a: Assignment) {
     await runAction(`called:${a.id}`, async () => {
       if (navigator.vibrate) navigator.vibrate(15)
-      const { error } = await supabase.rpc('driver_called_customer', { p_assignment_id: a.id })
-      if (error) { await alertSheet(describeError(error?.message)); return }
+      const res = await driverAssignmentAction('calledCustomer', { assignmentId: a.id })
+      if (!res.ok) { await alertSheet(res.error); return }
       await load(true)
     })
   }
 
   async function reportNoAnswer(a: Assignment) {
     if (!await confirmSheet({ title: 'العميل فعلاً ما ردش بعد ما اتصلت؟', body: 'الإدارة هتشوف الطلب وتقرر.' })) return
-    const { error } = await supabase.rpc('driver_report_no_answer', { p_assignment_id: a.id })
-    if (error) {
+    const res = await driverAssignmentAction('reportNoAnswer', { assignmentId: a.id })
+    if (!res.ok) {
       await alertSheet(
-        error.message.includes('must_call_customer_first') ? 'لازم تتصل بالعميل الأول'
-        : error.message.includes('too_early') ? 'لسه بدري، استنى 5 دقايق من وقت خروجك للتوصيل'
+        res.code === 'must_call_customer_first' ? 'لازم تتصل بالعميل الأول'
+        : res.code === 'too_early' ? 'لسه بدري، استنى 5 دقايق من وقت خروجك للتوصيل'
         : 'حصل خطأ، جرب تاني'
       )
       return
@@ -648,12 +649,12 @@ export default function DriverPage() {
     // pool card stayed enabled and two quick taps could land two orders.
     if (claiming !== null) return
     setClaiming(orderId)
-    const { error } = await supabase.rpc('claim_order', { p_order_id: orderId })
-    if (error) {
+    const claimRes = await driverAssignmentAction('claimOrder', { orderId })
+    if (!claimRes.ok) {
       await alertSheet(
-        error.message.includes('already_taken') ? 'الطلب اتاخد من مندوب تاني'
-        : error.message.includes('wrong_vehicle_type') ? 'الطلب ده محتاج فان'
-        : error.message.includes('not_ready_yet') ? 'الطلب لسه بيتحضر، استنى شوية'
+        claimRes.code === 'already_taken' ? 'الطلب اتاخد من مندوب تاني'
+        : claimRes.code === 'wrong_vehicle_type' ? 'الطلب ده محتاج فان'
+        : claimRes.code === 'not_ready_yet' ? 'الطلب لسه بيتحضر، استنى شوية'
         : 'حصل خطأ، جرب تاني'
       )
     } else {
@@ -672,8 +673,8 @@ export default function DriverPage() {
 
   async function reject() {
     if (!rejecting) return
-    const { error } = await supabase.rpc('driver_reject_assignment', { p_assignment_id: rejecting.id, p_reason: reason.trim() })
-    if (error) { await alertSheet(describeError(error?.message)); return }
+    const res = await driverAssignmentAction('rejectAssignment', { assignmentId: rejecting.id, reason: reason.trim() })
+    if (!res.ok) { await alertSheet(res.error); return }
     setRejecting(null); setReason(''); load(true)
   }
 

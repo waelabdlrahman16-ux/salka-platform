@@ -173,6 +173,31 @@ export const ERROR_AR: Record<string, string> = {
   invalid_phone: 'رقم الموبايل مش مظبوط',
   phone_already_registered: 'الرقم ده مسجل على حساب تاني',
   rate_limited: 'حاولت كتير — البحث بالرقم مسموح 5 مرات كل 10 دقايق. سجّل دخولك وهتشوف طلباتك من غير أي حد.',
+
+  // driver assignment lifecycle (batch 9)
+  not_your_pool: 'الطلب ده مش من نوع الطلبات اللي بتاخدها',
+  kitchen_not_accepted_yet: 'المطعم لسه ما قبلش الطلب',
+  reason_required: 'اكتب سبب المشكلة',
+  invalid_assignment_input: 'راجع بيانات الطلب أو المندوب وجرب تاني',
+  assignment_action_failed: 'تحديث الطلب متنفذش — جرب تاني أو راجع السجل',
+
+  // driver self-service (batch 9)
+  invalid_state: 'الحالة المطلوبة مش صحيحة',
+  not_authenticated: 'لازم تسجل دخولك الأول',
+  bad_platform: 'نوع الجهاز مش معروف',
+  empty_token: 'بيانات التنبيهات ناقصة',
+  invalid_driver_input: 'راجع البيانات وجرب تاني',
+  driver_action_failed: 'العملية متنفذتش — جرب تاني أو راجع السجل',
+
+  // catalog checks (batch 9)
+  not_authorised: 'مش مسموح بالعملية دي',
+  library_item_not_found: 'العنصر ده مش موجود في المكتبة',
+  group_name_required: 'اكتب اسم المجموعة',
+  item_belongs_to_another_vendor: 'الصنف ده تابع لمطعم تاني',
+  invalid_scope: 'نوع الخصم مش مظبوط',
+  restaurant_required: 'اختار المطعم الأول',
+  invalid_catalog_input: 'راجع البيانات وجرب تاني',
+  catalog_check_failed: 'العملية متنفذتش — جرب تاني أو راجع السجل',
 }
 
 export function isOffline(): boolean {

@@ -14,6 +14,7 @@ import { adminAccountDriverAction } from '../lib/adminAccountDriverActions'
 import { adminReport } from '../lib/adminReports'
 import { adminCatalogAction } from '../lib/adminCatalogActions'
 import { adminCompoundAction } from '../lib/adminCompoundActions'
+import { catalogCheck } from '../lib/catalogChecks'
 import { staffOperation } from '../lib/staffOperations'
 import { dispatchOperation } from '../lib/dispatchOperations'
 import { vendorOperation } from '../lib/vendorOperations'
@@ -400,7 +401,7 @@ export default function Admin() {
         withTimeout(toDataError(adminReport<PendingRefund[]>('pendingRefunds'))),
         // Was an N+1: restaurant_reliability() once per restaurant, sequentially
         // awaited, inside the same 15s cycle.
-        withTimeout(supabase.rpc('restaurants_reliability_all')),
+        withTimeout(toDataError(catalogCheck<Record<string, Reliability>>('restaurantsReliabilityAll'))),
         withTimeout(toDataError(adminReport<LiveDelivery[]>('liveDeliveries'))),
       ])
 

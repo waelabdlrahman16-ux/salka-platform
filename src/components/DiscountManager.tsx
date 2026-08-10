@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { catalogCheck } from '../lib/catalogChecks'
 import type { Discount } from '../lib/types'
 import Toggle from './Toggle'
 import { useSheets } from './ActionSheets'
@@ -41,14 +42,14 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
 
   async function attemptSave() {
     if (!value || Number(value) <= 0) return
-    const { data: conflictData } = await supabase.rpc('check_discount_conflict', {
-      p_restaurant_id: restaurantId, p_scope: scope,
-      p_menu_item_id: scope === 'item' ? menuItemId : null,
-      p_category: scope === 'category' ? category : null,
-      p_exclude_id: existing?.id ?? null
+    const res = await catalogCheck<Discount[]>('checkDiscountConflict', {
+      restaurantId, scope,
+      menuItemId: scope === 'item' ? menuItemId : null,
+      category: scope === 'category' ? category : null,
+      excludeId: existing?.id ?? null
     })
-    if (conflictData && conflictData.length > 0) {
-      setConflicts(conflictData)
+    if (res.ok && res.data && res.data.length > 0) {
+      setConflicts(res.data)
       return
     }
     await doSave()
