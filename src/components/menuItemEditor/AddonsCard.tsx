@@ -57,7 +57,7 @@ export default function AddonsCard({
         <div className="grid grid-cols-2 gap-2 mb-3">
           <button className="text-xs py-2.5 px-2 rounded-lg border-2 border-line hover:border-sea text-right"
             onClick={() => onApplyPreset('extras')}>
-            <span className="block font-bold">➕ إضافات</span>
+            <span className="block font-bold">إضافات</span>
             <span className="block text-mist mt-0.5">يختار قد ما يحب</span>
           </button>
           <button className="text-xs py-2.5 px-2 rounded-lg border-2 border-line hover:border-sea text-right"
