@@ -99,8 +99,16 @@ export default function MyOrders() {
           <button className="btn-sea w-full mt-4" onClick={() => setShowLogin(true)}>
             تسجيل الدخول
           </button>
+          {/* Phone/OTP login is currently hidden (SMS Misr not live yet), so
+              "سجّل دخولك" without more detail can read as a dead end if the
+              tracking tab/link is already gone -- Google or email are the
+              methods that actually work today, and are worth naming
+              explicitly rather than leaving the guest to discover that by
+              tapping through the login sheet themselves. */}
           <p className="text-xs text-mist mt-3">
-            الطلب اللي لسه عامله تقدر تتابعه من رابط التتبع اللي ظهر بعد التأكيد.
+            الطلب اللي لسه عامله تقدر تتابعه من رابط التتبع اللي ظهر بعد التأكيد —
+            يفضّل تحفظه أو تاخد له سكرين شوت. لو قفلت الرابط، سجّل دخولك بجوجل أو
+            بالإيميل عشان تربط طلباتك بحسابك وتقدر تلاقيها تاني في أي وقت.
           </p>
         </div>
       )}
