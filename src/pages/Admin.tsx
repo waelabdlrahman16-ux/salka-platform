@@ -1924,11 +1924,11 @@ export default function Admin() {
           {orderDateFilter === 'older' && (
             <div className="card p-3 flex flex-wrap items-center gap-2">
               <span className="text-sm text-mist">من يوم</span>
-              <input type="date" className="field !w-auto" value={orderDateFrom}
+              <input type="date" className="field !w-auto" aria-label="من يوم" value={orderDateFrom}
                 max={shiftDayKey(cairoDayKey(new Date().toISOString()), -2)}
                 onChange={e => setOrderDateFrom(e.target.value)} />
               <span className="text-sm text-mist">لـ</span>
-              <input type="date" className="field !w-auto" value={orderDateTo}
+              <input type="date" className="field !w-auto" aria-label="لـ يوم" value={orderDateTo}
                 min={orderDateFrom || undefined}
                 max={shiftDayKey(cairoDayKey(new Date().toISOString()), -2)}
                 onChange={e => setOrderDateTo(e.target.value)} />
@@ -1947,7 +1947,7 @@ export default function Admin() {
               scrolling the entire order history. */}
           <div className="card p-3 flex flex-col sm:flex-row gap-2">
             <input className="field flex-1" value={orderQuery} onChange={e => setOrderQuery(e.target.value)}
-              placeholder="دوّر برقم الطلب، اسم العميل، تليفونه، أو المطعم…" />
+              placeholder="دوّر برقم الطلب، اسم العميل، تليفونه، أو المطعم…" aria-label="بحث في الطلبات" />
             <select className="field sm:w-52" value={orderStatusFilter}
               onChange={e => setOrderStatusFilter(e.target.value as 'all' | OrderStatus)}>
               <option value="all">كل الحالات</option>
@@ -2091,7 +2091,7 @@ export default function Admin() {
               {o.order_type === 'custom_request' && o.pricing_status === 'pending_quote'
                 && !isCancelled(o.status) && (
                 <div className="flex items-center gap-2 mt-3">
-                  <input type="number" inputMode="decimal" placeholder="السعر بعد المكالمة"
+                  <input type="number" inputMode="decimal" placeholder="السعر بعد المكالمة" aria-label="السعر بعد المكالمة"
                     className="field !py-1.5 text-sm" id={`quote-${o.id}`} />
                   <button className="btn-sea shrink-0 !py-1.5 text-sm" onClick={() => {
                     const el = document.getElementById(`quote-${o.id}`) as HTMLInputElement
@@ -2468,11 +2468,11 @@ export default function Admin() {
                       )}
                     </div>
                     <div className="flex gap-2 mt-3">
-                      <input type="time" className="field !py-1.5 text-sm" value={newSlot.start_time}
+                      <input type="time" className="field !py-1.5 text-sm" aria-label="وقت البداية" value={newSlot.start_time}
                         onChange={e => setNewSlot({ ...newSlot, start_time: e.target.value })} />
-                      <input type="time" className="field !py-1.5 text-sm" value={newSlot.end_time}
+                      <input type="time" className="field !py-1.5 text-sm" aria-label="وقت النهاية" value={newSlot.end_time}
                         onChange={e => setNewSlot({ ...newSlot, end_time: e.target.value })} />
-                      <input type="number" className="field !py-1.5 !w-20 text-sm" placeholder="سعة" value={newSlot.capacity}
+                      <input type="number" className="field !py-1.5 !w-20 text-sm" placeholder="سعة" aria-label="السعة" value={newSlot.capacity}
                         onChange={e => setNewSlot({ ...newSlot, capacity: e.target.value })} />
                     </div>
                     <button className="btn-sea w-full mt-2 text-sm"
@@ -2617,16 +2617,16 @@ export default function Admin() {
           <div className="card p-4 mb-4">
             <p className="text-sm text-mist mb-2">إضافة وردية جديدة</p>
             <div className="grid grid-cols-2 gap-2">
-              <select className="field" value={newShift.driver_id}
+              <select className="field" aria-label="اختر مندوب" value={newShift.driver_id}
                 onChange={e => setNewShift({ ...newShift, driver_id: e.target.value })}>
                 <option value="">اختر مندوب…</option>
                 {drivers.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
-              <input type="date" className="field" value={newShift.shift_date}
+              <input type="date" className="field" aria-label="تاريخ الوردية" value={newShift.shift_date}
                 onChange={e => setNewShift({ ...newShift, shift_date: e.target.value })} />
-              <input type="time" className="field" value={newShift.start_time}
+              <input type="time" className="field" aria-label="وقت بداية الوردية" value={newShift.start_time}
                 onChange={e => setNewShift({ ...newShift, start_time: e.target.value })} />
-              <input type="time" className="field" value={newShift.end_time}
+              <input type="time" className="field" aria-label="وقت نهاية الوردية" value={newShift.end_time}
                 onChange={e => setNewShift({ ...newShift, end_time: e.target.value })} />
             </div>
             <button className="btn-sea w-full mt-3"
@@ -2708,10 +2708,10 @@ export default function Admin() {
           <p className="font-semibold mb-2">💳 إضافة رصيد لمحفظة عميل</p>
           <p className="text-xs text-mist mb-3">مفيد لتعويض عميل بعد شكوى، أو أي حالة تانية محتاجة رصيد</p>
           <div className="space-y-2">
-            <input className="field" dir="ltr" placeholder="رقم موبايل العميل" value={walletPhone} onChange={e => setWalletPhone(e.target.value)} />
+            <input className="field" dir="ltr" placeholder="رقم موبايل العميل" aria-label="رقم موبايل العميل" value={walletPhone} onChange={e => setWalletPhone(e.target.value)} />
             <div className="flex gap-2">
-              <input className="field !w-28" type="number" placeholder="المبلغ" value={walletAmount} onChange={e => setWalletAmount(e.target.value)} />
-              <input className="field" placeholder="السبب (اختياري)" value={walletReason} onChange={e => setWalletReason(e.target.value)} />
+              <input className="field !w-28" type="number" placeholder="المبلغ" aria-label="المبلغ" value={walletAmount} onChange={e => setWalletAmount(e.target.value)} />
+              <input className="field" placeholder="السبب (اختياري)" aria-label="السبب" value={walletReason} onChange={e => setWalletReason(e.target.value)} />
             </div>
             <button className="btn-sea w-full" disabled={!walletPhone.trim() || !walletAmount} onClick={sendWalletCredit}>إضافة الرصيد</button>
             {walletResult && <p className="text-sm text-mist">{walletResult}</p>}
@@ -2835,12 +2835,12 @@ export default function Admin() {
           <div className="card p-4">
             <p className="font-semibold mb-3">إضافة مطعم/متجر جديد</p>
             <div className="space-y-2.5">
-              <input className="field" placeholder="الاسم" value={newRestaurant.name}
+              <input className="field" placeholder="الاسم" aria-label="اسم المطعم/المتجر" value={newRestaurant.name}
                 onChange={e => setNewRestaurant({ ...newRestaurant, name: e.target.value })} />
-              <input className="field" placeholder="وصف قصير" value={newRestaurant.description}
+              <input className="field" placeholder="وصف قصير" aria-label="وصف قصير" value={newRestaurant.description}
                 onChange={e => setNewRestaurant({ ...newRestaurant, description: e.target.value })} />
               <div className="flex gap-2">
-                <input className="field" placeholder="التصنيف (مثال: فاست فود)" value={newRestaurant.category}
+                <input className="field" placeholder="التصنيف (مثال: فاست فود)" aria-label="التصنيف" value={newRestaurant.category}
                   onChange={e => setNewRestaurant({ ...newRestaurant, category: e.target.value })} />
                 <select className="field !w-auto" value={newRestaurant.vendor_type}
                   onChange={e => setNewRestaurant({ ...newRestaurant, vendor_type: e.target.value })}>
@@ -2874,7 +2874,7 @@ export default function Admin() {
               <div className="flex gap-2">
                 <input className="field flex-1" value={newCatalogName}
                   onChange={e => setNewCatalogName(e.target.value)}
-                  placeholder="اسم الموظف" />
+                  placeholder="اسم الموظف" aria-label="اسم الموظف" />
                 <button className="btn-sea shrink-0 !px-4" disabled={!newCatalogName.trim() || accountBusy === 'catalog-new'}
                   onClick={createCatalogLogin}>
                   {accountBusy === 'catalog-new' ? '...' : 'إنشاء حساب'}
@@ -3003,7 +3003,7 @@ export default function Admin() {
                   <p className="font-semibold">{r.name}</p>
                   <div className="flex items-center gap-2 shrink-0">
                     <input
-                      type="number" min={1} placeholder="بلا حد أقصى"
+                      type="number" min={1} placeholder="بلا حد أقصى" aria-label={`أقصى مسافة توصيل لـ ${r.name}`}
                       className="field !h-9 !w-28 text-sm"
                       value={r.max_delivery_km ?? ''}
                       onChange={e => updateRestaurant(r, { max_delivery_km: e.target.value ? Number(e.target.value) : null })}

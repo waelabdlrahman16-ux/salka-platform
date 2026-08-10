@@ -71,7 +71,7 @@ export default function OrderAdjust({ orderId, onDone }: {
     <div className="mt-2.5 bg-shellup/60 border border-line rounded-xl p-3">
       <div className="flex items-center justify-between mb-2">
         <p className="text-sm font-bold">تعديل مبلغ الطلب</p>
-        <button className="text-mist text-sm" onClick={() => setOpen(false)}>✕</button>
+        <button className="text-mist text-sm" onClick={() => setOpen(false)} aria-label="إغلاق">✕</button>
       </div>
 
       {result && (
