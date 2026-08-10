@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { describeError } from '../lib/rpc'
+import { compressImage } from '../lib/upload'
 import { useSheets } from './ActionSheets'
 
 interface BannerRow {
@@ -69,10 +70,11 @@ export default function BannersAdmin() {
     if (!OK_TYPES.includes(file.type)) { setError('لازم تكون صورة JPG أو PNG أو WebP'); return }
     if (file.size > MAX_BYTES) { setError('الصورة أكبر من ٢ ميجا — صغّرها الأول'); return }
     setUploading(true)
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+    const uploadFile = await compressImage(file)
+    const ext = uploadFile.name.split('.').pop()?.toLowerCase() || 'jpg'
     // Date.now keeps a re-upload from being served from cache under the old name.
     const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
-    const { error: upErr } = await supabase.storage.from('banners').upload(path, file, { upsert: false })
+    const { error: upErr } = await supabase.storage.from('banners').upload(path, uploadFile, { upsert: false })
     if (upErr) { setUploading(false); setError(describeError(upErr.message)); return }
     const { data } = supabase.storage.from('banners').getPublicUrl(path)
     setForm(f => ({ ...f, image_url: data.publicUrl }))
