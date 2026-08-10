@@ -18,6 +18,7 @@ import { driverAssignmentAction } from '../lib/driverAssignmentActions'
 import { driverSelfService } from '../lib/driverSelfService'
 import { haversineKm } from '../lib/geo'
 import { vendorNoun } from '../lib/vendorWords'
+import { SkeletonBlock, SkeletonCard } from '../components/Skeleton'
 import { getDeviceId, getDeviceLabel } from '../lib/deviceId'
 import { assignmentStatusLabel, driverStatusLabel } from '../lib/statusLabels'
 
@@ -700,7 +701,25 @@ export default function DriverPage() {
   }
 
   if (!id) return <p className="text-mist text-center py-10">حسابك غير مرتبط بمندوب. تواصل مع الإدارة.</p>
-  if (!driver) return <p className="text-mist">جاري التحميل…</p>
+  // `driver` is null until the first load() resolves, which doubles as the
+  // initial-load flag -- there is no separate loading state for it. A plain
+  // "جاري التحميل…" line here left the page looking blank on slow cellular
+  // for up to LOAD_TIMEOUT_MS; a skeleton roughly matching the real layout
+  // (header + card list) at least shows something is happening.
+  if (!driver) {
+    return (
+      <div className="max-w-lg mx-auto">
+        <div className="flex items-center justify-between mb-3">
+          <SkeletonBlock className="h-6 w-32" />
+          <SkeletonBlock className="h-8 w-20" />
+        </div>
+        <SkeletonBlock className="h-16 w-full mb-3" />
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+      </div>
+    )
+  }
 
   const fmt = (t: string | null) => t ? new Date(t).toLocaleTimeString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit' }) : ''
 
