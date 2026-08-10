@@ -439,11 +439,6 @@
       {
         "grantee": "anon",
         "table_name": "public.customer_addresses",
-        "privilege_type": "SELECT"
-      },
-      {
-        "grantee": "anon",
-        "table_name": "public.customer_addresses",
         "privilege_type": "TRIGGER"
       },
       {
@@ -465,11 +460,6 @@
         "grantee": "authenticated",
         "table_name": "public.customer_addresses",
         "privilege_type": "REFERENCES"
-      },
-      {
-        "grantee": "authenticated",
-        "table_name": "public.customer_addresses",
-        "privilege_type": "SELECT"
       },
       {
         "grantee": "authenticated",
@@ -534,11 +524,6 @@
       {
         "grantee": "anon",
         "table_name": "public.customer_otp_codes",
-        "privilege_type": "SELECT"
-      },
-      {
-        "grantee": "anon",
-        "table_name": "public.customer_otp_codes",
         "privilege_type": "TRIGGER"
       },
       {
@@ -560,11 +545,6 @@
         "grantee": "authenticated",
         "table_name": "public.customer_otp_codes",
         "privilege_type": "REFERENCES"
-      },
-      {
-        "grantee": "authenticated",
-        "table_name": "public.customer_otp_codes",
-        "privilege_type": "SELECT"
       },
       {
         "grantee": "authenticated",
@@ -629,11 +609,6 @@
       {
         "grantee": "anon",
         "table_name": "public.customer_sessions",
-        "privilege_type": "SELECT"
-      },
-      {
-        "grantee": "anon",
-        "table_name": "public.customer_sessions",
         "privilege_type": "TRIGGER"
       },
       {
@@ -655,11 +630,6 @@
         "grantee": "authenticated",
         "table_name": "public.customer_sessions",
         "privilege_type": "REFERENCES"
-      },
-      {
-        "grantee": "authenticated",
-        "table_name": "public.customer_sessions",
-        "privilege_type": "SELECT"
       },
       {
         "grantee": "authenticated",
@@ -819,11 +789,6 @@
       {
         "grantee": "anon",
         "table_name": "public.customers",
-        "privilege_type": "SELECT"
-      },
-      {
-        "grantee": "anon",
-        "table_name": "public.customers",
         "privilege_type": "TRIGGER"
       },
       {
@@ -845,11 +810,6 @@
         "grantee": "authenticated",
         "table_name": "public.customers",
         "privilege_type": "REFERENCES"
-      },
-      {
-        "grantee": "authenticated",
-        "table_name": "public.customers",
-        "privilege_type": "SELECT"
       },
       {
         "grantee": "authenticated",
@@ -1519,11 +1479,6 @@
       {
         "grantee": "anon",
         "table_name": "public.driver_shift_bonuses",
-        "privilege_type": "SELECT"
-      },
-      {
-        "grantee": "anon",
-        "table_name": "public.driver_shift_bonuses",
         "privilege_type": "TRIGGER"
       },
       {
@@ -1545,11 +1500,6 @@
         "grantee": "authenticated",
         "table_name": "public.driver_shift_bonuses",
         "privilege_type": "REFERENCES"
-      },
-      {
-        "grantee": "authenticated",
-        "table_name": "public.driver_shift_bonuses",
-        "privilege_type": "SELECT"
       },
       {
         "grantee": "authenticated",
@@ -2529,11 +2479,6 @@
       {
         "grantee": "anon",
         "table_name": "public.order_status_events",
-        "privilege_type": "SELECT"
-      },
-      {
-        "grantee": "anon",
-        "table_name": "public.order_status_events",
         "privilege_type": "TRIGGER"
       },
       {
@@ -2555,11 +2500,6 @@
         "grantee": "authenticated",
         "table_name": "public.order_status_events",
         "privilege_type": "REFERENCES"
-      },
-      {
-        "grantee": "authenticated",
-        "table_name": "public.order_status_events",
-        "privilege_type": "SELECT"
       },
       {
         "grantee": "authenticated",
@@ -3109,11 +3049,6 @@
       {
         "grantee": "anon",
         "table_name": "public.request_item_suppressions",
-        "privilege_type": "SELECT"
-      },
-      {
-        "grantee": "anon",
-        "table_name": "public.request_item_suppressions",
         "privilege_type": "TRIGGER"
       },
       {
@@ -3135,11 +3070,6 @@
         "grantee": "authenticated",
         "table_name": "public.request_item_suppressions",
         "privilege_type": "REFERENCES"
-      },
-      {
-        "grantee": "authenticated",
-        "table_name": "public.request_item_suppressions",
-        "privilege_type": "SELECT"
       },
       {
         "grantee": "authenticated",

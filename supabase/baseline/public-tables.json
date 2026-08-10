@@ -102,7 +102,7 @@
     },
     {
       "name": "public.app_events",
-      "rows": 3353,
+      "rows": 3376,
       "grants": {
         "anon_delete": false,
         "anon_insert": false,
@@ -478,11 +478,11 @@
       "grants": {
         "anon_delete": true,
         "anon_insert": true,
-        "anon_select": true,
+        "anon_select": false,
         "anon_update": true,
         "authenticated_delete": true,
         "authenticated_insert": true,
-        "authenticated_select": true,
+        "authenticated_select": false,
         "authenticated_update": true
       },
       "columns": [
@@ -551,11 +551,11 @@
       "grants": {
         "anon_delete": true,
         "anon_insert": true,
-        "anon_select": true,
+        "anon_select": false,
         "anon_update": true,
         "authenticated_delete": true,
         "authenticated_insert": true,
-        "authenticated_select": true,
+        "authenticated_select": false,
         "authenticated_update": true
       },
       "columns": [
@@ -603,11 +603,11 @@
       "grants": {
         "anon_delete": true,
         "anon_insert": true,
-        "anon_select": true,
+        "anon_select": false,
         "anon_update": true,
         "authenticated_delete": true,
         "authenticated_insert": true,
-        "authenticated_select": true,
+        "authenticated_select": false,
         "authenticated_update": true
       },
       "columns": [
@@ -693,15 +693,15 @@
     },
     {
       "name": "public.customers",
-      "rows": 101,
+      "rows": 102,
       "grants": {
         "anon_delete": true,
         "anon_insert": true,
-        "anon_select": true,
+        "anon_select": false,
         "anon_update": true,
         "authenticated_delete": true,
         "authenticated_insert": true,
-        "authenticated_select": true,
+        "authenticated_select": false,
         "authenticated_update": true
       },
       "columns": [
@@ -1299,11 +1299,11 @@
       "grants": {
         "anon_delete": true,
         "anon_insert": true,
-        "anon_select": true,
+        "anon_select": false,
         "anon_update": true,
         "authenticated_delete": true,
         "authenticated_insert": true,
-        "authenticated_select": true,
+        "authenticated_select": false,
         "authenticated_update": true
       },
       "columns": [
@@ -2169,11 +2169,11 @@
       "grants": {
         "anon_delete": true,
         "anon_insert": true,
-        "anon_select": true,
+        "anon_select": false,
         "anon_update": true,
         "authenticated_delete": true,
         "authenticated_insert": true,
-        "authenticated_select": true,
+        "authenticated_select": false,
         "authenticated_update": true
       },
       "columns": [
@@ -2773,7 +2773,7 @@
     },
     {
       "name": "public.rate_limit_log",
-      "rows": 294,
+      "rows": 270,
       "grants": {
         "anon_delete": false,
         "anon_insert": false,
@@ -2851,11 +2851,11 @@
       "grants": {
         "anon_delete": true,
         "anon_insert": true,
-        "anon_select": true,
+        "anon_select": false,
         "anon_update": true,
         "authenticated_delete": true,
         "authenticated_insert": true,
-        "authenticated_select": true,
+        "authenticated_select": false,
         "authenticated_update": true
       },
       "columns": [
