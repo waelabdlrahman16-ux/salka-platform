@@ -3160,6 +3160,7 @@ export default function Admin() {
       {editingItem && (
         <MenuItemEditor
           item={editingItem}
+          restaurantName={restaurants.find(r => r.id === editingItem.restaurant_id)?.name}
           onClose={() => setEditingItem(null)}
           onSaved={() => { setEditingItem(null); load(true) }}
           onDeleted={() => { setEditingItem(null); load(true) }}
