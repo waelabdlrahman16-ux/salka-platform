@@ -19,7 +19,16 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
   if(typeof action!=="string"||!ACTIONS.has(action as Action))return json({error:"invalid_action"},400)
   const userId=ctx.userClaims?.id;if(!userId)return json({error:"not_logged_in"},401)
   const who=await digest(userId)
-  for(const [bucket,max,window] of [[`admin-reports:${action}:${who}`,30,"10 minutes"],["admin-reports-global",600,"10 minutes"]] as const){
+  // Admin.tsx's dashboard load() runs every 15s and fires stalledOrders,
+  // pendingRefunds, liveDeliveries and listAccounts every single cycle --
+  // <=40 calls/10min each, above the flat 30 every other action here got.
+  // A left-open admin dashboard hit its own rate limit on a cycle; confirmed
+  // in production logs (admin-reports 429s recurring every ~15s for a real
+  // admin session). The other six actions are user-triggered, not polled,
+  // and keep the tighter cap.
+  const POLLED = new Set(["stalledOrders","pendingRefunds","liveDeliveries","listAccounts"])
+  const perUserMax = POLLED.has(action) ? 90 : 30
+  for(const [bucket,max,window] of [[`admin-reports:${action}:${who}`,perUserMax,"10 minutes"],["admin-reports-global",600,"10 minutes"]] as const){
     const {error}=await ctx.supabaseAdmin.rpc("check_rate_limit",{p_bucket:bucket,p_max:max,p_window:window})
     if(error){if(isRateLimitError(error))return json({error:"rate_limited"},429);return fail("admin-reports","rate_limit_check_failed",500,error)}
   }

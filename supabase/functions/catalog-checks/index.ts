@@ -19,7 +19,12 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
   if(typeof action!=="string"||!ACTIONS.has(action as Action))return json({error:"invalid_action"},400)
   const userId=ctx.userClaims?.id;if(!userId)return json({error:"not_logged_in"},401)
   const who=await digest(userId)
-  for(const [bucket,max,window] of [[`catalog-checks:${action}:${who}`,30,"10 minutes"],["catalog-checks-global",600,"10 minutes"]] as const){
+  // restaurantsReliabilityAll is polled every 15s by Admin.tsx's dashboard
+  // load() -- <=40 calls/10min, above the flat 30 the other three
+  // user-triggered actions here keep. Same fix, same cause, as the sibling
+  // cap in admin-reports/index.ts.
+  const perUserMax = action==="restaurantsReliabilityAll" ? 90 : 30
+  for(const [bucket,max,window] of [[`catalog-checks:${action}:${who}`,perUserMax,"10 minutes"],["catalog-checks-global",600,"10 minutes"]] as const){
     const {error}=await ctx.supabaseAdmin.rpc("check_rate_limit",{p_bucket:bucket,p_max:max,p_window:window})
     if(error){if(isRateLimitError(error))return json({error:"rate_limited"},429);return fail("catalog-checks","rate_limit_check_failed",500,error)}
   }
