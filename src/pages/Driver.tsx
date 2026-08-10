@@ -766,6 +766,26 @@ export default function DriverPage() {
         </div>
       </div>
 
+      {/* The only other cash_held display lives inside the "الأرباح والورديات"
+          accordion below, which stays closed by default once a driver has
+          live deliveries -- exactly when the number right after confirming a
+          cash order matters most. This chip is always visible regardless of
+          that accordion's state. seadeep at the normal level for the same
+          contrast reason as the accordion's own copy; switches to a red
+          warning within 500 ج.م of the 3000 ج.م safety limit enforced
+          server-side, since nothing on this page otherwise hints the limit is
+          close until it's already been hit. */}
+      {(driver.cash_held ?? 0) > 0 && (
+        <div className={`flex items-center justify-between rounded-xl px-3 py-2 mb-3 text-sm font-bold ${
+          (driver.cash_held ?? 0) >= 3000 ? 'bg-red-600 text-white'
+            : (driver.cash_held ?? 0) >= 2500 ? 'bg-red-500/15 text-red-700'
+            : 'bg-shellup text-seadeep'
+        }`}>
+          <span>💵 كاش معاك دلوقتي</span>
+          <span>{driver.cash_held} ج.م{(driver.cash_held ?? 0) >= 2500 ? ' — قرّب الحد' : ''}</span>
+        </div>
+      )}
+
       {/* The single most useful control on this page. Without it a driver has
           to keep the tab open and foregrounded to learn an order exists. */}
       <EnablePushButton
@@ -787,6 +807,15 @@ export default function DriverPage() {
         <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 mb-4">
           <p className="text-sm font-semibold text-red-700">
             📍 الموقع مقفول — شغّل الـ GPS عشان الخريطة والوقت المتوقع يشتغلوا
+          </p>
+          {/* The old copy said WHAT was broken but never HOW to fix it -- a
+              driver who tapped "block" on the permission prompt once has no
+              way back to it from inside the page (the browser never asks
+              again), and no reason to know where phone Settings even is for
+              this. There is no web API to jump straight to a specific app's
+              permission screen, so this is instructions, not a deep link. */}
+          <p className="text-xs text-red-700/80 mt-1.5">
+            من إعدادات الموبايل: التطبيقات ← سالكة ← الأذونات ← فعّل الموقع، بعدين ارجع هنا واعمل تحديث
           </p>
         </div>
       )}
@@ -982,6 +1011,7 @@ export default function DriverPage() {
                     destLng={a.status === 'Out_for_Delivery' ? destLng : null}
                     showRoute={a.status === 'Out_for_Delivery'}
                     myPos={myPos}
+                    locationDenied={gpsDenied}
                   />
                   {etaMin != null && (
                     <div className="absolute top-2.5 right-2.5 bg-white rounded-xl px-3 py-1.5 text-xs font-bold text-sea shadow-sm">
@@ -1118,26 +1148,35 @@ export default function DriverPage() {
                           : 'اسحب لتأكيد التسليم'}
                         disabled={!confirmed || isBusy(`deliver:${a.id}`)}
                         onConfirm={() => setStatus(a, 'Delivered')} />
-                      {a.no_answer_reported_at ? (
-                        <p className="text-sandink text-sm text-center">
-                          ⏳ اتبلّغت الإدارة، مستنيين قرارهم
-                          {a.delivery_problem_reason ? ` — "${a.delivery_problem_reason}"` : ''}
-                        </p>
-                      ) : !a.called_customer_at ? (
-                        <button className="btn-ghost w-full text-sm" disabled={isBusy(`called:${a.id}`)} onClick={() => markCalledCustomer(a)}>
-                          {isBusy(`called:${a.id}`) ? 'لحظة…' : '📞 اتصلت بالعميل ومردش'}
-                        </button>
-                      ) : (a.out_for_delivery_at && (Date.now() - +new Date(a.out_for_delivery_at)) >= 5 * 60000) ? (
-                        <button className="btn-danger w-full text-sm" onClick={() => reportNoAnswer(a)}>العميل لسه ما ردش — بلّغ الإدارة</button>
-                      ) : (
-                        <p className="text-mist text-xs text-center">✓ اتصلت — لو ما ردش خلال 5 دقايق من خروجك، هيظهر لك زرار الإبلاغ</p>
-                      )}
-                      <button className="btn-ghost w-full text-sm"
-                        disabled={isBusy(`problem:${a.id}`)}
-                        onClick={() => reportProblem(a)}>
-                        {isBusy(`problem:${a.id}`) ? 'لحظة…' : 'في مشكلة؟ بلّغ الإدارة'}
-                      </button>
 
+                      {/* These are escalation paths, not the next tap in the
+                          normal flow -- visually the same weight as "وصلت"
+                          above made all four ghost buttons in this block
+                          read as interchangeable steps on a glance while
+                          riding. A border and smaller, muted text mark this
+                          as a separate "something's wrong" group instead of
+                          part of the primary arrived-then-deliver sequence. */}
+                      <div className="pt-2 mt-1 border-t border-line/60 space-y-1.5">
+                        {a.no_answer_reported_at ? (
+                          <p className="text-sandink text-xs text-center">
+                            ⏳ اتبلّغت الإدارة، مستنيين قرارهم
+                            {a.delivery_problem_reason ? ` — "${a.delivery_problem_reason}"` : ''}
+                          </p>
+                        ) : !a.called_customer_at ? (
+                          <button className="btn-ghost w-full !py-2 text-xs text-mist" disabled={isBusy(`called:${a.id}`)} onClick={() => markCalledCustomer(a)}>
+                            {isBusy(`called:${a.id}`) ? 'لحظة…' : '📞 اتصلت بالعميل ومردش'}
+                          </button>
+                        ) : (a.out_for_delivery_at && (Date.now() - +new Date(a.out_for_delivery_at)) >= 5 * 60000) ? (
+                          <button className="btn-danger w-full text-sm" onClick={() => reportNoAnswer(a)}>العميل لسه ما ردش — بلّغ الإدارة</button>
+                        ) : (
+                          <p className="text-mist text-xs text-center">✓ اتصلت — لو ما ردش خلال 5 دقايق من خروجك، هيظهر لك زرار الإبلاغ</p>
+                        )}
+                        <button className="btn-ghost w-full !py-2 text-xs text-mist"
+                          disabled={isBusy(`problem:${a.id}`)}
+                          onClick={() => reportProblem(a)}>
+                          {isBusy(`problem:${a.id}`) ? 'لحظة…' : 'في مشكلة؟ بلّغ الإدارة'}
+                        </button>
+                      </div>
                     </div>
                   )
                 })()}
