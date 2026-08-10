@@ -3,6 +3,7 @@
 **Project:** `waelabdlrahman16-ux/salka-platform` · Supabase `pqpnwxyevrsipklzmwex`
 **Batches covered:** 1–7 · **Closed:** 2026-08-10
 **Verification timestamp:** 2026-08-09 23:40 UTC (point-in-time)
+**Revision:** 2 — corrections to §7 and §8 applied 2026-08-10 after post-merge findings. See §12.
 
 ---
 
@@ -123,8 +124,8 @@ Scoping — not merely reachability — was confirmed: the vendor sees 6 of 35 o
 | # | Issue | Severity |
 |---|---|---|
 | 1 | **43 functions remain directly callable** by any signed-in client — 20 admin panel, 17 driver self-service, 2 catalog, 4 misc. All have 0 RLS policies and 0 internal callers. **Unfinished, not intentional.** Needs batches 8–9. | Medium |
-| 2 | **`supabase/baseline` does not match live.** `migration-history.json` has 309 entries vs 312 live; `public-tables.json` still records the 7 tables as anon-readable. The snapshot was taken before batch 7's own migration was applied. | Medium |
-| 3 | **Production build is not byte-reproducible.** A documentation-only merge changed the bundle by −77,858 bytes. Verified functionally equivalent (same 19 chunks, all endpoints and libraries present, no console errors); cause not established. | Medium |
+| 2 | **`supabase/baseline` does not match live.** `migration-history.json` has 309 entries vs 312 live; `public-tables.json` still records the 7 tables as anon-readable. The snapshot was taken before batch 7's own migration was applied. **There is already an automated signal for this that nobody was reading:** the `Supabase Preview` check fails on *every* merge to `main` with `Remote migration versions not found in local migrations directory`. Realigning the baseline should also clear that check. | Medium |
+| 3 | **Production build output is not stable across runs.** Three consecutive documentation-only merges produced entry bundles `index-6kzSssPR.js` → `index-BumT0NQQ.js` → `index-6kzSssPR.js`, a swing of 77,858 bytes, from source that did not change. Each build was verified functionally equivalent (19 chunks, all Edge endpoints and libraries present, no console errors). **A two-deployer race was investigated and ruled out:** the `Workers Builds: appgosalka-platform` check completes in 0s on every merge and does not write the Worker, while the GitHub Actions `deploy` job runs 43–48s and matches the Worker's `modified_on`. There is one deployer. Root cause of the instability is not established; the next step is to pin the Node patch version and build one commit twice. | Medium |
 | 4 | **224 performance advisors never assessed** — 203 multiple-permissive-policies, 20 unused indexes, 1 auth connection notice. | Low |
 | 5 | `admin_funnel()` and `settle_driver_earnings()` do not filter `is_test`. Harmless today — 0 test rows reach compensation — but the guard is upstream rather than at the reporting layer. | Low |
 | 6 | Untracked `supabase/functions/vendor-operations/deno.lock` in the working copy. | Cosmetic |
@@ -154,7 +155,7 @@ Statuses are literal. "Observed" means seen in production telemetry, not execute
 | Admin order / account / driver / vendor / cancellation / refund / deposit / financial actions | **NOT TESTED** | Would create financial activity |
 | Cancellation and refund queue | **NOT TESTED** | Requires a cancellable order |
 | Push notifications, foreground and background | **NOT TESTED** | Requires devices |
-| Production build, lint, Edge Function type checks | **BLOCKED locally / PASS in CI** | Node absent on the audit machine; CI green on `082648b` |
+| Production build, lint, Edge Function type checks | **BLOCKED locally / PARTIAL in CI** | Node absent on the audit machine. GitHub Actions `build` and `deploy` green on `082648b` and `c9f822b`; **`Supabase Preview` FAILS on every merge to `main`** (see §7 issue 2). An earlier draft of this report recorded that check as "skipped" — true on PR branches, not on `main`. |
 
 **Tally: 7 of 18 rows PASS (4 directly verified, 3 observed in telemetry). 11 of 18 are NOT TESTED or BLOCKED** — 9 NOT TESTED, 1 BLOCKED, 1 BLOCKED locally but green in CI. The security posture is verified; the user journeys are not.
 
@@ -211,3 +212,15 @@ Two qualifications must travel with that conclusion:
 1. **43 functions remain directly callable by any signed-in client.** The original seven-batch plan labelled the residual warnings "intentional"; testing every one against every RLS policy and function body shows only 7 are. The other 43 carry internal role checks — so this is defence-in-depth rather than an open door — but the work is unfinished, not accepted. Batches 8 and 9 should be scheduled.
 
 2. **No claim of end-to-end functional correctness is made.** 11 of 18 regression areas were never executed, because doing so would have required credentials or real financial activity. What is proven is the permission model, not the user journeys.
+
+---
+
+## 12. Revision history
+
+**Revision 2 — 2026-08-10.** Three corrections, all found after revision 1 was merged. No security finding changed; the conclusion in §11 stands.
+
+1. **`Supabase Preview` check status corrected.** Revision 1 recorded it as "skipped". That is true on PR branches but wrong on `main`, where it **fails on every merge** with `Remote migration versions not found in local migrations directory`. Corrected in §8 and folded into §7 issue 2, since it is an automated signal for the migration drift that was already being reported and not read.
+
+2. **"CI green" qualified.** Revision 1 said CI was green on `082648b` without noting the failing Supabase check. §8 now distinguishes the GitHub Actions jobs (green) from the Supabase check (failing).
+
+3. **Build instability re-characterised, and a wrong hypothesis retracted.** During closure it was asserted that two builders — GitHub Actions and Cloudflare Workers Builds — were racing to deploy, and that this was the highest-priority operational issue. **That assertion was incorrect and is withdrawn.** Timings across four merges show `Workers Builds: appgosalka-platform` completing in 0s every time and never writing the Worker, while the GitHub Actions `deploy` job runs 43–48s and matches the Worker's `modified_on`. There is a single deployer. What remains true is that build *output* is unstable across runs (§7 issue 3): three documentation-only merges produced two different bundles, alternating. Severity is Medium, not critical, and the top operational priority reverts to vendor push registration coverage (§10, P0 item 1).
