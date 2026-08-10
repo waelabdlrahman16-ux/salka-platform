@@ -145,3 +145,21 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/admin-reports/deno.json"
 entrypoint = "./functions/admin-reports/index.ts"
+
+[functions.driver-assignment-actions]
+enabled = true
+verify_jwt = true
+import_map = "./functions/driver-assignment-actions/deno.json"
+entrypoint = "./functions/driver-assignment-actions/index.ts"
+
+[functions.driver-self-service]
+enabled = true
+verify_jwt = true
+import_map = "./functions/driver-self-service/deno.json"
+entrypoint = "./functions/driver-self-service/index.ts"
+
+[functions.catalog-checks]
+enabled = true
+verify_jwt = true
+import_map = "./functions/catalog-checks/deno.json"
+entrypoint = "./functions/catalog-checks/index.ts"

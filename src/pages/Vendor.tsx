@@ -12,6 +12,7 @@ import { orderStatusLabel } from '../lib/statusLabels'
 import { rpc } from '../lib/rpc'
 import { customerOrderCreation } from '../lib/customerOrderCreation'
 import { vendorOperation } from '../lib/vendorOperations'
+import { catalogCheck } from '../lib/catalogChecks'
 import PrescriptionLink from '../components/PrescriptionLink'
 import EnablePushButton from '../components/EnablePushButton'
 import type { Compound, MenuItem, Order, OrderItem, Restaurant } from '../lib/types'
@@ -481,8 +482,8 @@ function KitchenVendor({ rid }: { rid: number }) {
     if (sErr) setOpenStateFailed(true); else setOpenStateFailed(false)
     const mine = ((states ?? []) as { id: number; is_open: boolean }[]).find(v => v.id === rid)
     if (mine) setIsOpen(mine.is_open)
-    const { data: rel } = await supabase.rpc('restaurant_reliability', { p_restaurant_id: rid })
-    setReliability(rel)
+    const relRes = await catalogCheck<{ avg_accept_minutes: number | null; total_orders: number }>('restaurantReliability', { restaurantId: rid })
+    if (relRes.ok) setReliability(relRes.data)
     const { data: m, error: mErr } = await supabase.from('menu_items').select('*').eq('restaurant_id', rid).order('category').order('name')
     if (!mErr) setMenu(m ?? [])
     const { data: o, error: oErr } = await supabase.from('orders').select('*')

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { uploadVendorImage } from '../lib/upload'
+import { catalogCheck } from '../lib/catalogChecks'
 import type { MenuItem, VendorAddonLibraryItem } from '../lib/types'
 import { useSheets } from './ActionSheets'
 
@@ -84,14 +85,14 @@ export default function AddonLibrary({ restaurantId, items }: {
     const targets = items.filter(i => !targetCat || i.category === targetCat)
     if (!targets.length) { setError('مفيش أصناف في القسم ده'); return }
     setBusy(true); setError(''); setNotice('')
-    const { data, error: err } = await supabase.rpc('apply_library_addon', {
-      p_library_id: applying.id,
-      p_item_ids: targets.map(i => i.id),
-      p_group_name: groupName.trim() || 'إضافات'
+    const res = await catalogCheck<number>('applyLibraryAddon', {
+      libraryId: applying.id,
+      itemIds: targets.map(i => i.id),
+      groupName: groupName.trim() || 'إضافات'
     })
     setBusy(false)
-    if (err) { setError('حصل خطأ، جرب تاني'); return }
-    const n = Number(data) || 0
+    if (!res.ok) { setError(res.error); return }
+    const n = Number(res.data) || 0
     setNotice(n === 0
       ? `"${applying.name}" موجود بالفعل على كل الأصناف دي`
       : `تمام — "${applying.name}" اتضاف لـ ${n} صنف`)

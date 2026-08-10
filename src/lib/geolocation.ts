@@ -1,6 +1,6 @@
 import { Capacitor } from '@capacitor/core'
 import { Geolocation } from '@capacitor/geolocation'
-import { supabase } from './supabase'
+import { driverSelfService } from './driverSelfService'
 
 // How often the driver's position is pushed to the server while they are out
 // delivering. The cadence comes from this timer, NOT from the browser's
@@ -52,13 +52,13 @@ async function send() {
     // or Out_for_Delivery, so a position arriving in the seconds after the last
     // delivery completes is discarded rather than parked on the driver's row.
     //
-    // postgrest-js RESOLVES with { error } rather than rejecting, so the catch
-    // below never saw a rejected write -- the pin just stopped updating and
-    // dispatch could not tell a lost signal from a refused one.
-    const { error } = await supabase.rpc('update_my_location', { p_lat: lat, p_lng: lng })
-    if (error) {
-      lastReportError = error.message
-      console.error('location report rejected', error)
+    // edgeAction() RESOLVES with { ok: false } rather than rejecting, so the
+    // catch below never saw a rejected write -- the pin just stopped updating
+    // and dispatch could not tell a lost signal from a refused one.
+    const res = await driverSelfService('updateLocation', { lat, lng })
+    if (!res.ok) {
+      lastReportError = res.error
+      console.error('location report rejected', res.error)
     } else {
       lastReportError = ''
     }
@@ -115,7 +115,7 @@ export function stopLocationReporting() {
   // night. The server drops the position outright rather than ageing it, so the
   // board shows "no location" -- which is true -- instead of a confident pin in
   // the wrong place.
-  void supabase.rpc('clear_my_location').then(({ error }) => {
-    if (error) console.error('clear location failed', error)
+  void driverSelfService('clearLocation').then(res => {
+    if (!res.ok) console.error('clear location failed', res.error)
   })
 }

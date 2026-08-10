@@ -1,7 +1,7 @@
 import { Capacitor } from '@capacitor/core'
 import { PushNotifications } from '@capacitor/push-notifications'
 import { firebaseConfig, VAPID_PUBLIC_KEY } from './firebaseConfig'
-import { supabase } from './supabase'
+import { driverSelfService } from './driverSelfService'
 
 // Push used to be native-only: this file opened with
 //   if (!Capacitor.isNativePlatform()) return
@@ -79,18 +79,18 @@ export function reportSaveStale(stale: boolean): void { lastSaveWasStale = stale
  */
 export async function persistPushToken(token: string, platform: PushPlatform): Promise<boolean> {
   lastSaveWasStale = false
-  const { data, error } = await supabase.rpc('save_my_push_token', { p_push_token: token, p_platform: platform })
-  if (error) {
+  const res = await driverSelfService<{ stored: boolean; stale: boolean }>('savePushToken', { pushToken: token, platform })
+  if (!res.ok) {
     // Reported, not swallowed. Every call site used to drop this promise, so a
     // rejected write produced a hidden button and a silent phone.
-    lastPushError = `save_my_push_token: ${error.message}`
-    console.error('saving push token failed', error)
+    lastPushError = `save_my_push_token: ${res.error}`
+    console.error('saving push token failed', res.error)
     return false
   }
   // The server keeps every token FCM has answered UNREGISTERED for. If this is
   // one of them, it refused to store it -- storing it again is the loop that
   // kept the admin unreachable for a whole day.
-  if (data && typeof data === 'object' && (data as any).stale) {
+  if (res.data && typeof res.data === 'object' && (res.data as any).stale) {
     lastSaveWasStale = true
     lastPushError = 'التوكن ده اتلغى من فايربيز — بنجيب واحد جديد'
     return false
