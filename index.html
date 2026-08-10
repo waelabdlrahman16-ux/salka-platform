@@ -12,6 +12,18 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- The stylesheet below only tells the browser WHERE the font files are;
+         it has to load and parse before the browser even knows this URL, so
+         without this hint the actual woff2 fetch only starts after that round
+         trip finishes. This is the Arabic-subset, regular-weight file (the
+         body-text weight used everywhere in this RTL UI) -- preloading it
+         lets the font download start in parallel with the CSS fetch instead
+         of strictly after it. Pinned to the specific file Google currently
+         serves for this family/weight/subset (v15); if Google ships a new
+         font version this hint just goes stale and unused, not broken -- the
+         @font-face src is still resolved from the stylesheet either way. -->
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="https://fonts.gstatic.com/s/ibmplexsansarabic/v15/Qw3CZRtWPQCuHme67tEYUIx3Kh0PHR9N6Ys43PWrfQ.woff2" />
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <title>سالكة</title>
   </head>
