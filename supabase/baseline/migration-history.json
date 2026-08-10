@@ -1235,6 +1235,18 @@
     {
       "version": "20260809215238",
       "name": "supermarket_delivery_slots_off"
+    },
+    {
+      "version": "20260809221450",
+      "name": "route_admin_vendor_slots_through_edge"
+    },
+    {
+      "version": "20260809225300",
+      "name": "route_customer_accounts_and_swaps_through_edge"
+    },
+    {
+      "version": "20260809233338",
+      "name": "revoke_unused_grants_on_policyless_tables"
     }
   ]
 }

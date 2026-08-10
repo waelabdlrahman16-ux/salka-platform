@@ -1,8 +1,8 @@
 {
   "project_ref": "pqpnwxyevrsipklzmwex",
   "schemas": ["public", "private"],
-  "captured_at": "2026-08-09T23:20:08+00:00",
-  "previous_capture": "2026-08-08T20:53:32.842823+00:00",
+  "captured_at": "2026-08-10T00:00:33+00:00",
+  "previous_capture": "2026-08-09T23:20:08+00:00",
   "postgres_version": "17.6",
   "snapshot_only": true,
   "includes_data_rows": false,
@@ -16,20 +16,29 @@
     "policies": 79,
     "triggers": 14,
     "indexes": 119,
-    "migrations": 309
+    "migrations": 312
   },
   "drift_since_previous_capture": {
+    "reason": "The 2026-08-09T23:20 capture was taken BEFORE batch 7's own migration was applied, so it recorded a database state that existed for about thirteen minutes. This capture is post-migration.",
+    "migrations": "+3 (route_admin_vendor_slots_through_edge, route_customer_accounts_and_swaps_through_edge, revoke_unused_grants_on_policyless_tables) — 309 to 312, matching production",
+    "table_grants": "-14 — SELECT revoked from anon and authenticated on the 7 RLS-enabled, policy-free tables (7 tables x 2 roles)",
     "tables": "unchanged (48)",
+    "policies": "unchanged (79)",
     "triggers": "unchanged (14)",
-    "indexes": "+5 (_mcd_menu_backup_20260806_pkey, app_events_compound_id_idx, app_events_customer_id_idx, app_events_order_id_idx, app_events_restaurant_id_idx)",
-    "policies": "+2 (settings.admin manages settings, settings.public reads customer settings), -3 (drivers.vendor reads assigned drivers, settings.admin writes settings, settings.public read settings)",
-    "public_routine_names": "+4 (admin_set_vendor_slots, set_verified_customer_phone, staff_vendor_open_states, vendor_delivery_overview), none removed",
-    "private_schema": "NEW — 56 functions. The previous capture predated security batches 1-6 entirely and recorded no private schema."
+    "indexes": "unchanged (119)",
+    "routines": "unchanged (219: 163 public, 56 private)"
+  },
+  "verified_at_capture": {
+    "policyless_tables_readable_by_anon_or_authenticated": 0,
+    "residual_anon_or_authenticated_select_on_the_7_tables": 0,
+    "rls_predicates_holding_authenticated_execute": 7,
+    "service_role_only_wrappers_leaking": 0
   },
   "notes": [
-    "routines.json now carries schema, per-role execute grants and full definitions for BOTH public and private.",
-    "grants.json now records schema-level USAGE as well as table and routine grants.",
+    "routines.json carries schema, per-role execute grants and full definitions for BOTH public and private.",
+    "grants.json records schema-level USAGE as well as table and routine grants.",
     "No public routine was removed by name: every core relocated to private kept a same-named public wrapper, so name-level comparison understates the change. Signatures gained a trailing p_auth_user_id and execute was narrowed to service_role.",
-    "database.types.ts covers the public schema ONLY. The Supabase type generator emits public by default and was not asked to include private, so it is not a complete picture of the database. routines.json is the authoritative record for private."
+    "database.types.ts covers the public schema ONLY. The Supabase type generator emits public by default and was not asked to include private, so it is not a complete picture of the database. routines.json is the authoritative record for private.",
+    "The `Supabase Preview` CI check fails on every merge to main with 'Remote migration versions not found in local migrations directory'. That is the migration-filename vs recorded-version mismatch documented in supabase/baseline/README.md; migration-history.json is the reconciled record. Realigning this file does not by itself rename the migration files, so the check may continue to fail until the filenames and recorded versions are reconciled."
   ]
 }
