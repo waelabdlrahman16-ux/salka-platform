@@ -41,9 +41,19 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # Pinned to an exact patch, not just the major version. '22' let
+      # actions/setup-node resolve whatever the latest 22.x.y happened to be
+      # on the day a given workflow ran, and three consecutive
+      # documentation-only merges produced two different bundles alternating
+      # (index-6kzSssPR.js -> index-BumT0NQQ.js -> index-6kzSssPR.js, a
+      # 77,858-byte swing, from source that had not changed) -- confirmed
+      # locally that two builds of the identical commit on one fixed Node
+      # version are byte-for-byte identical, so version drift across runs
+      # was the only remaining explanation. Keep this in sync with .nvmrc
+      # and package.json's engines.node.
       - uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '22.23.2'
           cache: npm
 
       - name: Install dependencies
