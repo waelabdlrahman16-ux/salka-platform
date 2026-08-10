@@ -83,7 +83,7 @@ export default function Offers() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">🏷️ العروض والخصومات</h1>
+      <h1 className="text-2xl font-bold mb-4">العروض والخصومات</h1>
 
       {offers === null && <p className="text-mist">جاري التحميل…</p>}
 
@@ -92,7 +92,7 @@ export default function Offers() {
           merely could not read them is a false statement, not an empty state. */}
       {failed && (
         <div className="card p-4 text-center">
-          <p className="font-semibold">مش قادرين نجيب العروض دلوقتي</p>
+          <p className="font-semibold">مفيش عروض دلوقتي</p>
           <p className="text-sm text-mist mt-1 mb-3">اتأكد من الاتصال بالنت</p>
           <button className="btn-sea !py-2 !px-6 text-sm"
             onClick={() => { setOffers(null); setAttempt(a => a + 1) }}>جرب تاني</button>
