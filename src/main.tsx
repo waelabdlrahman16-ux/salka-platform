@@ -31,9 +31,20 @@ if (SENTRY_DSN) {
     // native bridge. Salka is not involved and the page renders fine. Left
     // unfiltered it drowns the real errors -- which is the actual cost, because
     // an alert nobody reads is the same as no alerting at all.
+    // Same reasoning as the stale-chunk auto-reload in ErrorBoundary.tsx:
+    // every route past Home is code-split, so a deploy landing between a tab
+    // loading index.html and it lazily fetching a route chunk throws this --
+    // not a Salka bug, a version race any deploy can trigger. ErrorBoundary
+    // now reloads through it silently, so the error still fires (and Sentry
+    // still sees it) but nothing is actually broken for the user -- filtering
+    // it here stops it from paging anyone for something already self-healed.
     ignoreErrors: [
       /window\.webkit\.messageHandlers/,
       /webkit\.messageHandlers/,
+      /fetch dynamically imported module/,
+      /loading dynamically imported module/,
+      /Unable to preload CSS/,
+      /Loading chunk/,
     ],
 
     // The structural filter, and the one that will still hold when Meta renames
