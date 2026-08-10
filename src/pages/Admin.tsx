@@ -6,7 +6,7 @@ import { ping, askNotificationPermission } from '../lib/notify'
 import { audioBlocked, unlockAudio } from '../lib/audioUnlock'
 import { registerPush, persistPushToken } from '../lib/push'
 import { uploadVendorImage } from '../lib/upload'
-import { SkeletonBlock, SkeletonCard } from '../components/Skeleton'
+import { SkeletonBlock, SkeletonOrderCard } from '../components/Skeleton'
 import { orderStatusLabel, assignmentStatusLabel, driverStatusLabel,
          ORDER_STATUSES, CLOSED_ORDER_STATUSES, UNPAID_ORDER_STATUSES, type OrderStatus, isCancelled, cancelReasonLabel } from '../lib/statusLabels'
 import { rpc, type RpcResult } from '../lib/rpc'
@@ -1471,17 +1471,23 @@ export default function Admin() {
   )
 
   if (firstLoad) {
+    // Matches what actually renders once data arrives: the group tab bar,
+    // the sub-tab bar beneath it, then a run of order cards -- the default
+    // "unassigned" tab, not the stat-grid layout that only appears inside
+    // specific other tabs. Getting this shape (and roughly its height) right
+    // is the point: a skeleton that doesn't match the real layout just moves
+    // the layout shift from "before data" to "when the skeleton is replaced".
     return (
       <div className="max-w-5xl mx-auto">
         <h1 className="text-2xl font-bold mb-4">لوحة التحكم</h1>
-        <div className="grid grid-cols-3 gap-2.5 mb-4">
-          <SkeletonBlock className="h-16" />
-          <SkeletonBlock className="h-16" />
-          <SkeletonBlock className="h-16" />
+        <div className="flex gap-1.5 pb-1.5">
+          {Array.from({ length: 4 }).map((_, i) => <SkeletonBlock key={i} className="h-9 w-24 shrink-0" />)}
         </div>
-        <SkeletonBlock className="h-9 w-full mb-4" />
-        <div className="space-y-2.5">
-          {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}
+        <div className="flex gap-1.5 pb-2 mb-4">
+          {Array.from({ length: 3 }).map((_, i) => <SkeletonBlock key={i} className="h-8 w-20 shrink-0" />)}
+        </div>
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => <SkeletonOrderCard key={i} />)}
         </div>
       </div>
     )
