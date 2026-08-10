@@ -15,7 +15,7 @@ import { vendorOperation } from '../lib/vendorOperations'
 import { catalogCheck } from '../lib/catalogChecks'
 import PrescriptionLink from '../components/PrescriptionLink'
 import EnablePushButton from '../components/EnablePushButton'
-import type { Compound, MenuItem, Order, OrderItem, Restaurant } from '../lib/types'
+import type { Compound, DeliverySlotRow, MenuItem, Order, OrderItem, Restaurant } from '../lib/types'
 import Icon from '../components/Icon'
 import Toggle from '../components/Toggle'
 import { useSheets } from '../components/ActionSheets'
@@ -438,6 +438,17 @@ function KitchenVendor({ rid }: { rid: number }) {
    *  clear the other in the same render pass. */
   const [nameFailed, setNameFailed] = useState(false)
   const [name, setName] = useState('')
+  const [vendorType, setVendorType] = useState('')
+  const [usesSlots, setUsesSlots] = useState(false)
+  // Was admin-only: a vendor who wanted a slot window changed had to call and
+  // wait for an admin to do it. Vendors can now manage their own restaurant's
+  // slot times/capacity directly; whether the restaurant uses slots at all
+  // (uses_delivery_slots) stays an admin-set switch -- that's closer to a
+  // contract term than day-to-day ops.
+  const [slots, setSlots] = useState<DeliverySlotRow[]>([])
+  const [slotsOpen, setSlotsOpen] = useState(false)
+  const [newSlot, setNewSlot] = useState({ start_time: '', end_time: '', capacity: '6' })
+  const [slotError, setSlotError] = useState('')
   const [declining, setDeclining] = useState<Order | null>(null)
   const [declineError, setDeclineError] = useState('')
   const decliningRef = useDismissable(() => { setDeclining(null); setDeclineError('') }, !!declining)
@@ -471,9 +482,14 @@ function KitchenVendor({ rid }: { rid: number }) {
     // setLoadError('') further down runs in the same React batch, so setting the
     // banner here meant it was wiped before it ever painted -- the exact
     // swallowed error this block was written to stop. Held separately.
-    const { data: r, error: rErr } = await supabase.from('restaurants').select('name').eq('id', rid).single()
+    const { data: r, error: rErr } = await supabase.from('restaurants').select('name, vendor_type, uses_delivery_slots').eq('id', rid).single()
     setNameFailed(!!rErr)
-    if (r) setName(r.name)
+    if (r) { setName(r.name); setVendorType(r.vendor_type); setUsesSlots(!!r.uses_delivery_slots) }
+    if (r?.uses_delivery_slots || r?.vendor_type === 'supermarket') {
+      const { data: sl, error: slErr } = await supabase.from('delivery_slots').select('*')
+        .eq('restaurant_id', rid).order('start_time')
+      if (!slErr) setSlots(sl ?? [])
+    }
     // The error was not even destructured. On failure `mine` is undefined,
     // setIsOpen never runs, and isOpen keeps useState(true) -- a vendor who is
     // actually closed reads «مفتوح» on their own dashboard and waits for orders
@@ -528,6 +544,24 @@ function KitchenVendor({ rid }: { rid: number }) {
       }
       setDeliveryByOrder(delivMap)
     }
+  }
+
+  async function addSlot() {
+    const { error } = await supabase.from('delivery_slots').insert({
+      restaurant_id: rid, start_time: newSlot.start_time,
+      end_time: newSlot.end_time, capacity: Number(newSlot.capacity)
+    })
+    if (error) { setSlotError(`إضافة الفترة فشلت — ${error.message}`); return }
+    setSlotError('')
+    setNewSlot({ start_time: '', end_time: '', capacity: '6' })
+    load()
+  }
+
+  async function toggleSlot(slot: DeliverySlotRow) {
+    const { error } = await supabase.from('delivery_slots').update({ active: !slot.active }).eq('id', slot.id)
+    if (error) { setSlotError('مش قادرين نغيّر الفترة دلوقتي'); return }
+    setSlotError('')
+    load()
   }
 
   useEffect(() => {
@@ -884,12 +918,22 @@ function KitchenVendor({ rid }: { rid: number }) {
             )}
             {!stage.next && (() => {
               const d = deliveryByOrder[o.id]
-              if (!d) return (
-                <div className="mt-3 rounded-2xl bg-shellup p-3.5 text-center">
-                  <p className="text-sea text-sm font-semibold">✅ في انتظار المندوب</p>
-                </div>
-              )
               const minsSince = (t: string | null) => t ? Math.max(0, Math.round((Date.now() - +new Date(t)) / 60000)) : null
+              if (!d) {
+                // A bagged order waiting 20 minutes for a driver looked
+                // identical to one ready 30 seconds ago -- same "في انتظار
+                // المندوب" line, no elapsed time. The countdown card covers
+                // overdue *prep*, but nothing flagged an overdue *pickup*.
+                const waitMin = minsSince(o.ready_at)
+                const stale = waitMin !== null && waitMin >= 15
+                return (
+                  <div className={`mt-3 rounded-2xl p-3.5 text-center ${stale ? 'bg-red-500/10' : 'bg-shellup'}`}>
+                    <p className={`text-sm font-semibold ${stale ? 'text-red-700' : 'text-sea'}`}>
+                      {stale ? '⚠️ ' : '✅ '}في انتظار المندوب{waitMin !== null ? ` — من ${waitMin} دقيقة` : ''}
+                    </p>
+                  </div>
+                )
+              }
               const label =
                 d.status === 'Accepted' && d.arrived_at_restaurant_at ? '📍 وصل المطعم'
                 : d.status === 'Accepted' ? '🛵 في الطريق للمطعم'
@@ -957,6 +1001,11 @@ function KitchenVendor({ rid }: { rid: number }) {
         <h1 className="text-xl font-bold min-w-0 truncate">🍽️ {name}</h1>
         <div className="flex items-center gap-2 shrink-0">
           <Toggle on={isOpen} onChange={toggleOpen} label="مفتوح" labelOff="مقفول" />
+          {(usesSlots || vendorType === 'supermarket') && (
+            <button className="btn-ghost !py-1.5 !px-2.5 text-xs" onClick={() => setSlotsOpen(v => !v)}>
+              ⏱️ فترات التوصيل
+            </button>
+          )}
           <div className="relative" ref={stockRef}>
             <button className="btn-ghost !py-1.5 !px-2.5 text-xs" onClick={() => setStockOpen(v => !v)}>
               📋 الأصناف {menu.filter(m => !m.available).length > 0 && `(${menu.filter(m => !m.available).length} خلص)`}
@@ -977,6 +1026,36 @@ function KitchenVendor({ rid }: { rid: number }) {
           </div>
         </div>
       </div>
+
+      {slotsOpen && (usesSlots || vendorType === 'supermarket') && (
+        <div className="card p-4 mb-4">
+          {slotError && <p className="text-sm text-red-600 mb-2">{slotError}</p>}
+          <div className="space-y-2">
+            {slots.map(sl => (
+              <div key={sl.id} className="flex items-center justify-between bg-night border border-line rounded-xl p-2.5 text-sm">
+                <span><bdi dir="ltr">{sl.start_time.slice(0, 5)} – {sl.end_time.slice(0, 5)}</bdi> · سعة {sl.capacity}</span>
+                <Toggle on={!!sl.active} onChange={() => toggleSlot(sl)} label="فعّالة" labelOff="موقوفة" />
+              </div>
+            ))}
+            {slots.length === 0 && <p className="text-xs text-mist">لسه مفيش فترات — ضيف واحدة تحت</p>}
+          </div>
+          <div className="flex gap-2 mt-3">
+            <input type="time" className="field !py-1.5 text-sm" aria-label="وقت البداية" value={newSlot.start_time}
+              onChange={e => setNewSlot({ ...newSlot, start_time: e.target.value })} />
+            <input type="time" className="field !py-1.5 text-sm" aria-label="وقت النهاية" value={newSlot.end_time}
+              onChange={e => setNewSlot({ ...newSlot, end_time: e.target.value })} />
+            <input type="number" className="field !py-1.5 !w-20 text-sm" placeholder="سعة" aria-label="السعة" value={newSlot.capacity}
+              onChange={e => setNewSlot({ ...newSlot, capacity: e.target.value })} />
+          </div>
+          <button className="btn-sea w-full mt-2 text-sm" disabled={!newSlot.start_time || !newSlot.end_time} onClick={addSlot}>
+            إضافة فترة
+          </button>
+          <p className="text-xs text-mist mt-2 leading-relaxed">
+            السعة = أقصى عدد طلبات في الفترة دي. اربطها بعدد المندوبين المتاحين وقتها مش بسرعة تجهيز المحل.
+          </p>
+        </div>
+      )}
+
       {reliability && reliability.total_orders > 0 && (
         <p className="text-xs text-mist mb-4">
           آخر 30 يوم: {reliability.total_orders} طلب
