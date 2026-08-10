@@ -5,16 +5,6 @@ import { AuthProvider, homeFor, useAuth } from './lib/auth'
 import { CartProvider, useCart } from './lib/cart'
 import Protected from './components/Protected'
 import Home from './pages/Home'
-import RestaurantDetail from './pages/RestaurantDetail'
-import CartPage from './pages/CartPage'
-import CheckoutPage from './pages/CheckoutPage'
-import CustomOrder from './pages/CustomOrder'
-import Track from './pages/Track'
-import Login from './pages/Login'
-import MyOrders from './pages/MyOrders'
-import Profile from './pages/Profile'
-import Offers from './pages/Offers'
-import Terms from './pages/Terms'
 import InstallPrompt from './components/InstallPrompt'
 import CustomerLogin from './components/CustomerLogin'
 import { CustomerAuthProvider, useCustomerAuth } from './lib/customerAuth'
@@ -31,6 +21,25 @@ const DriverPage = lazy(() => import('./pages/Driver'))
 const Vendor = lazy(() => import('./pages/Vendor'))
 const Catalog = lazy(() => import('./pages/Catalog'))
 const Supervisor = lazy(() => import('./pages/Supervisor'))
+
+// Home is the landing route for every customer, so it stays a static import
+// -- lazy-loading it would only add a network round trip to the page nobody
+// can skip. Everything reachable FROM Home is fair game: none of these are
+// needed for first paint, and shipping them eagerly meant every customer's
+// entry bundle carried checkout, tracking, and account-management code they
+// might never touch in that visit. This was the actual weight behind the
+// single 788KB entry chunk the build warned about, not the staff routes
+// above (already split) or Home itself.
+const RestaurantDetail = lazy(() => import('./pages/RestaurantDetail'))
+const CartPage = lazy(() => import('./pages/CartPage'))
+const CheckoutPage = lazy(() => import('./pages/CheckoutPage'))
+const CustomOrder = lazy(() => import('./pages/CustomOrder'))
+const Track = lazy(() => import('./pages/Track'))
+const Login = lazy(() => import('./pages/Login'))
+const MyOrders = lazy(() => import('./pages/MyOrders'))
+const Profile = lazy(() => import('./pages/Profile'))
+const Offers = lazy(() => import('./pages/Offers'))
+const Terms = lazy(() => import('./pages/Terms'))
 import { useState } from 'react'
 import { getCompoundId } from './lib/place'
 
