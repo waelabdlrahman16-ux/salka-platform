@@ -137,14 +137,21 @@ self.addEventListener('notificationclick', event => {
   const orderId = event.notification?.data?.order_id
   const target = event.notification?.data?.link || (orderId ? `/driver?order=${orderId}` : '/')
 
+  // client.navigate() always performs a full navigation -- i.e. a reload --
+  // even when the target URL is identical to what the tab is already showing.
+  // Tapping a notification while already sitting on the right screen (a
+  // driver mid-delivery, an admin on the right order) reloaded the whole app
+  // for no reason. Only navigate when an open client isn't already there;
+  // otherwise just focus it.
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
-      for (const client of list) {
-        if ('focus' in client) {
-          client.navigate(target).catch(() => {})
-          return client.focus()
-        }
-      }
+      const targetUrl = new URL(target, self.location.origin).href
+      const already = list.find(c => c.url === targetUrl && 'focus' in c)
+      if (already) return already.focus()
+
+      const client = list.find(c => 'focus' in c)
+      if (client) return client.navigate(target).then(() => client.focus()).catch(() => client.focus())
+
       return self.clients.openWindow(target)
     })
   )

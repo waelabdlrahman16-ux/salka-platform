@@ -164,7 +164,15 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
    */
   async function logout() {
     const { data: { session } } = await supabase.auth.getSession()
-    if (session) await supabase.auth.signOut()
+    // scope: 'local' only invalidates this tab's session -- the shared-device
+    // concern this function exists for (not retaining the previous customer's
+    // phone/wallet hints) is handled by the localStorage cleanup below, not by
+    // a server-side global revoke. A global sign-out here would also revoke
+    // this same auth.users row's refresh token everywhere, which -- since
+    // staff and customer sessions live under separate localStorage keys but
+    // the SAME underlying account if someone is signed into both as
+    // themselves -- can silently log a staff portal tab out too.
+    if (session) await supabase.auth.signOut({ scope: 'local' })
     const token = localStorage.getItem(TOKEN_KEY)
     if (token) await customerSessionAccess('logout', { token })
     try {
