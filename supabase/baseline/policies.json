@@ -1,814 +1,102 @@
 {
   "jsonb_agg": [
-    {
-      "cmd": "SELECT",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "app_events",
-      "permissive": "PERMISSIVE",
-      "policyname": "app_events_admin_read",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_admin()",
-      "roles": [
-        "authenticated"
-      ],
-      "tablename": "banned_customers",
-      "permissive": "PERMISSIVE",
-      "policyname": "banned_customers_admin_all",
-      "schemaname": "public",
-      "with_check": "is_admin()"
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "is_admin()",
-      "roles": [
-        "authenticated"
-      ],
-      "tablename": "banners",
-      "permissive": "PERMISSIVE",
-      "policyname": "banners_admin_read",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_admin()",
-      "roles": [
-        "authenticated"
-      ],
-      "tablename": "banners",
-      "permissive": "PERMISSIVE",
-      "policyname": "banners_admin_write",
-      "schemaname": "public",
-      "with_check": "is_admin()"
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "(active AND ((starts_at IS NULL) OR (starts_at <= now())) AND ((ends_at IS NULL) OR (ends_at > now())))",
-      "roles": [
-        "anon",
-        "authenticated"
-      ],
-      "tablename": "banners",
-      "permissive": "PERMISSIVE",
-      "policyname": "banners_public_read",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "complaints",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin manages complaints",
-      "schemaname": "public",
-      "with_check": "is_admin()"
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "compounds",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin writes compounds",
-      "schemaname": "public",
-      "with_check": "is_admin()"
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "true",
-      "roles": null,
-      "tablename": "compounds",
-      "permissive": "PERMISSIVE",
-      "policyname": "public read compounds",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "is_supervisor()",
-      "roles": null,
-      "tablename": "compounds",
-      "permissive": "PERMISSIVE",
-      "policyname": "supervisor reads compounds",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "customer_wallets",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin manages wallets",
-      "schemaname": "public",
-      "with_check": "is_admin()"
-    },
-    {
-      "cmd": "INSERT",
-      "qual": null,
-      "roles": null,
-      "tablename": "delivery_assignments",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin creates assignments",
-      "schemaname": "public",
-      "with_check": "is_admin()"
-    },
-    {
-      "cmd": "UPDATE",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "delivery_assignments",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin updates assignments",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "(is_admin() OR (driver_id = my_driver_id()))",
-      "roles": null,
-      "tablename": "delivery_assignments",
-      "permissive": "PERMISSIVE",
-      "policyname": "read assignments",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "is_supervisor()",
-      "roles": null,
-      "tablename": "delivery_assignments",
-      "permissive": "PERMISSIVE",
-      "policyname": "supervisor reads assignments",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "delivery_slots",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin writes slots",
-      "schemaname": "public",
-      "with_check": "is_admin()"
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "true",
-      "roles": null,
-      "tablename": "delivery_slots",
-      "permissive": "PERMISSIVE",
-      "policyname": "public read slots",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "discounts",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin writes discounts",
-      "schemaname": "public",
-      "with_check": "is_admin()"
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "true",
-      "roles": null,
-      "tablename": "discounts",
-      "permissive": "PERMISSIVE",
-      "policyname": "public read discounts",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "is_admin()",
-      "roles": [
-        "authenticated"
-      ],
-      "tablename": "driver_device_log",
-      "permissive": "PERMISSIVE",
-      "policyname": "driver_device_log_admin_read",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "INSERT",
-      "qual": null,
-      "roles": null,
-      "tablename": "driver_earnings",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin creates earnings",
-      "schemaname": "public",
-      "with_check": "is_admin()"
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "(is_admin() OR (driver_id = my_driver_id()))",
-      "roles": null,
-      "tablename": "driver_earnings",
-      "permissive": "PERMISSIVE",
-      "policyname": "read earnings",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "driver_settlements",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin writes settlements",
-      "schemaname": "public",
-      "with_check": "is_admin()"
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "(is_admin() OR (driver_id = my_driver_id()))",
-      "roles": null,
-      "tablename": "driver_settlements",
-      "permissive": "PERMISSIVE",
-      "policyname": "read settlements",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "(is_admin() OR (driver_id = my_driver_id()))",
-      "roles": null,
-      "tablename": "driver_tips",
-      "permissive": "PERMISSIVE",
-      "policyname": "read tips",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "INSERT",
-      "qual": null,
-      "roles": null,
-      "tablename": "drivers",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin creates drivers",
-      "schemaname": "public",
-      "with_check": "is_admin()"
-    },
-    {
-      "cmd": "UPDATE",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "drivers",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin manages drivers",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "(is_admin() OR (id = my_driver_id()))",
-      "roles": null,
-      "tablename": "drivers",
-      "permissive": "PERMISSIVE",
-      "policyname": "read drivers",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "is_supervisor()",
-      "roles": null,
-      "tablename": "drivers",
-      "permissive": "PERMISSIVE",
-      "policyname": "supervisor reads drivers",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "menu_categories",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin writes categories",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_catalog_manager()",
-      "roles": null,
-      "tablename": "menu_categories",
-      "permissive": "PERMISSIVE",
-      "policyname": "catalog writes categories",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "true",
-      "roles": null,
-      "tablename": "menu_categories",
-      "permissive": "PERMISSIVE",
-      "policyname": "public read categories",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "menu_item_addon_groups",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin writes addon groups",
-      "schemaname": "public",
-      "with_check": "is_admin()"
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_catalog_manager()",
-      "roles": null,
-      "tablename": "menu_item_addon_groups",
-      "permissive": "PERMISSIVE",
-      "policyname": "catalog writes addon groups",
-      "schemaname": "public",
-      "with_check": "is_catalog_manager()"
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "true",
-      "roles": null,
-      "tablename": "menu_item_addon_groups",
-      "permissive": "PERMISSIVE",
-      "policyname": "public read addon groups",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "menu_item_addons",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin writes addons",
-      "schemaname": "public",
-      "with_check": "is_admin()"
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_catalog_manager()",
-      "roles": null,
-      "tablename": "menu_item_addons",
-      "permissive": "PERMISSIVE",
-      "policyname": "catalog writes addons",
-      "schemaname": "public",
-      "with_check": "is_catalog_manager()"
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "true",
-      "roles": null,
-      "tablename": "menu_item_addons",
-      "permissive": "PERMISSIVE",
-      "policyname": "public read addons",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "menu_item_combos",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin writes combos",
-      "schemaname": "public",
-      "with_check": "is_admin()"
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_catalog_manager()",
-      "roles": null,
-      "tablename": "menu_item_combos",
-      "permissive": "PERMISSIVE",
-      "policyname": "catalog writes combos",
-      "schemaname": "public",
-      "with_check": "is_catalog_manager()"
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "true",
-      "roles": null,
-      "tablename": "menu_item_combos",
-      "permissive": "PERMISSIVE",
-      "policyname": "public read combos",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "menu_item_sizes",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin writes menu sizes",
-      "schemaname": "public",
-      "with_check": "is_admin()"
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_catalog_manager()",
-      "roles": null,
-      "tablename": "menu_item_sizes",
-      "permissive": "PERMISSIVE",
-      "policyname": "catalog writes menu sizes",
-      "schemaname": "public",
-      "with_check": "is_catalog_manager()"
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "true",
-      "roles": null,
-      "tablename": "menu_item_sizes",
-      "permissive": "PERMISSIVE",
-      "policyname": "public read sizes",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "menu_items",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin writes menu",
-      "schemaname": "public",
-      "with_check": "is_admin()"
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_catalog_manager()",
-      "roles": null,
-      "tablename": "menu_items",
-      "permissive": "PERMISSIVE",
-      "policyname": "catalog writes menu",
-      "schemaname": "public",
-      "with_check": "is_catalog_manager()"
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "true",
-      "roles": null,
-      "tablename": "menu_items",
-      "permissive": "PERMISSIVE",
-      "policyname": "public read",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "(is_admin() OR (EXISTS ( SELECT 1\n   FROM delivery_assignments da\n  WHERE ((da.order_id = order_items.order_id) AND (da.driver_id = my_driver_id())))))",
-      "roles": null,
-      "tablename": "order_items",
-      "permissive": "PERMISSIVE",
-      "policyname": "staff read order items",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "(is_supervisor() AND (EXISTS ( SELECT 1\n   FROM orders o\n  WHERE (o.id = order_items.order_id))))",
-      "roles": null,
-      "tablename": "order_items",
-      "permissive": "PERMISSIVE",
-      "policyname": "supervisor reads order items",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "(EXISTS ( SELECT 1\n   FROM orders o\n  WHERE ((o.id = order_items.order_id) AND (o.restaurant_id = my_restaurant_id()))))",
-      "roles": null,
-      "tablename": "order_items",
-      "permissive": "PERMISSIVE",
-      "policyname": "vendor reads order items",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "order_ratings",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin reads ratings",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "UPDATE",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "orders",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin updates orders",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "(is_admin() OR (EXISTS ( SELECT 1\n   FROM delivery_assignments da\n  WHERE ((da.order_id = orders.id) AND (da.driver_id = my_driver_id())))))",
-      "roles": null,
-      "tablename": "orders",
-      "permissive": "PERMISSIVE",
-      "policyname": "staff read orders",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "supervisor_may_touch_order(id)",
-      "roles": null,
-      "tablename": "orders",
-      "permissive": "PERMISSIVE",
-      "policyname": "supervisor reads orders",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "(restaurant_id = my_restaurant_id())",
-      "roles": null,
-      "tablename": "orders",
-      "permissive": "PERMISSIVE",
-      "policyname": "vendor reads orders",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "(( SELECT auth.uid() AS uid) = id)",
-      "roles": null,
-      "tablename": "profiles",
-      "permissive": "PERMISSIVE",
-      "policyname": "read own profile",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "ALL",
-      "qual": "(profile_id = ( SELECT auth.uid() AS uid))",
-      "roles": null,
-      "tablename": "push_tokens",
-      "permissive": "PERMISSIVE",
-      "policyname": "user manages own push token",
-      "schemaname": "public",
-      "with_check": "(profile_id = ( SELECT auth.uid() AS uid))"
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "regions",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin writes regions",
-      "schemaname": "public",
-      "with_check": "is_admin()"
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "true",
-      "roles": null,
-      "tablename": "regions",
-      "permissive": "PERMISSIVE",
-      "policyname": "public read regions",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "restaurants",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin writes restaurants",
-      "schemaname": "public",
-      "with_check": "is_admin()"
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "true",
-      "roles": null,
-      "tablename": "restaurants",
-      "permissive": "PERMISSIVE",
-      "policyname": "public read",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "is_supervisor()",
-      "roles": null,
-      "tablename": "restaurants",
-      "permissive": "PERMISSIVE",
-      "policyname": "supervisor reads restaurants",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_admin()",
-      "roles": [
-        "authenticated"
-      ],
-      "tablename": "settings",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin manages settings",
-      "schemaname": "public",
-      "with_check": "is_admin()"
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "(key = ANY (ARRAY['cod_deposit_threshold_egp'::text, 'service_fee_percent'::text, 'sms_login_enabled'::text]))",
-      "roles": [
-        "anon",
-        "authenticated"
-      ],
-      "tablename": "settings",
-      "permissive": "PERMISSIVE",
-      "policyname": "public reads customer settings",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "UPDATE",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "settlement_requests",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin updates requests",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "INSERT",
-      "qual": null,
-      "roles": null,
-      "tablename": "settlement_requests",
-      "permissive": "PERMISSIVE",
-      "policyname": "driver creates request",
-      "schemaname": "public",
-      "with_check": "(driver_id = my_driver_id())"
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "(is_admin() OR (driver_id = my_driver_id()))",
-      "roles": null,
-      "tablename": "settlement_requests",
-      "permissive": "PERMISSIVE",
-      "policyname": "read own requests",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "shift_swap_requests",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin manages swap requests",
-      "schemaname": "public",
-      "with_check": "is_admin()"
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "(is_admin() OR (requested_by = my_driver_id()) OR ((my_driver_id() IS NOT NULL) AND (status = 'open'::text)))",
-      "roles": [
-        "authenticated"
-      ],
-      "tablename": "shift_swap_requests",
-      "permissive": "PERMISSIVE",
-      "policyname": "read swap requests",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "shifts",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin writes shifts",
-      "schemaname": "public",
-      "with_check": "is_admin()"
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "((my_driver_id() IS NOT NULL) AND (EXISTS ( SELECT 1\n   FROM shift_swap_requests r\n  WHERE ((r.shift_id = shifts.id) AND (r.status = 'open'::text)))))",
-      "roles": [
-        "authenticated"
-      ],
-      "tablename": "shifts",
-      "permissive": "PERMISSIVE",
-      "policyname": "driver reads open swap shifts",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "(is_admin() OR (driver_id = my_driver_id()))",
-      "roles": null,
-      "tablename": "shifts",
-      "permissive": "PERMISSIVE",
-      "policyname": "read shifts",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "vendor_addon_library",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin writes addon library",
-      "schemaname": "public",
-      "with_check": "is_admin()"
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_catalog_manager()",
-      "roles": null,
-      "tablename": "vendor_addon_library",
-      "permissive": "PERMISSIVE",
-      "policyname": "catalog writes addon library",
-      "schemaname": "public",
-      "with_check": "is_catalog_manager()"
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "true",
-      "roles": null,
-      "tablename": "vendor_addon_library",
-      "permissive": "PERMISSIVE",
-      "policyname": "public read addon library",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "vendor_coverage",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin writes coverage",
-      "schemaname": "public",
-      "with_check": "is_admin()"
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "true",
-      "roles": null,
-      "tablename": "vendor_coverage",
-      "permissive": "PERMISSIVE",
-      "policyname": "public read coverage",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "true",
-      "roles": null,
-      "tablename": "vendor_hours",
-      "permissive": "PERMISSIVE",
-      "policyname": "vendor_hours_read",
-      "schemaname": "public",
-      "with_check": null
-    },
-    {
-      "cmd": "ALL",
-      "qual": "is_admin()",
-      "roles": null,
-      "tablename": "wallet_transactions",
-      "permissive": "PERMISSIVE",
-      "policyname": "admin manages wallet tx",
-      "schemaname": "public",
-      "with_check": "is_admin()"
-    },
-    {
-      "cmd": "SELECT",
-      "qual": "true",
-      "roles": null,
-      "tablename": "zones",
-      "permissive": "PERMISSIVE",
-      "policyname": "public read",
-      "schemaname": "public",
-      "with_check": null
-    }
+    {"cmd":"SELECT","qual":"is_admin()","roles":["public"],"tablename":"app_events","permissive":"PERMISSIVE","policyname":"app_events_admin_read","schemaname":"public","with_check":null},
+    {"cmd":"ALL","qual":"is_admin()","roles":["authenticated"],"tablename":"banned_customers","permissive":"PERMISSIVE","policyname":"banned_customers_admin_all","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"DELETE","qual":"is_admin()","roles":["authenticated"],"tablename":"banners","permissive":"PERMISSIVE","policyname":"banners_admin_delete","schemaname":"public","with_check":null},
+    {"cmd":"INSERT","qual":null,"roles":["authenticated"],"tablename":"banners","permissive":"PERMISSIVE","policyname":"banners_admin_insert","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"UPDATE","qual":"is_admin()","roles":["authenticated"],"tablename":"banners","permissive":"PERMISSIVE","policyname":"banners_admin_update","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"SELECT","qual":"(is_admin() OR (active AND ((starts_at IS NULL) OR (starts_at <= now())) AND ((ends_at IS NULL) OR (ends_at > now()))))","roles":["anon","authenticated"],"tablename":"banners","permissive":"PERMISSIVE","policyname":"banners_read","schemaname":"public","with_check":null},
+    {"cmd":"ALL","qual":"is_admin()","roles":["public"],"tablename":"complaints","permissive":"PERMISSIVE","policyname":"admin manages complaints","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"DELETE","qual":"is_admin()","roles":["public"],"tablename":"compounds","permissive":"PERMISSIVE","policyname":"manage compounds delete","schemaname":"public","with_check":null},
+    {"cmd":"INSERT","qual":null,"roles":["public"],"tablename":"compounds","permissive":"PERMISSIVE","policyname":"manage compounds insert","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"UPDATE","qual":"is_admin()","roles":["public"],"tablename":"compounds","permissive":"PERMISSIVE","policyname":"manage compounds update","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"SELECT","qual":"true","roles":["public"],"tablename":"compounds","permissive":"PERMISSIVE","policyname":"public read compounds","schemaname":"public","with_check":null},
+    {"cmd":"ALL","qual":"is_admin()","roles":["public"],"tablename":"customer_wallets","permissive":"PERMISSIVE","policyname":"admin manages wallets","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"INSERT","qual":null,"roles":["public"],"tablename":"delivery_assignments","permissive":"PERMISSIVE","policyname":"admin creates assignments","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"UPDATE","qual":"is_admin()","roles":["public"],"tablename":"delivery_assignments","permissive":"PERMISSIVE","policyname":"admin updates assignments","schemaname":"public","with_check":null},
+    {"cmd":"SELECT","qual":"(is_admin() OR (driver_id = my_driver_id()) OR is_supervisor())","roles":["public"],"tablename":"delivery_assignments","permissive":"PERMISSIVE","policyname":"read assignments","schemaname":"public","with_check":null},
+    {"cmd":"DELETE","qual":"is_admin()","roles":["public"],"tablename":"delivery_slots","permissive":"PERMISSIVE","policyname":"manage slots delete","schemaname":"public","with_check":null},
+    {"cmd":"INSERT","qual":null,"roles":["public"],"tablename":"delivery_slots","permissive":"PERMISSIVE","policyname":"manage slots insert","schemaname":"public","with_check":"(is_admin() OR (restaurant_id = my_restaurant_id()))"},
+    {"cmd":"UPDATE","qual":"(is_admin() OR (restaurant_id = my_restaurant_id()))","roles":["public"],"tablename":"delivery_slots","permissive":"PERMISSIVE","policyname":"manage slots update","schemaname":"public","with_check":"(is_admin() OR (restaurant_id = my_restaurant_id()))"},
+    {"cmd":"SELECT","qual":"true","roles":["public"],"tablename":"delivery_slots","permissive":"PERMISSIVE","policyname":"public read slots","schemaname":"public","with_check":null},
+    {"cmd":"DELETE","qual":"is_admin()","roles":["public"],"tablename":"discounts","permissive":"PERMISSIVE","policyname":"manage discounts delete","schemaname":"public","with_check":null},
+    {"cmd":"INSERT","qual":null,"roles":["public"],"tablename":"discounts","permissive":"PERMISSIVE","policyname":"manage discounts insert","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"UPDATE","qual":"is_admin()","roles":["public"],"tablename":"discounts","permissive":"PERMISSIVE","policyname":"manage discounts update","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"SELECT","qual":"true","roles":["public"],"tablename":"discounts","permissive":"PERMISSIVE","policyname":"public read discounts","schemaname":"public","with_check":null},
+    {"cmd":"SELECT","qual":"is_admin()","roles":["authenticated"],"tablename":"driver_device_log","permissive":"PERMISSIVE","policyname":"driver_device_log_admin_read","schemaname":"public","with_check":null},
+    {"cmd":"INSERT","qual":null,"roles":["public"],"tablename":"driver_earnings","permissive":"PERMISSIVE","policyname":"admin creates earnings","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"SELECT","qual":"(is_admin() OR (driver_id = my_driver_id()))","roles":["public"],"tablename":"driver_earnings","permissive":"PERMISSIVE","policyname":"read earnings","schemaname":"public","with_check":null},
+    {"cmd":"DELETE","qual":"is_admin()","roles":["public"],"tablename":"driver_settlements","permissive":"PERMISSIVE","policyname":"manage settlements delete","schemaname":"public","with_check":null},
+    {"cmd":"INSERT","qual":null,"roles":["public"],"tablename":"driver_settlements","permissive":"PERMISSIVE","policyname":"manage settlements insert","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"UPDATE","qual":"is_admin()","roles":["public"],"tablename":"driver_settlements","permissive":"PERMISSIVE","policyname":"manage settlements update","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"SELECT","qual":"(is_admin() OR (driver_id = my_driver_id()))","roles":["public"],"tablename":"driver_settlements","permissive":"PERMISSIVE","policyname":"read settlements","schemaname":"public","with_check":null},
+    {"cmd":"SELECT","qual":"(is_admin() OR (driver_id = my_driver_id()))","roles":["public"],"tablename":"driver_tips","permissive":"PERMISSIVE","policyname":"read tips","schemaname":"public","with_check":null},
+    {"cmd":"INSERT","qual":null,"roles":["public"],"tablename":"drivers","permissive":"PERMISSIVE","policyname":"admin creates drivers","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"UPDATE","qual":"is_admin()","roles":["public"],"tablename":"drivers","permissive":"PERMISSIVE","policyname":"admin manages drivers","schemaname":"public","with_check":null},
+    {"cmd":"SELECT","qual":"(is_admin() OR (id = my_driver_id()) OR is_supervisor())","roles":["public"],"tablename":"drivers","permissive":"PERMISSIVE","policyname":"read drivers","schemaname":"public","with_check":null},
+    {"cmd":"DELETE","qual":"(is_admin() OR is_catalog_manager())","roles":["public"],"tablename":"menu_categories","permissive":"PERMISSIVE","policyname":"manage categories delete","schemaname":"public","with_check":null},
+    {"cmd":"INSERT","qual":null,"roles":["public"],"tablename":"menu_categories","permissive":"PERMISSIVE","policyname":"manage categories insert","schemaname":"public","with_check":"(is_admin() OR is_catalog_manager())"},
+    {"cmd":"UPDATE","qual":"(is_admin() OR is_catalog_manager())","roles":["public"],"tablename":"menu_categories","permissive":"PERMISSIVE","policyname":"manage categories update","schemaname":"public","with_check":"(is_admin() OR is_catalog_manager())"},
+    {"cmd":"SELECT","qual":"true","roles":["public"],"tablename":"menu_categories","permissive":"PERMISSIVE","policyname":"public read categories","schemaname":"public","with_check":null},
+    {"cmd":"DELETE","qual":"(is_admin() OR is_catalog_manager())","roles":["public"],"tablename":"menu_item_addon_groups","permissive":"PERMISSIVE","policyname":"manage addon groups delete","schemaname":"public","with_check":null},
+    {"cmd":"INSERT","qual":null,"roles":["public"],"tablename":"menu_item_addon_groups","permissive":"PERMISSIVE","policyname":"manage addon groups insert","schemaname":"public","with_check":"(is_admin() OR is_catalog_manager())"},
+    {"cmd":"UPDATE","qual":"(is_admin() OR is_catalog_manager())","roles":["public"],"tablename":"menu_item_addon_groups","permissive":"PERMISSIVE","policyname":"manage addon groups update","schemaname":"public","with_check":"(is_admin() OR is_catalog_manager())"},
+    {"cmd":"SELECT","qual":"true","roles":["public"],"tablename":"menu_item_addon_groups","permissive":"PERMISSIVE","policyname":"public read addon groups","schemaname":"public","with_check":null},
+    {"cmd":"DELETE","qual":"(is_admin() OR is_catalog_manager())","roles":["public"],"tablename":"menu_item_addons","permissive":"PERMISSIVE","policyname":"manage addons delete","schemaname":"public","with_check":null},
+    {"cmd":"INSERT","qual":null,"roles":["public"],"tablename":"menu_item_addons","permissive":"PERMISSIVE","policyname":"manage addons insert","schemaname":"public","with_check":"(is_admin() OR is_catalog_manager())"},
+    {"cmd":"UPDATE","qual":"(is_admin() OR is_catalog_manager())","roles":["public"],"tablename":"menu_item_addons","permissive":"PERMISSIVE","policyname":"manage addons update","schemaname":"public","with_check":"(is_admin() OR is_catalog_manager())"},
+    {"cmd":"SELECT","qual":"true","roles":["public"],"tablename":"menu_item_addons","permissive":"PERMISSIVE","policyname":"public read addons","schemaname":"public","with_check":null},
+    {"cmd":"DELETE","qual":"(is_admin() OR is_catalog_manager())","roles":["public"],"tablename":"menu_item_combos","permissive":"PERMISSIVE","policyname":"manage combos delete","schemaname":"public","with_check":null},
+    {"cmd":"INSERT","qual":null,"roles":["public"],"tablename":"menu_item_combos","permissive":"PERMISSIVE","policyname":"manage combos insert","schemaname":"public","with_check":"(is_admin() OR is_catalog_manager())"},
+    {"cmd":"UPDATE","qual":"(is_admin() OR is_catalog_manager())","roles":["public"],"tablename":"menu_item_combos","permissive":"PERMISSIVE","policyname":"manage combos update","schemaname":"public","with_check":"(is_admin() OR is_catalog_manager())"},
+    {"cmd":"SELECT","qual":"true","roles":["public"],"tablename":"menu_item_combos","permissive":"PERMISSIVE","policyname":"public read combos","schemaname":"public","with_check":null},
+    {"cmd":"DELETE","qual":"(is_admin() OR is_catalog_manager())","roles":["public"],"tablename":"menu_item_sizes","permissive":"PERMISSIVE","policyname":"manage sizes delete","schemaname":"public","with_check":null},
+    {"cmd":"INSERT","qual":null,"roles":["public"],"tablename":"menu_item_sizes","permissive":"PERMISSIVE","policyname":"manage sizes insert","schemaname":"public","with_check":"(is_admin() OR is_catalog_manager())"},
+    {"cmd":"UPDATE","qual":"(is_admin() OR is_catalog_manager())","roles":["public"],"tablename":"menu_item_sizes","permissive":"PERMISSIVE","policyname":"manage sizes update","schemaname":"public","with_check":"(is_admin() OR is_catalog_manager())"},
+    {"cmd":"SELECT","qual":"true","roles":["public"],"tablename":"menu_item_sizes","permissive":"PERMISSIVE","policyname":"public read sizes","schemaname":"public","with_check":null},
+    {"cmd":"DELETE","qual":"(is_admin() OR is_catalog_manager())","roles":["public"],"tablename":"menu_items","permissive":"PERMISSIVE","policyname":"manage menu delete","schemaname":"public","with_check":null},
+    {"cmd":"INSERT","qual":null,"roles":["public"],"tablename":"menu_items","permissive":"PERMISSIVE","policyname":"manage menu insert","schemaname":"public","with_check":"(is_admin() OR is_catalog_manager())"},
+    {"cmd":"UPDATE","qual":"(is_admin() OR is_catalog_manager())","roles":["public"],"tablename":"menu_items","permissive":"PERMISSIVE","policyname":"manage menu update","schemaname":"public","with_check":"(is_admin() OR is_catalog_manager())"},
+    {"cmd":"SELECT","qual":"true","roles":["public"],"tablename":"menu_items","permissive":"PERMISSIVE","policyname":"public read","schemaname":"public","with_check":null},
+    {"cmd":"SELECT","qual":"(is_admin() OR (EXISTS ( SELECT 1\n   FROM delivery_assignments da\n  WHERE ((da.order_id = order_items.order_id) AND (da.driver_id = my_driver_id())))) OR (is_supervisor() AND (EXISTS ( SELECT 1\n   FROM orders o\n  WHERE (o.id = order_items.order_id)))) OR (EXISTS ( SELECT 1\n   FROM orders o\n  WHERE ((o.id = order_items.order_id) AND (o.restaurant_id = my_restaurant_id())))))","roles":["public"],"tablename":"order_items","permissive":"PERMISSIVE","policyname":"read order items","schemaname":"public","with_check":null},
+    {"cmd":"SELECT","qual":"is_admin()","roles":["public"],"tablename":"order_ratings","permissive":"PERMISSIVE","policyname":"admin reads ratings","schemaname":"public","with_check":null},
+    {"cmd":"UPDATE","qual":"is_admin()","roles":["public"],"tablename":"orders","permissive":"PERMISSIVE","policyname":"admin updates orders","schemaname":"public","with_check":null},
+    {"cmd":"SELECT","qual":"(is_admin() OR (EXISTS ( SELECT 1\n   FROM delivery_assignments da\n  WHERE ((da.order_id = orders.id) AND (da.driver_id = my_driver_id())))) OR supervisor_may_touch_order(id) OR (restaurant_id = my_restaurant_id()))","roles":["public"],"tablename":"orders","permissive":"PERMISSIVE","policyname":"read orders","schemaname":"public","with_check":null},
+    {"cmd":"SELECT","qual":"(( SELECT auth.uid() AS uid) = id)","roles":["public"],"tablename":"profiles","permissive":"PERMISSIVE","policyname":"read own profile","schemaname":"public","with_check":null},
+    {"cmd":"ALL","qual":"(profile_id = ( SELECT auth.uid() AS uid))","roles":["public"],"tablename":"push_tokens","permissive":"PERMISSIVE","policyname":"user manages own push token","schemaname":"public","with_check":"(profile_id = ( SELECT auth.uid() AS uid))"},
+    {"cmd":"DELETE","qual":"is_admin()","roles":["public"],"tablename":"regions","permissive":"PERMISSIVE","policyname":"manage regions delete","schemaname":"public","with_check":null},
+    {"cmd":"INSERT","qual":null,"roles":["public"],"tablename":"regions","permissive":"PERMISSIVE","policyname":"manage regions insert","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"UPDATE","qual":"is_admin()","roles":["public"],"tablename":"regions","permissive":"PERMISSIVE","policyname":"manage regions update","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"SELECT","qual":"true","roles":["public"],"tablename":"regions","permissive":"PERMISSIVE","policyname":"public read regions","schemaname":"public","with_check":null},
+    {"cmd":"DELETE","qual":"is_admin()","roles":["public"],"tablename":"restaurants","permissive":"PERMISSIVE","policyname":"manage restaurants delete","schemaname":"public","with_check":null},
+    {"cmd":"INSERT","qual":null,"roles":["public"],"tablename":"restaurants","permissive":"PERMISSIVE","policyname":"manage restaurants insert","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"UPDATE","qual":"is_admin()","roles":["public"],"tablename":"restaurants","permissive":"PERMISSIVE","policyname":"manage restaurants update","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"SELECT","qual":"true","roles":["public"],"tablename":"restaurants","permissive":"PERMISSIVE","policyname":"public read","schemaname":"public","with_check":null},
+    {"cmd":"DELETE","qual":"is_admin()","roles":["authenticated"],"tablename":"settings","permissive":"PERMISSIVE","policyname":"settings_admin_delete","schemaname":"public","with_check":null},
+    {"cmd":"INSERT","qual":null,"roles":["authenticated"],"tablename":"settings","permissive":"PERMISSIVE","policyname":"settings_admin_insert","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"UPDATE","qual":"is_admin()","roles":["authenticated"],"tablename":"settings","permissive":"PERMISSIVE","policyname":"settings_admin_update","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"SELECT","qual":"(is_admin() OR (key = ANY (ARRAY['cod_deposit_threshold_egp'::text, 'service_fee_percent'::text, 'sms_login_enabled'::text])))","roles":["anon","authenticated"],"tablename":"settings","permissive":"PERMISSIVE","policyname":"settings_read","schemaname":"public","with_check":null},
+    {"cmd":"UPDATE","qual":"is_admin()","roles":["public"],"tablename":"settlement_requests","permissive":"PERMISSIVE","policyname":"admin updates requests","schemaname":"public","with_check":null},
+    {"cmd":"INSERT","qual":null,"roles":["public"],"tablename":"settlement_requests","permissive":"PERMISSIVE","policyname":"driver creates request","schemaname":"public","with_check":"(driver_id = my_driver_id())"},
+    {"cmd":"SELECT","qual":"(is_admin() OR (driver_id = my_driver_id()))","roles":["public"],"tablename":"settlement_requests","permissive":"PERMISSIVE","policyname":"read own requests","schemaname":"public","with_check":null},
+    {"cmd":"DELETE","qual":"is_admin()","roles":["public"],"tablename":"shift_swap_requests","permissive":"PERMISSIVE","policyname":"manage swap requests delete","schemaname":"public","with_check":null},
+    {"cmd":"INSERT","qual":null,"roles":["public"],"tablename":"shift_swap_requests","permissive":"PERMISSIVE","policyname":"manage swap requests insert","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"UPDATE","qual":"is_admin()","roles":["public"],"tablename":"shift_swap_requests","permissive":"PERMISSIVE","policyname":"manage swap requests update","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"SELECT","qual":"(is_admin() OR (requested_by = my_driver_id()) OR ((my_driver_id() IS NOT NULL) AND (status = 'open'::text)))","roles":["authenticated"],"tablename":"shift_swap_requests","permissive":"PERMISSIVE","policyname":"read swap requests","schemaname":"public","with_check":null},
+    {"cmd":"DELETE","qual":"is_admin()","roles":["public"],"tablename":"shifts","permissive":"PERMISSIVE","policyname":"manage shifts delete","schemaname":"public","with_check":null},
+    {"cmd":"INSERT","qual":null,"roles":["public"],"tablename":"shifts","permissive":"PERMISSIVE","policyname":"manage shifts insert","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"UPDATE","qual":"is_admin()","roles":["public"],"tablename":"shifts","permissive":"PERMISSIVE","policyname":"manage shifts update","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"SELECT","qual":"(is_admin() OR (driver_id = my_driver_id()) OR ((my_driver_id() IS NOT NULL) AND (EXISTS ( SELECT 1\n   FROM shift_swap_requests r\n  WHERE ((r.shift_id = shifts.id) AND (r.status = 'open'::text))))))","roles":["public"],"tablename":"shifts","permissive":"PERMISSIVE","policyname":"read shifts","schemaname":"public","with_check":null},
+    {"cmd":"DELETE","qual":"(is_admin() OR is_catalog_manager())","roles":["public"],"tablename":"vendor_addon_library","permissive":"PERMISSIVE","policyname":"manage addon library delete","schemaname":"public","with_check":null},
+    {"cmd":"INSERT","qual":null,"roles":["public"],"tablename":"vendor_addon_library","permissive":"PERMISSIVE","policyname":"manage addon library insert","schemaname":"public","with_check":"(is_admin() OR is_catalog_manager())"},
+    {"cmd":"UPDATE","qual":"(is_admin() OR is_catalog_manager())","roles":["public"],"tablename":"vendor_addon_library","permissive":"PERMISSIVE","policyname":"manage addon library update","schemaname":"public","with_check":"(is_admin() OR is_catalog_manager())"},
+    {"cmd":"SELECT","qual":"true","roles":["public"],"tablename":"vendor_addon_library","permissive":"PERMISSIVE","policyname":"public read addon library","schemaname":"public","with_check":null},
+    {"cmd":"DELETE","qual":"is_admin()","roles":["public"],"tablename":"vendor_coverage","permissive":"PERMISSIVE","policyname":"manage coverage delete","schemaname":"public","with_check":null},
+    {"cmd":"INSERT","qual":null,"roles":["public"],"tablename":"vendor_coverage","permissive":"PERMISSIVE","policyname":"manage coverage insert","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"UPDATE","qual":"is_admin()","roles":["public"],"tablename":"vendor_coverage","permissive":"PERMISSIVE","policyname":"manage coverage update","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"SELECT","qual":"true","roles":["public"],"tablename":"vendor_coverage","permissive":"PERMISSIVE","policyname":"public read coverage","schemaname":"public","with_check":null},
+    {"cmd":"SELECT","qual":"true","roles":["public"],"tablename":"vendor_hours","permissive":"PERMISSIVE","policyname":"vendor_hours_read","schemaname":"public","with_check":null},
+    {"cmd":"ALL","qual":"is_admin()","roles":["public"],"tablename":"wallet_transactions","permissive":"PERMISSIVE","policyname":"admin manages wallet tx","schemaname":"public","with_check":"is_admin()"},
+    {"cmd":"SELECT","qual":"true","roles":["public"],"tablename":"zones","permissive":"PERMISSIVE","policyname":"public read","schemaname":"public","with_check":null}
   ]
 }

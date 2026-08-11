@@ -1283,6 +1283,18 @@
     {
       "version": "20260810101026",
       "name": "route_driver_catalog_actions_through_edge"
+    },
+    {
+      "version": "20260810163258",
+      "name": "consolidate_multiple_permissive_rls_policies"
+    },
+    {
+      "version": "20260810203918",
+      "name": "allow_vendor_manage_own_delivery_slots"
+    },
+    {
+      "version": "20260811104054",
+      "name": "notify_customer_on_custom_order_price_confirmed"
     }
   ]
 }
