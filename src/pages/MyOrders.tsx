@@ -22,9 +22,9 @@ export default function MyOrders() {
   const [error, setError] = useState('')
   const [showLogin, setShowLogin] = useState(false)
 
-  async function loadOrders() {
+  async function loadOrders(background = false) {
     if (!customer?.phone) return
-    setBusy(true)
+    if (!background) setBusy(true)
     setError('')
     const res = await customerSessionAccess<Row[]>('orders', {
       // Kept for RPC signature compatibility. The server deliberately ignores
@@ -32,12 +32,15 @@ export default function MyOrders() {
       phone: customer.phone,
       sessionToken: getSessionToken(),
     })
-    setBusy(false)
+    if (!background) setBusy(false)
     if (!res.ok) {
-      setRows(null)
+      // A background poll failing (e.g. one dropped request) shouldn't wipe
+      // an already-loaded list -- only the initial, foreground load does that.
+      if (!background) setRows(null)
       setError(res.error)
       return
     }
+    setError('')
     setRows(res.data ?? [])
   }
 
@@ -54,6 +57,13 @@ export default function MyOrders() {
       return
     }
     loadOrders()
+    // A supervisor pricing a custom order, or any other status change, used
+    // to only reach this list on the next mount -- a customer already sitting
+    // here would see a stale "قيد التسعير" indefinitely. Poll like Track.tsx
+    // does, but skip the busy flag so it doesn't flash the loading text over
+    // an already-populated list every 10s.
+    const t = setInterval(() => loadOrders(true), 10000)
+    return () => clearInterval(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, customer?.id, customer?.phone])
 
@@ -132,7 +142,7 @@ export default function MyOrders() {
       {customer?.phone && error && (
         <div className="card p-4 mt-5 text-center">
           <p className="text-sm text-red-600">{error}</p>
-          <button className="btn-ghost mt-3 text-sm" disabled={busy} onClick={loadOrders}>
+          <button className="btn-ghost mt-3 text-sm" disabled={busy} onClick={() => loadOrders()}>
             جرب تاني
           </button>
         </div>
