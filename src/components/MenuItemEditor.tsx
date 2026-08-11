@@ -141,7 +141,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
 
   async function upload(file: File) {
     setUploading(true); setImageError('')
-    const { url, error } = await uploadVendorImage(file, `menu-items/${item.id}/image`)
+    const { url, error } = await uploadVendorImage(file, `menu-items/${item.restaurant_id}/${item.id}/image`)
     setUploading(false)
     if (error) { setImageError(error); return }
     setImageUrl(url)
@@ -459,6 +459,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
         />}
 
         {openSection === 'addons' && <AddonsCard
+          restaurantId={item.restaurant_id}
           groups={groups} addons={addons}
           newGroup={newGroup} setNewGroup={setNewGroup}
           newAddon={newAddon} setNewAddon={setNewAddon}

@@ -5,11 +5,13 @@ import type { MenuItemAddon, MenuItemAddonGroup, VendorAddonLibraryItem } from '
 type NewAddonDraft = { name: string; price: string; imageUrl: string | null; uploading: boolean }
 
 export default function AddonsCard({
+  restaurantId,
   groups, addons, newGroup, setNewGroup, newAddon, setNewAddon,
   onAddGroup, onRemoveGroup, onAddAddon, onRemoveAddon,
   onApplyPreset, onRenameGroup, onAddonPriceChange, menuOptions, onAddFromMenu,
   library, onAddFromLibrary
 }: {
+  restaurantId: number
   /** The vendor's saved add-ons, offered as one-tap chips. */
   library: VendorAddonLibraryItem[]
   onAddFromLibrary: (groupId: number, entry: VendorAddonLibraryItem) => void
@@ -42,7 +44,7 @@ export default function AddonsCard({
   async function uploadOptionImage(groupId: number, file: File) {
     const draft = draftFor(groupId)
     setNewAddon({ ...newAddon, [groupId]: { ...draft, uploading: true } })
-    const { url } = await uploadVendorImage(file, `menu-addon-options/${groupId}/${Date.now()}`)
+    const { url } = await uploadVendorImage(file, `menu-addon-options/${restaurantId}/${groupId}/${Date.now()}`)
     setNewAddon({ ...newAddon, [groupId]: { ...draft, uploading: false, imageUrl: url ?? draft.imageUrl } })
   }
 
