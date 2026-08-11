@@ -1,6 +1,6 @@
 # Production database baseline
 
-Read-only snapshot of the production `public` **and `private`** schemas for project `pqpnwxyevrsipklzmwex`, refreshed 2026-08-11 (previous capture 2026-08-10 10:30, before that 2026-08-10 00:00). This refresh only fully regenerated `policies.json` (98 rows, up from 79 -- see `manifest.json` drift notes) and patched the one changed entry in `routines.json`; `grants.json`/`triggers.json`/`indexes.json`/`database.types.ts` were spot-checked as unchanged rather than regenerated.
+Read-only snapshot of the production `public` **and `private`** schemas for project `pqpnwxyevrsipklzmwex`, refreshed 2026-08-12 (previous capture 2026-08-11). This reconciliation adds the six production migration records that were missing from GitHub, fully regenerates `policies.json`, and refreshes the six affected private routine definitions. The changes add no tables, columns, triggers, indexes, or grants, so `public-tables.json`, `grants.json`, `triggers.json`, `indexes.json`, and `database.types.ts` remain unchanged.
 
 `private` is in scope as of this refresh. Security batches 1–9 (the complete programme) moved 99 privileged cores into it, and a snapshot that records only `public` describes a permission model that no longer exists.
 

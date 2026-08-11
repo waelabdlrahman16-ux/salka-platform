@@ -1295,6 +1295,30 @@
     {
       "version": "20260811104054",
       "name": "notify_customer_on_custom_order_price_confirmed"
+    },
+    {
+      "version": "20260811115126",
+      "name": "driver_report_no_answer_idempotent"
+    },
+    {
+      "version": "20260811115721",
+      "name": "allow_vendor_manage_own_menu_categories"
+    },
+    {
+      "version": "20260811115751",
+      "name": "allow_vendor_manage_own_menu_items_and_discounts"
+    },
+    {
+      "version": "20260811152809",
+      "name": "add_6_compounds_and_update_3_gps_verified"
+    },
+    {
+      "version": "20260811154224",
+      "name": "add_lavista_topaz_6_as_own_row"
+    },
+    {
+      "version": "20260811154414",
+      "name": "fix_galala_coords_and_name"
     }
   ]
 }
