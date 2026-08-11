@@ -151,7 +151,7 @@ function BottomNav() {
   // supermarket run is an errand being delivered, not a shop you browse.
   const items = [
     { to: '/', label: 'الرئيسية', icon: 'house' as const },
-    { to: '/custom-order', label: 'الضروريات', icon: 'truck' as const },
+    { to: '/custom-order', label: 'هنجبلك', icon: 'truck' as const },
     // Gold in both states, not just when selected: this is the one tab worth
     // pulling an eye towards, which is what Wael asked for. `sandink` and not
     // `sand` -- sand is 2.69:1 on this background and fails the 3:1 that a
