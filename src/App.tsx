@@ -224,7 +224,7 @@ function AppShell() {
     // the customer URL. Move it before crossing the auth boundary. A later app
     // launch has no shared session to inspect, so the remembered staff board
     // restores the old installed-app behaviour without sharing refresh tokens.
-    if (profile && (profile.role === 'driver' || profile.role === 'vendor' || profile.role === 'supervisor')) {
+    if (profile && (profile.role === 'driver' || profile.role === 'vendor' || profile.role === 'supervisor' || profile.role === 'admin' || profile.role === 'catalog')) {
       window.location.replace(promoteCurrentSessionToRole(profile.role))
       return
     }

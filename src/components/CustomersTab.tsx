@@ -100,10 +100,10 @@ const money = (n: number | null | undefined) =>
   `${Number(n ?? 0).toLocaleString('en-EG', { maximumFractionDigits: 0 })} ج.م`
 
 const day = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'short' }) : '—'
+  iso ? new Date(iso).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'short' }) : '—'
 
 const dayTime = (iso: string) =>
-  new Date(iso).toLocaleString('ar-EG', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
+  new Date(iso).toLocaleString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
 
 /** Egyptian mobiles are stored normalised (no leading 0). Put it back for display and for tel:. */
 const dial = (phone: string) => (phone.startsWith('0') ? phone : `0${phone}`)

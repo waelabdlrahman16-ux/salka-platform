@@ -107,7 +107,7 @@ export default function FunnelPanel() {
       <p className="text-xs text-mist mb-3">كل رقم = جهاز مختلف، مش عدد الضغطات</p>
       {data && (
         <p className="text-[10px] text-mist mb-3">
-          القياس الدقيق بدأ {new Date(data.since).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}
+          القياس الدقيق بدأ {new Date(data.since).toLocaleString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', dateStyle: 'short', timeStyle: 'short' })}
         </p>
       )}
 
