@@ -127,7 +127,7 @@ export default function Vendor() {
         <>
           <div className="flex items-center gap-2 mb-4">
             <button className="btn-ghost text-sm" onClick={() => setView('request')}>
-              🛵 طلب مندوب لأوردر مش من سالكة
+              🛵 طلب مندوب
             </button>
             <button className="btn-ghost text-sm" onClick={() => setView('history')}>
               🧾 سجل طلبات المندوب
