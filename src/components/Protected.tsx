@@ -30,8 +30,14 @@ export default function Protected({ role, children }: {
   // Admin is a superset of the narrow roles, so let them through rather than
   // bouncing. This mirrors is_catalog_manager() and is_supervisor() on the
   // server, both of which return true for an admin.
+  // observer is a read-only subset of admin, not a superset of anything --
+  // it only ever gets into /admin itself. Server-side is_admin_read() (not
+  // is_admin()) is what actually decides what an observer can fetch; every
+  // mutating admin_* function still checks is_admin() alone, so this route
+  // check is a UX door, not the security boundary.
   const allowed = profile.role === role
     || ((role === 'catalog' || role === 'supervisor') && profile.role === 'admin')
+    || (role === 'admin' && profile.role === 'observer')
   if (!allowed) return <Navigate to={homeFor(profile.role)} replace />
   return <>{children}</>
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../lib/auth'
 import { useDismissable } from '../lib/useDismissable'
 import type { Assignment, Compound, Complaint, Driver, DeliverySlotRow, Earning, LiveDelivery, MenuItem, Order, OrderRating, Reliability, Restaurant, Setting, SettlementRequest, Shift, VendorCoverage } from '../lib/types'
 import { ping, askNotificationPermission } from '../lib/notify'
@@ -202,6 +203,8 @@ function shiftDayKey(key: string, delta: number): string {
 type OrderDateFilter = 'today' | 'yesterday' | 'older' | 'all'
 
 export default function Admin() {
+  const { profile } = useAuth()
+  const isObserver = profile?.role === 'observer'
   const { confirmSheet, promptSheet, alertSheet, sheetElement } = useSheets()
   const [tab, setTab] = useState<Tab>('unassigned')
   const [openGroup, setOpenGroup] = useState<TabGroup>('now')
@@ -265,7 +268,7 @@ export default function Admin() {
   }
   const [vendorAccounts, setVendorAccounts] = useState<{ profile_id: string; restaurant_id: number; email: string }[]>([])
   const [driverAccounts, setDriverAccounts] = useState<{ profile_id: string; driver_id: number; email: string }[]>([])
-  const [catalogAccounts, setCatalogAccounts] = useState<{ profile_id: string; name: string; email: string; role: 'catalog' | 'supervisor' }[]>([])
+  const [catalogAccounts, setCatalogAccounts] = useState<{ profile_id: string; name: string; email: string; role: 'catalog' | 'supervisor' | 'observer' }[]>([])
   const [newCatalogName, setNewCatalogName] = useState('')
   const [accountBusy, setAccountBusy] = useState<string | null>(null)
   const [newCreds, setNewCreds] = useState<{ email: string; password: string } | null>(null)
@@ -470,7 +473,7 @@ export default function Admin() {
       const accountsRes = await adminReport<{
         vendors: { profile_id: string; restaurant_id: number; email: string }[]
         drivers: { profile_id: string; driver_id: number; email: string }[]
-        catalog: { profile_id: string; name: string; email: string; role: 'catalog' | 'supervisor' }[]
+        catalog: { profile_id: string; name: string; email: string; role: 'catalog' | 'supervisor' | 'observer' }[]
       }>('listAccounts')
       if (accountsRes.ok) {
         setVendorAccounts(accountsRes.data?.vendors ?? [])
@@ -1305,8 +1308,8 @@ export default function Admin() {
   // until it is, this is the supported path and it produces an identical
   // account. The conversion RPC only moves a profile between these two
   // no-restaurant, no-driver roles -- it cannot mint an admin.
-  async function convertStaffRole(profileId: string, role: 'catalog' | 'supervisor') {
-    const label = role === 'supervisor' ? 'مشرف تشغيل' : 'موظف قوايم'
+  async function convertStaffRole(profileId: string, role: 'catalog' | 'supervisor' | 'observer') {
+    const label = role === 'supervisor' ? 'مشرف تشغيل' : role === 'observer' ? 'مشاهدة فقط' : 'موظف قوايم'
     if (!await confirmSheet({
       title: `تحويل الحساب ده لـ «${label}»؟`,
       body: 'هيتغيّر اللي يقدر يشوفه ويعمله على طول.',
@@ -1711,6 +1714,32 @@ export default function Admin() {
           🔇 الصوت مقفول في التاب ده — اضغط هنا عشان التنبيهات تسمّع
         </button>
       )}
+
+      {isObserver && (
+        <div className="rounded-xl border-2 border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 mb-3 text-sm font-semibold text-amber-700 text-center">
+          👁️ وضع المشاهدة فقط — تقدر تشوف كل حاجة بس مش تعدّل
+        </div>
+      )}
+
+      {/* At-a-glance strip, visible regardless of which tab is open. Reuses
+          numbers already computed for the tab badges above rather than firing
+          a separate fetch -- these are the same counts, just surfaced before
+          you pick a tab instead of after. */}
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-3">
+        {[
+          { label: 'محتاجة تعيين', value: unassigned.length, warn: unassigned.length > 0 },
+          { label: 'توصيل شغال', value: active.length, warn: false },
+          { label: 'سائقين متاحين', value: availableDrivers.length, warn: availableDrivers.length === 0 },
+          { label: 'استرداد معلق', value: pendingRefunds.length, warn: pendingRefunds.length > 0 },
+          { label: 'طلبات متعطلة', value: stalled.length, warn: stalled.length > 0 },
+          { label: 'شكاوى مفتوحة', value: tabBadges.complaints ?? 0, warn: (tabBadges.complaints ?? 0) > 0 },
+        ].map(k => (
+          <div key={k.label} className={`card p-2.5 text-center ${k.warn ? 'bg-red-500/5 border-red-500/20' : ''}`}>
+            <p className={`text-xl font-bold ${k.warn ? 'text-red-600' : ''}`}>{k.value}</p>
+            <p className="text-[11px] text-mist mt-0.5">{k.label}</p>
+          </div>
+        ))}
+      </div>
 
       {/* Two rows instead of one row of sixteen. The group carries the alert
           count of everything inside it, so nothing that needed you becomes
@@ -2942,8 +2971,10 @@ export default function Admin() {
                       <p className="font-semibold truncate">
                         {acc.name}
                         <span className={`mr-2 text-[11px] font-bold rounded-full px-2 py-0.5 ${
-                          acc.role === 'supervisor' ? 'bg-sea/10 text-sea' : 'bg-shellup text-mist'}`}>
-                          {acc.role === 'supervisor' ? 'مشرف تشغيل' : 'قوايم'}
+                          acc.role === 'supervisor' ? 'bg-sea/10 text-sea'
+                          : acc.role === 'observer' ? 'bg-amber-500/10 text-amber-700'
+                          : 'bg-shellup text-mist'}`}>
+                          {acc.role === 'supervisor' ? 'مشرف تشغيل' : acc.role === 'observer' ? 'مشاهدة فقط' : 'قوايم'}
                         </span>
                       </p>
                       <p className="text-xs text-mist truncate" dir="ltr">{acc.email}</p>
@@ -2958,10 +2989,20 @@ export default function Admin() {
                       />
                     </div>
                   </div>
-                  <button className="btn-ghost w-full !py-1.5 text-xs mt-2.5"
-                    onClick={() => convertStaffRole(acc.profile_id, acc.role === 'supervisor' ? 'catalog' : 'supervisor')}>
-                    {acc.role === 'supervisor' ? 'رجّعه موظف قوايم' : 'خلّيه مشرف تشغيل'}
-                  </button>
+                  <div className="grid grid-cols-3 gap-1.5 mt-2.5">
+                    {([
+                      ['catalog', 'قوايم'],
+                      ['supervisor', 'مشرف تشغيل'],
+                      ['observer', 'مشاهدة فقط'],
+                    ] as const).map(([r, label]) => (
+                      <button key={r} className={`!py-1.5 text-xs rounded-lg border-2 font-semibold transition-colors ${
+                          acc.role === r ? 'bg-sea text-white border-sea' : 'bg-shell border-line text-mist hover:border-sea/40'}`}
+                        disabled={acc.role === r}
+                        onClick={() => convertStaffRole(acc.profile_id, r)}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               ))}
               {catalogAccounts.length === 0 && (

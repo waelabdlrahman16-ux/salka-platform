@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { observerBlocked } from './adminGuard'
 
 // Roughly forty call sites across the app called supabase.rpc(...) and either
 // destructured only `data` or discarded `error` entirely -- then set a success
@@ -273,6 +274,10 @@ export async function rpc<T = unknown>(
   overrides?: Record<string, string>,
   retries = 0
 ): Promise<RpcResult<T>> {
+  // Only ever matters for an observer -- no other role reaches this guard
+  // in a false-positive way, since 'observer' is a role no other flow uses.
+  const blocked = observerBlocked<T>()
+  if (blocked) return blocked
   for (let attempt = 0; ; attempt++) {
     try {
       const { data, error, status } = await supabase.rpc(name, args)

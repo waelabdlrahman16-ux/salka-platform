@@ -4,11 +4,19 @@ import type { Session } from '@supabase/supabase-js'
 
 export interface Profile {
   id: string
-  role: 'admin' | 'driver' | 'vendor' | 'catalog' | 'supervisor'
+  role: 'admin' | 'driver' | 'vendor' | 'catalog' | 'supervisor' | 'observer'
   driver_id: number | null
   restaurant_id: number | null
   name: string
 }
+
+// A synchronous mirror of the current profile's role for the plain (non-React)
+// admin action wrapper libs (adminFinancialActions.ts etc), which cannot call
+// useAuth(). Those libs short-circuit on 'observer' before ever reaching the
+// network -- belt-and-suspenders on top of the server-side is_admin() check,
+// which already rejects an observer's writes regardless of this cache.
+let cachedRole: Profile['role'] | null = null
+export const getCachedRole = () => cachedRole
 
 interface AuthCtx {
   session: Session | null
@@ -35,7 +43,7 @@ const Ctx = createContext<AuthCtx>({
 export const useAuth = () => useContext(Ctx)
 
 export const homeFor = (role: Profile['role']) =>
-  role === 'admin' ? '/admin'
+  role === 'admin' || role === 'observer' ? '/admin'
   : role === 'vendor' ? '/vendor'
   : role === 'catalog' ? '/catalog'
   : role === 'supervisor' ? '/supervisor'
@@ -43,7 +51,8 @@ export const homeFor = (role: Profile['role']) =>
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
+  const [profile, setProfileState] = useState<Profile | null>(null)
+  const setProfile = (p: Profile | null) => { cachedRole = p?.role ?? null; setProfileState(p) }
   const [loading, setLoading] = useState(true)
   const [profileError, setProfileError] = useState(false)
   const [attempt, setAttempt] = useState(0)
