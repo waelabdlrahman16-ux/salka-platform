@@ -622,17 +622,22 @@ export default function DriverPage() {
 
   async function reportNoAnswer(a: Assignment) {
     if (!await confirmSheet({ title: 'العميل فعلاً ما ردش بعد ما اتصلت؟', body: 'الإدارة هتشوف الطلب وتقرر.' })) return
-    const res = await driverAssignmentAction('reportNoAnswer', { assignmentId: a.id })
-    if (!res.ok) {
-      await alertSheet(
-        res.code === 'must_call_customer_first' ? 'لازم تتصل بالعميل الأول'
-        : res.code === 'too_early' ? 'لسه بدري، استنى 5 دقايق من وقت خروجك للتوصيل'
-        : 'حصل خطأ، جرب تاني'
-      )
-      return
-    }
-    await alertSheet('تم إبلاغ الإدارة، هيتواصلوا معاك بقرار')
-    load(true)
+    // Was the one status-changing button without a busy guard, unlike every
+    // sibling action here -- combined with the client's built-in retry on a
+    // flaky connection, a double-tap could page admin about the same event twice.
+    await runAction(`noanswer:${a.id}`, async () => {
+      const res = await driverAssignmentAction('reportNoAnswer', { assignmentId: a.id })
+      if (!res.ok) {
+        await alertSheet(
+          res.code === 'must_call_customer_first' ? 'لازم تتصل بالعميل الأول'
+          : res.code === 'too_early' ? 'لسه بدري، استنى 5 دقايق من وقت خروجك للتوصيل'
+          : 'حصل خطأ، جرب تاني'
+        )
+        return
+      }
+      await alertSheet('تم إبلاغ الإدارة، هيتواصلوا معاك بقرار')
+      await load(true)
+    })
   }
 
   async function requestSettlement() {
@@ -646,23 +651,29 @@ export default function DriverPage() {
   }
 
   async function requestSwap(shiftId: number) {
-    const res = await staffOperation('requestSwap', {
-      shiftId, reason: swapReason[shiftId] || ''
+    await runAction(`swap-request:${shiftId}`, async () => {
+      const res = await staffOperation('requestSwap', {
+        shiftId, reason: swapReason[shiftId] || ''
+      })
+      if (!res.ok) await alertSheet(res.error)
+      await load(true)
     })
-    if (!res.ok) await alertSheet(res.error)
-    load(true)
   }
 
   async function acceptSwap(requestId: number) {
-    const res = await staffOperation('acceptSwap', { requestId })
-    if (!res.ok) await alertSheet(res.code === 'request_unavailable' ? 'حد تاني سبقك' : 'حصل خطأ')
-    load(true)
+    await runAction(`swap-accept:${requestId}`, async () => {
+      const res = await staffOperation('acceptSwap', { requestId })
+      if (!res.ok) await alertSheet(res.code === 'request_unavailable' ? 'حد تاني سبقك' : 'حصل خطأ')
+      await load(true)
+    })
   }
 
   async function escalate(requestId: number) {
-    const res = await staffOperation('escalateSwap', { requestId })
-    if (!res.ok) { await alertSheet(res.error); return }
-    load(true)
+    await runAction(`swap-escalate:${requestId}`, async () => {
+      const res = await staffOperation('escalateSwap', { requestId })
+      if (!res.ok) { await alertSheet(res.error); return }
+      await load(true)
+    })
   }
 
   async function claim(orderId: number) {
@@ -694,9 +705,11 @@ export default function DriverPage() {
 
   async function reject() {
     if (!rejecting) return
-    const res = await driverAssignmentAction('rejectAssignment', { assignmentId: rejecting.id, reason: reason.trim() })
-    if (!res.ok) { await alertSheet(res.error); return }
-    setRejecting(null); setReason(''); load(true)
+    await runAction(`reject:${rejecting.id}`, async () => {
+      const res = await driverAssignmentAction('rejectAssignment', { assignmentId: rejecting.id, reason: reason.trim() })
+      if (!res.ok) { await alertSheet(res.error); return }
+      setRejecting(null); setReason(''); await load(true)
+    })
   }
 
   // Shown INSTEAD of the board, not over it: the point is that this phone must
@@ -1198,7 +1211,9 @@ export default function DriverPage() {
                             {isBusy(`called:${a.id}`) ? 'لحظة…' : '📞 اتصلت بالعميل ومردش'}
                           </button>
                         ) : (a.out_for_delivery_at && (Date.now() - +new Date(a.out_for_delivery_at)) >= 5 * 60000) ? (
-                          <button className="btn-danger w-full text-sm" onClick={() => reportNoAnswer(a)}>العميل لسه ما ردش — بلّغ الإدارة</button>
+                          <button className="btn-danger w-full text-sm" disabled={isBusy(`noanswer:${a.id}`)} onClick={() => reportNoAnswer(a)}>
+                            {isBusy(`noanswer:${a.id}`) ? 'لحظة…' : 'العميل لسه ما ردش — بلّغ الإدارة'}
+                          </button>
                         ) : (
                           <p className="text-mist text-xs text-center">✓ اتصلت — لو ما ردش خلال 5 دقايق من خروجك، هيظهر لك زرار الإبلاغ</p>
                         )}
@@ -1446,17 +1461,17 @@ export default function DriverPage() {
                       <input className="field !py-1.5 text-sm" placeholder="سبب الاستبدال (اختياري)"
                         value={swapReason[sh.id] || ''}
                         onChange={e => setSwapReason({ ...swapReason, [sh.id]: e.target.value })} />
-                      <button className="btn-ghost !py-1.5 text-sm shrink-0" onClick={() => requestSwap(sh.id)}>
-                        طلب استبدال
+                      <button className="btn-ghost !py-1.5 text-sm shrink-0" disabled={isBusy(`swap-request:${sh.id}`)} onClick={() => requestSwap(sh.id)}>
+                        {isBusy(`swap-request:${sh.id}`) ? 'لحظة…' : 'طلب استبدال'}
                       </button>
                     </div>
                   )}
                   {requested && myRequestId && (
                     <div className="mt-3">
                       <p className="text-sandink text-sm">⏳ طلب الاستبدال معروض على باقي المندوبين</p>
-                      <button className="btn-danger w-full mt-2 text-sm"
+                      <button className="btn-danger w-full mt-2 text-sm" disabled={isBusy(`swap-escalate:${myRequestId}`)}
                         onClick={() => escalate(myRequestId)}>
-                        محدش وافق — بلّغ الإدارة
+                        {isBusy(`swap-escalate:${myRequestId}`) ? 'لحظة…' : 'محدش وافق — بلّغ الإدارة'}
                       </button>
                     </div>
                   )}
@@ -1482,8 +1497,8 @@ export default function DriverPage() {
                 </p>
                 <p className="text-sm text-mist mt-1">مطلوبة من {sw.requested_by_name}</p>
                 {sw.reason && <p className="text-sm text-mist mt-0.5">"{sw.reason}"</p>}
-                <button className="btn-sea w-full mt-3" onClick={() => acceptSwap(sw.request_id)}>
-                  أقبل الوردية
+                <button className="btn-sea w-full mt-3" disabled={isBusy(`swap-accept:${sw.request_id}`)} onClick={() => acceptSwap(sw.request_id)}>
+                  {isBusy(`swap-accept:${sw.request_id}`) ? 'لحظة…' : 'أقبل الوردية'}
                 </button>
               </div>
             ))}
@@ -1513,8 +1528,10 @@ export default function DriverPage() {
             <h3 className="font-bold mb-3">سبب الرفض</h3>
             <input className="field" value={reason} onChange={e => setReason(e.target.value)} placeholder="مثال: بعيد عن منطقتي" />
             <div className="flex gap-3 mt-4">
-              <button className="btn-ghost flex-1" onClick={() => setRejecting(null)}>إلغاء</button>
-              <button className="btn-danger flex-1" onClick={reject}>تأكيد الرفض</button>
+              <button className="btn-ghost flex-1" disabled={isBusy(`reject:${rejecting.id}`)} onClick={() => setRejecting(null)}>إلغاء</button>
+              <button className="btn-danger flex-1" disabled={isBusy(`reject:${rejecting.id}`)} onClick={reject}>
+                {isBusy(`reject:${rejecting.id}`) ? 'لحظة…' : 'تأكيد الرفض'}
+              </button>
             </div>
           </div>
         </div>

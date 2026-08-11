@@ -1186,7 +1186,9 @@ export default function Admin() {
       danger: true,
     })) return
     setActionError('')
+    setAccountBusy(`cash-${driverId}`)
     const res = await adminFinancialAction('settleCash', { driverId })
+    setAccountBusy(null)
     if (!res.ok) { setActionError(res.error); return }
     load(true)
   }
@@ -1209,7 +1211,9 @@ export default function Admin() {
       danger: true,
     })) return
     setActionError('')
+    setAccountBusy(`earnings-${driverId}`)
     const res = await adminFinancialAction('settleEarnings', { driverId })
+    setAccountBusy(null)
     if (!res.ok) { setActionError(res.error); return }
     load(true)
   }
@@ -2713,7 +2717,10 @@ export default function Admin() {
                 {settlementRequests.map(sr => (
                   <div key={sr.id} className="card p-3.5 flex items-center justify-between text-sm">
                     <span className="font-semibold">{sr.drivers?.name}</span>
-                    <button className="btn-sea !py-1.5 text-sm" onClick={() => settleEarnings(sr.driver_id)}>ادفع دلوقتي</button>
+                    <button className="btn-sea !py-1.5 text-sm" disabled={accountBusy === `earnings-${sr.driver_id}`}
+                      onClick={() => settleEarnings(sr.driver_id)}>
+                      {accountBusy === `earnings-${sr.driver_id}` ? '...' : 'ادفع دلوقتي'}
+                    </button>
                   </div>
                 ))}
               </div>
@@ -2746,8 +2753,14 @@ export default function Admin() {
                     </div>
                   </div>
                   <div className="flex gap-2.5 mt-3">
-                    <button className="btn-ghost flex-1 text-sm" disabled={!(d.cash_held > 0)} onClick={() => settleCash(d.id)}>استلمت الكاش</button>
-                    <button className="btn-sea flex-1 text-sm" disabled={unpaid === 0} onClick={() => settleEarnings(d.id)}>ادفع الأرباح</button>
+                    <button className="btn-ghost flex-1 text-sm" disabled={!(d.cash_held > 0) || accountBusy === `cash-${d.id}`}
+                      onClick={() => settleCash(d.id)}>
+                      {accountBusy === `cash-${d.id}` ? '...' : 'استلمت الكاش'}
+                    </button>
+                    <button className="btn-sea flex-1 text-sm" disabled={unpaid === 0 || accountBusy === `earnings-${d.id}`}
+                      onClick={() => settleEarnings(d.id)}>
+                      {accountBusy === `earnings-${d.id}` ? '...' : 'ادفع الأرباح'}
+                    </button>
                   </div>
                 </div>
               )
