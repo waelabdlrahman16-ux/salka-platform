@@ -1,8 +1,8 @@
 {
   "project_ref": "pqpnwxyevrsipklzmwex",
   "schemas": ["public", "private"],
-  "captured_at": "2026-08-11T14:45:00+00:00",
-  "previous_capture": "2026-08-10T10:30:41+00:00",
+  "captured_at": "2026-08-12T00:00:00+02:00",
+  "previous_capture": "2026-08-11T14:45:00+00:00",
   "postgres_version": "17.6",
   "snapshot_only": true,
   "includes_data_rows": false,
@@ -16,14 +16,14 @@
     "policies": 98,
     "triggers": 14,
     "indexes": 119,
-    "migrations": 324
+    "migrations": 330
   },
   "drift_since_previous_capture": {
-    "reason": "No schema-hardening batch this round -- three targeted changes since the 2026-08-10 capture, verified individually against the live catalog before this refresh (not assumed from migration names alone).",
-    "migrations": "+3 (321 to 324): consolidate_multiple_permissive_rls_policies, allow_vendor_manage_own_delivery_slots (matches PR #82, already shipped), notify_customer_on_custom_order_price_confirmed (this capture's change)",
-    "policies": "+19 (79 to 98) from consolidate_multiple_permissive_rls_policies -- multiple role-specific PERMISSIVE policies per table/action (e.g. separate 'admin writes X' / 'catalog writes X' / 'supervisor reads X') were consolidated into fewer, broader per-verb policies (e.g. 'manage X insert/update/delete' + one read policy). Verified this is a consolidation, not a loosening: every consolidated policy's qual/with_check still gates on the same protected predicates (is_admin(), is_catalog_manager(), my_driver_id(), my_restaurant_id(), is_supervisor(), supervisor_may_touch_order()) that gated the original split policies. delivery_slots gained restaurant_id = my_restaurant_id() as an alternative to is_admin() on insert/update, matching allow_vendor_manage_own_delivery_slots (PR #82: vendors can now manage their own restaurant's delivery slots).",
+    "reason": "Reconcile six migrations already applied to production but absent from GitHub and the 2026-08-11 baseline. SQL was recovered verbatim from supabase_migrations.schema_migrations; this branch must not reapply it to production.",
+    "migrations": "+6 (324 to 330): driver_report_no_answer_idempotent; allow_vendor_manage_own_menu_categories; allow_vendor_manage_own_menu_items_and_discounts; add_6_compounds_and_update_3_gps_verified; add_lavista_topaz_6_as_own_row; fix_galala_coords_and_name.",
+    "policies": "Count remains 98. Policies were fully regenerated because vendor ownership was added to menu item, size, combo, addon, discount, and addon-library writes; each vendor path remains scoped by my_restaurant_id().",
     "functions_public": "unchanged (163)",
-    "functions_private": "unchanged (99)",
+    "functions_private": "unchanged (99); definitions refreshed for driver_report_no_answer plus five vendor category/hours routines",
     "functions_security_definer": "unchanged (243)",
     "tables": "unchanged (48)",
     "triggers": "unchanged (14) -- only a function body changed (notify_order_status_change gained a pricing_status='confirmed' branch so customers get a push when a supervisor prices their custom order), not the trigger definition itself",
@@ -40,8 +40,8 @@
     "advisor_floor_note": "12 rls_enabled_no_policy (INFO, intentional) + 1 extension_in_public (pg_net, not remediated per ACCEPTED-WARNINGS.md) + exactly the 7 protected RLS predicates. Re-verified via get_advisors at this capture -- unchanged from the 2026-08-10 floor."
   },
   "notes": [
-    "routines.json carries schema, per-role execute grants and full definitions for BOTH public and private. This capture only updated the one entry that actually changed (public.notify_order_status_change) -- every other routine definition was left as captured 2026-08-10 and is not independently re-verified here.",
-    "policies.json was fully regenerated from a live pg_policies query at this capture (all 98 rows), not incrementally patched, since the consolidation migration touched roughly a quarter of all policies.",
+    "routines.json carries schema, per-role execute grants and full definitions for BOTH public and private. This reconciliation refreshed the six private definitions changed by the missing migrations; unrelated routine entries remain from the prior capture.",
+    "policies.json was fully regenerated from live pg_policies at this capture (all 98 rows).",
     "grants.json, triggers.json, and indexes.json were NOT regenerated this capture -- their live counts were spot-checked and match the 2026-08-10 capture exactly (triggers 14, indexes 119), and no migration since then touched grants, so the existing files are still accurate. Full regeneration deferred to the next capture that actually changes one of them.",
     "database.types.ts was NOT regenerated this capture -- no public-schema table/column shape changed (only a policy consolidation and one trigger-function body), so the existing generated types are still accurate.",
     "No public routine was removed by name: every core relocated to private in batches 8-9 kept a same-named public wrapper.",
