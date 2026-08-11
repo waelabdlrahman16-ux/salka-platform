@@ -73,6 +73,6 @@ This section originally listed 43 functions with **0 RLS policies and 0 internal
 
 The advisor floor for this project is **7** (the protected predicates in §1) plus the 12 INFO notices in §4 plus the 1 accepted `pg_net` warning in §2 — **20 total**, and that is exactly what production shows as of this capture. There is no more deferred work from the original audit.
 
-## Separate future maintenance batch
+## Correction (2026-08-11)
 
-The `PGRST202` compatibility shim (`if (missing(result.error)) result = await ctx.supabase.rpc(fn, args)`) is present in 11 Edge Functions. Now that every migration is applied it can never succeed, and it converts a transient PostgREST schema-cache miss into a misleading "permission denied" instead of a retry. Tracked separately; deliberately out of scope for batch 7.
+The `PGRST202` compatibility shim described below does not exist in the codebase. Checked every Edge Function named in this document plus all other `.rpc()` call sites (21 files, 60 calls) — each does a single `.rpc()` call with error-message matching against a `KNOWN` allowlist, never a second/fallback `.rpc()` call gated on an error code. This item is closed as not applicable; nothing to clean up.

@@ -184,9 +184,9 @@ Statuses are literal. "Observed" means seen in production telemetry, not execute
 ## 9. Rollback and incident-response guidance
 
 - **Batch 7 migration:** `grant select on <the 7 tables> to anon, authenticated;` — one statement, instant, no data touched.
-- **Batch 8 migration (`route_admin_panel_actions_through_edge`):** re-create the 20 `public.<name>(...)` wrappers without the trailing `p_auth_user_id` parameter and re-grant `authenticated` EXECUTE, or redeploy the pre-batch-8 frontend (which called the old signatures directly). The `PGRST202` fallback shim in `admin-catalog-actions`, `admin-compound-actions` and `admin-reports` keeps calls working mid-rollback.
-- **Batch 9 migration (`route_driver_catalog_actions_through_edge`):** same pattern, for the 23 driver/catalog functions and the `driver-assignment-actions` / `driver-self-service` / `catalog-checks` Edge Functions.
-- **Any routing migration:** re-grant the previous signature or redeploy the prior frontend. The `PGRST202` fallback shim keeps calls working mid-rollback.
+- **Batch 8 migration (`route_admin_panel_actions_through_edge`):** re-create the 20 `public.<name>(...)` wrappers without the trailing `p_auth_user_id` parameter and re-grant `authenticated` EXECUTE, or redeploy the pre-batch-8 frontend (which called the old signatures directly). **Correction (2026-08-11): there is no `PGRST202` fallback shim in `admin-catalog-actions`, `admin-compound-actions`, or `admin-reports` — checked directly against the code, only a single `.rpc()` call exists in each with no fallback path.** Calls will break immediately on rollback until the wrapper signatures and frontend are both reverted together — see the ordering rule below.
+- **Batch 9 migration (`route_driver_catalog_actions_through_edge`):** same pattern, for the 23 driver/catalog functions and the `driver-assignment-actions` / `driver-self-service` / `catalog-checks` Edge Functions. Same correction applies — no fallback shim exists here either.
+- **Any routing migration:** re-grant the previous signature and redeploy the prior frontend **together, not sequentially** — there is no fallback path to cushion a partial rollback.
 - **Frontend:** `git revert <merge commit>` then push — Cloudflare redeploys in ~3 minutes. Proven during the `def7d16` incident.
 - **Ordering rule:** never apply a routing migration before its frontend is live. Reversed, staff and driver screens break immediately, because wrappers gain a trailing `p_auth_user_id` argument and the old signature disappears.
 - **Never push to `main` through the GitHub web UI.** It replaces whole files rather than merging and caused the only outage of this audit.
@@ -211,7 +211,7 @@ Batches 8 and 9 (previously P1 items 4–5) are done and removed from this list.
 6. Notification delivery reliability — 29 dead tokens against 9 live.
 7. Notification sounds — reported too short or muted.
 8. Backup restoration and disaster-recovery rehearsal — never exercised.
-9. Fallback-shim cleanup in Edge Functions — the `PGRST202` path can no longer succeed for any batch 1–9 function and turns a transient cache miss into a misleading "permission denied". Now present in more Edge Functions than at Revision 2 (batches 8–9 added it to `admin-catalog-actions`, `admin-compound-actions`, `admin-reports`, `driver-assignment-actions`, `driver-self-service`, `catalog-checks` — 6 more, following the established pattern).
+9. ~~Fallback-shim cleanup in Edge Functions~~ — **closed 2026-08-11, not applicable.** Verified directly against the code (all named Edge Functions plus every other `.rpc()` call site, 21 files / 60 calls): no `PGRST202` fallback shim exists anywhere in this codebase. This item as originally written described code that was never actually present — see the correction on the rollback guidance above, since that guidance had assumed this shim's behavior.
 
 **P3 — week 4**
 10. Huawei devices without Google Play Services.
