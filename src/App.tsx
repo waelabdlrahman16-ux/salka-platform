@@ -152,11 +152,6 @@ function BottomNav() {
   const items = [
     { to: '/', label: 'الرئيسية', icon: 'house' as const },
     { to: '/custom-order', label: 'هنجبلك', icon: 'truck' as const },
-    // Gold in both states, not just when selected: this is the one tab worth
-    // pulling an eye towards, which is what Wael asked for. `sandink` and not
-    // `sand` -- sand is 2.69:1 on this background and fails the 3:1 that a
-    // meaningful graphic needs, so it is a tint colour only. See the palette
-    // notes in tailwind.config.js.
     { to: '/offers', label: 'العروض', icon: 'tag' as const, accent: true },
     { to: '/cart', label: 'عربتي', icon: 'cartShopping' as const, badge: cart.count },
     { to: '/profile', label: 'حسابي', icon: 'circleUser' as const },
