@@ -92,7 +92,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
 
   async function upload(file: File) {
     setUploading(true); setFormError('')
-    const { url, error } = await uploadVendorImage(file, `menu-items/new/${restaurant.id}/${Date.now()}`)
+    const { url, error } = await uploadVendorImage(file, `menu-items/${restaurant.id}/new/${Date.now()}`)
     setUploading(false)
     // uploadVendorImage already returns Arabic copy for the two things that
     // actually go wrong -- wrong file type and over 5MB -- and it was thrown away.

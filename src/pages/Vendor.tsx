@@ -15,6 +15,7 @@ import { vendorOperation } from '../lib/vendorOperations'
 import { catalogCheck } from '../lib/catalogChecks'
 import PrescriptionLink from '../components/PrescriptionLink'
 import EnablePushButton from '../components/EnablePushButton'
+import VendorMenuManager from '../components/VendorMenuManager'
 import type { Compound, DeliverySlotRow, MenuItem, Order, OrderItem, Restaurant } from '../lib/types'
 import Icon from '../components/Icon'
 import Toggle from '../components/Toggle'
@@ -31,7 +32,7 @@ export default function Vendor() {
   const rid = profile?.restaurant_id
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
   const [restaurantFailed, setRestaurantFailed] = useState(false)
-  const [view, setView] = useState<'main' | 'request' | 'history'>('main')
+  const [view, setView] = useState<'main' | 'request' | 'history' | 'menu'>('main')
 
   // The error was discarded, so one failed request on a bad connection left the
   // vendor on "جاري التحميل…" permanently -- no orders, no ring, no retry, and
@@ -125,7 +126,10 @@ export default function Vendor() {
       <EnablePushButton onToken={persistPushToken} label="فعّل تنبيهات الطلبات الجديدة" />
       {view === 'main' && (
         <>
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <button className="btn-ghost text-sm" onClick={() => setView('menu')}>
+              📋 إدارة المنيو
+            </button>
             <button className="btn-ghost text-sm" onClick={() => setView('request')}>
               🛵 طلب مندوب
             </button>
@@ -136,6 +140,7 @@ export default function Vendor() {
           <KitchenVendor rid={rid} />
         </>
       )}
+      {view === 'menu' && <VendorMenuManager restaurant={restaurant} onClose={() => setView('main')} />}
       {view === 'request' && <DriverRequestPanel restaurant={restaurant} onClose={() => setView('main')} />}
       {view === 'history' && (
         <div>

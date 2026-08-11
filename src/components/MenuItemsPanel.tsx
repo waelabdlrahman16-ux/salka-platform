@@ -29,7 +29,7 @@ export default function MenuItemsPanel({
   items: MenuItem[]
   uploadingImage: string | null
   onEdit: (it: MenuItem) => void
-  onTogglePrice: (it: MenuItem, price: number) => void
+  onTogglePrice: (it: MenuItem, price: number) => Promise<boolean | void> | boolean | void
   onToggleAvailable: (it: MenuItem) => void
   onToggleRx: (it: MenuItem) => void
   onUploadImage: (it: MenuItem, f: File) => void
@@ -312,10 +312,14 @@ export default function MenuItemsPanel({
                     <input type="number" inputMode="numeric" defaultValue={it.price}
                       aria-label={`سعر ${it.name} بالجنيه`}
                       className={`field !w-24 shrink-0 !py-2 !px-2 text-center text-sm ${savedPrice === it.id ? '!border-emerald-600 bg-emerald-50' : ''}`}
-                      onBlur={e => {
+                      onBlur={async e => {
                         const v = Number(e.target.value)
                         if (v === Number(it.price)) return
-                        onTogglePrice(it, v)
+                        const saved = await onTogglePrice(it, v)
+                        if (saved === false) {
+                          e.target.value = String(it.price)
+                          return
+                        }
                         setSavedPrice(it.id)
                         setTimeout(() => setSavedPrice(p => (p === it.id ? null : p)), 1800)
                       }}
