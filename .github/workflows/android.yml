@@ -68,6 +68,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Capacitor's Android library compiles at Java 21 source/target
+      # compatibility (android/build.gradle pulls in @capacitor/android, whose
+      # own build.gradle sets sourceCompatibility/targetCompatibility to 21).
+      # The runner's default JDK is not 21, so without this step gradle fails
+      # with "invalid source release: 21" the moment it tries to compile the
+      # capacitor-android module -- nothing to do with app code.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
       # Keep build web assets reproducible with CI and production deploys.
       # This must match .nvmrc and package.json's engines.node exactly.
       - uses: actions/setup-node@v4
