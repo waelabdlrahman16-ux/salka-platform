@@ -10,7 +10,7 @@ body { @apply bg-night text-foam antialiased; }
    driver and admin portals can now share the same surface, heading and metric
    language as their screens are refreshed one by one. */
 .portal-hero {
-  @apply relative overflow-hidden rounded-2xl border border-line bg-shell px-5 py-5 sm:px-6;
+  @apply relative overflow-hidden rounded-2xl border border-line bg-shell px-4 py-4 sm:px-5;
   box-shadow: 0 12px 30px rgba(35, 31, 26, 0.06);
 }
 .portal-hero::after {
@@ -18,23 +18,33 @@ body { @apply bg-night text-foam antialiased; }
   @apply absolute -left-10 -top-14 h-32 w-32 rounded-full bg-sea/[0.07] pointer-events-none;
 }
 .portal-kicker { @apply relative text-xs font-bold tracking-wide text-sea; }
-.portal-title { @apply relative mt-1 text-2xl font-bold tracking-tight text-foam sm:text-3xl; }
-.portal-subtitle { @apply relative mt-1 text-sm leading-6 text-mist; }
-.metric { @apply relative min-w-[88px] rounded-xl border border-line bg-night/80 px-3 py-2.5 text-right; }
+.portal-title { @apply relative mt-1 text-xl font-bold tracking-tight text-foam sm:text-2xl; }
+.portal-subtitle { @apply relative mt-1 text-sm leading-5 text-mist; }
+.metric { @apply relative min-w-[82px] rounded-xl border border-line bg-night/80 px-2.5 py-2 text-right; }
 .metric-label { @apply block text-[11px] font-semibold text-mist; }
 .metric-value { @apply mt-0.5 block text-lg font-bold leading-tight text-foam; }
 .metric-alert { @apply text-red-600; }
 .section-heading { @apply flex items-center justify-between gap-3 mb-3; }
 .section-heading h2 { @apply text-base font-bold text-foam; }
-.admin-workspace { @apply grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)] lg:items-start; }
-.admin-nav { @apply rounded-2xl border border-line bg-shell p-2 lg:sticky lg:top-20; box-shadow: 0 4px 14px rgba(35, 31, 26, 0.035); }
+.admin-workspace { @apply grid gap-3 lg:grid-cols-[196px_minmax(0,1fr)] lg:items-start; }
+.admin-nav { @apply rounded-2xl border border-line bg-shell p-1.5 lg:sticky lg:top-20; box-shadow: 0 4px 14px rgba(35, 31, 26, 0.035); }
 .admin-nav-label { @apply px-3 pb-2 pt-1 text-[11px] font-bold uppercase tracking-wider text-mist; }
-.admin-nav-group { @apply flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-right text-sm font-semibold text-mist transition-colors hover:bg-shellup hover:text-foam; }
+.admin-nav-group { @apply flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-right text-sm font-semibold text-mist transition-colors hover:bg-shellup hover:text-foam; }
 .admin-nav-group-active { @apply bg-sea text-white hover:bg-seadeep hover:text-white; }
 .admin-nav-sub { @apply mt-1 border-r border-line pr-2; }
-.admin-nav-sub button { @apply flex w-full items-center justify-between rounded-lg px-3 py-2 text-right text-xs text-mist hover:bg-shellup hover:text-foam; }
+.admin-nav-sub button { @apply flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-right text-xs text-mist hover:bg-shellup hover:text-foam; }
 .admin-nav-sub button[aria-current="page"] { @apply bg-shellup font-bold text-sea; }
 .admin-content { @apply min-w-0; }
+.admin-alert-card { @apply mb-3 p-3; }
+.admin-alert-card > p:first-child { @apply mb-2 text-sm; }
+.admin-alert-card .space-y-2\.5 { @apply space-y-1.5; }
+.admin-alert-card .bg-night { @apply p-2.5; }
+.admin-alert-card .btn { @apply min-h-[38px] py-1.5; }
+
+@media (min-width: 1024px) {
+  .admin-content > .admin-alert-card { display: inline-block; vertical-align: top; width: calc(50% - 0.4rem); margin-inline-end: 0.5rem; }
+  .admin-content > .admin-alert-card:last-of-type { margin-inline-end: 0; }
+}
 
 .card { @apply bg-shell border border-line rounded-2xl; box-shadow: 0 4px 14px rgba(35, 31, 26, 0.035); }
 

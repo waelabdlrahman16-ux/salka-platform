@@ -1552,7 +1552,7 @@ export default function Admin() {
           -- once an order had a driver, nothing ever flagged it again, so the
           60-minute Accepted and 90-minute Out_for_Delivery cases were invisible. */}
       {stalled.length > 0 && (
-        <div className="card p-4 mb-4 border-red-400/50 bg-red-500/5">
+        <div className="card admin-alert-card border-red-400/50 bg-red-500/5">
           <p className="font-bold mb-3">⏳ طلبات واقفة محتاجة تدخّل ({stalled.length})</p>
           <div className="space-y-2.5">
             {stalled.map(o => {
@@ -1659,7 +1659,7 @@ export default function Admin() {
       )}
 
       {noAnswerReports.length > 0 && (
-        <div className="card p-4 mb-4 border-red-400/50 bg-red-500/5">
+        <div className="card admin-alert-card border-red-400/50 bg-red-500/5">
           <p className="font-bold mb-3">☎️ عملاء ما ردوش على المندوب ({noAnswerReports.length})</p>
           <div className="space-y-2.5">
             {noAnswerReports.map(a => {
@@ -1690,7 +1690,7 @@ export default function Admin() {
       )}
 
       {pendingInstapay.length > 0 && (
-        <div className="card p-4 mb-4 border-sand/50 bg-sand/5">
+        <div className="card admin-alert-card border-sand/50 bg-sand/5">
           <p className="font-bold mb-3">📲 تحويلات InstaPay بانتظار التأكيد ({pendingInstapay.length})</p>
           <div className="space-y-2.5">
             {pendingInstapay.map(o => (
