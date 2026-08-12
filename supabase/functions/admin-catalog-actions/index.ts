@@ -9,6 +9,41 @@ function positiveId(v: unknown): number | null { return Number.isInteger(v) && N
 function clean(v: unknown,max: number): string | null { if(typeof v!=="string")return null;const s=v.trim();return s&&s.length<=max?s:null }
 async function digest(v:string):Promise<string>{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,"0")).join("")}
 
+type MenuItemStorageScope = { itemId: number; restaurantId: number }
+
+export async function removeMenuItemImages(
+  supabaseAdmin: { storage: { from(bucket: string): {
+    list(path: string, options: { limit: number; offset: number; sortBy: { column: string; order: "asc" } }): PromiseLike<{ data: Array<{ id: string | null; name: string }> | null; error: { message?: string } | null }>
+    remove(paths: string[]): PromiseLike<{ error: { message?: string } | null }>
+  } } },
+  scope: MenuItemStorageScope,
+): Promise<{ removed: number; complete: boolean }> {
+  const folder = `menu-items/${scope.restaurantId}/${scope.itemId}`
+  const pageSize = 100
+  const paths: string[] = []
+
+  for (let offset = 0; offset < 1_000; offset += pageSize) {
+    const { data, error } = await supabaseAdmin.storage.from("vendor-assets").list(folder, {
+      limit: pageSize,
+      offset,
+      sortBy: { column: "name", order: "asc" },
+    })
+    if (error) throw new Error(`list_failed:${error.message ?? "unknown"}`)
+
+    const entries = data ?? []
+    for (const entry of entries) {
+      if (entry.id !== null) paths.push(`${folder}/${entry.name}`)
+    }
+    if (entries.length < pageSize) break
+    if (offset + pageSize >= 1_000) throw new Error("list_limit_exceeded")
+  }
+
+  if (paths.length === 0) return { removed: 0, complete: true }
+  const { error } = await supabaseAdmin.storage.from("vendor-assets").remove(paths)
+  if (error) throw new Error(`remove_failed:${error.message ?? "unknown"}`)
+  return { removed: paths.length, complete: true }
+}
+
 const DAY_RE = /^[0-6]$/
 
 function validDays(v: unknown): boolean {
@@ -40,6 +75,7 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
     if(error){if(isRateLimitError(error))return json({error:"rate_limited"},429);return fail("admin-catalog-actions","rate_limit_check_failed",500,error)}
   }
   let fn="",args:Record<string,unknown>={}
+  let menuItemStorageScope: MenuItemStorageScope | null = null
   if(action==="addMenuCategory"){
     const restaurantId=positiveId(input.restaurantId),name=clean(input.name,120)
     if(!restaurantId||!name)return json({error:"invalid_vendor_input"},400)
@@ -59,6 +95,11 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
   }else if(action==="deleteMenuItem"){
     const itemId=positiveId(input.itemId)
     if(!itemId)return json({error:"invalid_vendor_input"},400)
+    const {data:item,error:itemError}=await ctx.supabaseAdmin.from("menu_items").select("restaurant_id").eq("id",itemId).maybeSingle()
+    if(itemError)return fail("admin-catalog-actions","menu_item_lookup_failed",500,itemError)
+    const itemRow=item as {restaurant_id?: unknown}|null
+    const restaurantId=positiveId(Number(itemRow?.restaurant_id))
+    if(restaurantId)menuItemStorageScope={itemId,restaurantId}
     fn="admin_delete_menu_item";args={p_item_id:itemId}
   }else if(action==="setVendorHours"){
     const restaurantId=positiveId(input.restaurantId)
@@ -71,6 +112,19 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
   }
   const result=await ctx.supabaseAdmin.rpc(fn,{...args,p_auth_user_id:userId})
   if(result.error){const known=KNOWN.find(c=>result.error?.message?.includes(c));if(known)return json({error:known},known==="admin_only"||known==="not_authorized"?403:400);return fail("admin-catalog-actions","catalog_action_failed",500,result.error)}
-  return json({ok:true,data:result.data??null})
+  let imageCleanup: { removed: number; complete: boolean } | null = null
+  if(action==="deleteMenuItem"&&menuItemStorageScope){
+    try{
+      imageCleanup=await removeMenuItemImages(ctx.supabaseAdmin,menuItemStorageScope)
+    }catch(error){
+      imageCleanup={removed:0,complete:false}
+      console.error("admin-catalog-actions","menu_item_image_cleanup_failed",{
+        itemId:menuItemStorageScope.itemId,
+        restaurantId:menuItemStorageScope.restaurantId,
+        error:error instanceof Error?error.message:"unknown",
+      })
+    }
+  }
+  return json({ok:true,data:result.data??null,imageCleanup})
 })
 export default {fetch:handler}
