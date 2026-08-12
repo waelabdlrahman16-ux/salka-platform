@@ -27,7 +27,6 @@ import MenuItemEditor from '../components/MenuItemEditor'
 import AddMenuItemModal from '../components/AddMenuItemModal'
 import MenuItemsPanel from '../components/MenuItemsPanel'
 import EnablePushButton from '../components/EnablePushButton'
-import PushCoveragePanel from '../components/PushCoveragePanel'
 import CustomersTab from '../components/CustomersTab'
 import FunnelPanel from '../components/FunnelPanel'
 import VendorHoursRow from '../components/VendorHoursRow'
@@ -39,6 +38,7 @@ import DriverForm, { driverToForm } from '../components/DriverForm'
 import LiveDeliveryDetail from '../components/LiveDeliveryDetail'
 import Toggle from '../components/Toggle'
 import { useSheets } from '../components/ActionSheets'
+import { useCatalogSync } from '../lib/useCatalogSync'
 
 /**
  * The batch load below is a `Promise.all` of raw postgrest queries, each
@@ -100,7 +100,7 @@ function AccountActionsMenu({ busy, onChangeEmail, onResetPassword, onCustomPass
   )
 }
 
-type Tab = 'daily' | 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet' | 'banners' | 'refunds' | 'customers' | 'compounds' | 'notifications'
+type Tab = 'daily' | 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet' | 'banners' | 'refunds' | 'customers' | 'compounds'
 
 // What is actually owed back, decided by the server. A COD order only ever took
 // the 50% deposit, so refunding `total` would be a gift -- and that is exactly
@@ -162,7 +162,6 @@ const TABS: { key: Tab; label: string; group: TabGroup }[] = [
   { key: 'accounts', label: 'حسابات الدخول', group: 'people' },
 
   { key: 'settings', label: 'الإعدادات', group: 'setup' },
-  { key: 'notifications', label: '🔔 تغطية التنبيهات', group: 'setup' },
 ]
 
 interface StalledOrder {
@@ -555,6 +554,10 @@ export default function Admin() {
     const t = setInterval(load, 15000)
     return () => clearInterval(t)
   }, [])
+
+  // The normal 15s board refresh remains the fallback. Realtime makes a menu
+  // or restaurant edit made by a vendor visible to the admin immediately.
+  useCatalogSync({ refresh: () => load(true), fallbackIntervalMs: 60_000 })
 
   // WHY THIS EXISTS. Every alert on this page fires from a polling timer, and a
   // browser will not play a sound until the page has received a real user
@@ -3079,8 +3082,6 @@ export default function Admin() {
           })}
         </div>
       )}
-
-      {tab === 'notifications' && <PushCoveragePanel />}
 
       {newCreds && (
         <div ref={credsRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true" onClick={() => setNewCreds(null)}>
