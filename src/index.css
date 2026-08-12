@@ -26,6 +26,15 @@ body { @apply bg-night text-foam antialiased; }
 .metric-alert { @apply text-red-600; }
 .section-heading { @apply flex items-center justify-between gap-3 mb-3; }
 .section-heading h2 { @apply text-base font-bold text-foam; }
+.admin-workspace { @apply grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)] lg:items-start; }
+.admin-nav { @apply rounded-2xl border border-line bg-shell p-2 lg:sticky lg:top-20; box-shadow: 0 4px 14px rgba(35, 31, 26, 0.035); }
+.admin-nav-label { @apply px-3 pb-2 pt-1 text-[11px] font-bold uppercase tracking-wider text-mist; }
+.admin-nav-group { @apply flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-right text-sm font-semibold text-mist transition-colors hover:bg-shellup hover:text-foam; }
+.admin-nav-group-active { @apply bg-sea text-white hover:bg-seadeep hover:text-white; }
+.admin-nav-sub { @apply mt-1 border-r border-line pr-2; }
+.admin-nav-sub button { @apply flex w-full items-center justify-between rounded-lg px-3 py-2 text-right text-xs text-mist hover:bg-shellup hover:text-foam; }
+.admin-nav-sub button[aria-current="page"] { @apply bg-shellup font-bold text-sea; }
+.admin-content { @apply min-w-0; }
 
 .card { @apply bg-shell border border-line rounded-2xl; box-shadow: 0 4px 14px rgba(35, 31, 26, 0.035); }
 
