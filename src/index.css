@@ -9,10 +9,10 @@ body { @apply bg-night text-foam antialiased; }
    than a fresh set of one-off utility combinations: the customer, vendor,
    driver and admin portals can now share the same surface, heading and metric
    language as their screens are refreshed one by one. */
-.admin-shell { @apply max-w-[1440px] mx-auto; }
+.admin-shell { @apply max-w-[1280px] mx-auto; }
 .portal-hero {
-  @apply relative overflow-hidden rounded-2xl border border-line bg-shell px-4 py-3.5 sm:px-5;
-  box-shadow: 0 14px 34px rgba(35, 31, 26, 0.08);
+  @apply relative overflow-hidden rounded-lg border border-line bg-shell px-4 py-3 sm:px-5;
+  box-shadow: 0 2px 8px rgba(35, 31, 26, 0.06);
 }
 .portal-hero::after {
   content: '';
@@ -21,31 +21,34 @@ body { @apply bg-night text-foam antialiased; }
 .portal-kicker { @apply relative text-xs font-bold tracking-wide text-sea; }
 .portal-title { @apply relative mt-1 text-xl font-bold tracking-tight text-foam sm:text-2xl; }
 .portal-subtitle { @apply relative mt-1 text-sm leading-5 text-mist; }
-.metric { @apply relative min-w-[82px] rounded-xl border border-line bg-night/80 px-2.5 py-2 text-right; }
+.metric { @apply relative min-w-[74px] rounded-lg border border-line bg-night/80 px-2.5 py-1.5 text-right; }
 .metric-label { @apply block text-[11px] font-semibold text-mist; }
-.metric-value { @apply mt-0.5 block text-lg font-bold leading-tight text-foam; }
+.metric-value { @apply mt-0.5 block text-base font-bold leading-tight text-foam; }
 .metric-alert { @apply text-red-600; }
 .section-heading { @apply flex items-center justify-between gap-3 mb-3; }
 .section-heading h2 { @apply text-base font-bold text-foam; }
-.admin-workspace { @apply grid gap-4 lg:grid-cols-[244px_minmax(0,1fr)] lg:items-start; }
-.admin-nav { @apply rounded-2xl border border-line bg-shell p-2 lg:sticky lg:top-20; box-shadow: 0 12px 28px rgba(35, 31, 26, 0.07); }
-.admin-nav-label { @apply px-3 pb-2 pt-1 text-[11px] font-bold uppercase tracking-wider text-mist; }
-.admin-nav-group { @apply flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-right text-sm font-semibold text-mist transition-colors hover:bg-shellup hover:text-foam; }
+.admin-workspace { @apply grid gap-3; }
+.admin-nav { @apply rounded-lg border border-line bg-shell px-2 py-2; box-shadow: 0 2px 8px rgba(35, 31, 26, 0.05); }
+.admin-nav-label { @apply hidden; }
+.admin-nav .space-y-1 { @apply flex gap-1 overflow-x-auto pb-0.5; scrollbar-width: none; }
+.admin-nav .space-y-1::-webkit-scrollbar { display: none; }
+.admin-nav .space-y-1 > div { @apply shrink-0; }
+.admin-nav-group { @apply flex min-h-[34px] items-center justify-between rounded-md px-2.5 py-1.5 text-right text-xs font-semibold text-mist transition-colors hover:bg-shellup hover:text-foam; }
 .admin-nav-group-active { @apply bg-foam text-white hover:bg-foam hover:text-white; }
-.admin-nav-sub { @apply mt-1.5 border-r border-line pr-2; }
-.admin-nav-sub button { @apply flex w-full items-center justify-between rounded-lg px-3 py-2 text-right text-xs font-semibold text-mist hover:bg-shellup hover:text-foam; }
+.admin-nav-sub { @apply mt-2 flex gap-1 border-r-0 pr-0; }
+.admin-nav-sub button { @apply flex min-h-[32px] w-auto shrink-0 items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-right text-xs font-semibold text-mist hover:bg-shellup hover:text-foam; }
 .admin-nav-sub button[aria-current="page"] { @apply bg-sea/10 font-bold text-seadeep; }
 .admin-content { @apply min-w-0; }
-.admin-command-grid { @apply grid grid-cols-2 gap-3 mb-4 lg:grid-cols-4; }
-.admin-command-card { @apply min-h-[94px] rounded-2xl border border-line bg-shell px-4 py-3 text-right transition-colors hover:border-sea/60 hover:bg-shellup focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sea; box-shadow: 0 10px 24px rgba(35, 31, 26, 0.06); }
-.admin-command-card-label { @apply block text-xs font-bold text-mist; }
-.admin-command-card-value { @apply mt-2 block text-3xl font-bold leading-none text-foam; }
-.admin-command-card-meta { @apply mt-2 block text-xs font-semibold text-seadeep; }
-.admin-panel-head { @apply mb-3 rounded-2xl border border-line bg-shell px-4 py-3; box-shadow: 0 10px 24px rgba(35, 31, 26, 0.06); }
-.admin-panel-title { @apply text-lg font-bold text-foam; }
+.admin-command-grid { @apply grid grid-cols-2 gap-2 mb-3 lg:grid-cols-4; }
+.admin-command-card { @apply min-h-[64px] rounded-lg border border-line bg-shell px-3 py-2 text-right transition-colors hover:border-sea/60 hover:bg-shellup focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sea; box-shadow: 0 2px 8px rgba(35, 31, 26, 0.05); }
+.admin-command-card-label { @apply block text-[11px] font-bold text-mist; }
+.admin-command-card-value { @apply mt-1 block text-xl font-bold leading-none text-foam; }
+.admin-command-card-meta { @apply mt-1 block text-[11px] font-semibold text-seadeep; }
+.admin-panel-head { @apply mb-3 rounded-lg border border-line bg-shell px-3 py-2.5; box-shadow: 0 2px 8px rgba(35, 31, 26, 0.05); }
+.admin-panel-title { @apply text-base font-bold text-foam; }
 .admin-panel-meta { @apply mt-1 text-xs font-semibold text-mist; }
-.admin-panel-actions { @apply mt-3 flex flex-wrap gap-2; }
-.admin-panel-chip { @apply rounded-full border border-line bg-night px-3 py-1.5 text-xs font-bold text-mist; }
+.admin-panel-actions { @apply mt-2 flex flex-wrap gap-1.5; }
+.admin-panel-chip { @apply rounded-md border border-line bg-night px-2 py-1 text-[11px] font-bold text-mist; }
 .admin-alert-card { @apply mb-3 p-3; }
 .admin-alert-card > p:first-child { @apply mb-2 text-sm; }
 .admin-alert-card .space-y-2\.5 { @apply space-y-1.5; }
@@ -62,14 +65,14 @@ body { @apply bg-night text-foam antialiased; }
   .admin-content > .admin-alert-card:last-of-type { margin-inline-end: 0; }
 }
 
-.card { @apply bg-shell border border-line rounded-2xl; box-shadow: 0 4px 14px rgba(35, 31, 26, 0.035); }
+.card { @apply bg-shell border border-line rounded-lg; box-shadow: 0 1px 3px rgba(35, 31, 26, 0.045); }
 
 /* min-h-[44px] is the floor Apple asks for and Google exceeds at 48. The padding
    alone gave ~42px, and every `!py-1.5` override around the app cut that to ~32.
    inline-flex + centring is what makes the floor actually raise the box instead
    of leaving the label stuck to the top edge; every .btn in this codebase wraps
    a single run of text or an emoji, so nothing reflows. */
-.btn { @apply inline-flex items-center justify-center gap-1.5 min-h-[44px] rounded-xl px-4 py-2.5 font-semibold transition-colors disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sea focus-visible:ring-offset-2 focus-visible:ring-offset-night; }
+.btn { @apply inline-flex items-center justify-center gap-1.5 min-h-[36px] rounded-md px-3 py-2 text-sm font-semibold transition-colors disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sea focus-visible:ring-offset-2 focus-visible:ring-offset-night; }
 .btn-sea { @apply btn bg-sea text-white hover:bg-seadeep; }
 .btn-ghost { @apply btn bg-shellup text-foam hover:bg-line; }
 .btn-danger { @apply btn bg-red-500/15 text-red-600 hover:bg-red-500/25; }
@@ -78,7 +81,7 @@ body { @apply bg-night text-foam antialiased; }
    the boundary that identifies a control. `linestrong` is 3.40:1. The placeholder
    was mist at 60% opacity, which composites to #A69F98 for 2.45:1; full-opacity
    mist is 5.35:1 and still reads as secondary next to foam at 15.34:1. */
-.field { @apply w-full h-12 rounded-xl bg-night border border-linestrong px-3.5 text-foam placeholder:text-mist focus:outline-none focus:border-sea focus:ring-1 focus:ring-sea; }
+.field { @apply w-full h-10 rounded-md bg-night border border-linestrong px-3 text-sm text-foam placeholder:text-mist focus:outline-none focus:border-sea focus:ring-1 focus:ring-sea; }
 select.field {
   @apply appearance-none bg-no-repeat pr-3.5;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%236E655C'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z' clip-rule='evenodd'/%3E%3C/svg%3E");
@@ -93,7 +96,7 @@ select.field {
    regression. -800 clears it with room. */
 .badge-open { @apply text-xs font-semibold bg-emerald-500/15 text-emerald-800 rounded-full px-2.5 py-1; }
 .badge-closed { @apply text-xs font-semibold bg-red-500/15 text-red-600 rounded-full px-2.5 py-1; }
-.tab { @apply inline-flex items-center justify-center min-h-[44px] px-4 py-2 rounded-xl text-sm font-semibold text-mist hover:text-foam transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sea; }
+.tab { @apply inline-flex items-center justify-center min-h-[36px] px-3 py-1.5 rounded-md text-xs font-semibold text-mist hover:text-foam transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sea; }
 .tab-active { @apply bg-shellup text-foam; }
 .scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }

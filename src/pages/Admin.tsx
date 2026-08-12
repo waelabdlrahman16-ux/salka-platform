@@ -1770,7 +1770,7 @@ export default function Admin() {
           are unchanged; this only makes the large admin surface scannable. */}
       <div className="admin-workspace">
       <aside className="admin-nav" aria-label="أقسام لوحة التحكم">
-        <p className="admin-nav-label">مساحات العمل</p>
+        <p className="admin-nav-label">الأقسام</p>
         <div className="space-y-1">
         {GROUPS.map(g => {
           const n = TABS.filter(t => t.group === g.key).reduce((sum, t) => sum + (tabBadges[t.key] ?? 0), 0)
