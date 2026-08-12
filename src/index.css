@@ -9,13 +9,14 @@ body { @apply bg-night text-foam antialiased; }
    than a fresh set of one-off utility combinations: the customer, vendor,
    driver and admin portals can now share the same surface, heading and metric
    language as their screens are refreshed one by one. */
+.admin-shell { @apply max-w-[1440px] mx-auto; }
 .portal-hero {
-  @apply relative overflow-hidden rounded-2xl border border-line bg-shell px-4 py-4 sm:px-5;
-  box-shadow: 0 12px 30px rgba(35, 31, 26, 0.06);
+  @apply relative overflow-hidden rounded-2xl border border-line bg-shell px-4 py-3.5 sm:px-5;
+  box-shadow: 0 14px 34px rgba(35, 31, 26, 0.08);
 }
 .portal-hero::after {
   content: '';
-  @apply absolute -left-10 -top-14 h-32 w-32 rounded-full bg-sea/[0.07] pointer-events-none;
+  @apply absolute -left-10 -top-14 h-32 w-32 rounded-full bg-sea/[0.08] pointer-events-none;
 }
 .portal-kicker { @apply relative text-xs font-bold tracking-wide text-sea; }
 .portal-title { @apply relative mt-1 text-xl font-bold tracking-tight text-foam sm:text-2xl; }
@@ -26,25 +27,35 @@ body { @apply bg-night text-foam antialiased; }
 .metric-alert { @apply text-red-600; }
 .section-heading { @apply flex items-center justify-between gap-3 mb-3; }
 .section-heading h2 { @apply text-base font-bold text-foam; }
-.admin-workspace { @apply grid gap-3 lg:grid-cols-[196px_minmax(0,1fr)] lg:items-start; }
-.admin-nav { @apply rounded-2xl border border-line bg-shell p-1.5 lg:sticky lg:top-20; box-shadow: 0 4px 14px rgba(35, 31, 26, 0.035); }
+.admin-workspace { @apply grid gap-4 lg:grid-cols-[244px_minmax(0,1fr)] lg:items-start; }
+.admin-nav { @apply rounded-2xl border border-line bg-shell p-2 lg:sticky lg:top-20; box-shadow: 0 12px 28px rgba(35, 31, 26, 0.07); }
 .admin-nav-label { @apply px-3 pb-2 pt-1 text-[11px] font-bold uppercase tracking-wider text-mist; }
-.admin-nav-group { @apply flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-right text-sm font-semibold text-mist transition-colors hover:bg-shellup hover:text-foam; }
-.admin-nav-group-active { @apply bg-sea text-white hover:bg-seadeep hover:text-white; }
-.admin-nav-sub { @apply mt-1 border-r border-line pr-2; }
-.admin-nav-sub button { @apply flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-right text-xs text-mist hover:bg-shellup hover:text-foam; }
-.admin-nav-sub button[aria-current="page"] { @apply bg-shellup font-bold text-sea; }
+.admin-nav-group { @apply flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-right text-sm font-semibold text-mist transition-colors hover:bg-shellup hover:text-foam; }
+.admin-nav-group-active { @apply bg-foam text-white hover:bg-foam hover:text-white; }
+.admin-nav-sub { @apply mt-1.5 border-r border-line pr-2; }
+.admin-nav-sub button { @apply flex w-full items-center justify-between rounded-lg px-3 py-2 text-right text-xs font-semibold text-mist hover:bg-shellup hover:text-foam; }
+.admin-nav-sub button[aria-current="page"] { @apply bg-sea/10 font-bold text-seadeep; }
 .admin-content { @apply min-w-0; }
-.admin-command-grid { @apply grid grid-cols-2 gap-2.5 mb-3 sm:grid-cols-4; }
-.admin-command-card { @apply min-h-[82px] rounded-xl border border-line bg-shell px-3 py-2.5 text-right transition-colors hover:border-sea/50 hover:bg-shellup focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sea; }
-.admin-command-card-label { @apply block text-[11px] font-semibold text-mist; }
-.admin-command-card-value { @apply mt-1 block text-xl font-bold leading-none text-foam; }
-.admin-command-card-meta { @apply mt-1 block text-[11px] text-mist; }
+.admin-command-grid { @apply grid grid-cols-2 gap-3 mb-4 lg:grid-cols-4; }
+.admin-command-card { @apply min-h-[94px] rounded-2xl border border-line bg-shell px-4 py-3 text-right transition-colors hover:border-sea/60 hover:bg-shellup focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sea; box-shadow: 0 10px 24px rgba(35, 31, 26, 0.06); }
+.admin-command-card-label { @apply block text-xs font-bold text-mist; }
+.admin-command-card-value { @apply mt-2 block text-3xl font-bold leading-none text-foam; }
+.admin-command-card-meta { @apply mt-2 block text-xs font-semibold text-seadeep; }
+.admin-panel-head { @apply mb-3 rounded-2xl border border-line bg-shell px-4 py-3; box-shadow: 0 10px 24px rgba(35, 31, 26, 0.06); }
+.admin-panel-title { @apply text-lg font-bold text-foam; }
+.admin-panel-meta { @apply mt-1 text-xs font-semibold text-mist; }
+.admin-panel-actions { @apply mt-3 flex flex-wrap gap-2; }
+.admin-panel-chip { @apply rounded-full border border-line bg-night px-3 py-1.5 text-xs font-bold text-mist; }
 .admin-alert-card { @apply mb-3 p-3; }
 .admin-alert-card > p:first-child { @apply mb-2 text-sm; }
 .admin-alert-card .space-y-2\.5 { @apply space-y-1.5; }
 .admin-alert-card .bg-night { @apply p-2.5; }
 .admin-alert-card .btn { @apply min-h-[38px] py-1.5; }
+.admin-shell .admin-content > .space-y-3 > .card,
+.admin-shell .admin-content > .card {
+  @apply rounded-xl;
+  box-shadow: 0 8px 20px rgba(35, 31, 26, 0.05);
+}
 
 @media (min-width: 1024px) {
   .admin-content > .admin-alert-card { display: inline-block; vertical-align: top; width: calc(50% - 0.4rem); margin-inline-end: 0.5rem; }

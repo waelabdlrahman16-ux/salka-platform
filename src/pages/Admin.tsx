@@ -1513,8 +1513,11 @@ export default function Admin() {
     )
   }
 
+  const currentTab = TABS.find(t => t.key === tab)
+  const currentGroup = GROUPS.find(g => g.key === currentTab?.group)
+
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="admin-shell">
       <section className="portal-hero mb-5" aria-labelledby="admin-page-title">
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -1807,6 +1810,19 @@ export default function Admin() {
       </aside>
 
       <section className="admin-content">
+      <div className="admin-panel-head">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="admin-panel-meta">{currentGroup?.label ?? 'لوحة التحكم'}</p>
+            <h2 className="admin-panel-title">{currentTab?.label ?? 'مساحة العمل'}</h2>
+          </div>
+          <div className="admin-panel-actions" aria-label="ملخص المساحة الحالية">
+            <span className="admin-panel-chip">غير معيّنة: {unassigned.length}</span>
+            <span className="admin-panel-chip">جارية: {active.length}</span>
+            <span className="admin-panel-chip">مراجعة: {pendingInstapay.length + pendingRefunds.length + stalled.length}</span>
+          </div>
+        </div>
+      </div>
       <div className="flex gap-1.5 overflow-x-auto pb-2 mb-4 lg:hidden -mx-4 px-4">
         {TABS.filter(t => t.group === openGroup).map(t => (
           <button key={t.key} className={`tab ${tab === t.key ? 'tab-active' : ''}`} onClick={() => { if (t.key !== 'wallet') setWalletOrderId(null); setTab(t.key) }}>
