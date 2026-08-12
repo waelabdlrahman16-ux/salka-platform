@@ -7,31 +7,29 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'https',
 
-    // DRIVER BUILD ONLY. This APK is handed to three riders directly; it is
-    // not going in the Play Store or the App Store.
+    // CUSTOMER APP. This is the build going on the Play Store — package
+    // com.gosalka.app, the same identity the earlier driver-only build used.
+    // (2026-08-12: retired as the driver build. No driver ever actually
+    // installed that APK — see claude/salka-push-rules.md, "no native token
+    // has ever existed" — so reusing the package here has no live install to
+    // migrate. The staff app now lives at a separate package, built from a
+    // separate android-staff/ project once that's set up, so a build produced
+    // from THIS config can never land on a driver's or vendor's phone and
+    // silently repoint their staff app at the customer home screen.)
     //
-    // Loading the live site instead of a bundled copy is what keeps the deploy
-    // loop intact: push to main, ~3 minutes, the driver reopens the app and has
-    // the fix. A bundled build would freeze the drivers at whatever was
-    // compiled, and rebuilding it needs Node and the Capacitor CLI on the
-    // developer's machine -- which is exactly what is not available here, so
-    // every typo would become a blocked release.
-    //
-    // Capacitor still injects the native bridge into a remote URL, so
+    // Loading the live site instead of a bundled copy keeps the deploy loop
+    // intact: push to main, ~3 minutes, a customer who reopens the app has the
+    // fix, with no rebuild and no new Play Store review. Capacitor still
+    // injects the native bridge into a remote URL, so
     // @capacitor/push-notifications and @capacitor/geolocation work normally.
+    // This is fine for Google Play (unlike Apple, which rejects a bare
+    // WebView with no native functionality) because the app has real native
+    // features -- push notifications and geolocation for live order tracking
+    // -- beyond just rendering a site.
     //
-    // REMOVE THIS LINE before building a customer app for either store: Apple
-    // rejects apps that merely remote-load a website, and a store build wants
-    // the bundled `dist` this repo already produces.
-    // Note the PATH. Landing on the site root drops a driver on the customer
-    // home page, and a WebView has no address bar, so there is no way for him
-    // to reach the staff login at all -- the only sign-in he can see is the
-    // customer sheet with its Google button, which can never complete: Google
-    // refuses OAuth in an embedded WebView, so Capacitor hands it to Chrome,
-    // it succeeds there, and it comes back to a browser session the app cannot
-    // see. /login is the email+password screen, and Login.tsx redirects to
-    // homeFor(role) afterwards, so a driver lands on /driver by himself.
-    url: 'https://app.gosalka.com/login',
+    // Root, not /login: customers should land on the browsing/home screen,
+    // not be forced to sign in before they can look at a menu.
+    url: 'https://app.gosalka.com',
     cleartext: false
   }
 }
