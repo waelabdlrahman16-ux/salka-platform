@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { useCatalogSync } from '../lib/useCatalogSync'
 import { vendorOperation } from '../lib/vendorOperations'
 import { uploadVendorImage } from '../lib/upload'
 import AddMenuItemModal from './AddMenuItemModal'
@@ -26,7 +27,7 @@ export default function VendorMenuManager({ restaurant, onClose }: {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  async function load() {
+  const load = useCallback(async () => {
     setError('')
     const { data, error: loadError } = await supabase.from('menu_items').select('*')
       .eq('restaurant_id', restaurant.id).order('category').order('name')
@@ -37,9 +38,10 @@ export default function VendorMenuManager({ restaurant, onClose }: {
     }
     setItems(data ?? [])
     setLoading(false)
-  }
+  }, [restaurant.id])
 
   useEffect(() => { load() }, [restaurant.id])
+  useCatalogSync({ restaurantId: restaurant.id, refresh: load })
 
   async function updatePrice(item: MenuItem, price: number) {
     if (!Number.isFinite(price) || price <= 0) {

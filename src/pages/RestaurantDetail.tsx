@@ -14,6 +14,7 @@ import type { Compound, Discount, MenuItem, MenuItemAddon, MenuItemAddonGroup, M
 import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
 import { track } from '../lib/analytics'
 import { publicCatalog } from '../lib/publicCatalog'
+import { useCatalogSync } from '../lib/useCatalogSync'
 
 const ALL = '__all__'
 
@@ -65,12 +66,20 @@ export default function RestaurantDetail() {
     setSearchParams(next)
   }
   const [loadFailed, setLoadFailed] = useState(false)
+  const [catalogRevision, setCatalogRevision] = useState(0)
+
+  useCatalogSync({
+    restaurantId: Number(id),
+    refresh: () => setCatalogRevision(revision => revision + 1),
+    fallbackIntervalMs: 45_000,
+  })
 
   useEffect(() => {
     // The error was discarded, so a bad id, an RLS denial or being offline all
     // produced restaurant === null and an eternal "جاري التحميل…" with no
     // message and no way back (the back link sits below the early return).
     setLoadFailed(false)
+    setOptionsLoaded(false)
     // restaurant_public() rather than the table, because the table has no
     // review_count -- and without it this page displayed restaurants.rating
     // unconditionally. That column is hand-typed and unconnected to
@@ -113,7 +122,7 @@ export default function RestaurantDetail() {
       .then(({ data }) => setCompounds(data ?? []))
     supabase.from('discounts').select('*').eq('restaurant_id', id).eq('active', true)
       .then(({ data }) => setDiscounts(data ?? []))
-  }, [id])
+  }, [id, catalogRevision])
 
   useEffect(() => {
     if (restaurant && restaurant.order_mode === 'catalog') cart.setForRestaurant(restaurant)

@@ -38,6 +38,7 @@ import DriverForm, { driverToForm } from '../components/DriverForm'
 import LiveDeliveryDetail from '../components/LiveDeliveryDetail'
 import Toggle from '../components/Toggle'
 import { useSheets } from '../components/ActionSheets'
+import { useCatalogSync } from '../lib/useCatalogSync'
 
 /**
  * The batch load below is a `Promise.all` of raw postgrest queries, each
@@ -553,6 +554,10 @@ export default function Admin() {
     const t = setInterval(load, 15000)
     return () => clearInterval(t)
   }, [])
+
+  // The normal 15s board refresh remains the fallback. Realtime makes a menu
+  // or restaurant edit made by a vendor visible to the admin immediately.
+  useCatalogSync({ refresh: () => load(true), fallbackIntervalMs: 60_000 })
 
   // WHY THIS EXISTS. Every alert on this page fires from a polling timer, and a
   // browser will not play a sound until the page has received a real user
