@@ -35,6 +35,11 @@ body { @apply bg-night text-foam antialiased; }
 .admin-nav-sub button { @apply flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-right text-xs text-mist hover:bg-shellup hover:text-foam; }
 .admin-nav-sub button[aria-current="page"] { @apply bg-shellup font-bold text-sea; }
 .admin-content { @apply min-w-0; }
+.admin-command-grid { @apply grid grid-cols-2 gap-2.5 mb-3 sm:grid-cols-4; }
+.admin-command-card { @apply min-h-[82px] rounded-xl border border-line bg-shell px-3 py-2.5 text-right transition-colors hover:border-sea/50 hover:bg-shellup focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sea; }
+.admin-command-card-label { @apply block text-[11px] font-semibold text-mist; }
+.admin-command-card-value { @apply mt-1 block text-xl font-bold leading-none text-foam; }
+.admin-command-card-meta { @apply mt-1 block text-[11px] text-mist; }
 .admin-alert-card { @apply mb-3 p-3; }
 .admin-alert-card > p:first-child { @apply mb-2 text-sm; }
 .admin-alert-card .space-y-2\.5 { @apply space-y-1.5; }

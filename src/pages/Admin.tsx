@@ -1546,6 +1546,29 @@ export default function Admin() {
         </div>
       )}
 
+      <div className="admin-command-grid" aria-label="ملخص التشغيل السريع">
+        <button className="admin-command-card" onClick={() => { setOpenGroup('now'); setTab('unassigned') }}>
+          <span className="admin-command-card-label">طلبات تحتاج مندوب</span>
+          <strong className="admin-command-card-value">{unassigned.length}</strong>
+          <span className="admin-command-card-meta">افتح قائمة التعيين ←</span>
+        </button>
+        <button className="admin-command-card" onClick={() => { setOpenGroup('now'); setTab('active') }}>
+          <span className="admin-command-card-label">على الطريق الآن</span>
+          <strong className="admin-command-card-value">{active.length}</strong>
+          <span className="admin-command-card-meta">متابعة التوصيلات ←</span>
+        </button>
+        <button className="admin-command-card" onClick={() => { setOpenGroup('now'); setTab('orders') }}>
+          <span className="admin-command-card-label">كل الطلبات</span>
+          <strong className="admin-command-card-value">{orders.length}</strong>
+          <span className="admin-command-card-meta">بحث وتصفية ←</span>
+        </button>
+        <button className="admin-command-card" onClick={() => { setOpenGroup('money'); setTab('wallet') }}>
+          <span className="admin-command-card-label">تحتاج مراجعة</span>
+          <strong className="admin-command-card-value">{pendingInstapay.length + stalled.length}</strong>
+          <span className="admin-command-card-meta">مدفوعات وتأخيرات ←</span>
+        </button>
+      </div>
+
       {/* Third banner in the region that already does exactly this for
           no-answer reports and pending InstaPay. Before this, the only lateness
           detection anywhere in the admin surface applied to *unassigned* orders
