@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { useCatalogSync } from '../lib/useCatalogSync'
 import { useAuth } from '../lib/auth'
 import MenuItemEditor from '../components/MenuItemEditor'
 import AddMenuItemModal from '../components/AddMenuItemModal'
@@ -28,7 +29,7 @@ export default function Catalog() {
 
   const isAdmin = profile?.role === 'admin'
 
-  async function load() {
+  const load = useCallback(async () => {
     setError('')
     const [r, m] = await Promise.all([
       supabase.from('restaurants').select('*').eq('archived', false).order('name'),
@@ -38,9 +39,10 @@ export default function Catalog() {
     setRestaurants(r.data ?? [])
     setMenu(m.data ?? [])
     setLoading(false)
-  }
+  }, [])
 
   useEffect(() => { load() }, [])
+  useCatalogSync({ refresh: load })
 
   const [uploadingImage, setUploadingImage] = useState<string | null>(null)
 
