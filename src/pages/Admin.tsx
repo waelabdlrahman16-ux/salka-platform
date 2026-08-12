@@ -1495,7 +1495,11 @@ export default function Admin() {
     // the layout shift from "before data" to "when the skeleton is replaced".
     return (
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4">لوحة التحكم</h1>
+        <div className="portal-hero mb-5">
+          <p className="portal-kicker">مركز العمليات</p>
+          <h1 className="portal-title">لوحة التحكم</h1>
+          <p className="portal-subtitle">جاري تجهيز حالة التشغيل الآن</p>
+        </div>
         <div className="flex gap-1.5 pb-1.5">
           {Array.from({ length: 4 }).map((_, i) => <SkeletonBlock key={i} className="h-9 w-24 shrink-0" />)}
         </div>
@@ -1511,7 +1515,29 @@ export default function Admin() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">لوحة التحكم</h1>
+      <section className="portal-hero mb-5" aria-labelledby="admin-page-title">
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="portal-kicker">مركز العمليات</p>
+            <h1 id="admin-page-title" className="portal-title">لوحة التحكم</h1>
+            <p className="portal-subtitle">تابع الطلبات والتوصيل وما يحتاج تدخّل منك في مكان واحد.</p>
+          </div>
+          <div className="flex gap-2 overflow-x-auto pb-0.5 sm:justify-end">
+            <div className={`metric ${unassigned.length > 0 ? 'border-red-400/50' : ''}`}>
+              <span className="metric-label">غير معيّنة</span>
+              <strong className={`metric-value ${unassigned.length > 0 ? 'metric-alert' : ''}`}>{unassigned.length}</strong>
+            </div>
+            <div className="metric">
+              <span className="metric-label">توصيلات جارية</span>
+              <strong className="metric-value">{active.length}</strong>
+            </div>
+            <div className={`metric ${stalled.length > 0 ? 'border-red-400/50' : ''}`}>
+              <span className="metric-label">تحتاج تدخّل</span>
+              <strong className={`metric-value ${stalled.length > 0 ? 'metric-alert' : ''}`}>{stalled.length}</strong>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {actionError && (
         <div ref={actionErrorRef} className="card p-3 mb-4 border-red-400/50 bg-red-500/5 flex items-center justify-between gap-3">
