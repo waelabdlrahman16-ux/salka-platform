@@ -1,37 +1,49 @@
-# Build the driver APK on GitHub's machines, not on a laptop.
+# Build the customer app's AAB and APK on GitHub's machines, not on a laptop.
 #
-# WHY THIS EXISTS. Building the APK needs the Android SDK, and the Android SDK
-# comes from dl.google.com and maven.google.com. Both are blocked from the agent
+# WHY THIS EXISTS. Building needs the Android SDK, and the Android SDK comes
+# from dl.google.com and maven.google.com. Both are blocked from the agent
 # sandbox (403 through the CONNECT tunnel), so an agent session can run
-# `npm run build` and `npx cap sync` but can never run gradle. Android Studio on
-# a laptop was the only other route, and Wael does not have one set up.
+# `npm run build` and `npx cap sync` but can never run gradle. Android Studio
+# on a laptop was the only other route, and Wael does not have one set up.
 #
 # GitHub's ubuntu runners ship the Android SDK preinstalled. So: press the
-# button, wait a few minutes, download the APK. It works from a phone.
+# button, wait a few minutes, download the artifacts. It works from a phone.
 #
-# HOW TO RUN IT: GitHub → Actions → "Build driver APK" → Run workflow.
+# HOW TO RUN IT: GitHub → Actions → "Build customer app" → Run workflow.
+#
+# WHICH FILE TO UPLOAD WHERE.
+#   - The .aab (Android App Bundle) is what Play Console wants for the actual
+#     store listing. Play Console → your app → Production (or a testing
+#     track) → Create new release → upload the .aab.
+#   - The .apk is only for sideloading a build onto your own phone to check it
+#     before submitting -- Play Store does not accept a bare APK upload for a
+#     new app.
 #
 # ---------------------------------------------------------------------------
-# YOU PROBABLY DO NOT NEED THIS.
+# YOU PROBABLY DO NOT NEED TO RE-RUN THIS FOR EVERY CHANGE.
 #
-# capacitor.config.ts sets `server.url = 'https://app.gosalka.com/login'`, so
-# the APK is a thin shell that loads the live site. Web changes -- every screen,
-# every fix, including all of push.ts -- reach an already-installed APK when the
-# driver reopens it. No rebuild.
+# capacitor.config.ts sets `server.url = 'https://app.gosalka.com'`, so the
+# app is a thin shell that loads the live site. Web changes -- every screen,
+# every fix -- reach an already-installed copy when the customer reopens the
+# app. No rebuild, no new Play Store review.
 #
 # Rebuild ONLY when something NATIVE changes: capacitor.config.ts, a Capacitor
 # plugin added or removed, google-services.json, AndroidManifest, the app icon
-# or splash screen, or the SDK versions in android/variables.gradle.
+# or splash screen, or the SDK versions in android/variables.gradle. A native
+# change to an app already live on Play Store still needs a new release
+# uploaded through Play Console -- this workflow only produces the file, it
+# does not publish it.
 # ---------------------------------------------------------------------------
 #
-# SIGNING. The three secrets below are optional but you almost certainly want
-# them. The Firebase Android API key is restricted to package com.gosalka.app
-# plus the RELEASE keystore's SHA-1
-# (1B:FD:48:0F:DD:D3:3A:44:64:2F:EA:00:4A:D1:10:03:6A:DA:BF:B3). A debug build
-# is signed with a different key, so FCM will refuse to register it and the app
-# will look exactly like a push failure. Without the secrets this workflow still
-# produces an installable debug APK -- fine for checking the app opens, useless
-# for testing notifications.
+# SIGNING. The three secrets below are optional but you need them for
+# anything installable on a real device outside Play's own re-signing.
+# Play App Signing re-signs the AAB for distribution, but Google still checks
+# your upload against the "app signing key" the first time, and the Firebase
+# Android API key is restricted to package com.gosalka.app plus this
+# keystore's release SHA-1
+# (1B:FD:48:0F:DD:D3:3A:44:64:2F:EA:00:4A:D1:10:03:6A:DA:BF:B3). An unsigned
+# or debug-signed build will not register for push and Play Console will
+# reject an unsigned AAB outright.
 #
 #   Settings → Secrets and variables → Actions → New repository secret
 #     ANDROID_KEYSTORE_BASE64   base64 of salka-release.jks (in salka-android.zip)
@@ -41,20 +53,22 @@
 #   To make the base64:  base64 -w0 salka-release.jks
 #
 # The keystore is deliberately NOT in the repo. Keep it that way -- anyone with
-# it can ship an update that replaces Salka on a driver's phone.
+# it can ship an update that replaces Salka on a customer's phone, and losing
+# it means this app can never be updated on Play Store again, only replaced
+# under a new package name.
 
-name: Build driver APK
+name: Build customer app
 
 on:
   workflow_dispatch:
 
 jobs:
-  apk:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      # Keep APK web assets reproducible with CI and production deploys.
+      # Keep build web assets reproducible with CI and production deploys.
       # This must match .nvmrc and package.json's engines.node exactly.
       - uses: actions/setup-node@v4
         with:
@@ -75,9 +89,10 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
-      # Android refuses to install an update whose versionCode is not higher
-      # than the installed one, and build.gradle hardcodes 1. The run number is
-      # monotonic, so every build supersedes the last.
+      # Play Console refuses a versionCode it has already seen, and
+      # build.gradle hardcodes 1. The run number is monotonic, so every build
+      # supersedes the last -- keep this even after the first Play Store
+      # upload, or the next release will be rejected for a duplicate code.
       - name: Stamp versionCode from the run number
         run: |
           sed -i "s/^\( *versionCode \).*/\1${{ github.run_number }}/" android/app/build.gradle
@@ -92,7 +107,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           if [ -z "$KEYSTORE_B64" ]; then
-            echo "::warning::No ANDROID_KEYSTORE_BASE64 secret. Building an UNSIGNED debug APK — FCM will not register on it."
+            echo "::warning::No ANDROID_KEYSTORE_BASE64 secret. Building UNSIGNED debug artifacts — FCM will not register, and Play Console will reject the AAB."
             echo "signed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -105,7 +120,7 @@ jobs:
           EOF
           echo "signed=true" >> "$GITHUB_OUTPUT"
 
-      - name: Assemble
+      - name: Assemble APK (for sideload testing)
         working-directory: android
         run: |
           chmod +x gradlew
@@ -114,6 +129,11 @@ jobs:
           else
             ./gradlew assembleDebug --no-daemon
           fi
+
+      - name: Bundle AAB (for Play Console upload)
+        working-directory: android
+        if: steps.signing.outputs.signed == 'true'
+        run: ./gradlew bundleRelease --no-daemon
 
       # Printed so the fingerprint can be checked against the Firebase key
       # restriction without anyone having to trust that the right secret was used.
@@ -129,7 +149,15 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: salka-driver-apk
+          name: salka-customer-apk
           path: android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        if: steps.signing.outputs.signed == 'true'
+        with:
+          name: salka-customer-aab
+          path: android/app/build/outputs/bundle/release/*.aab
           if-no-files-found: error
           retention-days: 30
