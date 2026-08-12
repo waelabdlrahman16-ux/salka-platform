@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useDismissable } from '../lib/useDismissable'
 import { useAuth } from '../lib/auth'
 import { startRinging, stopRinging } from '../lib/ring'
-import { ping, askNotificationPermission } from '../lib/notify'
+import { ping } from '../lib/notify'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
@@ -15,6 +15,7 @@ import { vendorOperation } from '../lib/vendorOperations'
 import { catalogCheck } from '../lib/catalogChecks'
 import PrescriptionLink from '../components/PrescriptionLink'
 import EnablePushButton from '../components/EnablePushButton'
+import EnableSoundButton from '../components/EnableSoundButton'
 import VendorMenuManager from '../components/VendorMenuManager'
 import type { Compound, DeliverySlotRow, MenuItem, Order, OrderItem, Restaurant } from '../lib/types'
 import Icon from '../components/Icon'
@@ -62,7 +63,6 @@ export default function Vendor() {
   // navigates away from the main view.
   useEffect(() => {
     if (!rid) return
-    askNotificationPermission()
     async function checkNew() {
       const { count } = await supabase.from('orders').select('id', { count: 'exact', head: true })
         .eq('restaurant_id', rid).eq('kitchen_status', 'new').neq('status', 'Cancelled')
@@ -93,6 +93,7 @@ export default function Vendor() {
             the vendors the fix was written for -- كنتاكي, ماكدونالدز, بيتزا هت
             are all order_mode = 'pickup_request'. Caught in review. */}
         <EnablePushButton required onToken={persistPushToken} label="فعّل تنبيهات طلبات المندوب" />
+        <EnableSoundButton />
         <div className="flex gap-2 mb-4">
           <button className={`tab ${view !== 'history' ? 'tab-active' : 'bg-shellup/60'}`} onClick={() => setView('main')}>🛵 طلب مندوب</button>
           <button className={`tab ${view === 'history' ? 'tab-active' : 'bg-shellup/60'}`} onClick={() => setView('history')}>🧾 السجل</button>
@@ -124,6 +125,7 @@ export default function Vendor() {
        * notifications on their own devices" was impossible to follow.
        */}
       <EnablePushButton required onToken={persistPushToken} label="فعّل تنبيهات الطلبات الجديدة" />
+      <EnableSoundButton />
       {view === 'main' && (
         <>
           <div className="flex flex-wrap items-center gap-2 mb-4">

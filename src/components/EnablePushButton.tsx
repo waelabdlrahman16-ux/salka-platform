@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { enablePush, lastPushError, pushDiag, pushPermission, pushSupport, registerPush, resetPushDiag } from '../lib/push'
 import type { PushTokenSink } from '../lib/push'
-import { iosPushBlocker } from '../lib/platform'
+import { iosPushBlocker, isIOS } from '../lib/platform'
 
 /**
  * Explicit opt-in control for notifications.
@@ -143,6 +143,16 @@ export default function EnablePushButton({
     )
   }
 
+  // An installed iPhone app on iOS older than 16.4 has no Push API. Returning
+  // nothing here makes an unavailable device look like a successfully enrolled
+  // one, which is worse than a clear limitation.
+  if (support === 'unsupported' && isIOS()) {
+    return (
+      <p className="text-xs text-sandink bg-sand/10 rounded-xl p-3 mb-3 leading-relaxed">
+        التنبيهات محتاجة iOS 16.4 أو أحدث. حدّث الآيفون، وبعدها افتح سالكة من أيقونة الشاشة الرئيسية وفعّل التنبيهات.
+      </p>
+    )
+  }
   if (support === 'unsupported' || support === 'unconfigured') return null
   if (checking) return (
     <div className={`mb-3 rounded-xl p-3 text-sm ${required ? 'border border-sand/50 bg-sand/10' : 'bg-shellup/60'}`}>

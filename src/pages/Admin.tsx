@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useDismissable } from '../lib/useDismissable'
 import type { Assignment, Compound, Complaint, Driver, DeliverySlotRow, Earning, LiveDelivery, MenuItem, Order, OrderRating, Reliability, Restaurant, Setting, SettlementRequest, Shift, VendorCoverage } from '../lib/types'
-import { ping, askNotificationPermission } from '../lib/notify'
-import { audioBlocked, unlockAudio } from '../lib/audioUnlock'
+import { ping } from '../lib/notify'
 import { registerPush, persistPushToken } from '../lib/push'
 import { uploadVendorImage } from '../lib/upload'
 import { SkeletonBlock, SkeletonOrderCard } from '../components/Skeleton'
@@ -27,6 +26,7 @@ import MenuItemEditor from '../components/MenuItemEditor'
 import AddMenuItemModal from '../components/AddMenuItemModal'
 import MenuItemsPanel from '../components/MenuItemsPanel'
 import EnablePushButton from '../components/EnablePushButton'
+import EnableSoundButton from '../components/EnableSoundButton'
 import CustomersTab from '../components/CustomersTab'
 import FunnelPanel from '../components/FunnelPanel'
 import VendorHoursRow from '../components/VendorHoursRow'
@@ -548,7 +548,6 @@ export default function Admin() {
   }, [orderDateFilter, orderDateFrom, orderDateTo])
 
   useEffect(() => {
-    askNotificationPermission()
     registerPush(persistPushToken)
     load().finally(() => setFirstLoad(false))
     const t = setInterval(load, 15000)
@@ -558,21 +557,6 @@ export default function Admin() {
   // The normal 15s board refresh remains the fallback. Realtime makes a menu
   // or restaurant edit made by a vendor visible to the admin immediately.
   useCatalogSync({ refresh: () => load(true), fallbackIntervalMs: 60_000 })
-
-  // WHY THIS EXISTS. Every alert on this page fires from a polling timer, and a
-  // browser will not play a sound until the page has received a real user
-  // gesture. An admin tab is opened and then watched, not clicked -- so the
-  // AudioContext stays suspended all day, showNotification still draws the
-  // banner, and the beep is silently skipped. On 2026-08-07 a stalled-order
-  // alert appeared at 18:10 with no sound and read as a broken notification.
-  // There is no way to unlock audio without a tap, so ask for the tap.
-  const [soundBlocked, setSoundBlocked] = useState(false)
-  useEffect(() => {
-    const check = () => setSoundBlocked(audioBlocked())
-    check()
-    const t = setInterval(check, 4000)
-    return () => clearInterval(t)
-  }, [])
 
   const escalateAfter = Number(settings.find(s => s.key === 'escalate_after_minutes')?.value ?? 15)
   const isLate = (o: Order) => {
@@ -1702,16 +1686,7 @@ export default function Admin() {
         label="فعّل تنبيهات الإدارة"
       />
 
-      {/* One tap, then the alerts on this page can actually make a noise.
-          Sits next to the push button because they are the two halves of the
-          same promise and each fails on its own. */}
-      {soundBlocked && (
-        <button
-          className="w-full mb-3 rounded-xl border border-sand/50 bg-sand/15 px-3.5 py-3 text-right text-sm font-semibold text-sandink"
-          onClick={() => { unlockAudio(); setSoundBlocked(audioBlocked()) }}>
-          🔇 الصوت مقفول في التاب ده — اضغط هنا عشان التنبيهات تسمّع
-        </button>
-      )}
+      <EnableSoundButton />
 
       {/* Two rows instead of one row of sixteen. The group carries the alert
           count of everything inside it, so nothing that needed you becomes
