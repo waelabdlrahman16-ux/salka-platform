@@ -27,6 +27,7 @@ import MenuItemEditor from '../components/MenuItemEditor'
 import AddMenuItemModal from '../components/AddMenuItemModal'
 import MenuItemsPanel from '../components/MenuItemsPanel'
 import EnablePushButton from '../components/EnablePushButton'
+import PushCoveragePanel from '../components/PushCoveragePanel'
 import CustomersTab from '../components/CustomersTab'
 import FunnelPanel from '../components/FunnelPanel'
 import VendorHoursRow from '../components/VendorHoursRow'
@@ -99,7 +100,7 @@ function AccountActionsMenu({ busy, onChangeEmail, onResetPassword, onCustomPass
   )
 }
 
-type Tab = 'daily' | 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet' | 'banners' | 'refunds' | 'customers' | 'compounds'
+type Tab = 'daily' | 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet' | 'banners' | 'refunds' | 'customers' | 'compounds' | 'notifications'
 
 // What is actually owed back, decided by the server. A COD order only ever took
 // the 50% deposit, so refunding `total` would be a gift -- and that is exactly
@@ -161,6 +162,7 @@ const TABS: { key: Tab; label: string; group: TabGroup }[] = [
   { key: 'accounts', label: 'حسابات الدخول', group: 'people' },
 
   { key: 'settings', label: 'الإعدادات', group: 'setup' },
+  { key: 'notifications', label: '🔔 تغطية التنبيهات', group: 'setup' },
 ]
 
 interface StalledOrder {
@@ -3077,6 +3079,8 @@ export default function Admin() {
           })}
         </div>
       )}
+
+      {tab === 'notifications' && <PushCoveragePanel />}
 
       {newCreds && (
         <div ref={credsRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true" onClick={() => setNewCreds(null)}>

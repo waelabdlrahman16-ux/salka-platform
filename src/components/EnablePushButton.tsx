@@ -38,9 +38,11 @@ function Trail({ lines }: { lines: string[] }) {
 export default function EnablePushButton({
   onToken,
   label = 'فعّل تنبيهات الطلبات',
+  required = false,
 }: {
   onToken: PushTokenSink
   label?: string
+  required?: boolean
 }) {
   const [support, setSupport] = useState(() => pushSupport())
   const [permission, setPermission] = useState(() => pushPermission())
@@ -53,6 +55,7 @@ export default function EnablePushButton({
   // registration had succeeded. The button stayed on screen after a successful
   // tap, which is indistinguishable from the button not working.
   const [granted, setGranted] = useState(false)
+  const [checking, setChecking] = useState(false)
   // Rendered on screen because the release APK has no console and no remote
   // debugging. Without this, "the button does nothing" is the entire bug report
   // available from a phone.
@@ -80,6 +83,7 @@ export default function EnablePushButton({
     // on load. registerPush() does not prompt on either platform.
     if (s !== 'native' && p !== 'granted') return
     let cancelled = false
+    setChecking(true)
     registerPush(onToken).then(ok => {
       if (cancelled) return
       if (ok) { setGranted(true); return }
@@ -89,7 +93,7 @@ export default function EnablePushButton({
       if (s === 'native') return
       setReason(lastPushError || 'التسجيل فشل من غير رسالة')
       setFailed(true)
-    })
+    }).finally(() => { if (!cancelled) setChecking(false) })
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -140,6 +144,11 @@ export default function EnablePushButton({
   }
 
   if (support === 'unsupported' || support === 'unconfigured') return null
+  if (checking) return (
+    <div className={`mb-3 rounded-xl p-3 text-sm ${required ? 'border border-sand/50 bg-sand/10' : 'bg-shellup/60'}`}>
+      <p className="font-semibold">جاري التأكد إن الجهاز مسجل للتنبيهات…</p>
+    </div>
+  )
   if (granted || permission === 'granted') return null
 
   // Denied is a dead end until the person changes it in browser settings, so
@@ -154,7 +163,13 @@ export default function EnablePushButton({
   }
 
   return (
-    <div className="mb-3">
+    <div className={`mb-3 ${required ? 'rounded-xl border border-sand/50 bg-sand/10 p-3' : ''}`}>
+      {required && (
+        <div className="mb-2">
+          <p className="text-sm font-bold text-sandink">لازم تفعّل التنبيهات قبل ما تعتمد على الشاشة دي</p>
+          <p className="text-xs text-mist mt-0.5">من غيرها ممكن طلب جديد يوصل للنظام من غير ما جهازك ينبهك.</p>
+        </div>
+      )}
       <button
         className="btn-sea w-full !py-3"
         disabled={busy}

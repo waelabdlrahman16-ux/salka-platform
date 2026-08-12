@@ -92,7 +92,7 @@ export default function Vendor() {
         {/* Was only on the OTHER return, which meant it was missing from exactly
             the vendors the fix was written for -- كنتاكي, ماكدونالدز, بيتزا هت
             are all order_mode = 'pickup_request'. Caught in review. */}
-        <EnablePushButton onToken={persistPushToken} label="فعّل تنبيهات طلبات المندوب" />
+        <EnablePushButton required onToken={persistPushToken} label="فعّل تنبيهات طلبات المندوب" />
         <div className="flex gap-2 mb-4">
           <button className={`tab ${view !== 'history' ? 'tab-active' : 'bg-shellup/60'}`} onClick={() => setView('main')}>🛵 طلب مندوب</button>
           <button className={`tab ${view === 'history' ? 'tab-active' : 'bg-shellup/60'}`} onClick={() => setView('history')}>🧾 السجل</button>
@@ -123,7 +123,7 @@ export default function Vendor() {
        * صيدلية, سوبرماركت, هارت أتاك. The advice "tell the vendors to enable
        * notifications on their own devices" was impossible to follow.
        */}
-      <EnablePushButton onToken={persistPushToken} label="فعّل تنبيهات الطلبات الجديدة" />
+      <EnablePushButton required onToken={persistPushToken} label="فعّل تنبيهات الطلبات الجديدة" />
       {view === 'main' && (
         <>
           <div className="flex flex-wrap items-center gap-2 mb-4">

@@ -809,6 +809,7 @@ export default function DriverPage() {
       {/* The single most useful control on this page. Without it a driver has
           to keep the tab open and foregrounded to learn an order exists. */}
       <EnablePushButton
+        required
         onToken={persistPushToken}
       />
 
