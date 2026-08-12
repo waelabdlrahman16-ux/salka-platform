@@ -1739,17 +1739,20 @@ export default function Admin() {
         </button>
       )}
 
-      {/* Two rows instead of one row of sixteen. The group carries the alert
-          count of everything inside it, so nothing that needed you becomes
-          invisible by being one level down. */}
-      <div className="flex gap-1.5 overflow-x-auto pb-1.5 -mx-4 px-4">
+      {/* The same tab state is now presented as an operations rail on desktop
+          and a compact horizontal control on mobile. The actions and tab keys
+          are unchanged; this only makes the large admin surface scannable. */}
+      <div className="admin-workspace">
+      <aside className="admin-nav" aria-label="أقسام لوحة التحكم">
+        <p className="admin-nav-label">مساحات العمل</p>
+        <div className="space-y-1">
         {GROUPS.map(g => {
           const n = TABS.filter(t => t.group === g.key).reduce((sum, t) => sum + (tabBadges[t.key] ?? 0), 0)
           const on = openGroup === g.key
           return (
-            <button key={g.key}
-              className={`shrink-0 rounded-xl px-3.5 py-2 text-sm font-semibold border-2 transition-colors
-                ${on ? 'bg-sea text-white border-sea' : 'bg-shell border-line text-mist hover:border-sea/40'}`}
+            <div key={g.key}>
+            <button
+              className={`admin-nav-group ${on ? 'admin-nav-group-active' : ''}`}
               onClick={() => {
                 setOpenGroup(g.key)
                 // Land on the first tab that is asking for something, otherwise
@@ -1760,16 +1763,28 @@ export default function Admin() {
                 if (next !== 'wallet') setWalletOrderId(null)
                 setTab(next)
               }}>
-              {g.label}
+              <span>{g.label}</span>
               {n > 0 && (
                 <span className={`mr-1.5 rounded-full px-1.5 text-[11px] font-bold ${on ? 'bg-white text-sea' : 'bg-red-600 text-white'}`}>{n}</span>
               )}
             </button>
+            {on && <div className="admin-nav-sub">
+              {TABS.filter(t => t.group === g.key).map(t => (
+                <button key={t.key} aria-current={tab === t.key ? 'page' : undefined}
+                  onClick={() => { if (t.key !== 'wallet') setWalletOrderId(null); setTab(t.key) }}>
+                  <span>{t.label}</span>
+                  {(tabBadges[t.key] ?? 0) > 0 && <span className="badge-closed !px-1.5 !py-0.5">{tabBadges[t.key]}</span>}
+                </button>
+              ))}
+            </div>}
+            </div>
           )
         })}
-      </div>
+        </div>
+      </aside>
 
-      <div className="flex gap-1.5 overflow-x-auto pb-2 mb-4 -mx-4 px-4">
+      <section className="admin-content">
+      <div className="flex gap-1.5 overflow-x-auto pb-2 mb-4 lg:hidden -mx-4 px-4">
         {TABS.filter(t => t.group === openGroup).map(t => (
           <button key={t.key} className={`tab ${tab === t.key ? 'tab-active' : ''}`} onClick={() => { if (t.key !== 'wallet') setWalletOrderId(null); setTab(t.key) }}>
             {t.label}
@@ -3231,6 +3246,8 @@ export default function Admin() {
         />
       )}
 
+      </section>
+      </div>
       {sheetElement}
     </div>
   )
