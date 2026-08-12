@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useDismissable } from '../lib/useDismissable'
 import { useAuth } from '../lib/auth'
-import { pingIds, askNotificationPermission } from '../lib/notify'
+import { pingIds } from '../lib/notify'
 import { registerPush, persistPushToken } from '../lib/push'
 import EnablePushButton from '../components/EnablePushButton'
+import EnableSoundButton from '../components/EnableSoundButton'
 import { startLocationReporting, stopLocationReporting, reportPosition } from '../lib/geolocation'
 import type { Assignment, Driver, Shift, SwapRequest } from '../lib/types'
 import Icon from '../components/Icon'
@@ -356,7 +357,6 @@ export default function DriverPage() {
   }
 
   useEffect(() => {
-    askNotificationPermission()
     load()
     const t = setInterval(load, 10000)
     // Browsers throttle or suspend timers in a backgrounded tab, and push does
@@ -812,6 +812,7 @@ export default function DriverPage() {
         required
         onToken={persistPushToken}
       />
+      <EnableSoundButton />
 
       {(syncFailed || (lastSyncAt !== null && Date.now() - lastSyncAt > STALE_AFTER_MS)) && (
         <div className="bg-sand/15 border border-sand/40 rounded-xl p-3 mb-4 flex items-center justify-between gap-3">

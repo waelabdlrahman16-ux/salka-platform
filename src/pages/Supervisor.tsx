@@ -6,13 +6,14 @@ import { dispatchOperation } from '../lib/dispatchOperations'
 import { vendorOperation } from '../lib/vendorOperations'
 import { useAuth } from '../lib/auth'
 import { useDismissable } from '../lib/useDismissable'
-import { ping, askNotificationPermission } from '../lib/notify'
+import { ping } from '../lib/notify'
 import { registerPush, persistPushToken } from '../lib/push'
 import { orderStatusLabel, assignmentStatusLabel } from '../lib/statusLabels'
 import { vendorNoun } from '../lib/vendorWords'
 import type { Assignment, Driver, LiveDelivery, Order, RequestItem } from '../lib/types'
 import Icon from '../components/Icon'
 import EnablePushButton from '../components/EnablePushButton'
+import EnableSoundButton from '../components/EnableSoundButton'
 import LiveDeliveryDetail from '../components/LiveDeliveryDetail'
 import PhoneOrderForm from '../components/PhoneOrderForm'
 import { useSheets } from '../components/ActionSheets'
@@ -113,7 +114,6 @@ export default function Supervisor() {
   useEffect(() => {
     load()
     const t = setInterval(load, 15000)
-    askNotificationPermission()
     registerPush(persistPushToken)
     return () => clearInterval(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -256,6 +256,7 @@ export default function Supervisor() {
       <EnablePushButton
         onToken={persistPushToken}
       />
+      <EnableSoundButton />
 
       {/* Said plainly rather than left to be discovered by pressing something
           that fails. The database refuses these; this is just honesty. */}
