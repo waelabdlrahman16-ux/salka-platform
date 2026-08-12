@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html { font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif; }
+body { @apply bg-night text-foam antialiased; }
+
+/* Shared portal foundation. These are deliberately semantic classes rather
+   than a fresh set of one-off utility combinations: the customer, vendor,
+   driver and admin portals can now share the same surface, heading and metric
+   language as their screens are refreshed one by one. */
+.portal-hero {
+  @apply relative overflow-hidden rounded-2xl border border-line bg-shell px-5 py-5 sm:px-6;
+  box-shadow: 0 12px 30px rgba(35, 31, 26, 0.06);
+}
+.portal-hero::after {
+  content: '';
+  @apply absolute -left-10 -top-14 h-32 w-32 rounded-full bg-sea/[0.07] pointer-events-none;
+}
+.portal-kicker { @apply relative text-xs font-bold tracking-wide text-sea; }
+.portal-title { @apply relative mt-1 text-2xl font-bold tracking-tight text-foam sm:text-3xl; }
+.portal-subtitle { @apply relative mt-1 text-sm leading-6 text-mist; }
+.metric { @apply relative min-w-[88px] rounded-xl border border-line bg-night/80 px-3 py-2.5 text-right; }
+.metric-label { @apply block text-[11px] font-semibold text-mist; }
+.metric-value { @apply mt-0.5 block text-lg font-bold leading-tight text-foam; }
+.metric-alert { @apply text-red-600; }
+.section-heading { @apply flex items-center justify-between gap-3 mb-3; }
+.section-heading h2 { @apply text-base font-bold text-foam; }
+.admin-workspace { @apply grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)] lg:items-start; }
+.admin-nav { @apply rounded-2xl border border-line bg-shell p-2 lg:sticky lg:top-20; box-shadow: 0 4px 14px rgba(35, 31, 26, 0.035); }
+.admin-nav-label { @apply px-3 pb-2 pt-1 text-[11px] font-bold uppercase tracking-wider text-mist; }
+.admin-nav-group { @apply flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-right text-sm font-semibold text-mist transition-colors hover:bg-shellup hover:text-foam; }
+.admin-nav-group-active { @apply bg-sea text-white hover:bg-seadeep hover:text-white; }
+.admin-nav-sub { @apply mt-1 border-r border-line pr-2; }
+.admin-nav-sub button { @apply flex w-full items-center justify-between rounded-lg px-3 py-2 text-right text-xs text-mist hover:bg-shellup hover:text-foam; }
+.admin-nav-sub button[aria-current="page"] { @apply bg-shellup font-bold text-sea; }
+.admin-content { @apply min-w-0; }
+
+.card { @apply bg-shell border border-line rounded-2xl; box-shadow: 0 4px 14px rgba(35, 31, 26, 0.035); }
+
+/* min-h-[44px] is the floor Apple asks for and Google exceeds at 48. The padding
+   alone gave ~42px, and every `!py-1.5` override around the app cut that to ~32.
+   inline-flex + centring is what makes the floor actually raise the box instead
+   of leaving the label stuck to the top edge; every .btn in this codebase wraps
+   a single run of text or an emoji, so nothing reflows. */
+.btn { @apply inline-flex items-center justify-center gap-1.5 min-h-[44px] rounded-xl px-4 py-2.5 font-semibold transition-colors disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sea focus-visible:ring-offset-2 focus-visible:ring-offset-night; }
+.btn-sea { @apply btn bg-sea text-white hover:bg-seadeep; }
+.btn-ghost { @apply btn bg-shellup text-foam hover:bg-line; }
+.btn-danger { @apply btn bg-red-500/15 text-red-600 hover:bg-red-500/25; }
+/* A field used to be bg-night inside a bg-shell card -- 1.07:1, so the interior
+   was invisible -- edged by a `line` border at 1.30:1. WCAG 1.4.11 wants 3:1 for
+   the boundary that identifies a control. `linestrong` is 3.40:1. The placeholder
+   was mist at 60% opacity, which composites to #A69F98 for 2.45:1; full-opacity
+   mist is 5.35:1 and still reads as secondary next to foam at 15.34:1. */
+.field { @apply w-full h-12 rounded-xl bg-night border border-linestrong px-3.5 text-foam placeholder:text-mist focus:outline-none focus:border-sea focus:ring-1 focus:ring-sea; }
+select.field {
+  @apply appearance-none bg-no-repeat pr-3.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%236E655C'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z' clip-rule='evenodd'/%3E%3C/svg%3E");
+  background-position: left 0.9rem center;
+  background-size: 1.1em;
+  padding-left: 2.5rem;
+}
+.label { @apply block text-sm text-mist mb-1.5; }
+/* emerald-800, not -700. Measured on the rendered page, emerald-700 over the
+   15% tint sits at 4.49:1 against a 4.5 requirement -- one hundredth under, which
+   is still a fail and is the kind of thing that gets "discovered" later as a
+   regression. -800 clears it with room. */
+.badge-open { @apply text-xs font-semibold bg-emerald-500/15 text-emerald-800 rounded-full px-2.5 py-1; }
+.badge-closed { @apply text-xs font-semibold bg-red-500/15 text-red-600 rounded-full px-2.5 py-1; }
+.tab { @apply inline-flex items-center justify-center min-h-[44px] px-4 py-2 rounded-xl text-sm font-semibold text-mist hover:text-foam transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sea; }
+.tab-active { @apply bg-shellup text-foam; }
+.scrollbar-none { scrollbar-width: none; -ms-overflow-style: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
