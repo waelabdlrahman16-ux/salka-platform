@@ -58,12 +58,35 @@ export default function OrderAdjust({ orderId, onDone }: {
     onDone()
   }
 
+  async function markAsAuditTest() {
+    const reason = window.prompt('سبب اختبار التدقيق (مطلوب)')?.trim()
+    if (!reason) return
+    if (!window.confirm('تحويل الطلب لاختبار؟ لا يمكن التراجع عنه، ولن يدخل الإيراد أو حسابات المندوب.')) return
+    setSaving(true); setError('')
+    const response = await adminFinancialAction('markAuditTest', { orderId, reason })
+    setSaving(false)
+    if (!response.ok) {
+      setError(response.code === 'audit_mark_too_late'
+        ? 'لازم يتحول لاختبار قبل تعيين مندوب أو أي حركة مالية'
+        : response.error)
+      return
+    }
+    onDone()
+  }
+
   if (!open) {
     return (
-      <button className="text-xs text-mist hover:text-foam underline mt-2"
-        onClick={() => { setOpen(true); setResult(null) }}>
-        تعديل مبلغ الطلب
-      </button>
+      <div className="flex items-center gap-3 mt-2">
+        <button className="text-xs text-mist hover:text-foam underline"
+          onClick={() => { setOpen(true); setResult(null) }}>
+          تعديل مبلغ الطلب
+        </button>
+        <button className="text-xs text-sandink hover:text-foam underline" disabled={saving}
+          onClick={markAsAuditTest}>
+          🧪 تسجيل كاختبار تدقيق
+        </button>
+        {error && <p className="text-xs text-red-600 font-semibold">{error}</p>}
+      </div>
     )
   }
 
