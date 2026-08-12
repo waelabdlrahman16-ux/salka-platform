@@ -2,8 +2,8 @@ import { withSupabase } from "@supabase/server"
 import { fail, isRateLimitError, json } from "../_shared/secure.ts"
 
 type Db = { public: { Tables: Record<string, never>; Views: Record<string, never>; Enums: Record<string, never>; CompositeTypes: Record<string, never>; Functions: Record<string, { Args: Record<string, unknown>; Returns: unknown }> } }
-type Action = "customerDetail" | "customers" | "dailyReport" | "funnel" | "listAccounts" | "liveDeliveries" | "pendingRefunds" | "pushHealth" | "stalledOrders" | "vendorsWithoutItems"
-const ACTIONS = new Set<Action>(["customerDetail","customers","dailyReport","funnel","listAccounts","liveDeliveries","pendingRefunds","pushHealth","stalledOrders","vendorsWithoutItems"])
+type Action = "customerDetail" | "customers" | "dailyReport" | "funnel" | "listAccounts" | "liveDeliveries" | "pendingRefunds" | "pushHealth" | "stalledOrders" | "validatePush" | "vendorsWithoutItems"
+const ACTIONS = new Set<Action>(["customerDetail","customers","dailyReport","funnel","listAccounts","liveDeliveries","pendingRefunds","pushHealth","stalledOrders","validatePush","vendorsWithoutItems"])
 const KNOWN = ["admin_only","not_authorized"]
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 function clean(v: unknown,max: number): string | null { if(typeof v!=="string")return null;const s=v.trim();return s&&s.length<=max?s:null }
@@ -30,6 +30,28 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
   for(const [bucket,max,window] of [[`admin-reports:${action}:${who}`,perUserMax,"10 minutes"],["admin-reports-global",600,"10 minutes"]] as const){
     const {error}=await ctx.supabaseAdmin.rpc("check_rate_limit",{p_bucket:bucket,p_max:max,p_window:window})
     if(error){if(isRateLimitError(error))return json({error:"rate_limited"},429);return fail("admin-reports","rate_limit_check_failed",500,error)}
+  }
+  if(action==="validatePush"){
+    // Do not bypass the database's canonical admin/supervisor authorization
+    // merely because this action has no RPC result of its own.
+    const authorization=await ctx.supabaseAdmin.rpc("admin_push_health",{p_auth_user_id:userId})
+    if(authorization.error){
+      const known=KNOWN.find(c=>authorization.error?.message?.includes(c))
+      if(known)return json({error:known},403)
+      return fail("admin-reports","push_health_authorization_failed",500,authorization.error)
+    }
+    // push-health uses FCM validate_only: it checks whether every stored token
+    // is still registered without delivering a banner or sound. Keep its
+    // webhook secret server-to-server; the browser only receives the result.
+    const url=Deno.env.get("SUPABASE_URL"),secret=Deno.env.get("PUSH_WEBHOOK_SECRET")
+    if(!url||!secret)return fail("admin-reports","push_health_not_configured",500)
+    let response:Response
+    try{
+      response=await fetch(`${url}/functions/v1/push-health`,{method:"POST",headers:{"x-webhook-secret":secret,"content-type":"application/json"},body:"{}"})
+    }catch(error){return fail("admin-reports","push_health_unreachable",502,error)}
+    const data=await response.json().catch(()=>null)
+    if(!response.ok||!data||typeof data!=="object")return fail("admin-reports","push_health_failed",502,data)
+    return json({ok:true,data})
   }
   let fn="",args:Record<string,unknown>={}
   if(action==="customerDetail"){
