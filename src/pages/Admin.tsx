@@ -38,6 +38,7 @@ import PromoCodesTab from '../components/PromoCodesTab'
 import DriverForm, { driverToForm } from '../components/DriverForm'
 import LiveDeliveryDetail from '../components/LiveDeliveryDetail'
 import Toggle from '../components/Toggle'
+import RestaurantDeliverySettings from '../components/RestaurantDeliverySettings'
 import { useSheets } from '../components/ActionSheets'
 import { useCatalogSync } from '../lib/useCatalogSync'
 
@@ -2449,6 +2450,8 @@ export default function Admin() {
                 )}
 
                 {expanded && <VendorHoursRow restaurant={r} onSaved={loadOpenStates} />}
+
+                {expanded && <RestaurantDeliverySettings restaurant={r} compounds={compounds} />}
 
                 {expanded && (
                   <div className="flex items-center gap-3 mt-3">
