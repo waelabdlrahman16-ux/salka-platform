@@ -181,23 +181,6 @@ export default function Supervisor() {
       dispatchOperation('unassign', { orderId: a.order_id, reason: reason || 'supervisor_unassigned' }))
   }
 
-  async function forceDelivered(a: Assignment) {
-    const reason = await promptSheet({
-      title: `تسجيل الطلب #${a.order_id} كمُسلَّم بدل المندوب؟`,
-      body: 'استخدمه لما المندوب يكون سلّم فعلاً ومش قادر يأكد بنفسه.',
-      multiline: true,
-      placeholder: 'السبب…',
-    })
-    if (reason === null) return
-    if (!reason.trim()) { setError('اكتب السبب'); return }
-    const cash = await confirmSheet({
-      title: 'المندوب استلم الكاش من العميل؟',
-      confirmLabel: 'أيوه، استلمه',
-      cancelLabel: 'لأ',
-    })
-    run(`force:${a.id}`, () =>
-      dispatchOperation('forceDelivered', { orderId: a.order_id, reason: reason.trim(), cashCollected: cash }))
-  }
 
   async function resolve(a: Assignment, action: 'wait' | 'fail' | 'refund') {
     if (action === 'fail' && !await confirmSheet({
@@ -292,7 +275,6 @@ export default function Supervisor() {
                 <div className="flex gap-2 mt-2.5 flex-wrap">
                   <a className="btn-ghost !py-1.5 text-xs flex-1 min-w-[6rem] text-center" href={`tel:${a.orders?.customer_phone}`}>اتصل</a>
                   <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[6rem]" onClick={() => resolve(a, 'wait')}>يستنى</button>
-                  <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[6rem]" onClick={() => forceDelivered(a)}>سجّله كمُسلَّم</button>
                   <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[6rem] !text-red-600" onClick={() => resolve(a, 'fail')}>توصيل فاشل</button>
                   <button className="btn-danger !py-1.5 text-xs flex-1 min-w-[6rem]" onClick={() => resolve(a, 'refund')}>إلغاء واسترداد</button>
                 </div>
@@ -477,9 +459,6 @@ export default function Supervisor() {
                 <span className="flex items-center justify-center gap-1"><Icon name="clock" className="w-3 h-3" />كلّم المندوب</span>
               </a>
               <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[6rem]" onClick={() => unassign(a)}>اسحب الطلب</button>
-              {a.status === 'Out_for_Delivery' && (
-                <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[6rem]" onClick={() => forceDelivered(a)}>سجّله كمُسلَّم</button>
-              )}
               {a.orders && (
                 <button className="btn-danger !py-1.5 text-xs flex-1 min-w-[6rem]" onClick={() => cancelOrder(a.orders!)}>إلغاء</button>
               )}
