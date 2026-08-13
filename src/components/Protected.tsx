@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { useAuth, homeFor } from '../lib/auth'
 
 export default function Protected({ role, children }: {
-  role: 'admin' | 'driver' | 'vendor' | 'catalog' | 'supervisor'
+  role: 'admin' | 'driver' | 'vendor' | 'catalog' | 'supervisor' | 'observer'
   children: ReactNode
 }) {
   const { session, profile, loading, profileError, retryProfile } = useAuth()

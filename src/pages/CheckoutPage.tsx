@@ -95,6 +95,9 @@ export default function CheckoutPage() {
   const [codDepositThreshold, setCodDepositThreshold] = useState<number | null>(null)
   const [codThresholdFailed, setCodThresholdFailed] = useState(false)
   const [useWallet, setUseWallet] = useState(true)
+  const [promoCode, setPromoCode] = useState('')
+  const [promoQuote, setPromoQuote] = useState<{ valid: boolean; discount?: number; reason?: string; minimum?: number } | null>(null)
+  const [promoChecking, setPromoChecking] = useState(false)
 
   // Saved addresses, and the default one preselected. Guarded on `customer`
   // because the RPC is account-scoped -- a guest gets an empty list, not an error.
@@ -250,7 +253,25 @@ export default function CheckoutPage() {
   const { pct: serviceFeePct, loading: serviceFeeLoading, failed: serviceFeeFailed, retry: retryServiceFee } =
     useServiceFeePct()
   const serviceFee = serviceFeeFor(subtotal, serviceFeePct)
-  const preWalletTotal = subtotal + (deliveryFee ?? 0) + (serviceFee ?? 0)
+  // A code is only an estimate here. The database validates it again against
+  // the final server-priced basket inside the order transaction.
+  useEffect(() => {
+    const code = promoCode.trim().toUpperCase()
+    if (!code || !cart.restaurantId || !compoundId || subtotal <= 0) {
+      setPromoQuote(null); setPromoChecking(false); return
+    }
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      setPromoChecking(true)
+      const { data, error } = await supabase.rpc('quote_promo_code', {
+        p_code: code, p_restaurant_id: cart.restaurantId, p_compound_id: compoundId, p_subtotal: subtotal,
+      })
+      if (!cancelled) { setPromoQuote(error ? { valid: false, reason: 'promo_invalid' } : data as { valid: boolean; discount?: number; reason?: string; minimum?: number }); setPromoChecking(false) }
+    }, 350)
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [promoCode, cart.restaurantId, compoundId, subtotal])
+  const promoDiscount = promoQuote?.valid ? Number(promoQuote.discount ?? 0) : 0
+  const preWalletTotal = subtotal + (deliveryFee ?? 0) + (serviceFee ?? 0) - promoDiscount
   const walletApplied = useWallet ? Math.min(walletBalance, preWalletTotal) : 0
   const finalTotal = preWalletTotal - walletApplied
   // selectedCompound, not just compoundId: a saved id that no longer matches an
@@ -291,7 +312,8 @@ export default function CheckoutPage() {
       paymentMethod: isInstapay ? 'instapay' : 'cod',
       useWallet: walletBalance > 0 && useWallet,
       sessionToken: getSessionToken(),
-      customerNote: customerNote.trim() || null
+      customerNote: customerNote.trim() || null,
+      promoCode: promoCode.trim().toUpperCase() || null,
     })
     const data = result.ok ? result.data : null
     const err = result.ok ? null : { message: result.code }
@@ -307,6 +329,7 @@ export default function CheckoutPage() {
         : err?.message.includes('size_required') || err?.message.includes('invalid_size') ? 'size'
         : err?.message.includes('addon_group_min_not_met') ? 'addon_required'
         : err?.message.includes('addon_group_max_exceeded') ? 'addon_limit'
+        : err?.message.includes('promo_') ? 'promo'
         : 'unknown'
       track('checkout_blocked', {
         restaurantId: restaurant.id,
@@ -323,6 +346,12 @@ export default function CheckoutPage() {
         : err?.message.includes('size_required') || err?.message.includes('invalid_size') ? 'اختار حجم الصنف قبل ما تكمل'
         : err?.message.includes('addon_group_min_not_met') ? 'في اختيار مطلوب لصنف في عربتك لسه ما اتحددش'
         : err?.message.includes('addon_group_max_exceeded') ? 'اخترت إضافات أكتر من المسموح لصنف في عربتك'
+        : err?.message.includes('promo_expired') ? 'كود الخصم انتهت صلاحيته'
+        : err?.message.includes('promo_minimum_not_met') ? 'الطلب أقل من الحد الأدنى لكود الخصم'
+        : err?.message.includes('promo_already_used') ? 'استخدمت كود الخصم ده قبل كده'
+        : err?.message.includes('promo_limit_reached') ? 'كود الخصم خلص'
+        : err?.message.includes('promo_not_available') ? 'الكود ده مش متاح للمطعم أو المنطقة دي'
+        : err?.message.includes('promo_invalid') ? 'كود الخصم غير صحيح'
         : 'حصل خطأ، جرب تاني'
       )
       return
@@ -571,6 +600,25 @@ export default function CheckoutPage() {
       )}
 
       <div className="card p-4 mb-4">
+        <label className="label" htmlFor={`${fid}-promo`}>عندك كود خصم؟ <span className="text-mist font-normal">(اختياري)</span></label>
+        <input id={`${fid}-promo`} className="field" value={promoCode}
+          onChange={e => setPromoCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ''))}
+          placeholder="مثال: SOKHNA10" maxLength={32} dir="ltr" />
+        {promoChecking && <p className="text-xs text-mist mt-2">بنتأكد من الكود…</p>}
+        {!promoChecking && promoCode.trim() && promoQuote?.valid && (
+          <p className="text-xs text-emerald-700 font-semibold mt-2">تم تطبيق الخصم: -{promoDiscount} ج.م</p>
+        )}
+        {!promoChecking && promoCode.trim() && promoQuote && !promoQuote.valid && (
+          <p className="text-xs text-red-600 mt-2">
+            {promoQuote.reason === 'promo_expired' ? 'الكود منتهي أو لسه ما بدأش'
+              : promoQuote.reason === 'promo_minimum_not_met' ? `الحد الأدنى ${promoQuote.minimum ?? ''} ج.م`
+              : promoQuote.reason === 'promo_not_available' ? 'الكود مش متاح للمطعم أو المكان ده'
+              : 'الكود غير صحيح أو غير متاح'}
+          </p>
+        )}
+      </div>
+
+      <div className="card p-4 mb-4">
         <h2 className="font-bold mb-3">الدفع</h2>
         <div className="space-y-2.5">
           <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${paymentMethod === 'cod' ? 'border-sea bg-sea/5' : 'border-line'}`}>
@@ -638,6 +686,9 @@ export default function CheckoutPage() {
               : '—'}
           </span>
         </div>
+        {promoDiscount > 0 && (
+          <div className="flex justify-between text-sm text-emerald-700"><span>كود خصم {promoCode.trim().toUpperCase()}</span><span>-{promoDiscount} ج.م</span></div>
+        )}
         <div className="flex justify-between text-sm text-mist">
           <span>رسوم الخدمة</span>
           <span>
