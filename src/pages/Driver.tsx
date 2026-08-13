@@ -1070,6 +1070,12 @@ export default function DriverPage() {
                 {o.address_notes && (
                   <p className="text-sea bg-sea/10 rounded-lg p-2 font-semibold">📝 {o.address_notes}</p>
                 )}
+                {o.customer_note?.trim() && (
+                  <div className="border border-sand/40 bg-sand/10 rounded-lg p-2.5">
+                    <p className="text-xs font-bold text-sandink">💬 ملاحظة العميل</p>
+                    <p className="mt-1 font-semibold whitespace-pre-wrap">{o.customer_note}</p>
+                  </div>
+                )}
                 {/* These three are tapped one-handed, outdoors, at the moment of
                     arrival. The !py-1.5 + text-xs overrides dropped them to
                     ~28px; min-h-[44px] restores the platform touch minimum. */}
