@@ -1002,6 +1002,13 @@ export default function DriverPage() {
                 </span>
               </div>
 
+              {a.status !== 'Offered' && o.pickup_location_name && (
+                <div className="mt-3 rounded-xl border border-sea/30 bg-sea/10 p-3 text-sm">
+                  <p className="font-bold text-sea">📍 استلم من: {o.pickup_location_name}</p>
+                  {o.pickup_location_address && <p className="mt-1 text-mist whitespace-pre-wrap">{o.pickup_location_address}</p>}
+                </div>
+              )}
+
               {stageIndex >= 0 && (
                 <div className="relative mt-4 px-2">
                   <div className="absolute top-[5px] right-2 left-2 h-0.5 bg-line" />

@@ -96,6 +96,7 @@ export interface Discount {
 export interface RequestItem { name: string; qty: number }
 export interface Order {
   id: number; restaurant_id: number
+  kitchen_id: number | null; pickup_location_name: string | null; pickup_location_address: string | null
   /**
    * Written by a database trigger from the vendor's own is_test flag, so every
    * order on the test restaurant carries it and no order-creating path can
