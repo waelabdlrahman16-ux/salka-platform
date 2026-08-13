@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useId } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { customerOrderCreation } from '../lib/customerOrderCreation'
-import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
+import { displayEgyptPhone, isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { useCart } from '../lib/cart'
 import { loadMenuOptions } from '../lib/menuOptions'
 import { lineIsStale, priceLine } from '../lib/linePricing'
@@ -52,7 +52,7 @@ export default function CheckoutPage() {
   // their name and phone on every single order while the app already knew both.
   // The effect below is what actually delivers them.
   const [name, setName] = useState(() => customer?.name ?? '')
-  const [phone, setPhone] = useState(() => customer?.phone ?? localStorage.getItem('salka_phone') ?? '')
+  const [phone, setPhone] = useState(() => displayEgyptPhone(customer?.phone) || localStorage.getItem('salka_phone') || '')
   // Which fields the customer has actually left, so an error appears when they
   // move on rather than scolding an empty form on first paint.
   const [touched, setTouched] = useState<Record<string, boolean>>({})
@@ -62,7 +62,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!customer) return
     setName(prev => prev.trim() ? prev : (customer.name ?? ''))
-    setPhone(prev => prev.trim() ? prev : (customer.phone ?? prev))
+    setPhone(prev => prev.trim() ? prev : (displayEgyptPhone(customer.phone) || prev))
   }, [customer?.id, customer?.name, customer?.phone])
   const [unit, setUnit] = useState('')
   const [notes, setNotes] = useState('')
