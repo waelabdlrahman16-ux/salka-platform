@@ -34,7 +34,7 @@ async function assertTargetIsStaff(admin: any, profileId: string, callerId: stri
   // added here as well as to the create action; forgetting produces an account
   // that cannot be recovered or deleted, and nothing fails at creation time to
   // warn you.
-  if (!["vendor", "driver", "catalog", "supervisor"].includes(target.role)) {
+  if (!["vendor", "driver", "catalog", "supervisor", "observer"].includes(target.role)) {
     return { error: "target_not_staff", status: 403 }
   }
   return null
@@ -140,8 +140,8 @@ Deno.serve(async (req) => {
     // they work across every vendor, and their scope comes from the role alone.
     // One block for both: the two differ by a single string, and a copy-pasted
     // twin is how the second one silently stops matching the first.
-    if (action === "create_catalog_login" || action === "create_supervisor_login") {
-      const role = action === "create_supervisor_login" ? "supervisor" : "catalog"
+    if (action === "create_catalog_login" || action === "create_supervisor_login" || action === "create_observer_login") {
+      const role = action === "create_supervisor_login" ? "supervisor" : action === "create_observer_login" ? "observer" : "catalog"
       const { name } = body
       if (!name || typeof name !== "string" || !name.trim()) return json({ error: "name_required" }, 400)
 
