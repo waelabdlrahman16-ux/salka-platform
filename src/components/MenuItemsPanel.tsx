@@ -58,6 +58,7 @@ export default function MenuItemsPanel({
   /** Drag-to-reorder only touches real category tabs (never "الكل", which is
    *  never part of `tabs` and always rendered separately, pinned first). */
   const [reorderMode, setReorderMode] = useState(false)
+  const [reorderBusy, setReorderBusy] = useState(false)
   const [dragCat, setDragCat] = useState<string | null>(null)
   const [dragOverCat, setDragOverCat] = useState<{ name: string; before: boolean } | null>(null)
   const { confirmSheet, promptSheet, sheetElement } = useSheets()
@@ -166,12 +167,25 @@ export default function MenuItemsPanel({
    *  p_names)) -- this action existed and was callable before today, just
    *  never had a UI in front of it. */
   async function commitReorder(next: Category[]) {
+    if (reorderBusy) return
+    setReorderBusy(true)
     setCats(next) // optimistic -- drag already showed this order, don't flicker back
     const res = await adminCatalogAction('reorderMenuCategories',
       { restaurantId: restaurant.id, names: next.map(c => c.name) },
       { not_authorized: 'مش من صلاحياتك' })
-    if (!res.ok) { setCatError(res.error); await loadCats(); return }
+    if (!res.ok) { setCatError(res.error); await loadCats(); setReorderBusy(false); return }
+    setReorderBusy(false)
     onChanged()
+  }
+
+  function moveCategory(name: string, direction: -1 | 1) {
+    const from = cats.findIndex(c => c.name === name)
+    const to = from + direction
+    if (from < 0 || to < 0 || to >= cats.length) return
+    const next = [...cats]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
+    void commitReorder(next)
   }
 
   function dropCategory(draggedName: string, targetName: string, before: boolean) {
@@ -235,7 +249,16 @@ export default function MenuItemsPanel({
         </div>
       )}
       {reorderMode && (
-        <p className="text-xs text-mist mb-2">اسحب أي قسم يمين أو شمال لتغيير ترتيبه — «الكل» ثابت دايمًا أول واحد.</p>
+        <div className="rounded-xl border border-line bg-shellup p-2.5 mb-2">
+          <p className="text-xs text-mist mb-2">غيّر الترتيب من الأسهم؛ السحب يفضل متاح على الكمبيوتر. «الكل» ثابت أول واحد.</p>
+          <div className="flex flex-wrap gap-1.5">
+            {cats.map((cat, index) => <div key={cat.id} className="flex items-center gap-1 rounded-lg bg-shell px-2 py-1 text-xs font-semibold">
+              <button type="button" aria-label={`حرّك ${cat.name} يمين`} disabled={reorderBusy || index === 0} onClick={() => moveCategory(cat.name, -1)}>→</button>
+              <span>{cat.name}</span>
+              <button type="button" aria-label={`حرّك ${cat.name} شمال`} disabled={reorderBusy || index === cats.length - 1} onClick={() => moveCategory(cat.name, 1)}>←</button>
+            </div>)}
+          </div>
+        </div>
       )}
 
       {/* Tabs. Horizontally scrollable rather than wrapped: a vendor with ten
