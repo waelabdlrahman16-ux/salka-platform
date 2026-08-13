@@ -1140,6 +1140,59 @@ export default function Admin() {
     load(true)
   }
 
+  function openPriceTool(r: Restaurant) {
+    const categories = [...new Set(menu.filter(i => i.restaurant_id === r.id).map(i => i.category).filter(Boolean))]
+    setPriceToolFor(r)
+    setBulkPricePercent('')
+    setBulkPriceCategories(categories)
+  }
+
+  async function applyBulkPriceChange() {
+    const r = priceToolFor
+    if (!r) return
+    const allCategories = [...new Set(menu.filter(i => i.restaurant_id === r.id).map(i => i.category).filter(Boolean))]
+    const percent = Number(bulkPricePercent)
+    if (!/^[-+]?\d+(\.\d+)?$/.test(bulkPricePercent.trim()) || percent < -50 || percent > 100 || percent === 0) {
+      setActionError('اكتب نسبة بين −٥٠٪ و١٠٠٪، ومش صفر')
+      return
+    }
+    if (bulkPriceCategories.length === 0) { setActionError('اختار قسم واحد على الأقل'); return }
+    const scope = bulkPriceCategories.length === allCategories.length ? 'كل أقسام المطعم' : bulkPriceCategories.join('، ')
+    if (!await confirmSheet({
+      title: `تعديل أسعار ${r.name}؟`,
+      body: `هن${percent > 0 ? 'زوّد' : 'نقلّل'} الأسعار ${Math.abs(percent)}٪ في: ${scope}. يشمل الأصناف والأحجام والكومبو والإضافات. الطلبات القديمة مش هتتغير.`,
+      confirmLabel: 'تأكيد تعديل الأسعار', danger: percent < 0,
+    })) return
+    setBulkPriceBusy(true)
+    const res = await adminCatalogAction<{ items: number; sizes: number; combos: number; addons: number }>('adjustRestaurantPrices', {
+      restaurantId: r.id, percent, categories: bulkPriceCategories.length === allCategories.length ? null : bulkPriceCategories,
+    }, { categories_required: 'اختار قسم واحد على الأقل', invalid_pct: 'النسبة غير صالحة' })
+    setBulkPriceBusy(false)
+    if (!res.ok) { setActionError(res.error); return }
+    setPriceToolFor(null)
+    await alertSheet(`تم تعديل ${res.data?.items ?? 0} صنف، ${res.data?.sizes ?? 0} حجم، ${res.data?.combos ?? 0} كومبو و${res.data?.addons ?? 0} إضافة.`)
+    load(true)
+  }
+
+  async function bakeRestaurantFee(r: Restaurant) {
+    const pct = Math.round((r.service_fee_pct ?? 0) * 100)
+    if (pct <= 0) { setActionError('رسوم المطعم الداخلية مقفولة بالفعل'); return }
+    if (!await confirmSheet({
+      title: `إلغاء رسوم ${pct}٪ بدون تغيير الأسعار؟`,
+      body: 'هنثبت السعر الحالي لكل الأصناف والأحجام والكومبو والإضافات كسعر نهائي، ثم نقفل رسوم المطعم الداخلية. ده لا يغيّر أي طلب قديم ولا رسوم الخدمة العامة الظاهرة في الفاتورة.',
+      confirmLabel: 'ثبّت الأسعار وألغِ الرسوم', danger: true,
+    })) return
+    setBulkPriceBusy(true)
+    const res = await adminCatalogAction<{ items: number; sizes: number; combos: number; addons: number }>('bakeRestaurantServiceFee', { restaurantId: r.id }, {
+      service_fee_not_enabled: 'رسوم المطعم الداخلية مقفولة بالفعل',
+    })
+    setBulkPriceBusy(false)
+    if (!res.ok) { setActionError(res.error); return }
+    setPriceToolFor(null)
+    await alertSheet(`تم تثبيت الأسعار وإلغاء رسوم المطعم. اتراجع ${res.data?.items ?? 0} صنف وكل اختياراته.`)
+    load(true)
+  }
+
   async function removeCover(r: Restaurant) {
     if (!await confirmSheet({ title: 'إزالة صورة الواجهة؟', body: 'هنرجع نختار صورة تلقائيًا من القايمة.', danger: true })) return
     const { error } = await supabase.from('restaurants').update({ cover_image_url: null }).eq('id', r.id)
@@ -2491,6 +2544,16 @@ export default function Admin() {
                   </div>
                 )}
                 {imageError && expanded && <p className="text-xs text-sandink mt-1">{imageError}</p>}
+
+                {expanded && (
+                  <div className="mt-3 pt-2.5 border-t border-line flex items-center justify-between gap-3 text-sm">
+                    <div>
+                      <p className="font-semibold">إدارة أسعار المنيو</p>
+                      <p className="text-xs text-mist mt-0.5">عدّل كل الأقسام أو أقسام تختارها مرة واحدة</p>
+                    </div>
+                    <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0" onClick={() => openPriceTool(r)}>تعديل جماعي</button>
+                  </div>
+                )}
 
                 {expanded && (
                   <div className="mt-3 pt-2.5 border-t border-line flex items-center justify-between gap-3 text-sm">
