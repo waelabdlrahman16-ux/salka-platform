@@ -787,6 +787,13 @@ function KitchenVendor({ rid }: { rid: number }) {
           </div>
         </div>
 
+        {o.customer_note?.trim() && (
+          <div className="mt-3 border border-sand/40 bg-sand/10 rounded-xl p-3">
+            <p className="text-xs font-bold text-sandink">💬 ملاحظة العميل</p>
+            <p className="text-sm mt-1 font-semibold whitespace-pre-wrap">{o.customer_note}</p>
+          </div>
+        )}
+
         {/* A custom_request order writes NO order_items rows -- the whole list
             lives in orders.request_items -- so this ticket used to render an
             empty box. The pharmacist was being asked to press "قبول · 20 د" on
@@ -847,13 +854,6 @@ function KitchenVendor({ rid }: { rid: number }) {
 
         {(items[o.id] ?? []).some(it => it.requires_prescription) && (
           <p className="text-sandink text-sm mt-2">💊 الطلب فيه صنف يحتاج روشتة — أكّد مع العميل قبل التجهيز</p>
-        )}
-
-        {o.customer_note && (
-          <div className="mt-3 border border-line rounded-xl p-3">
-            <p className="text-xs text-mist">💬 ملاحظات إضافية</p>
-            <p className="text-sm bg-night rounded-lg p-2.5 mt-1.5 font-semibold">{o.customer_note}</p>
-          </div>
         )}
 
         {/* No money on this ticket beyond the per-item prices.
