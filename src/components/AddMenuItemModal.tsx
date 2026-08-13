@@ -71,6 +71,16 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
   const [sizes, setSizes] = useState<OptionRow[]>([])
   const [combos, setCombos] = useState<OptionRow[]>([])
   const [modifierGroups, setModifierGroups] = useState<DraftModifierGroup[]>([])
+  const [showAdvancedModifierSettings, setShowAdvancedModifierSettings] = useState(false)
+
+  const addModifierTemplate = (kind: 'required' | 'optional') => {
+    setModifierGroups(groups => [...groups, {
+      name: kind === 'required' ? 'اختار النوع' : 'إضافات',
+      required: kind === 'required',
+      maxSelect: kind === 'required' ? '1' : '5',
+      choices: [{ name: '', price: '' }]
+    }])
+  }
 
   // Once an item has sizes, place_order REFUSES an order that does not name one
   // (`size_required`), so menu_items.price is never charged -- it just sits
@@ -339,95 +349,123 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
 
         <section className="card p-3.5 mt-3 space-y-3" aria-label="اختيارات العميل والإضافات">
           <div>
-            <h3 className="font-bold text-sm text-foam">اختيارات العميل والإضافات</h3>
-            <p className="text-[11px] text-mist mt-1">نفس منطق المطاعم الكبيرة: اختيارات مطلوبة أو اختيارية، بسعر لكل اختيار، وحد أقصى للاختيارات.</p>
+            <h3 className="font-bold text-sm text-foam">هل العميل محتاج يختار حاجة؟</h3>
+            <p className="text-[11px] text-mist mt-1">اختار قالب سريع، وبعدها اكتب الاختيارات وأسعارها فقط.</p>
           </div>
 
-          {modifierGroups.map((group, groupIndex) => (
-            <div key={groupIndex} className="rounded-xl border border-line p-3 space-y-2.5 bg-shellup">
-              <div className="flex gap-2">
-                <input
-                  className={inputCls}
-                  placeholder="اسم المجموعة: اختار الصوص"
-                  value={group.name}
-                  onChange={e => setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? { ...current, name: e.target.value } : current))}
-                />
-                <button
-                  type="button"
-                  className="text-xs text-red-600 px-1 shrink-0"
-                  onClick={() => setModifierGroups(groups => groups.filter((_, i) => i !== groupIndex))}
-                >حذف</button>
-              </div>
-              <div className="flex items-center gap-3 text-xs text-mist">
-                <label className="flex items-center gap-1.5">
-                  <input
-                    type="checkbox"
-                    checked={group.required}
-                    onChange={e => setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? { ...current, required: e.target.checked } : current))}
-                  />
-                  اختيار مطلوب
-                </label>
-                <label className="flex items-center gap-1.5">
-                  أقصى عدد
-                  <input
-                    className="field !h-8 !py-1 !w-14 text-center"
-                    type="number"
-                    min={group.required ? 1 : 0}
-                    value={group.maxSelect}
-                    onChange={e => setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? { ...current, maxSelect: e.target.value } : current))}
-                  />
-                </label>
-              </div>
-              <div className="space-y-2">
-                {group.choices.map((choice, choiceIndex) => (
-                  <div key={choiceIndex} className="flex gap-2">
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              className="btn-ghost !py-2.5 text-sm"
+              onClick={() => addModifierTemplate('required')}
+            >☑️ اختيار مطلوب</button>
+            <button
+              type="button"
+              className="btn-ghost !py-2.5 text-sm"
+              onClick={() => addModifierTemplate('optional')}
+            >＋ إضافات اختيارية</button>
+          </div>
+
+          {modifierGroups.length > 0 && (
+            <div className="space-y-3 pt-1">
+              {modifierGroups.map((group, groupIndex) => (
+                <div key={groupIndex} className="rounded-xl border border-line p-3 space-y-2.5 bg-shellup">
+                  <div className="flex items-center gap-2">
                     <input
                       className={inputCls}
-                      placeholder="اسم الاختيار"
-                      value={choice.name}
-                      onChange={e => setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? {
-                        ...current,
-                        choices: current.choices.map((option, j) => j === choiceIndex ? { ...option, name: e.target.value } : option)
-                      } : current))}
-                    />
-                    <input
-                      className={`${inputCls} !w-24`}
-                      type="number"
-                      min="0"
-                      placeholder="+ سعر"
-                      value={choice.price}
-                      onChange={e => setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? {
-                        ...current,
-                        choices: current.choices.map((option, j) => j === choiceIndex ? { ...option, price: e.target.value } : option)
-                      } : current))}
+                      placeholder={group.required ? 'مثلاً: اختار الصوص' : 'مثلاً: إضافات'}
+                      value={group.name}
+                      onChange={e => setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? { ...current, name: e.target.value } : current))}
                     />
                     <button
                       type="button"
-                      className="text-xs text-mist px-1 shrink-0"
-                      aria-label="حذف الاختيار"
-                      onClick={() => setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? {
-                        ...current,
-                        choices: current.choices.filter((_, j) => j !== choiceIndex)
-                      } : current))}
-                    >✕</button>
+                      className="text-xs text-red-600 px-1 shrink-0"
+                      onClick={() => setModifierGroups(groups => groups.filter((_, i) => i !== groupIndex))}
+                    >حذف</button>
                   </div>
-                ))}
-              </div>
-              <button
-                type="button"
-                className="text-xs text-sea font-semibold"
-                onClick={() => setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? {
-                  ...current, choices: [...current.choices, { name: '', price: '' }]
-                } : current))}
-              >+ إضافة اختيار</button>
+
+                  <p className="text-[11px] text-mist">
+                    {group.required ? 'لازم العميل يختار اختيار واحد.' : 'العميل يقدر يضيف اللي يحبه.'}
+                  </p>
+
+                  <div className="space-y-2">
+                    {group.choices.map((choice, choiceIndex) => (
+                      <div key={choiceIndex} className="flex gap-2">
+                        <input
+                          className={inputCls}
+                          placeholder="مثلاً: صوص باربكيو"
+                          value={choice.name}
+                          onChange={e => setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? {
+                            ...current,
+                            choices: current.choices.map((option, j) => j === choiceIndex ? { ...option, name: e.target.value } : option)
+                          } : current))}
+                        />
+                        <input
+                          className={`${inputCls} !w-24`}
+                          type="number"
+                          min="0"
+                          placeholder="+ سعر"
+                          value={choice.price}
+                          onChange={e => setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? {
+                            ...current,
+                            choices: current.choices.map((option, j) => j === choiceIndex ? { ...option, price: e.target.value } : option)
+                          } : current))}
+                        />
+                        <button
+                          type="button"
+                          className="text-xs text-mist px-1 shrink-0"
+                          aria-label="حذف الاختيار"
+                          onClick={() => setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? {
+                            ...current,
+                            choices: current.choices.filter((_, j) => j !== choiceIndex)
+                          } : current))}
+                        >✕</button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="text-xs text-sea font-semibold"
+                    onClick={() => setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? {
+                      ...current, choices: [...current.choices, { name: '', price: '' }]
+                    } : current))}
+                  >+ إضافة اختيار</button>
+
+                  {showAdvancedModifierSettings && (
+                    <div className="rounded-lg bg-shell p-2.5 flex items-center gap-3 text-xs text-mist">
+                      <label className="flex items-center gap-1.5">
+                        <input
+                          type="checkbox"
+                          checked={group.required}
+                          onChange={e => setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? {
+                            ...current, required: e.target.checked, maxSelect: e.target.checked ? '1' : current.maxSelect
+                          } : current))}
+                        />
+                        مطلوب
+                      </label>
+                      <label className="flex items-center gap-1.5">
+                        أقصى عدد
+                        <input
+                          className="field !h-8 !py-1 !w-14 text-center"
+                          type="number"
+                          min={group.required ? 1 : 0}
+                          value={group.maxSelect}
+                          onChange={e => setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? { ...current, maxSelect: e.target.value } : current))}
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
+          )}
 
           <button
             type="button"
-            className="btn-ghost w-full !py-2 text-sm"
-            onClick={() => setModifierGroups(groups => [...groups, emptyModifierGroup()])}
-          >+ إضافة مجموعة اختيارات</button>
+            className="text-xs text-mist underline underline-offset-2"
+            onClick={() => setShowAdvancedModifierSettings(open => !open)}
+          >{showAdvancedModifierSettings ? 'إخفاء الإعدادات المتقدمة' : '⚙️ إعدادات متقدمة'}</button>
         </section>
 
         <div className="flex flex-wrap gap-2 mt-3">
