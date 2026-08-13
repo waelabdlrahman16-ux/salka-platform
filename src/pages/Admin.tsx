@@ -278,12 +278,6 @@ export default function Admin() {
   // «اتنسخ ✓» flash on the creds-modal copy button; the 1.5s timeout resets it.
   const [credsCopied, setCredsCopied] = useState(false)
   const [rankDraft, setRankDraft] = useState<Record<number, string>>({})
-  const [serviceFeeDraft, setServiceFeeDraft] = useState<Record<number, string>>({})
-  /** Remembers the last non-zero % per restaurant client-side, so switching
-   *  the Toggle off then back on restores what was there instead of resetting
-   *  to a hardcoded default. Not persisted -- a fresh page load just falls
-   *  back to 8, which is fine since it's only ever a starting point. */
-  const [lastServiceFeePct, setLastServiceFeePct] = useState<Record<number, number>>({})
   const [globalServiceFeeDraft, setGlobalServiceFeeDraft] = useState<string | null>(null)
   const [lastGlobalServiceFeePct, setLastGlobalServiceFeePct] = useState<number | null>(null)
   const [newRestaurant, setNewRestaurant] = useState({ name: '', description: '', category: '', vendor_type: 'restaurant', prep_minutes: '20' })
@@ -1091,41 +1085,6 @@ export default function Admin() {
     if (!res.ok) { setActionError(res.error); return }
     setRankDraft(d => { const n = { ...d }; delete n[r.id]; return n })
     load(true)
-  }
-
-  /** Percent input is typed as a whole number (e.g. "8" for 8%); converted to
-   *  the 0-0.5 fraction admin_set_restaurant_service_fee expects. Mirrors
-   *  commitRank's draft-then-blur pattern above. */
-  async function commitServiceFee(r: Restaurant, pctWholeOverride?: number) {
-    const raw = pctWholeOverride != null
-      ? String(pctWholeOverride)
-      : (serviceFeeDraft[r.id] ?? String(Math.round((r.service_fee_pct ?? 0) * 100)))
-    if (!/^\d+(\.\d+)?$/.test(raw.trim())) {
-      setActionError('نسبة الرسوم لازم تكون رقم')
-      setServiceFeeDraft(d => { const n = { ...d }; delete n[r.id]; return n })
-      return
-    }
-    const pctWhole = Number(raw)
-    if (pctWhole < 0 || pctWhole > 50) { setActionError('نسبة الرسوم لازم تكون بين ٠ و٥٠'); return }
-    const pct = pctWhole / 100
-    if (pct === (r.service_fee_pct ?? 0)) { setServiceFeeDraft(d => { const n = { ...d }; delete n[r.id]; return n }); return }
-
-    const res = await adminCatalogAction('setRestaurantServiceFee', {
-      restaurantId: r.id, pct,
-    }, { invalid_pct: 'نسبة الرسوم لازم تكون بين ٠ و٥٠' })
-    if (!res.ok) { setActionError(res.error); return }
-    if (pctWhole > 0) setLastServiceFeePct(d => ({ ...d, [r.id]: pctWhole }))
-    setServiceFeeDraft(d => { const n = { ...d }; delete n[r.id]; return n })
-    load(true)
-  }
-
-  /** The Toggle: off writes 0 straight away (no confirmation needed, it's
-   *  reversible and base_price is never touched). On restores whatever
-   *  percent was last used for this restaurant, or 8 as a first-time default. */
-  async function toggleServiceFee(r: Restaurant) {
-    const isOn = (r.service_fee_pct ?? 0) > 0
-    if (isOn) { await commitServiceFee(r, 0); return }
-    await commitServiceFee(r, lastServiceFeePct[r.id] ?? 8)
   }
 
   function openPriceTool(r: Restaurant) {
@@ -2532,28 +2491,6 @@ export default function Admin() {
                   </div>
                 )}
                 {imageError && expanded && <p className="text-xs text-sandink mt-1">{imageError}</p>}
-
-                {/* Hidden markup folded into menu prices instead of a checkout
-                    line item -- customers never see "app fee" separately, they
-                    just see the marked-up price. base_price stays untouched in
-                    the DB no matter how many times this gets toggled. */}
-                {expanded && (
-                  <div className="mt-3 pt-2.5 border-t border-line flex items-center gap-2 text-sm">
-                    <Toggle on={(r.service_fee_pct ?? 0) > 0} onChange={() => toggleServiceFee(r)}
-                      label="رسوم الخدمة مفعّلة" labelOff="رسوم الخدمة" />
-                    {(r.service_fee_pct ?? 0) > 0 && (
-                      <>
-                        <input type="number" min={0.5} max={50} step="0.5"
-                          className="field !w-20 !py-1.5 text-center"
-                          value={serviceFeeDraft[r.id] ?? String(Math.round((r.service_fee_pct ?? 0) * 100))}
-                          onChange={e => setServiceFeeDraft(d => ({ ...d, [r.id]: e.target.value }))}
-                          onBlur={() => commitServiceFee(r)} />
-                        <span className="text-mist">%</span>
-                        <span className="text-xs text-emerald-700 mr-auto">مضافة داخل السعر — العميل مش شايفها كبند منفصل</span>
-                      </>
-                    )}
-                  </div>
-                )}
 
                 {expanded && (
                   <div className="mt-3 pt-2.5 border-t border-line flex items-center justify-between gap-3 text-sm">
