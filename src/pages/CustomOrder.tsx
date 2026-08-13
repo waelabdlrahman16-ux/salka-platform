@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import { customerOrderCreation } from '../lib/customerOrderCreation'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
-import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
+import { displayEgyptPhone, isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { artFor } from '../lib/categoryArt'
 import Icon from '../components/Icon'
 import { getSessionToken, useCustomerAuth } from '../lib/customerAuth'
@@ -97,7 +97,7 @@ export default function CustomOrder() {
   useEffect(() => {
     if (!customer) return
     setName(prev => prev.trim() ? prev : (customer.name ?? ''))
-    setPhone(prev => prev.trim() ? prev : (customer.phone ?? prev))
+    setPhone(prev => prev.trim() ? prev : (displayEgyptPhone(customer.phone) || prev))
   }, [customer?.id, customer?.name, customer?.phone])
 
   useEffect(() => {
