@@ -221,6 +221,10 @@ export default function Admin() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [menu, setMenu] = useState<MenuItem[]>([])
   const [openRest, setOpenRest] = useState<number | null>(null)
+  const [priceToolFor, setPriceToolFor] = useState<Restaurant | null>(null)
+  const [bulkPricePercent, setBulkPricePercent] = useState('')
+  const [bulkPriceCategories, setBulkPriceCategories] = useState<string[]>([])
+  const [bulkPriceBusy, setBulkPriceBusy] = useState(false)
   const [addingItemFor, setAddingItemFor] = useState<Restaurant | null>(null)
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
   const [settings, setSettings] = useState<Setting[]>([])
@@ -1122,6 +1126,59 @@ export default function Admin() {
     const isOn = (r.service_fee_pct ?? 0) > 0
     if (isOn) { await commitServiceFee(r, 0); return }
     await commitServiceFee(r, lastServiceFeePct[r.id] ?? 8)
+  }
+
+  function openPriceTool(r: Restaurant) {
+    const categories = [...new Set(menu.filter(i => i.restaurant_id === r.id).map(i => i.category).filter(Boolean))]
+    setPriceToolFor(r)
+    setBulkPricePercent('')
+    setBulkPriceCategories(categories)
+  }
+
+  async function applyBulkPriceChange() {
+    const r = priceToolFor
+    if (!r) return
+    const allCategories = [...new Set(menu.filter(i => i.restaurant_id === r.id).map(i => i.category).filter(Boolean))]
+    const percent = Number(bulkPricePercent)
+    if (!/^[-+]?\d+(\.\d+)?$/.test(bulkPricePercent.trim()) || percent < -50 || percent > 100 || percent === 0) {
+      setActionError('اكتب نسبة بين −٥٠٪ و١٠٠٪، ومش صفر')
+      return
+    }
+    if (bulkPriceCategories.length === 0) { setActionError('اختار قسم واحد على الأقل'); return }
+    const scope = bulkPriceCategories.length === allCategories.length ? 'كل أقسام المطعم' : bulkPriceCategories.join('، ')
+    if (!await confirmSheet({
+      title: `تعديل أسعار ${r.name}؟`,
+      body: `هن${percent > 0 ? 'زوّد' : 'نقلّل'} الأسعار ${Math.abs(percent)}٪ في: ${scope}. يشمل الأصناف والأحجام والكومبو والإضافات. الطلبات القديمة مش هتتغير.`,
+      confirmLabel: 'تأكيد تعديل الأسعار', danger: percent < 0,
+    })) return
+    setBulkPriceBusy(true)
+    const res = await adminCatalogAction<{ items: number; sizes: number; combos: number; addons: number }>('adjustRestaurantPrices', {
+      restaurantId: r.id, percent, categories: bulkPriceCategories.length === allCategories.length ? null : bulkPriceCategories,
+    }, { categories_required: 'اختار قسم واحد على الأقل', invalid_pct: 'النسبة غير صالحة' })
+    setBulkPriceBusy(false)
+    if (!res.ok) { setActionError(res.error); return }
+    setPriceToolFor(null)
+    await alertSheet(`تم تعديل ${res.data?.items ?? 0} صنف، ${res.data?.sizes ?? 0} حجم، ${res.data?.combos ?? 0} كومبو و${res.data?.addons ?? 0} إضافة.`)
+    load(true)
+  }
+
+  async function bakeRestaurantFee(r: Restaurant) {
+    const pct = Math.round((r.service_fee_pct ?? 0) * 100)
+    if (pct <= 0) { setActionError('رسوم المطعم الداخلية مقفولة بالفعل'); return }
+    if (!await confirmSheet({
+      title: `إلغاء رسوم ${pct}٪ بدون تغيير الأسعار؟`,
+      body: 'هنثبت السعر الحالي لكل الأصناف والأحجام والكومبو والإضافات كسعر نهائي، ثم نقفل رسوم المطعم الداخلية. ده لا يغيّر أي طلب قديم ولا رسوم الخدمة العامة الظاهرة في الفاتورة.',
+      confirmLabel: 'ثبّت الأسعار وألغِ الرسوم', danger: true,
+    })) return
+    setBulkPriceBusy(true)
+    const res = await adminCatalogAction<{ items: number; sizes: number; combos: number; addons: number }>('bakeRestaurantServiceFee', { restaurantId: r.id }, {
+      service_fee_not_enabled: 'رسوم المطعم الداخلية مقفولة بالفعل',
+    })
+    setBulkPriceBusy(false)
+    if (!res.ok) { setActionError(res.error); return }
+    setPriceToolFor(null)
+    await alertSheet(`تم تثبيت الأسعار وإلغاء رسوم المطعم. اتراجع ${res.data?.items ?? 0} صنف وكل اختياراته.`)
+    load(true)
   }
 
   async function removeCover(r: Restaurant) {
@@ -2498,6 +2555,16 @@ export default function Admin() {
                   </div>
                 )}
 
+                {expanded && (
+                  <div className="mt-3 pt-2.5 border-t border-line flex items-center justify-between gap-3 text-sm">
+                    <div>
+                      <p className="font-semibold">إدارة أسعار المنيو</p>
+                      <p className="text-xs text-mist mt-0.5">عدّل كل الأقسام أو أقسام تختارها مرة واحدة</p>
+                    </div>
+                    <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0" onClick={() => openPriceTool(r)}>تعديل جماعي</button>
+                  </div>
+                )}
+
                 {/* Archiving lives HERE, not as a red pill on every collapsed
                     card. It is rare and destructive; giving it a permanent
                     header slot made every closed vendor look like two alarms. */}
@@ -3297,6 +3364,57 @@ export default function Admin() {
           onDeleted={() => { setEditingItem(null); load(true) }}
         />
       )}
+
+      {priceToolFor && (() => {
+        const r = priceToolFor
+        const categories = [...new Set(menu.filter(i => i.restaurant_id === r.id).map(i => i.category).filter(Boolean))]
+        const selectedAll = categories.length > 0 && bulkPriceCategories.length === categories.length
+        return (
+          <div className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true">
+            <div className="card !rounded-2xl p-5 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto">
+              <div className="flex items-start justify-between gap-3 mb-1">
+                <div>
+                  <h3 className="font-bold">إدارة أسعار {r.name}</h3>
+                  <p className="text-xs text-mist mt-1">تتطبق على السعر النهائي للأصناف واختياراتها الجديدة فقط.</p>
+                </div>
+                <button className="btn-ghost !py-1 !px-2" onClick={() => setPriceToolFor(null)} disabled={bulkPriceBusy}>✕</button>
+              </div>
+
+              <div className="mt-5">
+                <label className="text-sm font-semibold block mb-2">تعديل نسبة الأسعار</label>
+                <div className="flex items-center gap-2">
+                  <input autoFocus type="number" inputMode="decimal" min={-50} max={100} step="0.5" className="field !w-28 text-center" placeholder="مثال 8" value={bulkPricePercent} onChange={e => setBulkPricePercent(e.target.value)} disabled={bulkPriceBusy} />
+                  <span className="text-mist">٪ زيادة أو نسبة سالبة للتخفيض</span>
+                </div>
+                <div className="flex items-center justify-between mt-4 mb-2">
+                  <p className="text-sm font-semibold">الأقسام</p>
+                  <button className="text-xs text-sea font-semibold" disabled={bulkPriceBusy} onClick={() => setBulkPriceCategories(selectedAll ? [] : categories)}>{selectedAll ? 'إلغاء اختيار الكل' : 'اختيار الكل'}</button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {categories.map(category => {
+                    const checked = bulkPriceCategories.includes(category)
+                    return <label key={category} className={`cursor-pointer rounded-lg border px-2.5 py-1.5 text-xs ${checked ? 'border-sea bg-sea/10 text-sea font-semibold' : 'border-line text-mist'}`}>
+                      <input className="sr-only" type="checkbox" checked={checked} disabled={bulkPriceBusy} onChange={() => setBulkPriceCategories(current => checked ? current.filter(x => x !== category) : [...current, category])} />
+                      {category}
+                    </label>
+                  })}
+                  {categories.length === 0 && <p className="text-xs text-mist">مفيش أصناف في المنيو لسه.</p>}
+                </div>
+                <button className="btn-sea w-full mt-4" disabled={bulkPriceBusy || categories.length === 0} onClick={applyBulkPriceChange}>{bulkPriceBusy ? 'جاري الحفظ…' : 'راجع وطبّق التعديل'}</button>
+              </div>
+
+              <div className="mt-5 pt-4 border-t border-line">
+                <p className="text-sm font-semibold">إلغاء الرسوم المخفية</p>
+                <p className="text-xs text-mist mt-1 leading-relaxed">يثبّت سعر المنيو الحالي ثم يجعل رسوم هذا المطعم ٠٪. العميل لا يرى رسوم المطعم كبند منفصل.</p>
+                <button className="btn-ghost w-full mt-3 text-sm" disabled={bulkPriceBusy || !(r.service_fee_pct && r.service_fee_pct > 0)} onClick={() => bakeRestaurantFee(r)}>
+                  ثبّت الأسعار وألغِ رسوم المطعم ({Math.round((r.service_fee_pct ?? 0) * 100)}٪)
+                </button>
+                {!(r.service_fee_pct && r.service_fee_pct > 0) && <p className="text-xs text-emerald-700 mt-2">رسوم المطعم الداخلية مقفولة بالفعل.</p>}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {sheetElement}
     </div>
