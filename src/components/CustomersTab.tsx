@@ -87,6 +87,7 @@ type Detail = {
 }
 
 type Segment = 'all' | 'repeat' | 'once' | 'never' | 'attention'
+type Recovery = { id: number; phone: string; email: string | null; created_at: string }
 
 const SEGMENTS: { key: Segment; label: string; hint: string }[] = [
   { key: 'all', label: 'الكل', hint: 'كل اللي عندنا رقمه' },
@@ -119,6 +120,8 @@ export default function CustomersTab() {
   const [query, setQuery] = useState('')
   const [segment, setSegment] = useState<Segment>('all')
   const [sort, setSort] = useState<'spend' | 'recent' | 'quiet' | 'orders'>('spend')
+  const [recoveries, setRecoveries] = useState<Recovery[]>([])
+  const [recoveryBusy, setRecoveryBusy] = useState<number | null>(null)
 
   const [open, setOpen] = useState<Customer | null>(null)
   const [detail, setDetail] = useState<Detail | null>(null)
@@ -134,6 +137,14 @@ export default function CustomersTab() {
   }
 
   useEffect(() => { load() }, [])
+  useEffect(() => { adminAccountDriverAction<Recovery[]>('listAccountRecoveries', {}).then(r => { if (r.ok) setRecoveries(r.data ?? []) }) }, [])
+
+  async function approveRecovery(id: number) {
+    setRecoveryBusy(id)
+    const r = await adminAccountDriverAction('approveAccountRecovery', { requestId: id })
+    setRecoveryBusy(null)
+    if (r.ok) { setRecoveries(x => x.filter(v => v.id !== id)); load() }
+  }
 
   useEffect(() => {
     if (!open) { setDetail(null); setDetailError(''); return }
@@ -193,6 +204,14 @@ export default function CustomersTab() {
 
   return (
     <div className="space-y-4">
+      {recoveries.length > 0 && <div className="card p-4 border-sand/60 bg-sand/10">
+        <p className="font-bold text-sm">طلبات استرجاع الحساب ({recoveries.length})</p>
+        <p className="text-xs text-mist mt-1">اتصل بالرقم المسجل الأول، وبعد التأكد وافق لربط الحساب.</p>
+        <div className="space-y-2 mt-3">{recoveries.map(r => <div key={r.id} className="bg-white rounded-lg p-3 flex items-center justify-between gap-2">
+          <div><p dir="ltr" className="font-semibold text-sm">{dial(r.phone)}</p><p dir="ltr" className="text-xs text-mist">{r.email || '—'}</p></div>
+          <div className="flex gap-1"><a className="btn-ghost !py-1.5 !px-2 text-xs" href={`tel:${dial(r.phone)}`}>اتصل</a><button className="btn-sea !py-1.5 !px-2 text-xs" disabled={recoveryBusy===r.id} onClick={() => approveRecovery(r.id)}>وافق</button></div>
+        </div>)}</div>
+      </div>}
       {/* Six numbers, and the only one to act on is the last. */}
       <div className="grid grid-cols-3 gap-2">
         <Stat label="عملاء" value={String(totals.people)} />
