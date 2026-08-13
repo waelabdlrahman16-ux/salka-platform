@@ -66,7 +66,7 @@ export default function ProductDetailSheet({
             250 ج.م item. An empty box does not become more informative by
             being bigger. A vendor with no picture gets a short band instead,
             which reads as "no photo" rather than as a broken image. */}
-        <div className={`relative grid place-items-center text-5xl ${
+        <div className={`relative grid place-items-center text-5xl overflow-hidden ${
             active.image_url ? 'aspect-[4/3] max-h-[30vh]' : 'h-28'}`}
           style={{ background: active.image_url ? '#F4EEE3' : art.tint }}>
           {active.image_url
