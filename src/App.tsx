@@ -21,6 +21,7 @@ const DriverPage = lazy(() => import('./pages/Driver'))
 const Vendor = lazy(() => import('./pages/Vendor'))
 const Catalog = lazy(() => import('./pages/Catalog'))
 const Supervisor = lazy(() => import('./pages/Supervisor'))
+const Observer = lazy(() => import('./pages/Observer'))
 
 // Home is the landing route for every customer, so it stays a static import
 // -- lazy-loading it would only add a network round trip to the page nobody
@@ -50,7 +51,7 @@ import { getCompoundId } from './lib/place'
 // sheet, the customer bottom nav, and -- if they signed in with Google rather
 // than skipping -- an undismissable PhonePrompt covering the whole screen.
 // The route itself never mounted. Add new staff routes here and only here.
-const STAFF_PATHS = ['/admin', '/driver', '/vendor', '/catalog', '/supervisor']
+const STAFF_PATHS = ['/admin', '/driver', '/vendor', '/catalog', '/supervisor', '/observer']
 
 /** A staff workspace: shows the staff header, hides customer chrome. */
 function isStaffWorkspace(pathname: string): boolean {
@@ -219,7 +220,7 @@ function AppShell() {
     // the customer URL. Move it before crossing the auth boundary. A later app
     // launch has no shared session to inspect, so the remembered staff board
     // restores the old installed-app behaviour without sharing refresh tokens.
-    if (profile && (profile.role === 'driver' || profile.role === 'vendor' || profile.role === 'supervisor' || profile.role === 'admin' || profile.role === 'catalog')) {
+    if (profile && (profile.role === 'driver' || profile.role === 'vendor' || profile.role === 'supervisor' || profile.role === 'admin' || profile.role === 'catalog' || profile.role === 'observer')) {
       window.location.replace(promoteCurrentSessionToRole(profile.role))
       return
     }
@@ -321,6 +322,7 @@ function AppShell() {
             <Route path="/vendor" element={<Protected role="vendor"><Vendor /></Protected>} />
             <Route path="/catalog" element={<Protected role="catalog"><Catalog /></Protected>} />
             <Route path="/supervisor" element={<Protected role="supervisor"><Supervisor /></Protected>} />
+            <Route path="/observer" element={<Protected role="observer"><Observer /></Protected>} />
           </Routes>
         </Suspense>
       </main>
