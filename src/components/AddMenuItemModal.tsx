@@ -22,6 +22,17 @@ const SIZE_PRESETS = [
 // the order item. Matches MenuItemEditor's preset exactly.
 const COMBO_PRESETS = [{ label: 'ابدأ بـ وسط / كبير', names: ['وسط', 'كبير'] }]
 
+type DraftModifierGroup = {
+  name: string
+  required: boolean
+  maxSelect: string
+  choices: { name: string; price: string }[]
+}
+
+const emptyModifierGroup = (): DraftModifierGroup => ({
+  name: '', required: false, maxSelect: '1', choices: [{ name: '', price: '' }]
+})
+
 /**
  * Sizes and combos are held here as drafts and written after the item exists --
  * they need its menu_item_id, so there is no way to insert them first.
@@ -59,6 +70,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
   const [formError, setFormError] = useState('')
   const [sizes, setSizes] = useState<OptionRow[]>([])
   const [combos, setCombos] = useState<OptionRow[]>([])
+  const [modifierGroups, setModifierGroups] = useState<DraftModifierGroup[]>([])
 
   // Once an item has sizes, place_order REFUSES an order that does not name one
   // (`size_required`), so menu_items.price is never charged -- it just sits
@@ -154,13 +166,61 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
         onSaved(); return
       }
     }
+    for (const [groupIndex, group] of modifierGroups.entries()) {
+      const name = group.name.trim()
+      const choices = group.choices
+        .map(choice => ({ name: choice.name.trim(), price: Number(choice.price) || 0 }))
+        .filter(choice => choice.name)
+
+      if (!name || choices.length === 0) {
+        setSaving(false)
+        setFormError('اكتب اسم كل مجموعة واختيار واحد على الأقل، أو احذف المجموعة الفاضية.')
+        return
+      }
+
+      const maxSelect = Math.max(group.required ? 1 : 0, Number(group.maxSelect) || 1)
+      const { data: savedGroup, error: groupErr } = await supabase
+        .from('menu_item_addon_groups')
+        .insert({
+          menu_item_id: itemId,
+          name,
+          min_select: group.required ? 1 : 0,
+          max_select: maxSelect,
+          display_order: groupIndex
+        })
+        .select('id')
+        .single()
+
+      if (groupErr || !savedGroup) {
+        setSaving(false)
+        setFormError(`الصنف اتحفظ لكن مجموعة الاختيارات «${name}» ما اتحفظتش — افتحه وظبّطها. (${groupErr?.message || 'unknown error'})`)
+        onSaved()
+        return
+      }
+
+      const { error: choicesErr } = await supabase.from('menu_item_addons').insert(
+        choices.map((choice, choiceIndex) => ({
+          group_id: savedGroup.id,
+          name: choice.name,
+          price: choice.price,
+          available: true,
+          display_order: choiceIndex
+        }))
+      )
+      if (choicesErr) {
+        setSaving(false)
+        setFormError(`الصنف ومجموعة «${name}» اتحفظوا لكن الاختيارات فشلت — افتحه وظبّطها. (${choicesErr.message})`)
+        onSaved()
+        return
+      }
+    }
     setSaving(false)
 
     onSaved(after === 'addons' ? (created as MenuItem) : undefined)
     if (after === 'another') {
       setJustSaved(form.name.trim())
       setForm(f => ({ ...EMPTY, category: f.category })) // keep the section, clear the rest
-      setSizes([]); setCombos([])
+      setSizes([]); setCombos([]); setModifierGroups([])
       setTimeout(() => setJustSaved(''), 2500)
     } else {
       onClose()
@@ -276,6 +336,99 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
             onNameChange={(id, name) => setCombos(rs => rs.map(r => r.id === id ? { ...r, name } : r))}
           />
         </div>
+
+        <section className="card p-3.5 mt-3 space-y-3" aria-label="اختيارات العميل والإضافات">
+          <div>
+            <h3 className="font-bold text-sm text-foam">اختيارات العميل والإضافات</h3>
+            <p className="text-[11px] text-mist mt-1">نفس منطق المطاعم الكبيرة: اختيارات مطلوبة أو اختيارية، بسعر لكل اختيار، وحد أقصى للاختيارات.</p>
+          </div>
+
+          {modifierGroups.map((group, groupIndex) => (
+            <div key={groupIndex} className="rounded-xl border border-line p-3 space-y-2.5 bg-shellup">
+              <div className="flex gap-2">
+                <input
+                  className={inputCls}
+                  placeholder="اسم المجموعة: اختار الصوص"
+                  value={group.name}
+                  onChange={e => setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? { ...current, name: e.target.value } : current))}
+                />
+                <button
+                  type="button"
+                  className="text-xs text-red-600 px-1 shrink-0"
+                  onClick={() => setModifierGroups(groups => groups.filter((_, i) => i !== groupIndex))}
+                >حذف</button>
+              </div>
+              <div className="flex items-center gap-3 text-xs text-mist">
+                <label className="flex items-center gap-1.5">
+                  <input
+                    type="checkbox"
+                    checked={group.required}
+                    onChange={e => setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? { ...current, required: e.target.checked } : current))}
+                  />
+                  اختيار مطلوب
+                </label>
+                <label className="flex items-center gap-1.5">
+                  أقصى عدد
+                  <input
+                    className="field !h-8 !py-1 !w-14 text-center"
+                    type="number"
+                    min={group.required ? 1 : 0}
+                    value={group.maxSelect}
+                    onChange={e => setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? { ...current, maxSelect: e.target.value } : current))}
+                  />
+                </label>
+              </div>
+              <div className="space-y-2">
+                {group.choices.map((choice, choiceIndex) => (
+                  <div key={choiceIndex} className="flex gap-2">
+                    <input
+                      className={inputCls}
+                      placeholder="اسم الاختيار"
+                      value={choice.name}
+                      onChange={e => setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? {
+                        ...current,
+                        choices: current.choices.map((option, j) => j === choiceIndex ? { ...option, name: e.target.value } : option)
+                      } : current))}
+                    />
+                    <input
+                      className={`${inputCls} !w-24`}
+                      type="number"
+                      min="0"
+                      placeholder="+ سعر"
+                      value={choice.price}
+                      onChange={e => setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? {
+                        ...current,
+                        choices: current.choices.map((option, j) => j === choiceIndex ? { ...option, price: e.target.value } : option)
+                      } : current))}
+                    />
+                    <button
+                      type="button"
+                      className="text-xs text-mist px-1 shrink-0"
+                      aria-label="حذف الاختيار"
+                      onClick={() => setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? {
+                        ...current,
+                        choices: current.choices.filter((_, j) => j !== choiceIndex)
+                      } : current))}
+                    >✕</button>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="text-xs text-sea font-semibold"
+                onClick={() => setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? {
+                  ...current, choices: [...current.choices, { name: '', price: '' }]
+                } : current))}
+              >+ إضافة اختيار</button>
+            </div>
+          ))}
+
+          <button
+            type="button"
+            className="btn-ghost w-full !py-2 text-sm"
+            onClick={() => setModifierGroups(groups => [...groups, emptyModifierGroup()])}
+          >+ إضافة مجموعة اختيارات</button>
+        </section>
 
         <div className="flex flex-wrap gap-2 mt-3">
           <button className="btn-ghost flex-1 !py-2.5 text-sm" disabled={saving || !valid} onClick={() => save('another')}>
