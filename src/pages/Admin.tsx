@@ -1827,7 +1827,7 @@ export default function Admin() {
               )}
                      {(o.request_items?.length || o.request_notes?.trim()) && (
   <div className="mt-3 rounded-xl border border-shellup bg-shellup/40 px-3 py-2.5 text-sm">
-    {o.request_items?.map((item, index) => <p key={index}>×{item.quantity} {item.name}</p>)}
+    {o.request_items?.map((item, index) => <p key={index}>×{item.qty} {item.name}</p>)}
     {o.request_notes?.trim() && <p className="mt-1 text-mist">📝 {o.request_notes}</p>}
   </div>
 )}
