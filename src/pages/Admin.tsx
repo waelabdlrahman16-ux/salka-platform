@@ -1610,6 +1610,12 @@ export default function Admin() {
                       🧾 واقف عليك إنت — الطلب ده محتاج تسعير قبل ما أي مندوب يقدر ياخده
                     </p>
                   )}
+                  {(full?.customer_note?.trim() || full?.request_notes?.trim()) && (
+                    <div className="mt-2 rounded-xl border border-sand/40 bg-sand/10 px-3 py-2 text-xs text-sandink space-y-1">
+                      {full.customer_note?.trim() && <p>💬 ملاحظة العميل: {full.customer_note}</p>}
+                      {full.request_notes?.trim() && <p>📝 تفاصيل الطلب: {full.request_notes}</p>}
+                    </div>
+                  )}
                   <p className="text-xs text-red-700 font-semibold mt-1.5">
                     واقف من {since} (الحد {o.threshold_minutes} دقيقة)
                     {o.payment_method === 'cod' ? ' · كاش' : o.payment_method === 'instapay' ? ' · إنستاباي' : ''}
