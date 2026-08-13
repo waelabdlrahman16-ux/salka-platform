@@ -9,7 +9,7 @@ const key = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_rI0HsZAc1W
 
 type AuthScope = 'customer' | Profile['role'] | 'staff-login'
 
-const STAFF_SCOPES: Profile['role'][] = ['admin', 'driver', 'vendor', 'catalog', 'supervisor']
+const STAFF_SCOPES: Profile['role'][] = ['admin', 'driver', 'vendor', 'catalog', 'supervisor', 'observer']
 const LAST_STAFF_HOME_KEY = 'salka_last_staff_home'
 
 export function authScopeForPathname(pathname: string): AuthScope {

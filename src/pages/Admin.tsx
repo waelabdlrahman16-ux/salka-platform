@@ -269,7 +269,7 @@ export default function Admin() {
   }
   const [vendorAccounts, setVendorAccounts] = useState<{ profile_id: string; restaurant_id: number; email: string }[]>([])
   const [driverAccounts, setDriverAccounts] = useState<{ profile_id: string; driver_id: number; email: string }[]>([])
-  const [catalogAccounts, setCatalogAccounts] = useState<{ profile_id: string; name: string; email: string; role: 'catalog' | 'supervisor' }[]>([])
+  const [catalogAccounts, setCatalogAccounts] = useState<{ profile_id: string; name: string; email: string; role: 'catalog' | 'supervisor' | 'observer' }[]>([])
   const [newCatalogName, setNewCatalogName] = useState('')
   const [accountBusy, setAccountBusy] = useState<string | null>(null)
   const [newCreds, setNewCreds] = useState<{ email: string; password: string } | null>(null)
@@ -483,7 +483,7 @@ export default function Admin() {
       const accountsRes = await adminReport<{
         vendors: { profile_id: string; restaurant_id: number; email: string }[]
         drivers: { profile_id: string; driver_id: number; email: string }[]
-        catalog: { profile_id: string; name: string; email: string; role: 'catalog' | 'supervisor' }[]
+        catalog: { profile_id: string; name: string; email: string; role: 'catalog' | 'supervisor' | 'observer' }[]
       }>('listAccounts')
       if (accountsRes.ok) {
         setVendorAccounts(accountsRes.data?.vendors ?? [])
@@ -498,7 +498,8 @@ export default function Admin() {
       ping('complaints', (openComp.data ?? []).filter((c: Complaint) => c.status === 'open').length, 'شكوى جديدة', 'في عميل بلّغ عن مشكلة')
       ping('settlement_requests', (sr.data ?? []).length, 'طلب تسوية مبكرة', 'مندوب طالب تسوية قبل ميعاده')
       ping('stalled', ((stalled.data as StalledOrder[]) ?? []).length, 'طلب واقف', 'في طلب عدّى الوقت المسموح ومحدش حركه')
-    } catch {      setSyncFailed(true)
+    } catch {
+      setSyncFailed(true)
     }
   }
 
@@ -997,7 +998,8 @@ export default function Admin() {
         setAccountBusy(profileId)
         const forced = await adminAccountDriverAction('deleteStaff', { profileId, force: true })
         setAccountBusy(null)
-        if (!forced.ok) { setActionError(forced.error); return }        setActionError(''); load(true)
+        if (!forced.ok) { setActionError(forced.error); return }
+        setActionError(''); load(true)
         return
       }
       setActionError(res.error); return
@@ -1496,7 +1498,8 @@ export default function Admin() {
     && o.status === 'awaiting_payment'
     && o.instapay_claimed_at != null)
 
-  const CATEGORY_LABEL: Record<string, string> = {    missing_item: '📦 نقص صنف', wrong_item: '❌ صنف غلط', driver_conduct: '🛵 مشكلة مع المندوب',
+  const CATEGORY_LABEL: Record<string, string> = {
+    missing_item: '📦 نقص صنف', wrong_item: '❌ صنف غلط', driver_conduct: '🛵 مشكلة مع المندوب',
     quality: '👎 جودة الطلب', other: '❓ حاجة تانية'
   }
 
@@ -1995,7 +1998,8 @@ export default function Admin() {
             return (
               <div className="flex flex-wrap gap-2">
                 {chip('today', 'النهاردة', todayCount)}
-                {chip('yesterday', 'إمبارح', yCount)}                {chip('older', 'أقدم')}
+                {chip('yesterday', 'إمبارح', yCount)}
+                {chip('older', 'أقدم')}
                 {chip('all', 'الكل', real.length)}
                 {testCount > 0 && (
                   <button onClick={() => setShowTestOrders(v => !v)}
@@ -2515,7 +2519,8 @@ export default function Admin() {
                           : 'من غير صورة واجهة بنختار أحسن صورة من القايمة تلقائيًا'}
                     </p>
                     {r.cover_image_url && (
-                      <button className="text-red-500 text-xs font-semibold mt-1" onClick={() => removeCover(r)}>                        ✗ إزالة صورة الواجهة
+                      <button className="text-red-500 text-xs font-semibold mt-1" onClick={() => removeCover(r)}>
+                        ✗ إزالة صورة الواجهة
                       </button>
                     )}
                   </div>
@@ -3015,3 +3020,523 @@ export default function Admin() {
                 <span className={`text-xs font-semibold rounded-full px-2.5 py-1 shrink-0 ${c.status === 'open' ? 'bg-red-500/15 text-red-600' : c.status === 'reviewed' ? 'bg-sand/15 text-sandink' : 'bg-emerald-500/15 text-emerald-700'}`}>
                   {c.status === 'open' ? 'جديدة' : c.status === 'reviewed' ? 'قيد المراجعة' : 'اتحلت'}
                 </span>
+              </div>
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                <span className="text-xs font-semibold bg-shellup rounded-full px-2 py-0.5">{CATEGORY_LABEL[c.category] ?? c.category}</span>
+                {c.drivers?.name && <span className="text-xs text-mist">🛵 {c.drivers.name}</span>}
+              </div>
+              <p className="text-sm mt-2">{c.description}</p>
+              {c.orders && (
+                <p className="text-sm text-mist mt-2">👤 {c.orders.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${c.orders.customer_phone}`}>{c.orders.customer_phone}</a></p>
+              )}
+              <div className="flex gap-2.5 mt-3 flex-wrap">
+                {c.status !== 'reviewed' && <button className="btn-ghost flex-1 text-sm" onClick={() => updateComplaintStatus(c, 'reviewed')}>قيد المراجعة</button>}
+                {c.status !== 'resolved' && <button className="btn-sea flex-1 text-sm" onClick={() => updateComplaintStatus(c, 'resolved')}>اتحلت</button>}
+                {compensatedOrderIds.has(c.order_id)
+                  ? <span className="text-sm font-semibold text-emerald-700 flex-1 text-center py-2">✓ اتعوّض</span>
+                  : <button className="btn-ghost flex-1 text-sm" onClick={() => compensateFromComplaint(c)}>💳 تعويض العميل</button>}
+                {c.category === 'driver_conduct' && c.driver_id && (
+                  <button className="btn-ghost flex-1 text-sm !text-red-600" onClick={() => flagDriverDispute(c)}>⚠️ علّم في سجل المندوب</button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'accounts' && (
+        <div className="space-y-6">
+          <div className="mb-6">
+            <p className="font-semibold mb-1">موظفي القوايم</p>
+            <p className="text-xs text-mist mb-3">
+              حساب بيقدر يضيف ويعدّل الأصناف والأسعار والأحجام والإضافات لكل المطاعم — ومش بيشوف الطلبات
+              ولا المندوبين ولا الأرباح ولا الإعدادات.
+            </p>
+            <p className="text-xs text-mist mb-3 leading-relaxed">
+              <b>مشرف التشغيل</b> بيشتغل على طلبات المطاعم بس: بيكلّم المطعم ويسجّل
+              القبول والجاهزية، بيعيّن المندوبين ويسحبهم، وبيحل مشاكل التوصيل.
+              مش بيشوف الصيدلية ولا الماركت، ومش بيلمس أي فلوس — تأكيد التحويلات
+              وتسوية الكاش والاستردادات كلها عندك إنت. لإنشاء واحد: اعمل حساب
+              هنا وبعدين اضغط «خلّيه مشرف تشغيل».
+            </p>
+            <p className="text-xs text-mist mb-3 leading-relaxed">
+              <b>المراقب</b> يشوف أرقام التشغيل وحالة الطلبات فقط، من غير أرقام عملاء أو مبالغ أو أي أزرار تنفيذ.
+            </p>
+
+            <div className="card p-3.5 mb-3">
+              <div className="flex gap-2">
+                <input className="field flex-1" value={newCatalogName}
+                  onChange={e => setNewCatalogName(e.target.value)}
+                  placeholder="اسم الموظف" aria-label="اسم الموظف" />
+                <button className="btn-sea shrink-0 !px-4" disabled={!newCatalogName.trim() || accountBusy === 'catalog-new'}
+                  onClick={createCatalogLogin}>
+                  {accountBusy === 'catalog-new' ? '...' : 'إنشاء حساب'}
+                </button>
+                <button className="btn-ghost shrink-0 !px-4" disabled={!newCatalogName.trim() || accountBusy === 'observer-new'}
+                  onClick={createObserverLogin}>
+                  {accountBusy === 'observer-new' ? '...' : 'إنشاء مراقب'}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-2.5">
+              {catalogAccounts.map(acc => (
+                <div key={acc.profile_id} className="card p-3.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-semibold truncate">
+                        {acc.name}
+                        <span className={`mr-2 text-[11px] font-bold rounded-full px-2 py-0.5 ${
+                          acc.role === 'supervisor' ? 'bg-sea/10 text-sea'
+                          : acc.role === 'observer' ? 'bg-shellup text-seadeep' : 'bg-shellup text-mist'}`}>
+                          {acc.role === 'supervisor' ? 'مشرف تشغيل' : acc.role === 'observer' ? 'مراقب' : 'قوايم'}
+                        </span>
+                      </p>
+                      <p className="text-xs text-mist truncate" dir="ltr">{acc.email}</p>
+                    </div>
+                    <div className="flex gap-1.5 shrink-0">
+                      <AccountActionsMenu
+                        busy={accountBusy === acc.profile_id}
+                        onChangeEmail={() => changeEmail(acc.profile_id, acc.email)}
+                        onResetPassword={() => resetPassword(acc.profile_id)}
+                        onCustomPassword={() => setCustomPassword(acc.profile_id)}
+                        onRemove={() => removeLogin(acc.profile_id)}
+                      />
+                    </div>
+                  </div>
+                  {/* The catalog/supervisor toggle has no observer equivalent --
+                      an observer is a distinct read-only role, not a step on this
+                      ladder, so the convert button simply does not apply to it. */}
+                  {acc.role !== 'observer' && (
+                    <button className="btn-ghost w-full !py-1.5 text-xs mt-2.5"
+                      onClick={() => convertStaffRole(acc.profile_id, acc.role === 'supervisor' ? 'catalog' : 'supervisor')}>
+                      {acc.role === 'supervisor' ? 'رجّعه موظف قوايم' : 'خلّيه مشرف تشغيل'}
+                    </button>
+                  )}
+                </div>
+              ))}
+              {catalogAccounts.length === 0 && (
+                <p className="text-xs text-mist">مفيش حسابات قوايم لسه</p>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <p className="font-semibold mb-3">حسابات المطاعم والمتاجر</p>
+            <div className="space-y-2.5">
+              {restaurants.map(r => {
+                const acc = vendorAccounts.find(a => a.restaurant_id === r.id)
+                return (
+                  <div key={r.id} className="card p-3.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">{r.name}{r.archived ? ' (مخفي)' : ''}</p>
+                        {acc ? <p className="text-xs text-mist truncate" dir="ltr">{acc.email}</p>
+                          : <p className="text-xs text-mist">مفيش حساب دخول</p>}
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {acc ? (
+                          <AccountActionsMenu
+                            busy={accountBusy === acc.profile_id}
+                            onChangeEmail={() => changeEmail(acc.profile_id, acc.email)}
+                            onResetPassword={() => resetPassword(acc.profile_id)}
+                            onCustomPassword={() => setCustomPassword(acc.profile_id)}
+                            onRemove={() => removeLogin(acc.profile_id)}
+                          />
+                        ) : (
+                          <button className="btn-sea !py-1.5 !px-3 text-xs" disabled={accountBusy === `vendor-${r.id}`}
+                            onClick={() => createVendorLogin(r.id)}>إنشاء حساب</button>
+                        )}
+                        <Toggle on={!r.archived} onChange={() => archiveRestaurant(r, !r.archived)} label="ظاهر في التطبيق" labelOff="مخفي" />
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <div>
+            <p className="font-semibold mb-3">حسابات المندوبين</p>
+            <div className="space-y-2.5">
+              {drivers.map(d => {
+                const acc = driverAccounts.find(a => a.driver_id === d.id)
+                return (
+                  <div key={d.id} className="card p-3.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">{d.name}</p>
+                        {acc ? <p className="text-xs text-mist truncate" dir="ltr">{acc.email}</p>
+                          : <p className="text-xs text-mist">مفيش حساب دخول (بيانات مؤقتة)</p>}
+                      </div>
+                      <div className="flex gap-1.5 shrink-0">
+                        {acc ? (
+                          <AccountActionsMenu
+                            busy={accountBusy === acc.profile_id}
+                            onChangeEmail={() => changeEmail(acc.profile_id, acc.email)}
+                            onResetPassword={() => resetPassword(acc.profile_id)}
+                            onCustomPassword={() => setCustomPassword(acc.profile_id)}
+                            onRemove={() => removeLogin(acc.profile_id)}
+                          />
+                        ) : (
+                          <button className="btn-sea !py-1.5 !px-3 text-xs" disabled={accountBusy === `driver-${d.id}`}
+                            onClick={() => createDriverLogin(d.id)}>إنشاء حساب</button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab === 'coverage' && (
+        <div className="space-y-2.5">
+          <p className="text-sm text-mist bg-shellup/60 rounded-xl p-3">
+            كل مطعم بيوصل لكل الأماكن افتراضيًا. تقدر تحدد له مسافة قصوى (كم)، أو لو عايز تحدد أماكن بعينها بالظبط دوس "أماكن محددة" — لو حددت أماكن، هتتجاهل المسافة القصوى وهيوصل بس للأماكن المختارة.
+          </p>
+          {restaurants.filter(r => !r.archived).map(r => {
+            const explicit = coverage.filter(c => c.restaurant_id === r.id)
+            const open = coverageFor === r.id
+            return (
+              <div key={r.id} className="card p-3.5">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-semibold">{r.name}</p>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <input
+                      type="number" min={1} placeholder="بلا حد أقصى" aria-label={`أقصى مسافة توصيل لـ ${r.name}`}
+                      className="field !h-9 !w-28 text-sm"
+                      value={r.max_delivery_km ?? ''}
+                      onChange={e => updateRestaurant(r, { max_delivery_km: e.target.value ? Number(e.target.value) : null })}
+                    />
+                    <span className="text-xs text-mist">كم</span>
+                    <button className="btn-ghost !py-1.5 !px-2.5 text-xs" onClick={() => setCoverageFor(open ? null : r.id)}>
+                      {explicit.length > 0 ? `أماكن محددة (${explicit.length})` : 'أماكن محددة'}
+                    </button>
+                  </div>
+                </div>
+
+                {open && (
+                  <div className="mt-3 pt-3 border-t border-line">
+                    {explicit.length > 0 && (
+                      <p className="text-xs text-sandink mb-2">⚠️ المطعم ده حاليًا مقتصر بس على الأماكن المعلّمة تحت — لو عايزه يرجع يوصل بالمسافة القصوى بس، شيل كل التعليمات.</p>
+                    )}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-64 overflow-y-auto">
+                      {compounds.map(c => {
+                        const checked = explicit.some(e => e.compound_id === c.id)
+                        return (
+                          <label key={c.id} className={`flex items-center gap-1.5 text-xs rounded-lg px-2 py-1.5 cursor-pointer ${checked ? 'bg-sea/10 text-sea font-semibold' : 'bg-shellup/50'}`}>
+                            <Toggle on={checked} onChange={() => toggleCoverage(r.id, c.id)} ariaLabel={`تغطية ${c.name} — ${r.name}`} />
+                            <span className="truncate">{c.name}</span>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {newCreds && (
+        <div ref={credsRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true" onClick={() => setNewCreds(null)}>
+          <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold mb-3">بيانات الدخول</h3>
+            <p className="text-sm text-mist mb-1">الإيميل</p>
+            <p className="font-mono text-sm bg-night border border-line rounded-lg p-2.5 mb-3" dir="ltr">{newCreds.email}</p>
+            <p className="text-sm text-mist mb-1">كلمة السر</p>
+            <p className="font-mono text-sm bg-night border border-line rounded-lg p-2.5 mb-4" dir="ltr">{newCreds.password}</p>
+            <div className="flex items-center gap-2 mb-4">
+              <p className="text-xs text-sandink flex-1">⚠️ ده ظاهر مرة واحدة بس — انسخه وابعته دلوقتي</p>
+              <button className="btn-sea !py-2 text-xs shrink-0" onClick={() => {
+                navigator.clipboard.writeText(`${newCreds.email}\n${newCreds.password}`)
+                setCredsCopied(true)
+                window.setTimeout(() => setCredsCopied(false), 1500)
+              }}>{credsCopied ? 'اتنسخ ✓' : '📋 نسخ'}</button>
+            </div>
+            <button className="btn-sea w-full" onClick={() => setNewCreds(null)}>تمام</button>
+          </div>
+        </div>
+      )}
+
+      {assigning && (
+        <div ref={assigningRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true" onClick={closeAssign}>
+          <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold mb-4">اختيار مندوب متاح — طلب #{assigning.id}</h3>
+            {assigningNeedsVan && (
+              <p className="text-sandink text-sm mb-3">🚐 الطلب محتاج فان — لسه السعر متأكدش أو الطلب كبير</p>
+            )}
+            {/* The refusal has to be readable HERE. The page-level banner sits
+                behind a fixed inset-0 overlay, so a failed assign produced no
+                visible message at all -- which is how ten distinct reasons
+                became one alert() saying nothing. */}
+            {modalError && (
+              <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3" role="alert">{modalError}</p>
+            )}
+            {assignableDrivers.length === 0 && (
+              <p className="text-mist text-sm">
+                {assigningNeedsVan ? 'لا يوجد فان متاح حالياً' : 'لا يوجد مندوبين متاحين حالياً'}
+              </p>
+            )}
+            <div className="space-y-2.5">
+              {assignableDrivers.map(d => {
+                const driverActiveCount = active.filter(a => a.driver_id === d.id).length
+                return (
+                  <button key={d.id} className="w-full card !bg-night p-3.5 text-right hover:border-sea/50 transition-colors" onClick={() => assign(assigning, d)}>
+                    <p className="font-semibold">{d.name}</p>
+                    <p className="text-sm text-mist mt-0.5">★ {d.rating} · {d.total_deliveries} توصيلة · {vehicleLabel(d.vehicle_type)} · {d.vehicle_plate}</p>
+                    {driverActiveCount > 0 && (
+                      <p className="text-xs text-sandink mt-1">شغال دلوقتي على {driverActiveCount} طلب</p>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+            <button className="btn-ghost w-full mt-4" onClick={() => setAssigning(null)}>إلغاء</button>
+          </div>
+        </div>
+      )}
+
+      {reassigning && (
+        <div ref={reassigningRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true"
+          onClick={() => setReassigning(null)}>
+          <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold mb-1">تغيير المندوب — طلب #{reassigning.order_id}</h3>
+            <p className="text-sm text-mist mb-4">
+              دلوقتي مع {reassigning.drivers?.name ?? 'مندوب'} · {assignmentStatusLabel(reassigning.status)}
+            </p>
+            {reassignNeedsVan && (
+              <p className="text-sandink text-sm mb-3">🚐 الطلب محتاج فان — لسه السعر متأكدش أو الطلب كبير</p>
+            )}
+            {modalError && (
+              <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3">{modalError}</p>
+            )}
+            {reassignCandidates.length === 0 && (
+              <p className="text-mist text-sm">
+                {reassignNeedsVan ? 'لا يوجد فان تاني متاح حالياً' : 'لا يوجد مندوب تاني متاح حالياً'}
+              </p>
+            )}
+            <div className="space-y-2.5">
+              {reassignCandidates.map(d => {
+                const driverActiveCount = active.filter(a => a.driver_id === d.id).length
+                return (
+                  <button key={d.id} className="w-full card !bg-night p-3.5 text-right hover:border-sea/50 transition-colors disabled:opacity-50"
+                    disabled={reassignBusy}
+                    onClick={() => reassignOrder(reassigning, d)}>
+                    <p className="font-semibold">{d.name}</p>
+                    <p className="text-sm text-mist mt-0.5">★ {d.rating} · {vehicleLabel(d.vehicle_type)} · {d.vehicle_plate}</p>
+                    {driverActiveCount > 0 && (
+                      <p className="text-xs text-sandink mt-1">شغال دلوقتي على {driverActiveCount} طلب</p>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+            <button className="btn-ghost w-full mt-4" onClick={() => setReassigning(null)}>إلغاء</button>
+          </div>
+        </div>
+      )}
+
+      {addingItemFor && (
+        <AddMenuItemModal
+          restaurant={addingItemFor}
+          onClose={() => setAddingItemFor(null)}
+          // Straight from "added" into its sizes and options, instead of
+          // closing and making someone hunt for the row they just created.
+          onSaved={(created) => {
+            load(true)
+            if (created) { setAddingItemFor(null); setEditingItem(created) }
+          }}
+        />
+      )}
+
+      {editingItem && (
+        <MenuItemEditor
+          item={editingItem}
+          restaurantName={restaurants.find(r => r.id === editingItem.restaurant_id)?.name}
+          onClose={() => setEditingItem(null)}
+          onSaved={() => { setEditingItem(null); load(true) }}
+          onDeleted={() => { setEditingItem(null); load(true) }}
+        />
+      )}
+
+      {sheetElement}
+    </div>
+  )
+}
+
+
+/**
+ * The end-of-day audit, live.
+ *
+ * Written after doing it by hand on 2026-08-07 and watching the answer change
+ * within the hour. Three things it deliberately does that a naive dashboard
+ * does not:
+ *
+ *  - It reports what SALKA KEPT, not GMV. On 6 August the app moved 8,167 ج.م
+ *    of food and Salka's share of it was 737. A dashboard leading with the
+ *    bigger number tells you a loss-making day was a triumph.
+ *  - It counts the funnel by DEVICE, not by event. 408 arrivals from 267 phones
+ *    is a denominator that flatters every rate underneath it.
+ *  - It names its own assumption. Rider salary is paid outside the system --
+ *    nothing in the database reads driver_daily_salary_egp -- so the figure is
+ *    labelled as an assumption rather than presented as fact.
+ */
+function DailyReportTab() {
+  // Was `Date.now() + 3h`, which is Cairo only during EEST -- in winter the tab
+  // opened on tomorrow's empty report between 23:00 and midnight local.
+  const [day, setDay] = useState(() =>
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date()))
+  const [r, setR] = useState<any>(null)
+  const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    setBusy(true); setErr('')
+    adminReport('dailyReport', { date: day }).then(res => {
+      if (cancelled) return
+      setBusy(false)
+      // setR(null) matters: without it a failed fetch left the PREVIOUS day's
+      // report rendered underneath the new date and the error banner -- a P&L
+      // screen showing yesterday's result as though it were today's.
+      if (!res.ok) { setErr(res.error); setR(null); return }
+      const { data } = res
+      setR(data)
+    })
+    return () => { cancelled = true }
+  }, [day])
+
+  const n = (v: any) => Number(v ?? 0).toLocaleString('ar-EG-u-nu-latn',
+    { maximumFractionDigits: 0 })
+
+  const shift = (days: number) => {
+    const d = new Date(day + 'T12:00:00Z')
+    d.setDate(d.getDate() + days)
+    setDay(d.toISOString().slice(0, 10))
+  }
+
+  const f = r?.funnel ?? {}
+  const steps: [string, number][] = [
+    ['دخلوا التطبيق', f.arrived ?? 0],
+    ['اختاروا مكانهم', f.chose_place ?? 0],
+    ['فتحوا مطعم', f.opened_vendor ?? 0],
+    ['ضافوا صنف', f.added_item ?? 0],
+    ['بدأوا الدفع', f.checkout ?? 0],
+    ['طلبوا', f.ordered ?? 0],
+  ]
+  // Steps are counted per DEVICE over the same window, but a returning device
+  // can choose a place without a fresh `arrival`, so a later step can exceed
+  // the first. Without this the bar renders width:500% and the label «500٪».
+  const top = Math.max(...steps.map(x => x[1]), 1)
+  // `?? []` only defends against null. If the RPC ever returns an object here
+  // instead of an array, `.find` is not a function and the THROW takes down the
+  // whole Admin tree, not just this tab.
+  const browsers: any[] = Array.isArray(r?.by_browser) ? r.by_browser : []
+  const inApp = browsers.find(b => b.segment === 'in_app')
+  const normal = browsers.find(b => b.segment === 'browser')
+  const losing = Number(r?.result ?? 0) < 0
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <button className="btn-ghost text-sm" onClick={() => shift(-1)}>اليوم اللي قبله ←</button>
+        <span className="font-bold text-sm">{day}</span>
+        <button className="btn-ghost text-sm" onClick={() => shift(1)}>→ اليوم اللي بعده</button>
+      </div>
+
+      {busy && <div className="card p-6 text-center text-mist">بنحسب…</div>}
+      {err && <div className="card p-4 text-red-600 text-sm">{err}</div>}
+
+      {r && !busy && (
+        <>
+          <div className={`card p-5 ${losing ? 'bg-red-500/5 border-red-500/25' : 'bg-emerald-500/5 border-emerald-500/25'}`}>
+            <p className="text-sm font-semibold mb-1">
+              {losing ? '▼ نتيجة اليوم' : '▲ نتيجة اليوم'}
+            </p>
+            <p className={`text-4xl font-bold ${losing ? 'text-red-600' : 'text-emerald-700'}`}>
+              <bdi dir="ltr">{n(r.result)}</bdi> <span className="text-lg">ج.م</span>
+            </p>
+            <p className="text-sm text-mist mt-2">
+              دخل سالكة {n(r.revenue)} ج.م − أجور {r.riders_active} مندوبين {n(r.assumed_rider_cost)} ج.م
+            </p>
+            {/* Said out loud, because nothing in the database actually pays this. */}
+            <p className="text-[11px] text-mist mt-1">
+              الأجور مفترضة من إعداد «المرتب اليومي» ({n(r.rider_daily_salary)} ج.م) — النظام نفسه مش بيصرفها
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Stat k="طلبات اتوصّلت" v={n(r.delivered)} sub={`من ${n(r.orders_created)} اتعملوا`} />
+            <Stat k="نسبة الإلغاء" v={`${n(r.cancel_pct)}٪`} sub={`${n(r.cancelled)} طلب`} warn={Number(r.cancel_pct) > 15} />
+            <Stat k="دخل سالكة للطلب" v={n(r.revenue_per_delivered)} sub="توصيل + خدمة" />
+            <Stat k="تكلفة المندوب للطلب" v={n(r.cost_per_delivered)} sub="أجور ÷ طلبات" warn />
+            <Stat k="من نقطة التعادل" v={`${n(r.pct_of_breakeven ?? 0)}٪`} sub={`محتاج ${n(r.breakeven_orders)} طلب`} warn={Number(r.pct_of_breakeven ?? 0) < 100} />
+            <Stat k="قيمة الطلبات كلها" v={n(r.gmv)} sub="أغلبها بضاعة للتجار" />
+          </div>
+
+          {(Number(r.unpriced_left_open) > 0 || Number(r.unpaid_left_open) > 0) && (
+            <div className="card p-4 bg-sand/10 border-sand/40 text-sm">
+              <b>سايبين معلّق:</b>{' '}
+              {Number(r.unpriced_left_open) > 0 && <>{n(r.unpriced_left_open)} طلب مستني تسعير. </>}
+              {Number(r.unpaid_left_open) > 0 && <>{n(r.unpaid_left_open)} طلب مستني دفع.</>}
+            </div>
+          )}
+
+          <div className="card p-4">
+            <h3 className="font-bold text-sm mb-3">من دخل التطبيق لحد ما طلب</h3>
+            {steps.map(([label, val], i) => (
+              <div key={label} className="mb-2">
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className={i === 0 ? 'font-semibold' : 'text-mist'}>{label}</span>
+                  <span className="font-bold">
+                    {n(val)}{i > 0 && <span className="text-mist font-normal"> · {Math.round(val / top * 100)}٪</span>}
+                  </span>
+                </div>
+                <div className="h-2 rounded-full bg-shellup overflow-hidden">
+                  <div className="h-full bg-sea rounded-full"
+                    style={{ width: `${Math.max(val / top * 100, val > 0 ? 1.5 : 0)}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {inApp && Number(inApp.devices) > 0 && (
+            <div className="card p-4">
+              <h3 className="font-bold text-sm mb-1">متصفح فيسبوك الداخلي</h3>
+              <p className="text-xs text-mist mb-3">
+                إعلانات فيسبوك بتفتح جوه التطبيق نفسه. لو الرقم ده فضل صفر، فلوس الإعلانات بتضيع.
+              </p>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-xl bg-shellup p-3">
+                  <p className="text-xs text-mist">جوه فيسبوك</p>
+                  <p className="font-bold">{n(inApp.devices)} جهاز</p>
+                  <p className="text-xs text-mist">{n(inApp.chose_place)} اختاروا مكانهم · {n(inApp.ordered)} طلبوا</p>
+                </div>
+                <div className="rounded-xl bg-shellup p-3">
+                  <p className="text-xs text-mist">متصفح عادي</p>
+                  <p className="font-bold">{n(normal?.devices)} جهاز</p>
+                  <p className="text-xs text-mist">{n(normal?.chose_place)} اختاروا مكانهم · {n(normal?.ordered)} طلبوا</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+function Stat({ k, v, sub, warn }: { k: string; v: string; sub?: string; warn?: boolean }) {
+  return (
+    <div className="card p-3.5">
+      <p className="text-[11px] text-mist mb-1 min-h-[2.4em] leading-snug">{k}</p>
+      <p className={`text-xl font-bold ${warn ? 'text-red-600' : ''}`}>{v}</p>
+      {sub && <p className="text-[11px] text-mist mt-0.5">{sub}</p>}
+    </div>
+  )
+}
