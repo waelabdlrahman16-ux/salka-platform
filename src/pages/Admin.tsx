@@ -34,6 +34,7 @@ import OrderAdjust from '../components/OrderAdjust'
 import { openLabel } from '../lib/vendorHours'
 import PhoneOrderForm from '../components/PhoneOrderForm'
 import CompoundsTab from '../components/CompoundsTab'
+import PromoCodesTab from '../components/PromoCodesTab'
 import DriverForm, { driverToForm } from '../components/DriverForm'
 import LiveDeliveryDetail from '../components/LiveDeliveryDetail'
 import Toggle from '../components/Toggle'
@@ -100,7 +101,7 @@ function AccountActionsMenu({ busy, onChangeEmail, onResetPassword, onCustomPass
   )
 }
 
-type Tab = 'daily' | 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet' | 'banners' | 'refunds' | 'customers' | 'compounds'
+type Tab = 'daily' | 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet' | 'banners' | 'refunds' | 'customers' | 'compounds' | 'promos'
 
 // What is actually owed back, decided by the server. A COD order only ever took
 // the 50% deposit, so refunding `total` would be a gift -- and that is exactly
@@ -149,6 +150,7 @@ const TABS: { key: Tab; label: string; group: TabGroup }[] = [
   { key: 'payouts', label: 'مدفوعات المندوبين', group: 'money' },
   { key: 'refunds', label: 'الاستردادات', group: 'money' },
   { key: 'wallet', label: 'محفظة العميل', group: 'money' },
+  { key: 'promos', label: '🏷️ أكواد الخصم', group: 'money' },
 
   { key: 'menu', label: 'المطاعم والمنيو', group: 'catalog' },
   { key: 'banners', label: '📣 الإعلانات', group: 'catalog' },
@@ -2877,6 +2879,8 @@ export default function Admin() {
           </div>
         </div>
       )}
+
+      {tab === 'promos' && <PromoCodesTab restaurants={restaurants} compounds={compounds} />}
 
       {tab === 'wallet' && (
         <div className="card p-4">
