@@ -25,7 +25,9 @@ const ORDER_ERRORS = [
   "login_required", "menu_item_not_found", "missing_customer_details", "not_a_custom_order_vendor",
   "not_your_restaurant", "notes_too_long", "order_rate_limit", "restaurant_closed",
   "restaurant_not_found", "size_required", "slot_full", "slot_unavailable",
-  "vendor_not_covering_compound",
+  "vendor_not_covering_compound", "promo_invalid", "promo_expired",
+  "promo_not_available", "promo_minimum_not_met", "promo_limit_reached",
+  "promo_already_used", "promo_customer_missing",
 ].sort((a, b) => b.length - a.length)
 
 function object(value: unknown): value is Record<string, unknown> {
@@ -118,12 +120,14 @@ const customerOrderCreation = withSupabase<OrderDatabase>(
       if (!Array.isArray(body.items) || body.items.length < 1 || body.items.length > 50) return json({ error: "invalid_items" }, 400)
       const slotId = nullablePositiveId(body.slotId)
       const note = optionalText(body.customerNote, 1000)
-      if (slotId === undefined || note === undefined || (body.scheduledDate != null && typeof body.scheduledDate !== "string")) {
+      const promoCode = optionalText(body.promoCode, 32)
+      if (slotId === undefined || note === undefined || promoCode === undefined || (body.scheduledDate != null && typeof body.scheduledDate !== "string")) {
         return json({ error: "invalid_order_input" }, 400)
       }
       fn = "place_order"
       args = { ...common, p_items: body.items, p_slot_id: slotId, p_scheduled_date: body.scheduledDate ?? null,
-        p_payment_method: body.paymentMethod, p_use_wallet: body.useWallet === true, p_customer_note: note }
+        p_payment_method: body.paymentMethod, p_use_wallet: body.useWallet === true, p_customer_note: note,
+        p_promo_code: promoCode?.toUpperCase() ?? null }
     } else if (safeAction === "custom") {
       if (!Array.isArray(body.items) || body.items.length > 50) return json({ error: "invalid_items" }, 400)
       const slotId = nullablePositiveId(body.slotId)
