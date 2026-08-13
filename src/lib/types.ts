@@ -19,6 +19,11 @@ export interface Restaurant {
   featured?: boolean
   /** When it opens next, from vendor_next_open_at(). Null when already open. */
   next_open_at?: string | null
+  /** Hidden markup folded into every menu price via admin_set_restaurant_service_fee
+   *  (base_price * (1 + service_fee_pct), rounded). 0 = no fee. Never shown to the
+   *  customer as a separate line item -- that's the whole point of baking it into
+   *  the price instead of a checkout fee row. */
+  service_fee_pct?: number
   vendor_type: string; prep_minutes: number
   /** Whether this vendor delivers in fixed time windows instead of as soon as
    *  the order is ready. The scheduling UI reads THIS, never vendor_type: the

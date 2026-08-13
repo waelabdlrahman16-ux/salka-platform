@@ -2,9 +2,9 @@ import { withSupabase } from "@supabase/server"
 import { fail, isRateLimitError, json } from "../_shared/secure.ts"
 
 type Db = { public: { Tables: Record<string, never>; Views: Record<string, never>; Enums: Record<string, never>; CompositeTypes: Record<string, never>; Functions: Record<string, { Args: Record<string, unknown>; Returns: unknown }> } }
-type Action = "addMenuCategory" | "renameMenuCategory" | "deleteMenuCategory" | "reorderMenuCategories" | "deleteMenuItem" | "setVendorHours" | "setRestaurantRank"
-const ACTIONS = new Set<Action>(["addMenuCategory","renameMenuCategory","deleteMenuCategory","reorderMenuCategories","deleteMenuItem","setVendorHours","setRestaurantRank"])
-const KNOWN = ["admin_only","category_exists","category_not_empty","hours_incomplete","invalid_day","item_has_order_history","name_required","not_authorized","rank_must_be_positive","restaurant_not_found"]
+type Action = "addMenuCategory" | "renameMenuCategory" | "deleteMenuCategory" | "reorderMenuCategories" | "deleteMenuItem" | "setVendorHours" | "setRestaurantRank" | "setRestaurantServiceFee"
+const ACTIONS = new Set<Action>(["addMenuCategory","renameMenuCategory","deleteMenuCategory","reorderMenuCategories","deleteMenuItem","setVendorHours","setRestaurantRank","setRestaurantServiceFee"])
+const KNOWN = ["admin_only","category_exists","category_not_empty","hours_incomplete","invalid_day","item_has_order_history","name_required","not_authorized","rank_must_be_positive","restaurant_not_found","invalid_pct"]
 function positiveId(v: unknown): number | null { return Number.isInteger(v) && Number(v)>0 && Number(v)<=2_147_483_647 ? Number(v) : null }
 function clean(v: unknown,max: number): string | null { if(typeof v!=="string")return null;const s=v.trim();return s&&s.length<=max?s:null }
 async function digest(v:string):Promise<string>{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,"0")).join("")}
@@ -105,6 +105,10 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
     const restaurantId=positiveId(input.restaurantId)
     if(!restaurantId||!validDays(input.days))return json({error:"invalid_vendor_input"},400)
     fn="admin_set_vendor_hours";args={p_restaurant_id:restaurantId,p_days:input.days??[]}
+  }else if(action==="setRestaurantServiceFee"){
+    const restaurantId=positiveId(input.restaurantId),pct=input.pct
+    if(!restaurantId||typeof pct!=="number"||!Number.isFinite(pct)||pct<0||pct>0.5)return json({error:"invalid_vendor_input"},400)
+    fn="admin_set_restaurant_service_fee";args={p_restaurant_id:restaurantId,p_pct:pct}
   }else{
     const restaurantId=positiveId(input.restaurantId),displayOrder=input.displayOrder==null?null:positiveId(input.displayOrder)
     if(!restaurantId||(input.displayOrder!=null&&!displayOrder)||(input.featured!=null&&typeof input.featured!=="boolean"))return json({error:"invalid_vendor_input"},400)
