@@ -946,6 +946,18 @@ export default function Admin() {
     load(true)
   }
 
+  async function createObserverLogin() {
+    const name = newCatalogName.trim()
+    if (!name) return
+    setAccountBusy('observer-new')
+    const result = await callAccountsFn({ action: 'create_observer_login', name })
+    setAccountBusy(null)
+    if (result.error) { await alertSheet('حصل خطأ: ' + result.error); return }
+    setNewCatalogName('')
+    setNewCreds({ email: result.email, password: result.password })
+    load(true)
+  }
+
   // Moved off the admin-accounts edge function onto admin_delete_staff().
   // That function's assertTargetIsStaff permits vendor, driver and catalog only,
   // so a supervisor account could be created from this very screen and then
@@ -3018,6 +3030,9 @@ export default function Admin() {
               وتسوية الكاش والاستردادات كلها عندك إنت. لإنشاء واحد: اعمل حساب
               هنا وبعدين اضغط «خلّيه مشرف تشغيل».
             </p>
+            <p className="text-xs text-mist mb-3 leading-relaxed">
+              <b>المراقب</b> يشوف أرقام التشغيل وحالة الطلبات فقط، من غير أرقام عملاء أو مبالغ أو أي أزرار تنفيذ.
+            </p>
 
             <div className="card p-3.5 mb-3">
               <div className="flex gap-2">
@@ -3027,6 +3042,10 @@ export default function Admin() {
                 <button className="btn-sea shrink-0 !px-4" disabled={!newCatalogName.trim() || accountBusy === 'catalog-new'}
                   onClick={createCatalogLogin}>
                   {accountBusy === 'catalog-new' ? '...' : 'إنشاء حساب'}
+                </button>
+                <button className="btn-ghost shrink-0 !px-4" disabled={!newCatalogName.trim() || accountBusy === 'observer-new'}
+                  onClick={createObserverLogin}>
+                  {accountBusy === 'observer-new' ? '...' : 'إنشاء مراقب'}
                 </button>
               </div>
             </div>
