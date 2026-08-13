@@ -335,6 +335,7 @@ export default function Supervisor() {
                   </div>
                 </div>
 
+                <CustomerNote order={o} />
                 <div className="mt-3 bg-night border border-line rounded-xl p-3 text-sm space-y-1">
                   <OrderLines order={o} />
                 </div>
@@ -376,6 +377,7 @@ export default function Supervisor() {
               </div>
             </div>
 
+            <CustomerNote order={o} />
             <div className="mt-3 bg-night border border-line rounded-xl p-3 text-sm space-y-1">
               <OrderLines order={o} />
             </div>
@@ -588,6 +590,17 @@ function OrderLines({ order }: { order: Order }) {
   )
 }
 
+function CustomerNote({ order }: { order: Order }) {
+  const note = order.customer_note?.trim()
+  if (!note) return null
+  return (
+    <div className="mt-3 border border-sand/40 bg-sand/10 rounded-xl p-3">
+      <p className="text-xs font-bold text-sandink">💬 ملاحظة العميل</p>
+      <p className="text-sm mt-1 font-semibold whitespace-pre-wrap">{note}</p>
+    </div>
+  )
+}
+
 // One order the supervisor has shopped for and now has to price.
 //
 // The input is the goods total off the receipt and nothing else. What the
@@ -627,6 +640,8 @@ function QuoteCard({ order, addr, busy, onConfirm, onCancel }: {
           {late ? 'عدّى وعد الـ10 دقايق — سعّره فورًا' : 'اتصل وسعّر دلوقتي قبل ما يعدّي 10 دقايق'}
         </p>
       )}
+
+      <CustomerNote order={order} />
 
       <div className="mt-3 bg-night border border-line rounded-xl p-3 text-sm space-y-1">
         <p className="text-[11px] font-bold text-mist mb-1.5">طلب العميل</p>
