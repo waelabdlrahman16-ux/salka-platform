@@ -58,6 +58,15 @@ function nativePlatform(): PushPlatform {
  */
 export let lastSaveWasStale = false
 
+// Several portal components can mount during one route transition (the page
+// itself plus its explicit enable button). They all receive the same FCM token.
+// Coalesce concurrent writes and do not write an already-confirmed token again
+// for one minute; otherwise opening a staff portal repeatedly can exhaust the
+// server's protection for the push-enrolment action.
+const PUSH_SAVE_DEDUPE_MS = 60_000
+const recentPushSaves = new Map<string, number>()
+const inFlightPushSaves = new Map<string, Promise<boolean>>()
+
 /**
  * For sinks that are not persistPushToken.
  *
@@ -78,8 +87,26 @@ export function reportSaveStale(stale: boolean): void { lastSaveWasStale = stale
  * data-only message the killed app will never display.
  */
 export async function persistPushToken(token: string, platform: PushPlatform): Promise<boolean> {
+  const key = `${platform}:${token}`
+  const savedAt = recentPushSaves.get(key)
+  if (savedAt && Date.now() - savedAt < PUSH_SAVE_DEDUPE_MS) return true
+  const inFlight = inFlightPushSaves.get(key)
+  if (inFlight) return inFlight
+
+  const save = persistPushTokenOnce(token, platform, key)
+  inFlightPushSaves.set(key, save)
+  try {
+    return await save
+  } finally {
+    inFlightPushSaves.delete(key)
+  }
+}
+
+async function persistPushTokenOnce(token: string, platform: PushPlatform, key: string): Promise<boolean> {
   lastSaveWasStale = false
-  const res = await driverSelfService<{ stored: boolean; stale: boolean }>('savePushToken', { pushToken: token, platform })
+  const res = await driverSelfService<{ stored: boolean; stale: boolean }>('savePushToken', { pushToken: token, platform }, {
+    rate_limited: 'في محاولات تفعيل تنبيهات كثيرة من الجهاز ده. اقفل وافتح سالكة مرة واحدة بعد دقيقة، من غير ما تغيّر إعدادات حسابك أو رقمك.',
+  })
   if (!res.ok) {
     // Reported, not swallowed. Every call site used to drop this promise, so a
     // rejected write produced a hidden button and a silent phone.
@@ -95,6 +122,7 @@ export async function persistPushToken(token: string, platform: PushPlatform): P
     lastPushError = 'التوكن ده اتلغى من فايربيز — بنجيب واحد جديد'
     return false
   }
+  recentPushSaves.set(key, Date.now())
   return true
 }
 

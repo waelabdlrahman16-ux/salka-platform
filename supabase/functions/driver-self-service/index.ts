@@ -22,7 +22,11 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
   // and myStats are polled together every 10s via the same load() tick
   // (<=60/10min each) -- their per-user caps need headroom above that, not just
   // above the write actions'.
-  const perUserMax = action==="updateLocation" ? 40 : (action==="availableOrders"||action==="myStats") ? 90 : 20
+  // Push registration is an authenticated, bounded upsert (the database keeps
+  // only four device tokens). It can legitimately be requested by the page and
+  // its enable control during a route transition, so it needs more headroom
+  // than account/device-changing actions without weakening phone-login limits.
+  const perUserMax = action==="updateLocation" ? 40 : (action==="availableOrders"||action==="myStats") ? 90 : action==="savePushToken" ? 60 : 20
   for(const [bucket,max,window] of [[`driver-self:${action}:${who}`,perUserMax,"10 minutes"],["driver-self-global",4000,"10 minutes"]] as const){
     const {error}=await ctx.supabaseAdmin.rpc("check_rate_limit",{p_bucket:bucket,p_max:max,p_window:window})
     if(error){if(isRateLimitError(error))return json({error:"rate_limited"},429);return fail("driver-self-service","rate_limit_check_failed",500,error)}
