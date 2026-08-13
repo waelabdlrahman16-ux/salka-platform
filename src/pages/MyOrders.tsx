@@ -4,6 +4,10 @@ import CustomerLogin from '../components/CustomerLogin'
 import { getSessionToken, useCustomerAuth } from '../lib/customerAuth'
 import { customerSessionAccess } from '../lib/customerSessionAccess'
 import { orderStatusLabel } from '../lib/statusLabels'
+import { displayEgyptPhone } from '../lib/validation'
+import { useAuth } from '../lib/auth'
+import { isValidEgyptPhone } from '../lib/validation'
+import { customerAccount } from '../lib/customerAccounts'
 
 interface Row {
   id: number
@@ -17,10 +21,20 @@ interface Row {
 
 export default function MyOrders() {
   const { customer, loading: authLoading, logout } = useCustomerAuth()
+  const { session } = useAuth()
   const [rows, setRows] = useState<Row[] | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [showLogin, setShowLogin] = useState(false)
+  const [recoveryPhone, setRecoveryPhone] = useState('')
+  const [recoveryState, setRecoveryState] = useState<'idle'|'sending'|'sent'|'error'>('idle')
+
+  async function requestRecovery() {
+    if (!isValidEgyptPhone(recoveryPhone)) return
+    setRecoveryState('sending')
+    const res = await customerAccount('requestRecovery', { phone: recoveryPhone })
+    setRecoveryState(res.ok ? 'sent' : 'error')
+  }
 
   async function loadOrders(background = false) {
     if (!customer?.phone) return
@@ -80,13 +94,25 @@ export default function MyOrders() {
         />
       )}
 
+      {session && !customer && (
+        <div className="card p-5 mt-5 text-center">
+          <p className="font-semibold">عندك طلبات قديمة؟</p>
+          <p className="text-sm text-mist mt-1.5">اكتب رقمك القديم. هنراجع الطلب ونتصل بيك قبل ما نربط الحساب.</p>
+          {recoveryState === 'sent' ? <p className="text-sm text-sea mt-3">تم إرسال طلبك — هنراجع ونتصل بيك.</p> : <>
+            <input className="field text-center mt-4" dir="ltr" value={recoveryPhone} onChange={e => setRecoveryPhone(e.target.value)} placeholder="010xxxxxxxx" />
+            <button className="btn-sea w-full mt-2" disabled={recoveryState==='sending'||!isValidEgyptPhone(recoveryPhone)} onClick={requestRecovery}>اربط طلباتي القديمة</button>
+            {recoveryState === 'error' && <p className="text-xs text-red-700 mt-2">مش قادرين نسجل الطلب دلوقتي. جرّب تاني.</p>}
+          </>}
+        </div>
+      )}
+
       {customer ? (
         <div className="card p-4 mt-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="font-semibold">{customer.name || 'حسابك'}</p>
               {customer.phone && (
-                <p className="text-xs text-mist mt-0.5" dir="ltr">{customer.phone}</p>
+                <p className="text-xs text-mist mt-0.5" dir="ltr">{displayEgyptPhone(customer.phone)}</p>
               )}
             </div>
             <button className="btn-ghost !py-1.5 !px-3 text-sm" onClick={signOut}>
