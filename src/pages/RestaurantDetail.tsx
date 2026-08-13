@@ -256,7 +256,9 @@ export default function RestaurantDetail() {
   // prep entirely; sla_minutes_for() in the database now does exactly what this
   // does. Kept as the local render so the card still shows something while the
   // quote is in flight -- but it is no longer the only correct copy.
-  const totalEta = restaurant && selectedCompound ? restaurant.prep_minutes + selectedCompound.est_travel_minutes : null
+  const totalEta = restaurant && selectedCompound
+    ? { min: restaurant.prep_minutes + selectedCompound.est_travel_minutes_min, max: restaurant.prep_minutes + selectedCompound.est_travel_minutes_max }
+    : null
   const { fee: deliveryFee } = useDeliveryQuote(compoundId, restaurant?.id)
 
   if (loadFailed) return (
@@ -370,7 +372,7 @@ export default function RestaurantDetail() {
             {/* A range, not a single number. "16 دقيقة تقريبًا" reads as a
                 promise; the home card already says 20–30 for the same vendor,
                 so the two screens disagreed about the same restaurant. */}
-            {totalEta && <span>يوصلك {totalEta}–{totalEta + 10} دقيقة</span>}
+            {totalEta && <span>يوصلك {totalEta.min}–{totalEta.max} دقيقة</span>}
             {restaurant.category && (
               <>
                 {totalEta && <span aria-hidden="true">·</span>}

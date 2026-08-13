@@ -29,8 +29,10 @@ export default function RestaurantCard({
   restaurant: r, etaMinutes, discountLabel,
 }: {
   restaurant: Restaurant
-  /** Prep + travel to the chosen compound. Null when no compound is chosen. */
-  etaMinutes: number | null
+  /** Prep + travel to the chosen compound, as a real range -- not prep + a
+   *  single travel figure with a hardcoded +10 tacked on. Null when no
+   *  compound is chosen. */
+  etaMinutes: { min: number; max: number } | null
   /**
    * «خصم ٢٠٪» when the vendor's best live offer is a percentage, «عروض» when it
    * is a fixed amount off (a pound figure means nothing without knowing the
@@ -77,7 +79,7 @@ export default function RestaurantCard({
           beside it. */}
       {etaMinutes !== null && !closed ? (
         <>
-          <span className="font-semibold text-seadeep">يوصلك {etaMinutes}–{etaMinutes + 10} د</span>
+          <span className="font-semibold text-seadeep">يوصلك {etaMinutes.min}–{etaMinutes.max} د</span>
           {r.category && <><span aria-hidden="true">·</span><span className="truncate">{r.category}</span></>}
         </>
       ) : (

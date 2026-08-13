@@ -250,7 +250,9 @@ export default function Home() {
   const selected = compounds.find(c => c.id === compoundId)
   // Authoritative, same source as the cart and checkout -- never a local guess.
   const { fee: deliveryFee, quote: deliveryQuote } = useDeliveryQuote(compoundId)
-  const eta = (r: Restaurant) => selected ? r.prep_minutes + selected.est_travel_minutes : r.prep_minutes
+  const eta = (r: Restaurant) => selected
+    ? { min: r.prep_minutes + selected.est_travel_minutes_min, max: r.prep_minutes + selected.est_travel_minutes_max }
+    : { min: r.prep_minutes, max: r.prep_minutes }
   const catalogRestaurants = restaurants.filter(r =>
     r.order_mode !== 'custom_request' && r.vendor_type !== 'pharmacy' && r.vendor_type !== 'supermarket')
   // Only offer a kind that actually has a vendor delivering to this compound --
@@ -577,7 +579,7 @@ export default function Home() {
                         onClick={() => choose(c.id)}>
                         <span className="font-semibold block truncate">{c.name}</span>
                         <span className="text-mist text-xs block mt-0.5">
-                          {km === null ? `~${c.est_travel_minutes} دقيقة توصيل`
+                          {km === null ? `~${c.est_travel_minutes_min}-${c.est_travel_minutes_max} دقيقة توصيل`
                             : km < 1 ? 'إنت هنا تقريبًا'
                             : `على بعد ${km < 10 ? km.toFixed(1) : Math.round(km)} كم منك`}
                         </span>
@@ -597,7 +599,7 @@ export default function Home() {
                 <button key={c.id} className={`w-full card !bg-night p-3 text-right ${compoundId === c.id ? 'border-sea' : ''}`}
                   onClick={() => choose(c.id)}>
                   <span className="font-semibold block truncate">{c.name}</span>
-                  <span className="text-mist text-xs block mt-0.5">~{c.est_travel_minutes} دقيقة توصيل</span>
+                  <span className="text-mist text-xs block mt-0.5">~{c.est_travel_minutes_min}-{c.est_travel_minutes_max} دقيقة توصيل</span>
                 </button>
               ))}
             </div>

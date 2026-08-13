@@ -229,7 +229,14 @@ export interface DeliverySlotRow {
 export interface Compound {
   id: number; region_id: number; name: string
   distance_km: number; direction: 'north' | 'south'
-  est_travel_minutes: number; active: boolean
+  est_travel_minutes: number
+  /** Real customer-facing range, not a single promised number -- a fixed
+   *  minute count reads as precise but breaks the moment traffic, prep, or a
+   *  slow checkpoint entry pushes past it. est_travel_minutes above is kept
+   *  as the midpoint for the handful of places (compound picker dropdowns)
+   *  that just need a compact single figure, not a promise. */
+  est_travel_minutes_min: number; est_travel_minutes_max: number
+  active: boolean
   latitude: number | null; longitude: number | null
   // Delivery is priced per compound, not per kilometre. distance_km survives
   // only because the SLA is still derived from it.
