@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useCustomerAuth } from '../lib/customerAuth'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
+import { supabase } from '../lib/supabase'
 
 function message(code?: string) {
   const messages: Record<string, string> = {
@@ -16,13 +17,30 @@ function message(code?: string) {
 
 export default function VerifiedPhoneEditor({ compact = false }: { compact?: boolean }) {
   const { requestPhoneChange, verifyPhoneChange } = useCustomerAuth()
+  const [smsEnabled, setSmsEnabled] = useState(false)
   const [phone, setPhone] = useState('')
   const [code, setCode] = useState('')
   const [sent, setSent] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
+  // Do not expose a working-looking verification form while the SMS provider
+  // is intentionally offline. This is also checked in requestCode below so a
+  // delayed settings response can never spend a failed OTP request.
+  useEffect(() => {
+    let cancelled = false
+    supabase.from('settings').select('value').eq('key', 'sms_login_enabled').maybeSingle()
+      .then(({ data, error }) => {
+        if (!cancelled && !error) setSmsEnabled(data?.value === 'true')
+      })
+    return () => { cancelled = true }
+  }, [])
+
   async function requestCode() {
+    if (!smsEnabled) {
+      setError('تأكيد الرقم بالرسالة غير متاح مؤقتًا.')
+      return
+    }
     if (!isValidEgyptPhone(phone)) { setError(PHONE_HINT); return }
     setBusy(true); setError('')
     const result = await requestPhoneChange(phone)
@@ -38,6 +56,17 @@ export default function VerifiedPhoneEditor({ compact = false }: { compact?: boo
     setBusy(false)
     if (!result.ok) { setError(message(result.error)); return }
     setPhone(''); setCode(''); setSent(false)
+  }
+
+  if (!smsEnabled) {
+    return (
+      <div className={compact ? 'text-sm' : 'card p-4 text-center'} role="status">
+        <p className="font-semibold">تأكيد رقم الموبايل بالرسالة غير متاح مؤقتًا</p>
+        <p className="text-xs text-mist mt-1.5 leading-relaxed">
+          تقدر تكمل طلبك عادي وتكتب رقمك في صفحة الدفع. دخول جوجل والإيميل شغالين.
+        </p>
+      </div>
+    )
   }
 
   return (
