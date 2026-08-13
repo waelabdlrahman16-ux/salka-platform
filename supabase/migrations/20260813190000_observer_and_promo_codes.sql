@@ -151,3 +151,29 @@ grant execute on function public.quote_promo_code(text,integer,integer,numeric) 
 -- Account creation is handled by the existing admin-accounts function update.
 alter table public.profiles drop constraint if exists profiles_role_check;
 alter table public.profiles add constraint profiles_role_check check (role in ('admin','driver','vendor','catalog','supervisor','observer'));
+
+create or replace function private.observer_dashboard()
+returns json language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from profiles where id = auth.uid() and role in ('observer','admin')) then
+    raise exception 'observer_only';
+  end if;
+  return json_build_object(
+    'today', (select count(*) from orders where created_at >= date_trunc('day', now() at time zone 'Africa/Cairo') at time zone 'Africa/Cairo' and not coalesce(is_test,false)),
+    'yesterday', (select count(*) from orders where created_at >= (date_trunc('day', now() at time zone 'Africa/Cairo') - interval '1 day') at time zone 'Africa/Cairo' and created_at < date_trunc('day', now() at time zone 'Africa/Cairo') at time zone 'Africa/Cairo' and not coalesce(is_test,false)),
+    'incoming', (select count(*) from orders where status in ('pending','Scheduled','awaiting_payment') and not coalesce(is_test,false)),
+    'ready', (select count(*) from orders where status='Accepted' and kitchen_status='ready' and not coalesce(is_test,false)),
+    'on_way', (select count(*) from orders where status in ('Picked_Up','Out_for_Delivery') and not coalesce(is_test,false)),
+    'delivered_today', (select count(*) from delivery_assignments a join orders o on o.id=a.order_id where a.status='Delivered' and a.delivered_at >= date_trunc('day', now() at time zone 'Africa/Cairo') at time zone 'Africa/Cairo' and not coalesce(o.is_test,false)),
+    'recent', coalesce((select json_agg(x) from (
+      select o.id, r.name as restaurant_name, o.status, o.kitchen_status, o.created_at
+      from orders o join restaurants r on r.id=o.restaurant_id
+      where not coalesce(o.is_test,false) order by o.created_at desc limit 20
+    ) x), '[]'::json)
+  );
+end $$;
+revoke all on function private.observer_dashboard() from public;
+create or replace function public.observer_dashboard()
+returns json language sql security definer set search_path = public as $$ select private.observer_dashboard() $$;
+revoke all on function public.observer_dashboard() from public;
+grant execute on function public.observer_dashboard() to authenticated;
