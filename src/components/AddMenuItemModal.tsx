@@ -27,6 +27,7 @@ type DraftModifierGroup = {
   required: boolean
   maxSelect: string
   choices: { name: string; price: string }[]
+  kind?: 'standard' | 'ingredient'
 }
 
 const emptyModifierGroup = (): DraftModifierGroup => ({
@@ -80,6 +81,24 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
       maxSelect: kind === 'required' ? '1' : '5',
       choices: [{ name: '', price: '' }]
     }])
+  }
+
+  const addIngredientCustomizer = () => {
+    setModifierGroups(groups => [...groups, {
+      name: '', required: true, maxSelect: '1', kind: 'ingredient',
+      choices: [{ name: 'عادي', price: '0' }, { name: '', price: '0' }, { name: '', price: '0' }]
+    }])
+  }
+
+  const setIngredientName = (groupIndex: number, name: string) => {
+    setModifierGroups(groups => groups.map((group, index) => index === groupIndex ? {
+      ...group, name,
+      choices: [
+        { name: 'عادي', price: '0' },
+        { name: name ? `من غير ${name}` : '', price: '0' },
+        { name: name ? `زيادة ${name}` : '', price: group.choices[2]?.price || '0' }
+      ]
+    } : group))
   }
 
   // Once an item has sizes, place_order REFUSES an order that does not name one
@@ -364,6 +383,11 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
               className="btn-ghost !py-2.5 text-sm"
               onClick={() => addModifierTemplate('optional')}
             >＋ إضافات اختيارية</button>
+            <button
+              type="button"
+              className="btn-ghost col-span-2 !py-2.5 text-sm"
+              onClick={addIngredientCustomizer}
+            >🥪 تعديل مكوّن ساندوتش (عادي / من غير / زيادة)</button>
           </div>
 
           {modifierGroups.length > 0 && (
@@ -373,9 +397,11 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
                   <div className="flex items-center gap-2">
                     <input
                       className={inputCls}
-                      placeholder={group.required ? 'مثلاً: اختار الصوص' : 'مثلاً: إضافات'}
+                      placeholder={group.kind === 'ingredient' ? 'اسم المكوّن: طماطم' : (group.required ? 'مثلاً: اختار الصوص' : 'مثلاً: إضافات')}
                       value={group.name}
-                      onChange={e => setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? { ...current, name: e.target.value } : current))}
+                      onChange={e => group.kind === 'ingredient'
+                        ? setIngredientName(groupIndex, e.target.value)
+                        : setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? { ...current, name: e.target.value } : current))}
                     />
                     <button
                       type="button"
@@ -385,7 +411,9 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
                   </div>
 
                   <p className="text-[11px] text-mist">
-                    {group.required ? 'لازم العميل يختار اختيار واحد.' : 'العميل يقدر يضيف اللي يحبه.'}
+                    {group.kind === 'ingredient'
+                      ? 'العميل يختار: عادي، من غير المكوّن، أو زيادة منه.'
+                      : (group.required ? 'لازم العميل يختار اختيار واحد.' : 'العميل يقدر يضيف اللي يحبه.')}
                   </p>
 
                   <div className="space-y-2">
@@ -424,15 +452,17 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
                     ))}
                   </div>
 
-                  <button
-                    type="button"
-                    className="text-xs text-sea font-semibold"
-                    onClick={() => setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? {
-                      ...current, choices: [...current.choices, { name: '', price: '' }]
-                    } : current))}
-                  >+ إضافة اختيار</button>
+                  {group.kind !== 'ingredient' && (
+                    <button
+                      type="button"
+                      className="text-xs text-sea font-semibold"
+                      onClick={() => setModifierGroups(groups => groups.map((current, i) => i === groupIndex ? {
+                        ...current, choices: [...current.choices, { name: '', price: '' }]
+                      } : current))}
+                    >+ إضافة اختيار</button>
+                  )}
 
-                  {showAdvancedModifierSettings && (
+                  {showAdvancedModifierSettings && group.kind !== 'ingredient' && (
                     <div className="rounded-lg bg-shell p-2.5 flex items-center gap-3 text-xs text-mist">
                       <label className="flex items-center gap-1.5">
                         <input
