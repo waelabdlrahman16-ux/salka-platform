@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { uploadVendorImage } from '../lib/upload'
 import { catalogCheck } from '../lib/catalogChecks'
+import { adminCatalogAction } from '../lib/adminCatalogActions'
 import type { MenuItem, VendorAddonLibraryItem } from '../lib/types'
 import { useSheets } from './ActionSheets'
 
@@ -56,14 +57,11 @@ export default function AddonLibrary({ restaurantId, items }: {
   async function add() {
     if (!draft.name.trim()) return
     setBusy(true); setError('')
-    const { error: err } = await supabase.from('vendor_addon_library').insert({
-      restaurant_id: restaurantId, name: draft.name.trim(),
-      price: Number(draft.price) || 0, image_url: draft.imageUrl
+    const res = await adminCatalogAction('createAddonLibraryItem', {
+      restaurantId, name: draft.name.trim(), price: Number(draft.price) || 0, imageUrl: draft.imageUrl,
     })
     setBusy(false)
-    // The unique(restaurant_id, name) constraint is the point, not an accident:
-    // two tomatoes in the library is how you end up with two tomatoes on a menu.
-    if (err) { setError(err.message.includes('duplicate') ? 'الاسم ده موجود بالفعل في المكتبة' : 'حصل خطأ، جرب تاني'); return }
+    if (!res.ok) { setError(res.error); return }
     setDraft({ name: '', price: '', imageUrl: null })
     load()
   }
@@ -71,13 +69,15 @@ export default function AddonLibrary({ restaurantId, items }: {
   async function updatePrice(id: number, value: string) {
     const n = Number(value)
     if (!value.trim() || Number.isNaN(n) || n < 0) return
-    await supabase.from('vendor_addon_library').update({ price: n }).eq('id', id)
+    const res = await adminCatalogAction('updateAddonLibraryItem', { itemId: id, price: n })
+    if (!res.ok) { setError(res.error); return }
     load()
   }
 
   async function remove(id: number) {
     if (!(await confirmSheet({ title: 'حذف من المكتبة؟', body: 'الأصناف اللي مستخدماها مش هتتأثر.', danger: true, confirmLabel: 'احذف' }))) return
-    await supabase.from('vendor_addon_library').delete().eq('id', id)
+    const res = await adminCatalogAction('deleteAddonLibraryItem', { itemId: id })
+    if (!res.ok) { setError(res.error); return }
     load()
   }
 

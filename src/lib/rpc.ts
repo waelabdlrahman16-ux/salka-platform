@@ -84,6 +84,9 @@ export const ERROR_AR: Record<string, string> = {
   category_exists: 'في قسم بالاسم ده بالفعل',
   category_not_empty: 'فيه أصناف لسه في القسم ده — انقلهم أو احذفهم الأول',
   item_has_order_history: 'الصنف ده اتباع قبل كده، مينفعش يتمسح',
+  library_item_exists: 'الإضافة دي موجودة بالفعل في المكتبة',
+  library_item_not_found: 'الإضافة دي مش موجودة — حدّث الصفحة',
+  invalid_price: 'السعر لازم يكون صفر أو أكبر',
   complaint_not_found: 'الشكوى دي مش موجودة',
   no_driver_on_this_complaint: 'مفيش مندوب متسجل على الشكوى دي',
   rank_must_be_positive: 'المركز لازم يكون ١ أو أكبر',
@@ -191,7 +194,6 @@ export const ERROR_AR: Record<string, string> = {
 
   // catalog checks (batch 9)
   not_authorised: 'مش مسموح بالعملية دي',
-  library_item_not_found: 'العنصر ده مش موجود في المكتبة',
   group_name_required: 'اكتب اسم المجموعة',
   item_belongs_to_another_vendor: 'الصنف ده تابع لمطعم تاني',
   invalid_scope: 'نوع الخصم مش مظبوط',

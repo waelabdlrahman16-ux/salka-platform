@@ -2,8 +2,8 @@ import { withSupabase } from "@supabase/server"
 import { fail, isRateLimitError, json } from "../_shared/secure.ts"
 
 type Db = { public: { Tables: Record<string, never>; Views: Record<string, never>; Enums: Record<string, never>; CompositeTypes: Record<string, never>; Functions: Record<string, { Args: Record<string, unknown>; Returns: unknown }> } }
-type Action = "addMenuCategory" | "renameMenuCategory" | "deleteMenuCategory" | "reorderMenuCategories" | "deleteMenuItem" | "setVendorHours" | "setRestaurantRank" | "setRestaurantServiceFee" | "adjustRestaurantPrices" | "bakeRestaurantServiceFee"
-const ACTIONS = new Set<Action>(["addMenuCategory","renameMenuCategory","deleteMenuCategory","reorderMenuCategories","deleteMenuItem","setVendorHours","setRestaurantRank","setRestaurantServiceFee","adjustRestaurantPrices","bakeRestaurantServiceFee"])
+type Action = "addMenuCategory" | "renameMenuCategory" | "deleteMenuCategory" | "reorderMenuCategories" | "deleteMenuItem" | "setVendorHours" | "setRestaurantRank" | "setRestaurantServiceFee" | "adjustRestaurantPrices" | "bakeRestaurantServiceFee" | "createAddonLibraryItem" | "updateAddonLibraryItem" | "deleteAddonLibraryItem"
+const ACTIONS = new Set<Action>(["addMenuCategory","renameMenuCategory","deleteMenuCategory","reorderMenuCategories","deleteMenuItem","setVendorHours","setRestaurantRank","setRestaurantServiceFee","adjustRestaurantPrices","bakeRestaurantServiceFee","createAddonLibraryItem","updateAddonLibraryItem","deleteAddonLibraryItem"])
 const KNOWN = ["admin_only","category_exists","category_not_empty","categories_required","hours_incomplete","invalid_day","item_has_order_history","name_required","not_authorized","rank_must_be_positive","restaurant_not_found","invalid_pct","service_fee_not_enabled"]
 function positiveId(v: unknown): number | null { return Number.isInteger(v) && Number(v)>0 && Number(v)<=2_147_483_647 ? Number(v) : null }
 function clean(v: unknown,max: number): string | null { if(typeof v!=="string")return null;const s=v.trim();return s&&s.length<=max?s:null }
@@ -117,6 +117,17 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
     const restaurantId=positiveId(input.restaurantId)
     if(!restaurantId)return json({error:"invalid_vendor_input"},400)
     fn="admin_bake_restaurant_service_fee";args={p_restaurant_id:restaurantId}
+  }else if(action==="createAddonLibraryItem"){
+    const restaurantId=positiveId(input.restaurantId),name=clean(input.name,120),price=input.price,imageUrl=input.imageUrl
+    if(!restaurantId||!name||typeof price!=="number"||!Number.isFinite(price)||price<0||(imageUrl!==null&&typeof imageUrl!=="string"))return json({error:"invalid_vendor_input"},400)
+    fn="admin_create_addon_library_item";args={p_restaurant_id:restaurantId,p_name:name,p_price:price,p_image_url:imageUrl}
+  }else if(action==="updateAddonLibraryItem"){
+    const itemId=positiveId(input.itemId),price=input.price
+    if(!itemId||typeof price!=="number"||!Number.isFinite(price)||price<0)return json({error:"invalid_vendor_input"},400)
+    fn="admin_update_addon_library_item";args={p_item_id:itemId,p_price:price}
+  }else if(action==="deleteAddonLibraryItem"){
+    const itemId=positiveId(input.itemId);if(!itemId)return json({error:"invalid_vendor_input"},400)
+    fn="admin_delete_addon_library_item";args={p_item_id:itemId}
   }else{
     const restaurantId=positiveId(input.restaurantId),displayOrder=input.displayOrder==null?null:positiveId(input.displayOrder)
     if(!restaurantId||(input.displayOrder!=null&&!displayOrder)||(input.featured!=null&&typeof input.featured!=="boolean"))return json({error:"invalid_vendor_input"},400)
