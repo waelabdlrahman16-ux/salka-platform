@@ -45,6 +45,7 @@ export default function MenuItemsPanel({
   const [busy, setBusy] = useState(false)
   const [loadFailed, setLoadFailed] = useState(false)
   const [savedPrice, setSavedPrice] = useState<number | null>(null)
+  const [savedNotice, setSavedNotice] = useState('')
   const [search, setSearch] = useState('')
   /** Categories other vendors already use, offered so «مقبلات» does not get
       retyped as «المقبلات» at the next restaurant. */
@@ -175,6 +176,9 @@ export default function MenuItemsPanel({
       )}
       {catError && (
         <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-2.5 mb-2" role="alert">{catError}</p>
+      )}
+      {savedNotice && (
+        <p className="text-xs text-emerald-700 bg-emerald-500/10 rounded-xl p-2.5 mb-2" role="status">✓ {savedNotice}</p>
       )}
 
       <input className="field text-sm mb-2.5" value={search} onChange={e => setSearch(e.target.value)}
@@ -321,7 +325,9 @@ export default function MenuItemsPanel({
                           return
                         }
                         setSavedPrice(it.id)
+                        setSavedNotice(`اتحفظ سعر «${it.name}»`)
                         setTimeout(() => setSavedPrice(p => (p === it.id ? null : p)), 1800)
+                        setTimeout(() => setSavedNotice(''), 1800)
                       }}
                       onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }} />
                   )}

@@ -31,6 +31,7 @@ export default function AddonLibrary({ restaurantId, items }: {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [applying, setApplying] = useState<VendorAddonLibraryItem | null>(null)
+  const [selectedIds, setSelectedIds] = useState<number[]>([])
   const [targetCat, setTargetCat] = useState('')
   const [groupName, setGroupName] = useState('إضافات')
   const [advanced, setAdvanced] = useState(false)
@@ -85,18 +86,21 @@ export default function AddonLibrary({ restaurantId, items }: {
     const targets = items.filter(i => !targetCat || i.category === targetCat)
     if (!targets.length) { setError('مفيش أصناف في القسم ده'); return }
     setBusy(true); setError(''); setNotice('')
-    const res = await catalogCheck<number>('applyLibraryAddon', {
-      libraryId: applying.id,
-      itemIds: targets.map(i => i.id),
-      groupName: groupName.trim() || 'إضافات'
-    })
+    const chosen = lib.filter(l => selectedIds.length ? selectedIds.includes(l.id) : l.id === applying.id)
+    let added = 0
+    for (const entry of chosen) {
+      const res = await catalogCheck<number>('applyLibraryAddon', {
+        libraryId: entry.id, itemIds: targets.map(i => i.id), groupName: groupName.trim() || 'إضافات'
+      })
+      if (!res.ok) { setBusy(false); setError(res.error); return }
+      added += Number(res.data) || 0
+    }
     setBusy(false)
-    if (!res.ok) { setError(res.error); return }
-    const n = Number(res.data) || 0
-    setNotice(n === 0
-      ? `"${applying.name}" موجود بالفعل على كل الأصناف دي`
-      : `تمام — "${applying.name}" اتضاف لـ ${n} صنف`)
+    setNotice(added === 0
+      ? 'الإضافات المحددة موجودة بالفعل على كل الأصناف دي'
+      : `تمام — اتضاف ${chosen.length} إضافات لـ ${added} صنف`)
     setApplying(null)
+    setSelectedIds([])
   }
 
   return (
@@ -107,8 +111,16 @@ export default function AddonLibrary({ restaurantId, items }: {
 
       {lib.length > 0 && (
         <div className="space-y-2 mb-3">
+          {selectedIds.length > 0 && (
+            <button className="btn-sea w-full !py-2 text-sm" onClick={() => setApplying(lib.find(l => selectedIds.includes(l.id)) ?? null)}>
+              ضيف المحدد ({selectedIds.length}) لقسم
+            </button>
+          )}
           {lib.map(l => (
             <div key={l.id} className="flex items-center gap-2.5 bg-night border border-line rounded-lg p-2.5 text-sm">
+              <input type="checkbox" className="shrink-0" aria-label={`اختيار ${l.name}`}
+                checked={selectedIds.includes(l.id)}
+                onChange={e => setSelectedIds(ids => e.target.checked ? [...ids, l.id] : ids.filter(id => id !== l.id))} />
               {l.image_url
                 ? <img src={l.image_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
                 : <div className="w-10 h-10 rounded-lg bg-shellup shrink-0" />}
@@ -117,7 +129,7 @@ export default function AddonLibrary({ restaurantId, items }: {
                 defaultValue={String(l.price)} aria-label={`سعر ${l.name}`}
                 onBlur={e => { if (Number(e.target.value) !== Number(l.price)) updatePrice(l.id, e.target.value) }}
                 onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }} />
-              <button className="btn-ghost !py-1 !px-2.5 text-xs shrink-0" onClick={() => { setApplying(l); setTargetCat(categories[0] ?? '') }}>
+              <button className="btn-ghost !py-1 !px-2.5 text-xs shrink-0" onClick={() => { setSelectedIds([l.id]); setApplying(l); setTargetCat(categories[0] ?? '') }}>
                 ضيفه لقسم
               </button>
               <button className="text-red-500 text-xs shrink-0" onClick={() => remove(l.id)}>حذف</button>
