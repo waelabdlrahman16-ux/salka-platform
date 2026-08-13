@@ -11,6 +11,7 @@ import { describeError } from '../lib/rpc'
 import { SUPPORT_WHATSAPP_URL } from '../lib/support'
 import type { Compound } from '../lib/types'
 import VerifiedPhoneEditor from '../components/VerifiedPhoneEditor'
+import { displayEgyptPhone } from '../lib/validation'
 
 interface Address {
   id: number; label: string; compound_id: number; compound_name: string
@@ -139,7 +140,7 @@ export default function Profile() {
                 <p className="font-bold">{customer.name || 'حسابك'}</p>
                 {customer.email && <p className="text-xs text-mist mt-0.5" dir="ltr">{customer.email}</p>}
                 {customer.phone
-                  ? <p className="text-xs text-mist mt-0.5" dir="ltr">{customer.phone}</p>
+                  ? <p className="text-xs text-mist mt-0.5" dir="ltr">{displayEgyptPhone(customer.phone)}</p>
                   : <p className="text-xs text-sandink mt-0.5">لسه ما ضفتش رقم موبايل</p>}
               </>
             )}
@@ -158,7 +159,9 @@ export default function Profile() {
           <p className="text-sm font-semibold mb-1">
             {customer.phone ? 'تغيير رقم الموبايل' : 'محتاجين رقم موبايلك عشان نقدر نوصلك'}
           </p>
-          <p className="text-xs text-mist mb-3">هنبعت كود للرقم عشان نتأكد إنه رقمك.</p>
+          <p className="text-xs text-mist mb-3">
+            تأكيد الرقم بالرسالة هيتاح بعد تفعيل خدمة الرسائل. لحد وقتها، اكتب رقم التواصل في صفحة الدفع.
+          </p>
           <VerifiedPhoneEditor compact />
         </div>
       )}

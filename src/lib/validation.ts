@@ -8,4 +8,15 @@ export function isValidEgyptPhone(raw: string): boolean {
   return /^01[0125]\d{8}$/.test(local)
 }
 
+// Customer records are stored in a normalized ten-digit form (the local
+// leading zero is removed). Never show that storage format to a person, and
+// never prefill it into a form validated as a local Egyptian number.
+export function displayEgyptPhone(raw: string | null | undefined): string {
+  if (!raw) return ''
+  const digits = raw.replace(/\D/g, '')
+  if (/^1[0125]\d{8}$/.test(digits)) return `0${digits}`
+  if (/^01[0125]\d{8}$/.test(digits)) return digits
+  return raw
+}
+
 export const PHONE_HINT = 'رقم مصري صحيح، مثال: 010xxxxxxxx'
