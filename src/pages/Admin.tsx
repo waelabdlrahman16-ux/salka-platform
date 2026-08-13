@@ -1,4 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+iimport CompoundsTab from '../components/CompoundsTab'import CompoundsTab from '../components/CompoundsTab'
+import PromoCodesTab from '../components/PromoCodesTab'm| 'compounds'| 'compounds' | 'promos'p{ key: 'wallet', label: 'محفظة العميل', group: 'money' },{ key: 'wallet', label: 'محفظة العميل', group: 'money' },
+  { key: 'promos', label: '🏷️ أكواد الخصم', group: 'money' },o{tab === 'wallet' && ({tab === 'promos' && <PromoCodesTab restaurants={restaurants} compounds={compounds} />}
+
+      {tab === 'wallet' && (rt { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useDismissable } from '../lib/useDismissable'
 import type { Assignment, Compound, Complaint, Driver, DeliverySlotRow, Earning, LiveDelivery, MenuItem, Order, OrderRating, Reliability, Restaurant, Setting, SettlementRequest, Shift, VendorCoverage } from '../lib/types'
