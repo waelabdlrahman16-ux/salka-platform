@@ -145,6 +145,12 @@ export const ERROR_AR: Record<string, string> = {
   invalid_device: 'مش قادرين نتعرف على الجهاز ده',
   unavailable: 'حد تاني سبقك',
 
+  // Admin audit and cleanup
+  audit_mark_too_late: 'الطلب اتأثر بالفعل بتوصيل أو حسابات، ومينفعش يتحول لتجربة',
+  test_order_required: 'الحذف النهائي متاح للطلبات المعلّمة كتجربة فقط',
+  test_order_has_financial_or_customer_history: 'الطلب ده له حركة مالية أو سجل عميل، فمينفعش يتحذف نهائياً — استخدم الأرشفة',
+  order_not_closed: 'الأرشفة متاحة بعد التسليم أو الإلغاء فقط',
+
   // tips / feedback
   invalid_amount: 'المبلغ مش مظبوط',
   invalid_fee: 'الرسوم لازم تكون رقم موجب',
