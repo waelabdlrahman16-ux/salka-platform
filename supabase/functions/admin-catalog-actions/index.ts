@@ -2,9 +2,9 @@ import { withSupabase } from "@supabase/server"
 import { fail, isRateLimitError, json } from "../_shared/secure.ts"
 
 type Db = { public: { Tables: Record<string, never>; Views: Record<string, never>; Enums: Record<string, never>; CompositeTypes: Record<string, never>; Functions: Record<string, { Args: Record<string, unknown>; Returns: unknown }> } }
-type Action = "addMenuCategory" | "renameMenuCategory" | "deleteMenuCategory" | "reorderMenuCategories" | "deleteMenuItem" | "setVendorHours" | "setRestaurantRank" | "setRestaurantServiceFee"
-const ACTIONS = new Set<Action>(["addMenuCategory","renameMenuCategory","deleteMenuCategory","reorderMenuCategories","deleteMenuItem","setVendorHours","setRestaurantRank","setRestaurantServiceFee"])
-const KNOWN = ["admin_only","category_exists","category_not_empty","hours_incomplete","invalid_day","item_has_order_history","name_required","not_authorized","rank_must_be_positive","restaurant_not_found","invalid_pct"]
+type Action = "addMenuCategory" | "renameMenuCategory" | "deleteMenuCategory" | "reorderMenuCategories" | "deleteMenuItem" | "setVendorHours" | "setRestaurantRank" | "setRestaurantServiceFee" | "adjustRestaurantPrices" | "bakeRestaurantServiceFee"
+const ACTIONS = new Set<Action>(["addMenuCategory","renameMenuCategory","deleteMenuCategory","reorderMenuCategories","deleteMenuItem","setVendorHours","setRestaurantRank","setRestaurantServiceFee","adjustRestaurantPrices","bakeRestaurantServiceFee"])
+const KNOWN = ["admin_only","category_exists","category_not_empty","categories_required","hours_incomplete","invalid_day","item_has_order_history","name_required","not_authorized","rank_must_be_positive","restaurant_not_found","invalid_pct","service_fee_not_enabled"]
 function positiveId(v: unknown): number | null { return Number.isInteger(v) && Number(v)>0 && Number(v)<=2_147_483_647 ? Number(v) : null }
 function clean(v: unknown,max: number): string | null { if(typeof v!=="string")return null;const s=v.trim();return s&&s.length<=max?s:null }
 async function digest(v:string):Promise<string>{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,"0")).join("")}
@@ -109,6 +109,14 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
     const restaurantId=positiveId(input.restaurantId),pct=input.pct
     if(!restaurantId||typeof pct!=="number"||!Number.isFinite(pct)||pct<0||pct>0.5)return json({error:"invalid_vendor_input"},400)
     fn="admin_set_restaurant_service_fee";args={p_restaurant_id:restaurantId,p_pct:pct}
+  }else if(action==="adjustRestaurantPrices"){
+    const restaurantId=positiveId(input.restaurantId),percent=input.percent,categories=input.categories
+    if(!restaurantId||typeof percent!=="number"||!Number.isFinite(percent)||percent<-50||percent>100||(categories!==null&&(!Array.isArray(categories)||categories.length===0||categories.length>100||!categories.every(c=>typeof c==="string"&&c.trim().length>0&&c.length<=120))))return json({error:"invalid_vendor_input"},400)
+    fn="admin_adjust_restaurant_prices";args={p_restaurant_id:restaurantId,p_categories:categories,p_percent:percent}
+  }else if(action==="bakeRestaurantServiceFee"){
+    const restaurantId=positiveId(input.restaurantId)
+    if(!restaurantId)return json({error:"invalid_vendor_input"},400)
+    fn="admin_bake_restaurant_service_fee";args={p_restaurant_id:restaurantId}
   }else{
     const restaurantId=positiveId(input.restaurantId),displayOrder=input.displayOrder==null?null:positiveId(input.displayOrder)
     if(!restaurantId||(input.displayOrder!=null&&!displayOrder)||(input.featured!=null&&typeof input.featured!=="boolean"))return json({error:"invalid_vendor_input"},400)
