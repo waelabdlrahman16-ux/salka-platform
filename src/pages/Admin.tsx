@@ -1662,7 +1662,7 @@ export default function Admin() {
                         <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem]" onClick={() => unassignOrder(assignment)}>
                           اسحب الطلب
                         </button>
-                        {assignment.status === 'Out_for_Delivery' && (
+                        {['Accepted', 'Picked_Up', 'Out_for_Delivery'].includes(assignment.status) && (
                           <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem]" onClick={() => forceDelivered(assignment)}>
                             سجّله كمُسلَّم
                           </button>
@@ -1876,7 +1876,7 @@ export default function Admin() {
                       <div className="flex gap-2 mt-3">
                         <button className="btn-ghost !py-1.5 text-xs flex-1" onClick={() => setReassigning(a)}>غيّر المندوب</button>
                         <button className="btn-ghost !py-1.5 text-xs flex-1" onClick={() => unassignOrder(a)}>اسحب الطلب</button>
-                        {a.status === 'Out_for_Delivery' && (
+                        {['Accepted', 'Picked_Up', 'Out_for_Delivery'].includes(a.status) && (
                           <button className="btn-ghost !py-1.5 text-xs flex-1" onClick={() => forceDelivered(a)}>سجّله كمُسلَّم</button>
                         )}
                         {a.orders && (
