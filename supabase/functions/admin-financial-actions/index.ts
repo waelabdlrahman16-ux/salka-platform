@@ -2,9 +2,9 @@ import { withSupabase } from "@supabase/server"
 import { fail, isRateLimitError, json } from "../_shared/secure.ts"
 
 type Db = { public: { Tables: Record<string, never>; Views: Record<string, never>; Enums: Record<string, never>; CompositeTypes: Record<string, never>; Functions: Record<string, { Args: Record<string, unknown>; Returns: unknown }> } }
-type Action = "adjustOrder" | "confirmCodDeposit" | "confirmInstapay" | "creditWallet" | "markRefunded" | "settleCash" | "settleEarnings" | "markAuditTest"
-const ACTIONS = new Set<Action>(["adjustOrder","confirmCodDeposit","confirmInstapay","creditWallet","markRefunded","settleCash","settleEarnings","markAuditTest"])
-const KNOWN = ["admin_only","already_confirmed","audit_mark_too_late","deposit_not_required","driver_not_found","invalid_audit_reason","invalid_credit_amount","invalid_order_id","invalid_phone","negative_total","order_cancelled","order_not_found","payment_not_claimed","reason_required","reason_too_long","refund_not_pending"]
+type Action = "adjustOrder" | "confirmCodDeposit" | "confirmInstapay" | "creditWallet" | "markRefunded" | "settleCash" | "settleEarnings" | "markAuditTest" | "archiveOrder" | "deleteTestOrder"
+const ACTIONS = new Set<Action>(["adjustOrder","confirmCodDeposit","confirmInstapay","creditWallet","markRefunded","settleCash","settleEarnings","markAuditTest","archiveOrder","deleteTestOrder"])
+const KNOWN = ["admin_only","already_confirmed","audit_mark_too_late","deposit_not_required","driver_not_found","invalid_audit_reason","invalid_credit_amount","invalid_order_id","invalid_phone","negative_total","order_cancelled","order_not_closed","order_not_found","payment_not_claimed","reason_required","reason_too_long","refund_not_pending","test_order_has_financial_or_customer_history","test_order_required"]
 function positiveId(v: unknown): number | null { return Number.isInteger(v) && Number(v) > 0 && Number(v) <= 2_147_483_647 ? Number(v) : null }
 async function digest(v: string): Promise<string> { const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v)); return Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,"0")).join("") }
 
@@ -34,6 +34,10 @@ const handler = withSupabase<Db>({ auth: "user" }, async (req,ctx) => {
     const orderId=positiveId(input.orderId),reason=typeof input.reason==="string"?input.reason.trim():""
     if(!orderId||reason.length<3||reason.length>500)return json({error:"invalid_audit_input"},400)
     fn="admin_mark_order_as_test";args={p_order_id:orderId,p_reason:reason}
+  }else if(action==="archiveOrder"||action==="deleteTestOrder"){
+    const orderId=positiveId(input.orderId)
+    if(!orderId)return json({error:"invalid_financial_input"},400)
+    fn=action==="archiveOrder"?"admin_archive_order":"admin_delete_test_order";args={p_order_id:orderId}
   }else{
     const targetId=positiveId(action==="settleCash"||action==="settleEarnings"?input.driverId:input.orderId)
     if(!targetId)return json({error:"invalid_financial_input"},400)
