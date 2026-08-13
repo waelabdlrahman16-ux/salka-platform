@@ -55,8 +55,7 @@ export default function AddonsCard({
       {/* Two buttons instead of a paragraph. The old copy explained the two
           kinds of group in prose, then asked for the same distinction again as
           a dropdown -- the button labels carry it now. */}
-      {groups.length === 0 && (
-        <div className="grid grid-cols-2 gap-2 mb-3">
+      <div className="grid grid-cols-2 gap-2 mb-3">
           <button className="text-xs py-2.5 px-2 rounded-lg border-2 border-line hover:border-sea text-right"
             onClick={() => onApplyPreset('extras')}>
             <span className="block font-bold">إضافات</span>
@@ -67,8 +66,7 @@ export default function AddonsCard({
             <span className="block font-bold">🔁 اختيار مطلوب</span>
             <span className="block text-mist mt-0.5">واحد بس، ولازم يختار</span>
           </button>
-        </div>
-      )}
+      </div>
 
       {groups.map(g => {
         const draft = draftFor(g.id)
