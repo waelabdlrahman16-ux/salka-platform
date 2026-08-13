@@ -459,8 +459,6 @@ export default function Supervisor() {
                 <span className="flex items-center justify-center gap-1"><Icon name="clock" className="w-3 h-3" />كلّم المندوب</span>
               </a>
               <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[6rem]" onClick={() => unassign(a)}>اسحب الطلب</button>
-              {a.status === 'Out_for_Delivery' && (
-              )}
               {a.orders && (
                 <button className="btn-danger !py-1.5 text-xs flex-1 min-w-[6rem]" onClick={() => cancelOrder(a.orders!)}>إلغاء</button>
               )}
