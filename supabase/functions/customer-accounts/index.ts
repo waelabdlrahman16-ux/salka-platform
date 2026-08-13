@@ -1,7 +1,7 @@
 import{withSupabase}from"@supabase/server";import{fail,isRateLimitError,json}from"../_shared/secure.ts"
 type Db={public:{Tables:Record<string,never>;Views:Record<string,never>;Enums:Record<string,never>;CompositeTypes:Record<string,never>;Functions:Record<string,{Args:Record<string,unknown>;Returns:unknown}>}}
-type Action="addAddress"|"deleteAddress"|"myAddresses"|"myOrders"|"myProfile"|"setDefaultAddress"|"updateAddress"|"updateName"
-const ACTIONS=new Set<Action>(["addAddress","deleteAddress","myAddresses","myOrders","myProfile","setDefaultAddress","updateAddress","updateName"])
+type Action="addAddress"|"deleteAddress"|"myAddresses"|"myOrders"|"myProfile"|"setDefaultAddress"|"updateAddress"|"updateName"|"requestRecovery"
+const ACTIONS=new Set<Action>(["addAddress","deleteAddress","myAddresses","myOrders","myProfile","setDefaultAddress","updateAddress","updateName","requestRecovery"])
 // Reads run on every app load and on the checkout screen, so they cannot share
 // the writes' budget: a customer refreshing the app a few times would lock
 // themselves out of their own profile.
@@ -22,6 +22,7 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{if(req.method!=="P
  else if(action==="myAddresses"){fn="my_customer_addresses"}
  else if(action==="myOrders"){fn="my_customer_orders"}
  else if(action==="updateName"){const name=text(x.name,60);if(!name)return json({error:"invalid_account_input"},400);fn="update_my_customer_name";args={p_name:name}}
+ else if(action==="requestRecovery"){const phone=text(x.phone,24);if(!phone)return json({error:"invalid_account_input"},400);fn="request_customer_account_recovery";args={p_phone:phone}}
  else if(action==="deleteAddress"){if(!addressId)return json({error:"invalid_account_input"},400);fn="delete_customer_address";args={p_id:addressId}}
  else if(action==="setDefaultAddress"){if(!addressId)return json({error:"invalid_account_input"},400);fn="set_default_address";args={p_id:addressId}}
  else if(action==="addAddress"){const label=optText(x.label,60),compoundId=id(x.compoundId),unit=text(x.unitNumber,120),notes=optText(x.notes,500)
