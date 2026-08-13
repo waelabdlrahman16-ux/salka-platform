@@ -4,6 +4,7 @@ import CustomerLogin from '../components/CustomerLogin'
 import { getSessionToken, useCustomerAuth } from '../lib/customerAuth'
 import { customerSessionAccess } from '../lib/customerSessionAccess'
 import { orderStatusLabel } from '../lib/statusLabels'
+import { displayEgyptPhone } from '../lib/validation'
 
 interface Row {
   id: number
@@ -86,7 +87,7 @@ export default function MyOrders() {
             <div>
               <p className="font-semibold">{customer.name || 'حسابك'}</p>
               {customer.phone && (
-                <p className="text-xs text-mist mt-0.5" dir="ltr">{customer.phone}</p>
+                <p className="text-xs text-mist mt-0.5" dir="ltr">{displayEgyptPhone(customer.phone)}</p>
               )}
             </div>
             <button className="btn-ghost !py-1.5 !px-3 text-sm" onClick={signOut}>
