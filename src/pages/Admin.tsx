@@ -280,6 +280,8 @@ export default function Admin() {
    *  to a hardcoded default. Not persisted -- a fresh page load just falls
    *  back to 8, which is fine since it's only ever a starting point. */
   const [lastServiceFeePct, setLastServiceFeePct] = useState<Record<number, number>>({})
+  const [globalServiceFeeDraft, setGlobalServiceFeeDraft] = useState<string | null>(null)
+  const [lastGlobalServiceFeePct, setLastGlobalServiceFeePct] = useState<number | null>(null)
   const [newRestaurant, setNewRestaurant] = useState({ name: '', description: '', category: '', vendor_type: 'restaurant', prep_minutes: '20' })
   const [showAddRestaurant, setShowAddRestaurant] = useState(false)
   const [uploadingImage, setUploadingImage] = useState<string | null>(null)
@@ -1197,6 +1199,32 @@ export default function Admin() {
     if (error) { setActionError('الإعداد ماتحفظش — جرب تاني'); return }
     setActionError('')
     load(true)
+  }
+
+  /** Same Toggle-plus-remembered-percent pattern as the per-restaurant fee
+   *  below, but for the one global settings.service_fee_percent row that
+   *  place_order actually reads for the visible checkout line item. These are
+   *  two separate mechanisms that happen to share a name -- this one shows
+   *  up to the customer, the per-restaurant one never does. */
+  async function commitGlobalServiceFee(pctOverride?: number) {
+    const st = settings.find(s => s.key === 'service_fee_percent')
+    if (!st) return
+    const raw = (pctOverride != null ? String(pctOverride) : (globalServiceFeeDraft ?? st.value)).trim()
+    if (!/^\d+(\.\d+)?$/.test(raw)) { setActionError('نسبة الرسوم لازم تكون رقم'); setGlobalServiceFeeDraft(null); return }
+    const pct = Number(raw)
+    if (pct < 0 || pct > 100) { setActionError('نسبة الرسوم لازم تكون بين ٠ و١٠٠'); return }
+    if (String(pct) === st.value) { setGlobalServiceFeeDraft(null); return }
+    await updateSetting(st, String(pct))
+    if (pct > 0) setLastGlobalServiceFeePct(pct)
+    setGlobalServiceFeeDraft(null)
+  }
+
+  async function toggleGlobalServiceFee() {
+    const st = settings.find(s => s.key === 'service_fee_percent')
+    if (!st) return
+    const isOn = Number(st.value) > 0
+    if (isOn) { await commitGlobalServiceFee(0); return }
+    await commitGlobalServiceFee(lastGlobalServiceFeePct ?? 8)
   }
 
   // Both move real money and are irreversible, and both fired on a single click
@@ -2609,11 +2637,38 @@ export default function Admin() {
 
       {tab === 'settings' && (
         <div className="space-y-3">
+          {/* The visible checkout line item -- separate from any per-restaurant
+              baked-in fee under كتالوج المطاعم. Pulled out of the generic list
+              below (which renders numbers as plain inputs) so it gets the same
+              Toggle everything else on/off uses. */}
+          {settings.some(s => s.key === 'service_fee_percent') && (() => {
+            const st = settings.find(s => s.key === 'service_fee_percent')!
+            const pct = Number(st.value) || 0
+            return (
+              <div className="card p-4 flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-sm">رسوم الخدمة العامة (بند ظاهر في الفاتورة)</p>
+                  <p className="text-xs text-mist mt-0.5">بتتحسب من قيمة المنتجات وتظهر للعميل كبند منفصل عند الدفع</p>
+                </div>
+                <Toggle on={pct > 0} onChange={toggleGlobalServiceFee} />
+                {pct > 0 && (
+                  <>
+                    <input type="number" min={0.5} max={100} step="0.5"
+                      className="field !w-20 !py-1.5 text-center"
+                      value={globalServiceFeeDraft ?? String(pct)}
+                      onChange={e => setGlobalServiceFeeDraft(e.target.value)}
+                      onBlur={() => commitGlobalServiceFee()} />
+                    <span className="text-mist text-sm">%</span>
+                  </>
+                )}
+              </div>
+            )
+          })()}
           {/* The fee_tier_* rows are no longer what anyone pays. They are only a
               seed for a compound added later. Leaving them in the same list as
               live settings invites someone to "fix delivery pricing" here and
               watch nothing change. */}
-          {settings.filter(st => !st.key.startsWith('fee_tier')).map(st => {
+          {settings.filter(st => !st.key.startsWith('fee_tier') && st.key !== 'service_fee_percent').map(st => {
             const isBool = st.value === 'true' || st.value === 'false'
             const on = st.value === 'true'
             return (
