@@ -2,8 +2,8 @@ import { withSupabase } from "@supabase/server"
 import { fail, isRateLimitError, json } from "../_shared/secure.ts"
 
 type Db = { public: { Tables: Record<string, never>; Views: Record<string, never>; Enums: Record<string, never>; CompositeTypes: Record<string, never>; Functions: Record<string, { Args: Record<string, unknown>; Returns: unknown }> } }
-type Action = "convertStaffRole" | "deleteCustomer" | "deleteCustomerByPhone" | "deleteStaff" | "resetDriverDevice" | "setCustomerBan" | "setVendorSlots" | "upsertDriver"
-const ACTIONS = new Set<Action>(["convertStaffRole","deleteCustomer","deleteCustomerByPhone","deleteStaff","resetDriverDevice","setCustomerBan","setVendorSlots","upsertDriver"])
+type Action = "approveAccountRecovery" | "convertStaffRole" | "deleteCustomer" | "deleteCustomerByPhone" | "deleteStaff" | "listAccountRecoveries" | "resetDriverDevice" | "setCustomerBan" | "setVendorSlots" | "upsertDriver"
+const ACTIONS = new Set<Action>(["approveAccountRecovery","convertStaffRole","deleteCustomer","deleteCustomerByPhone","deleteStaff","listAccountRecoveries","resetDriverDevice","setCustomerBan","setVendorSlots","upsertDriver"])
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const KNOWN = ["admin_only","cannot_delete_admin","cannot_delete_self","cannot_target_self","customer_has_live_order","customer_has_wallet_balance","driver_has_live_delivery","driver_holds_cash","driver_not_found","has_live_orders","invalid_phone","invalid_payout_schedule","invalid_role","invalid_vehicle_type","name_required","no_account_for_phone","phone_already_used","phone_required","profile_not_found","target_not_convertible","vendor_not_found"]
 function positiveId(v: unknown): number | null { return Number.isInteger(v) && Number(v)>0 && Number(v)<=2_147_483_647 ? Number(v) : null }
@@ -24,7 +24,9 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
     if(error){if(isRateLimitError(error))return json({error:"rate_limited"},429);return fail("admin-account-driver-actions","rate_limit_check_failed",500,error)}
   }
   let fn="",args:Record<string,unknown>={}
-  if(action==="convertStaffRole"){
+  if(action==="listAccountRecoveries"){fn="admin_pending_account_recoveries"}
+  else if(action==="approveAccountRecovery"){const requestId=positiveId(input.requestId);if(!requestId)return json({error:"invalid_account_input"},400);fn="admin_approve_account_recovery";args={p_request_id:requestId}}
+  else if(action==="convertStaffRole"){
     const profileId=clean(input.profileId,36),role=input.role
     if(!profileId||!UUID.test(profileId)||(role!=="catalog"&&role!=="supervisor"))return json({error:"invalid_account_input"},400)
     fn="admin_convert_staff_role";args={p_profile_id:profileId,p_role:role}
