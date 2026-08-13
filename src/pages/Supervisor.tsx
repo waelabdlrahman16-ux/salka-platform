@@ -239,7 +239,10 @@ export default function Supervisor() {
     !assignedIds.has(o.id) && o.kitchen_status === 'ready' && o.status !== 'awaiting_payment')
   const availableDrivers = drivers.filter(d => d.active && d.available)
 
-  const addr = (o: Order) => `${o.zone ?? '—'} · وحدة ${o.unit_number ?? '—'}`
+  const addr = (o: Order) => {
+    const addressNote = o.address_notes?.trim()
+    return `${o.zone ?? '—'} · وحدة ${o.unit_number ?? '—'}${addressNote ? ` · ${addressNote}` : ''}`
+  }
 
   if (loading) return <p className="text-mist text-center py-10">جاري التحميل…</p>
 
@@ -339,6 +342,7 @@ export default function Supervisor() {
                 <div className="mt-3 bg-night border border-line rounded-xl p-3 text-sm space-y-1">
                   <OrderLines order={o} />
                 </div>
+                <PaymentSummary order={o} />
 
                 <button className="btn-sea w-full !py-2 text-sm mt-3"
                   disabled={busy === `ready:${o.id}`}
@@ -381,6 +385,7 @@ export default function Supervisor() {
             <div className="mt-3 bg-night border border-line rounded-xl p-3 text-sm space-y-1">
               <OrderLines order={o} />
             </div>
+            <PaymentSummary order={o} />
 
             {o.kitchen_status === 'new' ? (
               <>
@@ -418,13 +423,25 @@ export default function Supervisor() {
       )}
       <div className="space-y-3 mb-6">
         {unassigned.map(o => (
-          <div key={o.id} className="card p-4 flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="font-bold text-sm truncate">#{o.id} — {o.restaurants?.name}</p>
-              <p className="text-xs text-mist truncate">📍 {addr(o)}</p>
-              <p className="text-xs text-mist">{orderStatusLabel(o.status)}</p>
+          <div key={o.id} className="card p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-bold text-sm">#{o.id} — {o.restaurants?.name}</p>
+                <p className="text-xs text-mist mt-0.5">👤 {o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
+                <p className="text-xs text-mist mt-0.5">📍 {addr(o)}</p>
+              </div>
+              <div className="text-left shrink-0">
+                <span className="font-bold text-sea block">{o.total} ج.م</span>
+                <span className="text-xs text-mist">{orderStatusLabel(o.status)}</span>
+              </div>
             </div>
-            <button className="btn-sea !py-2 !px-4 text-sm shrink-0" onClick={() => { setAssigning(o); setModalError('') }}>
+            <CustomerNote order={o} />
+            <div className="mt-3 bg-night border border-line rounded-xl p-3 text-sm space-y-1">
+              <p className="text-[11px] font-bold text-mist mb-1.5">طلب العميل</p>
+              <OrderLines order={o} />
+            </div>
+            <PaymentSummary order={o} />
+            <button className="btn-sea w-full !py-2 text-sm mt-3" onClick={() => { setAssigning(o); setModalError('') }}>
               عيّن مندوب
             </button>
           </div>
@@ -445,12 +462,15 @@ export default function Supervisor() {
               <div className="min-w-0">
                 <p className="font-bold text-sm truncate">#{a.order_id} — {a.orders?.restaurants?.name}</p>
                 <p className="text-xs text-mist mt-0.5">🛵 {a.drivers?.name} · محاولة {a.attempt_number}</p>
+                {a.orders && <p className="text-xs text-mist mt-0.5">👤 {a.orders.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${a.orders.customer_phone}`}>{a.orders.customer_phone}</a></p>}
                 <p className="text-xs text-mist mt-0.5">📍 {a.orders ? addr(a.orders) : '—'}</p>
               </div>
               <span className="text-xs font-semibold bg-shellup rounded-full px-2.5 py-1 shrink-0">
                 {assignmentStatusLabel(a.status)}
               </span>
             </div>
+            {a.orders && <CustomerNote order={a.orders} />}
+            {a.orders && <PaymentSummary order={a.orders} />}
             <LiveDeliveryDetail live={liveById[a.id]} />
             <div className="flex gap-2 mt-3 flex-wrap">
               <a className="btn-ghost !py-1.5 text-xs flex-1 min-w-[6rem] text-center" href={`tel:${a.drivers?.phone}`}>
@@ -601,6 +621,29 @@ function CustomerNote({ order }: { order: Order }) {
   )
 }
 
+// Amounts are facts recorded on the order, not values the supervisor may edit.
+// Keeping them beside the card action prevents a rider being sent out without
+// the operator knowing whether they collect cash, a deposit, or nothing.
+function PaymentSummary({ order }: { order: Order }) {
+  const method = order.payment_method === 'cod'
+    ? 'كاش عند الاستلام'
+    : order.payment_method === 'instapay'
+      ? 'إنستاباي'
+      : order.payment_method === 'online'
+        ? 'دفع أونلاين'
+        : order.payment_method
+  const collect = order.collect_amount ?? (order.payment_method === 'cod' ? order.total : null)
+  const deposit = order.cod_deposit_amount
+  if (collect == null && !deposit) return <p className="text-xs text-mist mt-2">💳 {method}</p>
+  return (
+    <div className="mt-2 rounded-xl bg-shellup px-3 py-2 text-xs text-mist flex flex-wrap gap-x-3 gap-y-1">
+      <span>💳 {method}</span>
+      {collect != null && <span className="font-semibold text-ink">المندوب يجمّع {collect} ج.م</span>}
+      {!!deposit && <span>تأمين كاش {deposit} ج.م</span>}
+    </div>
+  )
+}
+
 // One order the supervisor has shopped for and now has to price.
 //
 // The input is the goods total off the receipt and nothing else. What the
@@ -647,6 +690,7 @@ function QuoteCard({ order, addr, busy, onConfirm, onCancel }: {
         <p className="text-[11px] font-bold text-mist mb-1.5">طلب العميل</p>
         <OrderLines order={order} />
       </div>
+      <PaymentSummary order={order} />
 
       <div className="mt-3 border border-linestrong rounded-xl p-3 bg-shellup">
         <label className="block text-[11px] font-bold text-sandink mb-2" htmlFor={`p${order.id}`}>
