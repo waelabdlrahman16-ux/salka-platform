@@ -21,6 +21,11 @@ type Category = { id: number; name: string; display_order: number }
 /** How many available sizes an item has, and the cheapest of them. */
 type SizeInfo = { count: number; min: number }
 
+/** Not a real category -- never sent to the server, never rename/delete-able,
+ *  never a target for "add item here". Selecting it means "show me everything
+ *  in one list, tagged by its real category" and nothing else. */
+const ALL = '__ALL__'
+
 export default function MenuItemsPanel({
   restaurant, items, uploadingImage,
   onEdit, onTogglePrice, onToggleAvailable, onToggleRx, onUploadImage, onAddItem, onChanged
@@ -50,6 +55,11 @@ export default function MenuItemsPanel({
   /** Categories other vendors already use, offered so «مقبلات» does not get
       retyped as «المقبلات» at the next restaurant. */
   const [otherCats, setOtherCats] = useState<string[]>([])
+  /** Drag-to-reorder only touches real category tabs (never "الكل", which is
+   *  never part of `tabs` and always rendered separately, pinned first). */
+  const [reorderMode, setReorderMode] = useState(false)
+  const [dragCat, setDragCat] = useState<string | null>(null)
+  const [dragOverCat, setDragOverCat] = useState<{ name: string; before: boolean } | null>(null)
   const { confirmSheet, promptSheet, sheetElement } = useSheets()
 
   async function loadCats() {
@@ -103,14 +113,16 @@ export default function MenuItemsPanel({
     return [...named, ...strays]
   }, [cats, items])
 
-  const current = active && tabs.includes(active) ? active : tabs[0] ?? null
+  const current = active && (active === ALL || tabs.includes(active)) ? active : tabs[0] ?? null
   // A search spans EVERY category, not the open tab. Searching inside one tab
   // would answer "not here" for an item that is one tab over -- the same
   // confident-false-negative shape as filtering the loaded order window.
   const q = search.trim().toLowerCase()
   const shown = q
     ? items.filter(it => it.name.toLowerCase().includes(q) || (it.category ?? '').toLowerCase().includes(q))
-    : items.filter(it => it.category === current)
+    : current === ALL
+      ? items
+      : items.filter(it => it.category === current)
 
   const dupWarning = useMemo(() => {
     const q = newCat.trim().toLowerCase()
@@ -149,6 +161,30 @@ export default function MenuItemsPanel({
     onChanged()
   }
 
+  /** Sends the whole ordered name list every time, same shape the edge
+   *  function already expects (admin_reorder_menu_categories(p_restaurant_id,
+   *  p_names)) -- this action existed and was callable before today, just
+   *  never had a UI in front of it. */
+  async function commitReorder(next: Category[]) {
+    setCats(next) // optimistic -- drag already showed this order, don't flicker back
+    const res = await adminCatalogAction('reorderMenuCategories',
+      { restaurantId: restaurant.id, names: next.map(c => c.name) },
+      { not_authorized: 'مش من صلاحياتك' })
+    if (!res.ok) { setCatError(res.error); await loadCats(); return }
+    onChanged()
+  }
+
+  function dropCategory(draggedName: string, targetName: string, before: boolean) {
+    const from = cats.findIndex(c => c.name === draggedName)
+    const to = cats.findIndex(c => c.name === targetName)
+    if (from < 0 || to < 0 || draggedName === targetName) return
+    const next = [...cats]
+    const [moved] = next.splice(from, 1)
+    const insertAt = next.findIndex(c => c.name === targetName)
+    next.splice(before ? insertAt : insertAt + 1, 0, moved)
+    commitReorder(next)
+  }
+
   async function deleteCategory(name: string) {
     if (!await confirmSheet({ title: `حذف قسم «${name}»؟`, danger: true })) return
     const res = await adminCatalogAction('deleteMenuCategory',
@@ -184,22 +220,85 @@ export default function MenuItemsPanel({
       <input className="field text-sm mb-2.5" value={search} onChange={e => setSearch(e.target.value)}
         placeholder="دوّر باسم الصنف أو القسم…" />
 
+      {!q && (
+        <div className="flex items-center justify-between mb-2">
+          <span />
+          <button onClick={() => setReorderMode(m => !m)}
+            className={`text-xs font-semibold rounded-full px-3 py-1.5 flex items-center gap-1.5 ${
+              reorderMode ? 'bg-ink text-white' : 'bg-shellup text-mist'}`}>
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true">
+              <circle cx="9" cy="6" r="1.6" /><circle cx="9" cy="12" r="1.6" /><circle cx="9" cy="18" r="1.6" />
+              <circle cx="15" cy="6" r="1.6" /><circle cx="15" cy="12" r="1.6" /><circle cx="15" cy="18" r="1.6" />
+            </svg>
+            {reorderMode ? 'خلاص، تم' : 'ترتيب الأقسام'}
+          </button>
+        </div>
+      )}
+      {reorderMode && (
+        <p className="text-xs text-mist mb-2">اسحب أي قسم يمين أو شمال لتغيير ترتيبه — «الكل» ثابت دايمًا أول واحد.</p>
+      )}
+
       {/* Tabs. Horizontally scrollable rather than wrapped: a vendor with ten
           categories would otherwise push the first item three rows down.
           Dimmed while searching, because the results ignore them. */}
       <div className={`flex gap-1.5 overflow-x-auto pb-2.5 border-b border-line mb-3 -mx-1 px-1 ${q ? 'opacity-40' : ''}`}>
-        {tabs.map(c => (
-          <button key={c} onClick={() => setActive(c)}
-            className={`shrink-0 rounded-full border px-3.5 min-h-[34px] text-xs font-semibold transition-colors ${
-              current === c ? 'bg-sea border-sea text-white' : 'bg-shell border-line text-foam'}`}>
-            {c}
-            <span className={`font-normal ${current === c ? 'text-white/70' : 'text-mist'}`}> {counts[c] ?? 0}</span>
-          </button>
-        ))}
-        <button onClick={() => { setAdding(true); setCatError('') }}
-          className="shrink-0 rounded-full border border-dashed border-linestrong bg-shell px-3.5 min-h-[34px] text-xs font-semibold text-sea">
-          ＋ قسم
+        {/* Not a real category: pinned first, never draggable, never part of
+            `tabs`, so it can't collide with a real category name anyone types. */}
+        <button onClick={() => !reorderMode && setActive(ALL)}
+          className={`shrink-0 rounded-full border-2 px-3.5 min-h-[34px] text-xs font-semibold transition-colors ${
+            current === ALL ? 'bg-ink border-ink text-white' : 'bg-shell border-ink text-foam'}`}>
+          الكل
+          <span className={`font-normal ${current === ALL ? 'text-white/70' : 'text-mist'}`}> {items.length}</span>
         </button>
+        {tabs.map(c => {
+          const isRealCat = cats.some(cat => cat.name === c)
+          const draggable = reorderMode && isRealCat
+          return (
+            <button key={c} draggable={draggable}
+              onClick={() => !reorderMode && setActive(c)}
+              onDragStart={() => setDragCat(c)}
+              onDragEnd={() => { setDragCat(null); setDragOverCat(null) }}
+              onDragOver={e => {
+                if (!draggable) return
+                e.preventDefault()
+                const rect = e.currentTarget.getBoundingClientRect()
+                const before = e.clientX - rect.left > rect.width / 2 // RTL: right half = before
+                setDragOverCat({ name: c, before })
+              }}
+              onDrop={e => {
+                if (!draggable || !dragCat) return
+                e.preventDefault()
+                const rect = e.currentTarget.getBoundingClientRect()
+                const before = e.clientX - rect.left > rect.width / 2
+                dropCategory(dragCat, c, before)
+                setDragCat(null); setDragOverCat(null)
+              }}
+              style={
+                dragOverCat?.name === c
+                  ? { boxShadow: `inset ${dragOverCat.before ? '3px' : '-3px'} 0 0 #0A5F5E` }
+                  : undefined
+              }
+              className={`shrink-0 rounded-full border px-3.5 min-h-[34px] text-xs font-semibold transition-colors ${
+                current === c ? 'bg-sea border-sea text-white' : 'bg-shell border-line text-foam'}
+                ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}
+                ${dragCat === c ? 'opacity-40' : ''}`}>
+              {draggable && (
+                <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor" className="inline ml-1 opacity-50" aria-hidden="true">
+                  <circle cx="9" cy="6" r="1.6" /><circle cx="9" cy="12" r="1.6" /><circle cx="9" cy="18" r="1.6" />
+                  <circle cx="15" cy="6" r="1.6" /><circle cx="15" cy="12" r="1.6" /><circle cx="15" cy="18" r="1.6" />
+                </svg>
+              )}
+              {c}
+              <span className={`font-normal ${current === c ? 'text-white/70' : 'text-mist'}`}> {counts[c] ?? 0}</span>
+            </button>
+          )
+        })}
+        {!reorderMode && (
+          <button onClick={() => { setAdding(true); setCatError('') }}
+            className="shrink-0 rounded-full border border-dashed border-linestrong bg-shell px-3.5 min-h-[34px] text-xs font-semibold text-sea">
+            ＋ قسم
+          </button>
+        )}
       </div>
 
       {adding && (
@@ -234,7 +333,7 @@ export default function MenuItemsPanel({
         </div>
       )}
 
-      {current && (
+      {current && current !== ALL && (
         <div className="flex items-center justify-between gap-2 mb-2.5 flex-wrap">
           <div className="flex items-center gap-2 text-xs">
             <button className="text-mist underline min-h-[44px] inline-flex items-center" onClick={() => renameCategory(current)}>تغيير الاسم</button>
@@ -243,10 +342,13 @@ export default function MenuItemsPanel({
           <button className="btn-ghost !py-1.5 !px-3 text-xs" onClick={onAddItem}>+ صنف هنا</button>
         </div>
       )}
+      {current === ALL && (
+        <p className="text-xs text-mist mb-2.5">افتح قسم بعينه عشان تضيف صنف فيه — «الكل» بس للعرض والتعديل</p>
+      )}
 
       {/* The category discount belongs beside its category, not in a separate
           block that listed all seven with an empty «إضافة خصم» under each. */}
-      {current && (
+      {current && current !== ALL && (
         <div className="mb-3">
           <DiscountManager restaurantId={restaurant.id} scope="category" category={current} />
         </div>
@@ -255,6 +357,7 @@ export default function MenuItemsPanel({
       {shown.length === 0 ? (
         <p className="text-mist text-center text-sm py-6">
           {q ? 'مفيش أصناف بالبحث ده'
+             : current === ALL ? 'المطعم ده لسه من غير أصناف'
              : current ? 'القسم ده لسه فاضي — ضيف أول صنف'
              : 'مفيش أصناف'}
         </p>
@@ -290,12 +393,18 @@ export default function MenuItemsPanel({
 
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-sm truncate" title={it.name}>{it.name}</p>
-                    {(sz || !it.image_url || (it.available_from && it.available_until)) && (
+                    {(current === ALL || sz || !it.image_url || (it.available_from && it.available_until)) && (
                       <p className="text-[11px] text-mist truncate">
+                        {/* The one thing "الكل" needs that a single-category view
+                            doesn't: which real category this item actually lives in. */}
+                        {current === ALL && (
+                          <span className="bg-shellup rounded px-1 py-px font-semibold text-foam">{it.category}</span>
+                        )}
+                        {(current === ALL && (sz || !it.image_url)) ? ' · ' : ''}
                         {sz ? `${sz.count} أحجام` : !it.image_url ? 'من غير صورة' : ''}
                         {it.available_from && it.available_until && (
                           <>
-                            {sz || !it.image_url ? ' · ' : ''}
+                            {(current === ALL || sz || !it.image_url) ? ' · ' : ''}
                             {'⏰ '}
                             <bdi dir="ltr">{it.available_from.slice(0, 5)}–{it.available_until.slice(0, 5)}</bdi>
                           </>
