@@ -25,6 +25,14 @@ export default function Home() {
    *  falls back to «عروض»: "20 ج.م off" means nothing without the price. */
   const [discountLabels, setDiscountLabels] = useState<Map<number, string>>(new Map())
   const [loading, setLoading] = useState(true)
+  // Distinguishes "this compound genuinely has no coverage" from "we could
+  // not read the restaurant list" -- both used to render the identical
+  // «لا يوجد مطاعم بتوصل لمكانك» message, which is a confident factual claim
+  // made on a failed fetch. Every other screen in the app (Offers,
+  // RestaurantDetail, CheckoutPage, CustomOrder) already guards against
+  // this; the home screen's own primary list was the one gap.
+  const [restaurantsFailed, setRestaurantsFailed] = useState(false)
+  const [restaurantsAttempt, setRestaurantsAttempt] = useState(0)
   const [picking, setPicking] = useState(false)
   // Whether BannerRail actually has anything to show, so the pharmacy/
   // supermarket shortcuts can sit under real ads but move up to fill that
@@ -157,9 +165,10 @@ export default function Home() {
   useEffect(() => {
     if (!compoundId) { setLoading(false); return }
     setLoading(true)
+    setRestaurantsFailed(false)
     publicCatalog<Restaurant[]>('restaurants', { compoundId })
       .then(async res => {
-        if (!res.ok) { setRestaurants([]); setLoading(false); return }
+        if (!res.ok) { setRestaurants([]); setRestaurantsFailed(true); setLoading(false); return }
         const list = res.data ?? []
         setRestaurants(list); setLoading(false)
         if (!list.length) return
@@ -189,7 +198,7 @@ export default function Home() {
         for (const [id, pct] of bestPct) labels.set(id, `خصم ${Math.round(pct)}٪`)
         setDiscountLabels(labels)
       })
-  }, [compoundId])
+  }, [compoundId, restaurantsAttempt])
 
   function choose(id: number) {
     setCompoundId(id)
@@ -544,7 +553,21 @@ export default function Home() {
             </div>
           ) : (
           <div className="space-y-3">
-            {shownRestaurants.length === 0 && (
+            {/* Order matters: the failure state has to win. A network
+                failure and a genuinely uncovered compound both leave
+                shownRestaurants empty, and telling the customer their
+                location has no delivery coverage when we simply could not
+                read the list is a false statement, not an empty state. */}
+            {restaurantsFailed && (
+              <div className="card p-6 text-center">
+                <p className="font-semibold">مش قادرين نجيب المطاعم دلوقتي</p>
+                <p className="text-sm text-mist mt-1 mb-4">اتأكد إن النت شغال وجرب تاني.</p>
+                <button className="btn-sea !py-2 !px-5 text-sm" onClick={() => setRestaurantsAttempt(a => a + 1)}>
+                  جرب تاني
+                </button>
+              </div>
+            )}
+            {!restaurantsFailed && shownRestaurants.length === 0 && (
               <p className="text-mist py-6">
                 {kind ? `مفيش مطاعم ${kind} بتوصل لمكانك حاليًا` : 'لا يوجد مطاعم بتوصل لمكانك حاليًا'}
               </p>
