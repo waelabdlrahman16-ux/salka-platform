@@ -27,7 +27,7 @@ const ORDER_ERRORS = [
   "restaurant_not_found", "size_required", "slot_full", "slot_unavailable",
   "vendor_not_covering_compound", "promo_invalid", "promo_expired",
   "promo_not_available", "promo_minimum_not_met", "promo_limit_reached",
-  "promo_already_used", "promo_customer_missing",
+  "promo_already_used", "promo_customer_missing", "promo_nothing_to_discount",
 ].sort((a, b) => b.length - a.length)
 
 function object(value: unknown): value is Record<string, unknown> {

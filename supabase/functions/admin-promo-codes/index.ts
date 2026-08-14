@@ -7,6 +7,10 @@ const promoCode = (value: unknown) => typeof value === "string" ? value.trim().t
 const positive = (value: unknown, allowZero = false) => typeof value === "number" && Number.isFinite(value) && (allowZero ? value >= 0 : value > 0) ? value : null
 const positiveInt = (value: unknown) => Number.isInteger(value) && Number(value) > 0 ? Number(value) : null
 const dateValue = (value: unknown) => value == null || value === "" ? null : typeof value === "string" && !Number.isNaN(Date.parse(value)) ? new Date(value).toISOString() : undefined
+// Which part of the bill the code is allowed to discount. Unset means delivery:
+// the safe default is the one that never reaches into the vendor's basket.
+const SCOPES = ["delivery", "service", "vendor", "all"] as const
+const scopeValue = (value: unknown) => value == null || value === "" ? "delivery" : typeof value === "string" && (SCOPES as readonly string[]).includes(value) ? value : null
 
 Deno.serve(async req => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers })
@@ -25,7 +29,7 @@ Deno.serve(async req => {
     if (!body || typeof body.action !== "string") return reply({ ok: false, error: "invalid_request" }, 400)
 
     if (body.action === "list") {
-      const { data: codes, error } = await admin.from("promo_codes").select("id,code,active,discount_type,discount_value,max_discount_egp,minimum_subtotal_egp,restaurant_id,compound_id,starts_at,ends_at,max_redemptions,max_redemptions_per_customer").order("id", { ascending: false })
+      const { data: codes, error } = await admin.from("promo_codes").select("id,code,active,discount_type,discount_value,max_discount_egp,minimum_subtotal_egp,applies_to,restaurant_id,compound_id,starts_at,ends_at,max_redemptions,max_redemptions_per_customer").order("id", { ascending: false })
       if (error) return reply({ ok: false, error: "list_failed" }, 500)
       const { data: redemptions } = await admin.from("promo_redemptions").select("promo_code_id")
       const counts: Record<string, number> = {}
@@ -48,11 +52,12 @@ Deno.serve(async req => {
       const maxDiscount = body.max_discount_egp == null ? null : positive(body.max_discount_egp)
       const maxRedemptions = body.max_redemptions == null ? null : positiveInt(body.max_redemptions)
       const perCustomer = positiveInt(body.max_redemptions_per_customer)
+      const appliesTo = scopeValue(body.applies_to)
       const restaurantId = body.restaurant_id == null ? null : positiveInt(body.restaurant_id)
       const compoundId = body.compound_id == null ? null : positiveInt(body.compound_id)
       const startsAt = dateValue(body.starts_at), endsAt = dateValue(body.ends_at)
-      if (!/^[A-Z0-9][A-Z0-9_-]{2,31}$/.test(code) || !value || minimum == null || !perCustomer || startsAt === undefined || endsAt === undefined || (body.discount_type !== "percent" && body.discount_type !== "fixed") || (body.discount_type === "percent" && value > 100) || (startsAt && endsAt && startsAt >= endsAt)) return reply({ ok: false, error: "invalid_input" }, 400)
-      const row = { code, discount_type: body.discount_type, discount_value: value, max_discount_egp: maxDiscount, minimum_subtotal_egp: minimum, restaurant_id: restaurantId, compound_id: compoundId, starts_at: startsAt, ends_at: endsAt, max_redemptions: maxRedemptions, max_redemptions_per_customer: perCustomer, updated_at: new Date().toISOString() }
+      if (!/^[A-Z0-9][A-Z0-9_-]{2,31}$/.test(code) || !value || minimum == null || !perCustomer || appliesTo == null || startsAt === undefined || endsAt === undefined || (body.discount_type !== "percent" && body.discount_type !== "fixed") || (body.discount_type === "percent" && value > 100) || (startsAt && endsAt && startsAt >= endsAt)) return reply({ ok: false, error: "invalid_input" }, 400)
+      const row = { code, discount_type: body.discount_type, discount_value: value, max_discount_egp: maxDiscount, minimum_subtotal_egp: minimum, applies_to: appliesTo, restaurant_id: restaurantId, compound_id: compoundId, starts_at: startsAt, ends_at: endsAt, max_redemptions: maxRedemptions, max_redemptions_per_customer: perCustomer, updated_at: new Date().toISOString() }
       if (body.action === "create") {
         const { error } = await admin.from("promo_codes").insert({ ...row, active: true, created_by: session.user.id })
         if (error?.code === "23505") return reply({ ok: false, error: "duplicate_code" }, 409)

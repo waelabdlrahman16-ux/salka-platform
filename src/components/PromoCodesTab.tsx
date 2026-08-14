@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Compound, Restaurant } from '../lib/types'
+import { PROMO_SCOPES, PROMO_SCOPE_ADMIN_LABEL as SCOPE_LABEL, type PromoScope } from '../lib/promoScope'
 
-type Promo = { id: number; code: string; active: boolean; discount_type: 'percent' | 'fixed'; discount_value: number; max_discount_egp: number | null; minimum_subtotal_egp: number; restaurant_id: number | null; compound_id: number | null; starts_at: string | null; ends_at: string | null; max_redemptions: number | null; max_redemptions_per_customer: number; redemption_count: number }
-type Draft = { code: string; discount_type: 'percent' | 'fixed'; discount_value: string; max_discount_egp: string; minimum_subtotal_egp: string; restaurant_id: string; compound_id: string; starts_at: string; ends_at: string; max_redemptions: string; max_redemptions_per_customer: string }
-const emptyDraft = (): Draft => ({ code: '', discount_type: 'percent', discount_value: '', max_discount_egp: '', minimum_subtotal_egp: '0', restaurant_id: '', compound_id: '', starts_at: '', ends_at: '', max_redemptions: '', max_redemptions_per_customer: '1' })
+type Promo = { id: number; code: string; active: boolean; discount_type: 'percent' | 'fixed'; discount_value: number; max_discount_egp: number | null; minimum_subtotal_egp: number; applies_to: PromoScope; restaurant_id: number | null; compound_id: number | null; starts_at: string | null; ends_at: string | null; max_redemptions: number | null; max_redemptions_per_customer: number; redemption_count: number }
+type Draft = { code: string; discount_type: 'percent' | 'fixed'; discount_value: string; max_discount_egp: string; minimum_subtotal_egp: string; applies_to: PromoScope; restaurant_id: string; compound_id: string; starts_at: string; ends_at: string; max_redemptions: string; max_redemptions_per_customer: string }
+const emptyDraft = (): Draft => ({ code: '', discount_type: 'percent', discount_value: '', max_discount_egp: '', minimum_subtotal_egp: '0', applies_to: 'delivery', restaurant_id: '', compound_id: '', starts_at: '', ends_at: '', max_redemptions: '', max_redemptions_per_customer: '1' })
 const asNumber = (value: string, optional = false) => value.trim() === '' && optional ? null : Number(value)
 
 export default function PromoCodesTab({ restaurants, compounds }: { restaurants: Restaurant[]; compounds: Compound[] }) {
@@ -40,13 +41,13 @@ export default function PromoCodesTab({ restaurants, compounds }: { restaurants:
   function reset() { setDraft(emptyDraft()); setEditing(null); setError('') }
   function startEdit(p: Promo) {
     setEditing(p.id)
-    setDraft({ code: p.code, discount_type: p.discount_type, discount_value: String(p.discount_value), max_discount_egp: p.max_discount_egp == null ? '' : String(p.max_discount_egp), minimum_subtotal_egp: String(p.minimum_subtotal_egp), restaurant_id: p.restaurant_id == null ? '' : String(p.restaurant_id), compound_id: p.compound_id == null ? '' : String(p.compound_id), starts_at: p.starts_at?.slice(0,16) ?? '', ends_at: p.ends_at?.slice(0,16) ?? '', max_redemptions: p.max_redemptions == null ? '' : String(p.max_redemptions), max_redemptions_per_customer: String(p.max_redemptions_per_customer) })
+    setDraft({ code: p.code, discount_type: p.discount_type, discount_value: String(p.discount_value), max_discount_egp: p.max_discount_egp == null ? '' : String(p.max_discount_egp), minimum_subtotal_egp: String(p.minimum_subtotal_egp), applies_to: p.applies_to ?? 'delivery', restaurant_id: p.restaurant_id == null ? '' : String(p.restaurant_id), compound_id: p.compound_id == null ? '' : String(p.compound_id), starts_at: p.starts_at?.slice(0,16) ?? '', ends_at: p.ends_at?.slice(0,16) ?? '', max_redemptions: p.max_redemptions == null ? '' : String(p.max_redemptions), max_redemptions_per_customer: String(p.max_redemptions_per_customer) })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
   async function save() {
     if (!canSave) { setError('اكتب كود صحيح وقيمة خصم أكبر من صفر'); return }
     setBusy(true); setError('')
-    const payload = { id: editing, code: draft.code.trim().toUpperCase(), discount_type: draft.discount_type, discount_value: asNumber(draft.discount_value), max_discount_egp: asNumber(draft.max_discount_egp, true), minimum_subtotal_egp: asNumber(draft.minimum_subtotal_egp), restaurant_id: asNumber(draft.restaurant_id, true), compound_id: asNumber(draft.compound_id, true), starts_at: draft.starts_at || null, ends_at: draft.ends_at || null, max_redemptions: asNumber(draft.max_redemptions, true), max_redemptions_per_customer: asNumber(draft.max_redemptions_per_customer) }
+    const payload = { id: editing, code: draft.code.trim().toUpperCase(), discount_type: draft.discount_type, discount_value: asNumber(draft.discount_value), max_discount_egp: asNumber(draft.max_discount_egp, true), minimum_subtotal_egp: asNumber(draft.minimum_subtotal_egp), applies_to: draft.applies_to, restaurant_id: asNumber(draft.restaurant_id, true), compound_id: asNumber(draft.compound_id, true), starts_at: draft.starts_at || null, ends_at: draft.ends_at || null, max_redemptions: asNumber(draft.max_redemptions, true), max_redemptions_per_customer: asNumber(draft.max_redemptions_per_customer) }
     try { await call(editing ? 'update' : 'create', payload); reset(); await refresh() }
     catch (e) { setError(e instanceof Error && e.message === 'duplicate_code' ? 'الكود مستخدم بالفعل' : 'مش قادرين نحفظ الكود، راجع البيانات وجرب تاني') }
     finally { setBusy(false) }
@@ -61,10 +62,14 @@ export default function PromoCodesTab({ restaurants, compounds }: { restaurants:
 
   return <div className="space-y-5">
     <div className="card p-4">
-      <div className="flex items-start justify-between gap-3 mb-4"><div><h2 className="font-bold">🏷️ {editing ? 'تعديل كود خصم' : 'كود خصم جديد'}</h2><p className="text-xs text-mist mt-1">الخصم يُحسب من الأصناف فقط، ويظهر واضحًا للعميل في الدفع والفاتورة.</p></div>{editing && <button className="btn-ghost text-sm" onClick={reset}>إلغاء التعديل</button>}</div>
+      <div className="flex items-start justify-between gap-3 mb-4"><div><h2 className="font-bold">🏷️ {editing ? 'تعديل كود خصم' : 'كود خصم جديد'}</h2><p className="text-xs text-mist mt-1">اختار الخصم يتحسب من إيه، ويظهر واضحًا للعميل في الدفع والفاتورة.</p></div>{editing && <button className="btn-ghost text-sm" onClick={reset}>إلغاء التعديل</button>}</div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {input('code', 'الكود', 'text', 'مثال: SOKHNA10')}
         <label className="block text-xs text-mist"><span className="block mb-1">نوع الخصم</span><select className="field" value={draft.discount_type} onChange={e => setDraft(d => ({ ...d, discount_type: e.target.value as Draft['discount_type'] }))}><option value="percent">نسبة مئوية</option><option value="fixed">مبلغ ثابت</option></select></label>
+        <label className="block text-xs text-mist sm:col-span-2"><span className="block mb-1">الخصم يُطبَّق على</span><select className="field" value={draft.applies_to} onChange={e => setDraft(d => ({ ...d, applies_to: e.target.value as PromoScope }))}>{PROMO_SCOPES.map(s => <option key={s} value={s}>{SCOPE_LABEL[s]}</option>)}</select>
+          {draft.applies_to === 'vendor' && <span className="block mt-1 text-amber-700">تحذير: الخصم ده هيتخصم من قيمة أصناف المطعم.</span>}
+          {draft.applies_to === 'all' && <span className="block mt-1 text-mist">الخصم بياكل رسوم الخدمة الأول، وبعدين التوصيل، وما يوصلش للأصناف غير لو أكبر منهم.</span>}
+        </label>
         {input('discount_value', draft.discount_type === 'percent' ? 'النسبة (%)' : 'المبلغ (ج.م)', 'number')}
         {draft.discount_type === 'percent' && input('max_discount_egp', 'أقصى خصم (اختياري، ج.م)', 'number')}
         {input('minimum_subtotal_egp', 'أقل قيمة أصناف (ج.م)', 'number')}
@@ -80,7 +85,7 @@ export default function PromoCodesTab({ restaurants, compounds }: { restaurants:
     </div>
     <div className="space-y-3">
       <div className="flex items-center justify-between"><h2 className="font-bold">الأكواد الحالية</h2><button className="btn-ghost text-sm" onClick={refresh} disabled={loading}>تحديث</button></div>
-      {loading ? <div className="card p-5 text-center text-mist">جارٍ التحميل…</div> : codes.length === 0 ? <div className="card p-5 text-center text-mist">مفيش أكواد خصم لسه</div> : codes.map(p => <div key={p.id} className="card p-4"><div className="flex justify-between gap-3"><div><p className="font-bold" dir="ltr">{p.code}</p><p className="text-xs text-mist mt-1">{p.discount_type === 'percent' ? String(p.discount_value) + '%' : String(p.discount_value) + ' ج.م'} · استُخدم {p.redemption_count}{p.max_redemptions ? ' من ' + p.max_redemptions : ''}</p><p className="text-xs text-mist mt-1">{p.restaurant_id ? restaurants.find(r => r.id === p.restaurant_id)?.name : 'كل المطاعم'} · {p.compound_id ? compounds.find(c => c.id === p.compound_id)?.name : 'كل الأماكن'}</p></div><span className={status(p) === 'شغّال' ? 'badge-active' : 'badge-closed'}>{status(p)}</span></div><div className="flex gap-2 mt-3"><button className="btn-ghost flex-1 text-sm" disabled={busy} onClick={() => startEdit(p)}>تعديل</button><button className="btn-ghost flex-1 text-sm" disabled={busy} onClick={() => toggle(p)}>{p.active ? 'إيقاف' : 'تشغيل'}</button></div></div>)}
+      {loading ? <div className="card p-5 text-center text-mist">جارٍ التحميل…</div> : codes.length === 0 ? <div className="card p-5 text-center text-mist">مفيش أكواد خصم لسه</div> : codes.map(p => <div key={p.id} className="card p-4"><div className="flex justify-between gap-3"><div><p className="font-bold" dir="ltr">{p.code}</p><p className="text-xs text-mist mt-1">{p.discount_type === 'percent' ? String(p.discount_value) + '%' : String(p.discount_value) + ' ج.م'} · استُخدم {p.redemption_count}{p.max_redemptions ? ' من ' + p.max_redemptions : ''}</p><p className={p.applies_to === 'vendor' ? 'text-xs mt-1 text-amber-700 font-semibold' : 'text-xs text-mist mt-1'}>{SCOPE_LABEL[p.applies_to ?? 'delivery']}</p><p className="text-xs text-mist mt-1">{p.restaurant_id ? restaurants.find(r => r.id === p.restaurant_id)?.name : 'كل المطاعم'} · {p.compound_id ? compounds.find(c => c.id === p.compound_id)?.name : 'كل الأماكن'}</p></div><span className={status(p) === 'شغّال' ? 'badge-active' : 'badge-closed'}>{status(p)}</span></div><div className="flex gap-2 mt-3"><button className="btn-ghost flex-1 text-sm" disabled={busy} onClick={() => startEdit(p)}>تعديل</button><button className="btn-ghost flex-1 text-sm" disabled={busy} onClick={() => toggle(p)}>{p.active ? 'إيقاف' : 'تشغيل'}</button></div></div>)}
     </div>
   </div>
 }

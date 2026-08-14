@@ -9,6 +9,7 @@ import { lineIsStale, priceLine } from '../lib/linePricing'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { track, trackOnce } from '../lib/analytics'
 import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
+import { PROMO_SCOPE_LABEL, type PromoScope } from '../lib/promoScope'
 import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
 import { isItemAvailableNow } from '../lib/itemAvailability'
 import { applyDiscount, effectiveDiscount } from '../lib/discounts'
@@ -96,7 +97,7 @@ export default function CheckoutPage() {
   const [codThresholdFailed, setCodThresholdFailed] = useState(false)
   const [useWallet, setUseWallet] = useState(true)
   const [promoCode, setPromoCode] = useState('')
-  const [promoQuote, setPromoQuote] = useState<{ valid: boolean; discount?: number; reason?: string; minimum?: number } | null>(null)
+  const [promoQuote, setPromoQuote] = useState<{ valid: boolean; discount?: number; reason?: string; minimum?: number; applies_to?: PromoScope } | null>(null)
   const [promoChecking, setPromoChecking] = useState(false)
 
   // Saved addresses, and the default one preselected. Guarded on `customer`
@@ -255,9 +256,15 @@ export default function CheckoutPage() {
   const serviceFee = serviceFeeFor(subtotal, serviceFeePct)
   // A code is only an estimate here. The database validates it again against
   // the final server-priced basket inside the order transaction.
+  //
+  // The fees go with the quote because a code can now be scoped to them: a
+  // delivery-only code is worth a percentage of deliveryFee, not of subtotal.
+  // Quoting before both fees have loaded would price the code off zero and show
+  // the customer a discount the order transaction is about to disagree with, so
+  // this waits for them the same way the confirm button does.
   useEffect(() => {
     const code = promoCode.trim().toUpperCase()
-    if (!code || !cart.restaurantId || !compoundId || subtotal <= 0) {
+    if (!code || !cart.restaurantId || !compoundId || subtotal <= 0 || deliveryFee === null || serviceFee === null) {
       setPromoQuote(null); setPromoChecking(false); return
     }
     let cancelled = false
@@ -265,11 +272,12 @@ export default function CheckoutPage() {
       setPromoChecking(true)
       const { data, error } = await supabase.rpc('quote_promo_code', {
         p_code: code, p_restaurant_id: cart.restaurantId, p_compound_id: compoundId, p_subtotal: subtotal,
+        p_delivery_fee: deliveryFee, p_service_fee: serviceFee,
       })
-      if (!cancelled) { setPromoQuote(error ? { valid: false, reason: 'promo_invalid' } : data as { valid: boolean; discount?: number; reason?: string; minimum?: number }); setPromoChecking(false) }
+      if (!cancelled) { setPromoQuote(error ? { valid: false, reason: 'promo_invalid' } : data as typeof promoQuote); setPromoChecking(false) }
     }, 350)
     return () => { cancelled = true; clearTimeout(timer) }
-  }, [promoCode, cart.restaurantId, compoundId, subtotal])
+  }, [promoCode, cart.restaurantId, compoundId, subtotal, deliveryFee, serviceFee])
   const promoDiscount = promoQuote?.valid ? Number(promoQuote.discount ?? 0) : 0
   const preWalletTotal = subtotal + (deliveryFee ?? 0) + (serviceFee ?? 0) - promoDiscount
   const walletApplied = useWallet ? Math.min(walletBalance, preWalletTotal) : 0
@@ -349,6 +357,7 @@ export default function CheckoutPage() {
         : err?.message.includes('promo_expired') ? 'كود الخصم انتهت صلاحيته'
         : err?.message.includes('promo_minimum_not_met') ? 'الطلب أقل من الحد الأدنى لكود الخصم'
         : err?.message.includes('promo_already_used') ? 'استخدمت كود الخصم ده قبل كده'
+        : err?.message.includes('promo_nothing_to_discount') ? 'كود الخصم مش بيخصم حاجة في الطلب ده'
         : err?.message.includes('promo_limit_reached') ? 'كود الخصم خلص'
         : err?.message.includes('promo_not_available') ? 'الكود ده مش متاح للمطعم أو المنطقة دي'
         : err?.message.includes('promo_invalid') ? 'كود الخصم غير صحيح'
@@ -606,13 +615,14 @@ export default function CheckoutPage() {
           placeholder="مثال: SOKHNA10" maxLength={32} dir="ltr" />
         {promoChecking && <p className="text-xs text-mist mt-2">بنتأكد من الكود…</p>}
         {!promoChecking && promoCode.trim() && promoQuote?.valid && (
-          <p className="text-xs text-emerald-700 font-semibold mt-2">تم تطبيق الخصم: -{promoDiscount} ج.م</p>
+          <p className="text-xs text-emerald-700 font-semibold mt-2">تم تطبيق الخصم على {PROMO_SCOPE_LABEL[promoQuote.applies_to ?? 'all']}: -{promoDiscount} ج.م</p>
         )}
         {!promoChecking && promoCode.trim() && promoQuote && !promoQuote.valid && (
           <p className="text-xs text-red-600 mt-2">
             {promoQuote.reason === 'promo_expired' ? 'الكود منتهي أو لسه ما بدأش'
               : promoQuote.reason === 'promo_minimum_not_met' ? `الحد الأدنى ${promoQuote.minimum ?? ''} ج.م`
               : promoQuote.reason === 'promo_not_available' ? 'الكود مش متاح للمطعم أو المكان ده'
+              : promoQuote.reason === 'promo_nothing_to_discount' ? `الكود ده بيخصم من ${PROMO_SCOPE_LABEL[promoQuote.applies_to ?? 'all']}، ومفيش حاجة يخصم منها في الطلب ده`
               : 'الكود غير صحيح أو غير متاح'}
           </p>
         )}
@@ -687,7 +697,7 @@ export default function CheckoutPage() {
           </span>
         </div>
         {promoDiscount > 0 && (
-          <div className="flex justify-between text-sm text-emerald-700"><span>كود خصم {promoCode.trim().toUpperCase()}</span><span>-{promoDiscount} ج.م</span></div>
+          <div className="flex justify-between text-sm text-emerald-700"><span>كود خصم {promoCode.trim().toUpperCase()} · {PROMO_SCOPE_LABEL[promoQuote?.applies_to ?? 'all']}</span><span>-{promoDiscount} ج.م</span></div>
         )}
         <div className="flex justify-between text-sm text-mist">
           <span>رسوم الخدمة</span>
