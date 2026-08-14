@@ -902,7 +902,7 @@ function KitchenVendor({ rid }: { rid: number }) {
               </button>
             )}
             <button className="btn-ghost w-full !rounded-2xl !text-sm mt-2 !text-red-600 !border-red-400/40"
-              onClick={() => setDeclining(o)}>رفض الطلب</button>
+              onClick={() => { setDeclineError(''); setDeclining(o) }}>رفض الطلب</button>
           </div>
         ) : (
           <>
@@ -1145,7 +1145,7 @@ function KitchenVendor({ rid }: { rid: number }) {
       })()}
 
       {declining && (
-        <div ref={decliningRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true" onClick={() => setDeclining(null)}>
+        <div ref={decliningRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true" onClick={() => { setDeclining(null); setDeclineError('') }}>
           <div className="card !rounded-2xl w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold mb-2">رفض الطلب #{declining.id}</h3>
             <p className="text-sm text-mist mb-4">هيتم إلغاء الطلب وإخطار العميل. متاح فقط قبل بدء التحضير.</p>
@@ -1153,7 +1153,7 @@ function KitchenVendor({ rid }: { rid: number }) {
               <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3">{declineError}</p>
             )}
             <div className="flex gap-3">
-              <button className="btn-ghost !rounded-2xl flex-1" onClick={() => setDeclining(null)}>تراجع</button>
+              <button className="btn-ghost !rounded-2xl flex-1" onClick={() => { setDeclining(null); setDeclineError('') }}>تراجع</button>
               <button className="btn-danger !rounded-2xl flex-1" onClick={decline}>تأكيد الرفض</button>
             </div>
           </div>

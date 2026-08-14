@@ -68,6 +68,14 @@ export default function Supervisor() {
   const firstLoad = useRef(true)
   const { confirmSheet, promptSheet, sheetElement } = useSheets()
   const assigningRef = useDismissable(() => setAssigning(null), !!assigning)
+  // The error banner sits at the top of the page; an escalation card an
+  // action fails on can be scrolled well below it in a long list, so a
+  // failed "يستنى" (or any other resolve action) could look like it silently
+  // did nothing. Scroll the banner into view the moment it has something to say.
+  const errorRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (error) errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }, [error])
 
   async function load() {
     const [o, a, d, live] = await Promise.all([
@@ -252,7 +260,7 @@ export default function Supervisor() {
       </p>
 
       {error && (
-        <div className="bg-red-500/10 rounded-xl p-3 mb-4 flex items-center justify-between gap-3">
+        <div ref={errorRef} className="bg-red-500/10 rounded-xl p-3 mb-4 flex items-center justify-between gap-3">
           <p className="text-sm text-red-700">{error}</p>
           <button className="btn-ghost !py-1.5 text-xs shrink-0" onClick={load}>حدّث</button>
         </div>
