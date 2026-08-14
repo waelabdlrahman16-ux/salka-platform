@@ -1,4 +1,5 @@
 import { useEffect, useState, useId } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { forgetLastStaffHome, promoteCurrentSessionToRole } from '../lib/supabase'
 
@@ -57,7 +58,7 @@ export default function Login() {
         </button>
       </div>
       <p className="text-center text-sm text-mist mt-4">
-        عميل؟ <a className="text-sea" href="/" onClick={forgetLastStaffHome}>اطلب من هنا</a>
+        عميل؟ <Link className="text-sea" to="/" onClick={forgetLastStaffHome}>اطلب من هنا</Link>
       </p>
     </div>
   )

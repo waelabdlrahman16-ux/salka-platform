@@ -64,6 +64,25 @@ function isStaffRoute(pathname: string): boolean {
   return isStaffWorkspace(pathname) || pathname.startsWith('/login')
 }
 
+/** A bad/stale/mistyped URL used to render nothing at all inside <main> --
+ *  no "page not found," no way back, just the header and empty space. Routed
+ *  to the customer home or the staff login screen depending on which side of
+ *  the app the URL was trying to reach, so a mistyped staff path doesn't
+ *  strand someone looking like they're in the wrong app entirely. */
+function NotFound() {
+  const { pathname } = useLocation()
+  const backTo = isStaffWorkspace(pathname) ? '/login' : '/'
+  return (
+    <div className="card p-6 text-center">
+      <p className="font-semibold">الصفحة دي مش موجودة</p>
+      <p className="text-sm text-mist mt-1 mb-4">الرابط ده مش صحيح أو اتغيّر.</p>
+      <Link className="btn-sea !py-2 !px-5 text-sm inline-block" to={backTo}>
+        {isStaffWorkspace(pathname) ? 'رجوع لتسجيل الدخول' : 'رجوع للرئيسية'}
+      </Link>
+    </div>
+  )
+}
+
 function Header() {
   const { pathname } = useLocation()
   const { session, profile, signOut } = useAuth()
@@ -323,6 +342,7 @@ function AppShell() {
             <Route path="/catalog" element={<Protected role="catalog"><Catalog /></Protected>} />
             <Route path="/supervisor" element={<Protected role="supervisor"><Supervisor /></Protected>} />
             <Route path="/observer" element={<Protected role="observer"><Observer /></Protected>} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
       </main>
