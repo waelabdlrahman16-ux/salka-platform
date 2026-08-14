@@ -68,6 +68,7 @@ export default function PromoCodesTab({ restaurants, compounds }: { restaurants:
         <label className="block text-xs text-mist"><span className="block mb-1">نوع الخصم</span><select className="field" value={draft.discount_type} onChange={e => setDraft(d => ({ ...d, discount_type: e.target.value as Draft['discount_type'] }))}><option value="percent">نسبة مئوية</option><option value="fixed">مبلغ ثابت</option></select></label>
         <label className="block text-xs text-mist sm:col-span-2"><span className="block mb-1">الخصم يُطبَّق على</span><select className="field" value={draft.applies_to} onChange={e => setDraft(d => ({ ...d, applies_to: e.target.value as PromoScope }))}>{PROMO_SCOPES.map(s => <option key={s} value={s}>{SCOPE_LABEL[s]}</option>)}</select>
           {draft.applies_to === 'vendor' && <span className="block mt-1 text-amber-700">تحذير: الخصم ده هيتخصم من قيمة أصناف المطعم.</span>}
+          {draft.applies_to === 'platform' && <span className="block mt-1 text-mist">الخصم بياكل رسوم الخدمة الأول، وبعدين التوصيل، وأبدًا ما يوصل لقيمة أصناف المطعم.</span>}
           {draft.applies_to === 'all' && <span className="block mt-1 text-mist">الخصم بياكل رسوم الخدمة الأول، وبعدين التوصيل، وما يوصلش للأصناف غير لو أكبر منهم.</span>}
         </label>
         {input('discount_value', draft.discount_type === 'percent' ? 'النسبة (%)' : 'المبلغ (ج.م)', 'number')}

@@ -9,7 +9,7 @@ const positiveInt = (value: unknown) => Number.isInteger(value) && Number(value)
 const dateValue = (value: unknown) => value == null || value === "" ? null : typeof value === "string" && !Number.isNaN(Date.parse(value)) ? new Date(value).toISOString() : undefined
 // Which part of the bill the code is allowed to discount. Unset means delivery:
 // the safe default is the one that never reaches into the vendor's basket.
-const SCOPES = ["delivery", "service", "vendor", "all"] as const
+const SCOPES = ["delivery", "service", "vendor", "platform", "all"] as const
 const scopeValue = (value: unknown) => value == null || value === "" ? "delivery" : typeof value === "string" && (SCOPES as readonly string[]).includes(value) ? value : null
 
 Deno.serve(async req => {
