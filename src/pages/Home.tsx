@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useDismissable } from '../lib/useDismissable'
@@ -9,6 +9,8 @@ import { BROWSE_KINDS, vendorKind, type VendorKind } from '../lib/categoryArt'
 import Icon from '../components/Icon'
 import BannerRail from '../components/BannerRail'
 import RestaurantCard from '../components/RestaurantCard'
+import FeedAdCard, { type FeedAdCardData } from '../components/FeedAdCard'
+import FeaturedProductsRail, { type FeaturedProductCard } from '../components/FeaturedProductsRail'
 import type { Compound, Discount, Restaurant } from '../lib/types'
 import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
 import { publicCatalog } from '../lib/publicCatalog'
@@ -58,6 +60,48 @@ export default function Home() {
       restaurant_id: number; restaurant_name: string; is_open: boolean }[]
   >([])
   const [foodSearching, setFoodSearching] = useState(false)
+
+  // Ads and featured products dropped BETWEEN restaurant cards further down --
+  // a second ad slot separate from BannerRail, and a cross-restaurant
+  // "featured" shelf. Fetched once, platform-wide (not per-compound): the RLS
+  // policies already gate on active + the time window the same way
+  // BannerRail's own filter does, client-side, as a second check in case the
+  // window boundary lands between the query and the render.
+  const [feedAds, setFeedAds] = useState<FeedAdCardData[]>([])
+  const [featuredProducts, setFeaturedProducts] = useState<FeaturedProductCard[]>([])
+
+  useEffect(() => {
+    const now = Date.now()
+    const inWindow = (starts_at: string | null, ends_at: string | null) =>
+      (!starts_at || new Date(starts_at).getTime() <= now) && (!ends_at || new Date(ends_at).getTime() > now)
+
+    supabase.from('feed_ads').select('id,title,subtitle,image_url,bg_color,link_url,active,sort,starts_at,ends_at')
+      .eq('active', true).order('sort').order('id')
+      .then(({ data, error }) => {
+        if (error) return
+        setFeedAds((data ?? []).filter(a => inWindow(a.starts_at, a.ends_at)))
+      })
+
+    supabase.from('featured_products')
+      .select('menu_item_id,active,sort,starts_at,ends_at,menu_items(id,name,price,image_url,restaurant_id)')
+      .eq('active', true).order('sort').order('id')
+      .then(({ data, error }) => {
+        if (error) return
+        const cards = (data ?? [])
+          .filter(row => inWindow(row.starts_at, row.ends_at) && row.menu_items)
+          .map(row => {
+            const item = row.menu_items as unknown as { id: number; name: string; price: number; image_url: string | null; restaurant_id: number }
+            return { menu_item_id: item.id, restaurant_id: item.restaurant_id, name: item.name, price: item.price, image_url: item.image_url }
+          })
+        setFeaturedProducts(cards)
+      })
+  }, [])
+
+  // Coverage-safe: `restaurants` already reflects which vendors deliver to
+  // the chosen compound (publicCatalog('restaurants', {compoundId}) above),
+  // so a featured item whose restaurant does not deliver here is dropped
+  // rather than promoting a dish the customer cannot actually order.
+  const coveredFeaturedProducts = featuredProducts.filter(p => restaurants.some(r => r.id === p.restaurant_id))
 
   function loadCompounds() {
     setCompoundsFailed(false)
@@ -298,6 +342,28 @@ export default function Home() {
     </div>
   ) : null
 
+  // Interleave the restaurant list with the featured-products shelf (once,
+  // after the 3rd card) and feed ads (round-robin, every 5th card after
+  // that). Built as a flat node array rather than nested conditionals inside
+  // the .map() below so the insertion points are declared once, here, and the
+  // render loop just walks the result.
+  const restaurantFeed: ReactNode[] = []
+  let adCursor = 0
+  openRestaurants.forEach((r, i) => {
+    restaurantFeed.push(
+      <RestaurantCard key={r.id} restaurant={r} etaMinutes={selected ? eta(r) : null} discountLabel={discountLabels.get(r.id)} />
+    )
+    const position = i + 1
+    if (position === 3 && coveredFeaturedProducts.length > 0) {
+      restaurantFeed.push(<FeaturedProductsRail key="featured-products" items={coveredFeaturedProducts} />)
+    }
+    if (position % 5 === 0 && feedAds.length > 0) {
+      const ad = feedAds[adCursor % feedAds.length]
+      adCursor += 1
+      restaurantFeed.push(<FeedAdCard key={`feed-ad-${position}`} ad={ad} />)
+    }
+  })
+
   return (
     <div>
       {/* The place is not a secondary control, it is the decision that governs
@@ -483,14 +549,7 @@ export default function Home() {
                 {kind ? `مفيش مطاعم ${kind} بتوصل لمكانك حاليًا` : 'لا يوجد مطاعم بتوصل لمكانك حاليًا'}
               </p>
             )}
-            {openRestaurants.map(r => (
-              <RestaurantCard
-                key={r.id}
-                restaurant={r}
-                etaMinutes={selected ? eta(r) : null}
-                discountLabel={discountLabels.get(r.id)}
-              />
-            ))}
+            {restaurantFeed}
 
             {/* Closed vendors, collected. Still reachable -- people browse a
                 menu before a place opens -- but no longer taking up half the

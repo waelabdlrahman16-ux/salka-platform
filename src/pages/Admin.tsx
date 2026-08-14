@@ -21,6 +21,8 @@ import { vendorOperation } from '../lib/vendorOperations'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import Icon from '../components/Icon'
 import BannersAdmin from '../components/BannersAdmin'
+import FeedAdsAdmin from '../components/FeedAdsAdmin'
+import FeaturedProductsAdmin from '../components/FeaturedProductsAdmin'
 import PrescriptionLink from '../components/PrescriptionLink'
 import MenuItemEditor from '../components/MenuItemEditor'
 import AddMenuItemModal from '../components/AddMenuItemModal'
@@ -103,7 +105,7 @@ function AccountActionsMenu({ busy, onChangeEmail, onResetPassword, onCustomPass
   )
 }
 
-type Tab = 'daily' | 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet' | 'banners' | 'refunds' | 'customers' | 'compounds' | 'promos'
+type Tab = 'daily' | 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet' | 'banners' | 'feed_ads' | 'featured_products' | 'refunds' | 'customers' | 'compounds' | 'promos'
 
 // What is actually owed back, decided by the server. A COD order only ever took
 // the 50% deposit, so refunding `total` would be a gift -- and that is exactly
@@ -156,6 +158,8 @@ const TABS: { key: Tab; label: string; group: TabGroup }[] = [
 
   { key: 'menu', label: 'المطاعم والمنيو', group: 'catalog' },
   { key: 'banners', label: '📣 الإعلانات', group: 'catalog' },
+  { key: 'feed_ads', label: '📣 إعلانات بين المطاعم', group: 'catalog' },
+  { key: 'featured_products', label: '⭐ أصناف مميزة', group: 'catalog' },
 
   { key: 'compounds', label: 'الكومباوندات والتوصيل', group: 'places' },
   { key: 'coverage', label: 'مين بيوصّل لفين', group: 'places' },
@@ -2664,6 +2668,8 @@ export default function Admin() {
       {tab === 'customers' && <CustomersTab />}
 
       {tab === 'banners' && <BannersAdmin />}
+      {tab === 'feed_ads' && <FeedAdsAdmin />}
+      {tab === 'featured_products' && <FeaturedProductsAdmin restaurants={restaurants} />}
 
       {tab === 'settings' && (
         <div className="space-y-3">
