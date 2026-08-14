@@ -49,6 +49,7 @@ type CustomerCancelReason = typeof CUSTOMER_CANCEL_REASONS[number]['code']
 interface TrackData {
   order: {
     id: number; status: string; subtotal: number; delivery_fee: number; service_fee: number; wallet_used: number; total: number
+    promo_discount: number | null; promo_code: string | null
     zone: string; unit_number: string; address_notes: string; restaurant_name: string; vendor_type: string | null
     ready_at: string | null; scheduled_date: string | null
     created_at: string; sla_minutes: number | null
@@ -951,6 +952,11 @@ export default function Track() {
         <div className="flex justify-between text-sm"><span className="text-mist">التوصيل</span><span>{o.delivery_fee} ج.م</span></div>
         {o.service_fee > 0 && (
           <div className="flex justify-between text-sm"><span className="text-mist">رسوم الخدمة</span><span>{o.service_fee} ج.م</span></div>
+        )}
+        {!!o.promo_discount && o.promo_discount > 0 && (
+          <div className="flex justify-between text-sm text-emerald-700">
+            <span>كود خصم{o.promo_code ? ` ${o.promo_code}` : ''}</span><span>-{o.promo_discount} ج.م</span>
+          </div>
         )}
         {o.wallet_used > 0 && (
           <div className="flex justify-between text-sm text-emerald-700"><span>من رصيدك</span><span>-{o.wallet_used} ج.م</span></div>
