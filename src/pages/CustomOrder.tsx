@@ -13,6 +13,7 @@ import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/plac
 import { publicCatalog } from '../lib/publicCatalog'
 import { customerSessionAccess } from '../lib/customerSessionAccess'
 import { customerAccount } from '../lib/customerAccounts'
+import { cairoToday } from '../lib/cairoTime'
 
 export default function CustomOrder() {
   const fid = useId()
@@ -436,7 +437,7 @@ export default function CustomOrder() {
             const usesSlots = !!v.uses_delivery_slots
             const vSlots = vendorSlots[v.id] ?? []
             const next = vSlots[0]
-            const today = next?.scheduled_date === new Date().toISOString().slice(0, 10)
+            const today = next?.scheduled_date === cairoToday()
             return (
               <button key={v.id}
                 className="card p-3 w-full text-right flex items-center gap-3 hover:border-sea/40 transition-colors"
@@ -635,7 +636,7 @@ export default function CustomOrder() {
           <div className="grid grid-cols-2 gap-2">
             {slots.map(sl => {
               const on = slot?.id === sl.id && slot?.scheduled_date === sl.scheduled_date
-              const today = sl.scheduled_date === new Date().toISOString().slice(0, 10)
+              const today = sl.scheduled_date === cairoToday()
               return (
                 <button key={`${sl.id}-${sl.scheduled_date}`}
                   aria-pressed={on}
@@ -1007,7 +1008,7 @@ export default function CustomOrder() {
           // A scheduled order sent with a button that just says "ابعت الطلب"
           // reaches a customer who thinks it is coming now. Name the moment.
           : scheduled && slot
-            ? `ابعت الطلب — التسليم ${slot.scheduled_date === new Date().toISOString().slice(0, 10) ? 'النهاردة' : 'بكرة'} ${slot.start_time.slice(0, 5)}–${slot.end_time.slice(0, 5)}`
+            ? `ابعت الطلب — التسليم ${slot.scheduled_date === cairoToday() ? 'النهاردة' : 'بكرة'} ${slot.start_time.slice(0, 5)}–${slot.end_time.slice(0, 5)}`
           : rxPath && lines.length === 0 ? 'ابعت الروشتة — هنتصل بيك بالسعر'
           : 'ابعت الطلب — هنتصل بيك بالسعر'}
       </button>

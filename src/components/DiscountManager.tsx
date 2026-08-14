@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { catalogCheck } from '../lib/catalogChecks'
+import { isoToCairoLocalInput, cairoLocalInputToISO } from '../lib/cairoTime'
 import type { Discount } from '../lib/types'
 import Toggle from './Toggle'
 import { useSheets } from './ActionSheets'
@@ -36,7 +37,7 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
     if (data) {
       setDiscountType(data.discount_type); setValue(String(data.value))
       setHasWindow(!!(data.starts_at || data.ends_at))
-      setStartsAt(data.starts_at?.slice(0, 16) ?? ''); setEndsAt(data.ends_at?.slice(0, 16) ?? '')
+      setStartsAt(isoToCairoLocalInput(data.starts_at)); setEndsAt(isoToCairoLocalInput(data.ends_at))
     }
   }
 
@@ -66,8 +67,8 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
       menu_item_id: scope === 'item' ? menuItemId : null,
       category: scope === 'category' ? category : null,
       discount_type: discountType, value: Number(value), active: true,
-      starts_at: hasWindow && startsAt ? new Date(startsAt).toISOString() : null,
-      ends_at: hasWindow && endsAt ? new Date(endsAt).toISOString() : null
+      starts_at: hasWindow && startsAt ? cairoLocalInputToISO(startsAt) : null,
+      ends_at: hasWindow && endsAt ? cairoLocalInputToISO(endsAt) : null
     }
     const { error } = existing
       ? await supabase.from('discounts').update(payload).eq('id', existing.id)

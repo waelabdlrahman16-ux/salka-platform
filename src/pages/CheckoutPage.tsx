@@ -19,6 +19,7 @@ import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/plac
 import { publicCatalog } from '../lib/publicCatalog'
 import { customerSessionAccess } from '../lib/customerSessionAccess'
 import { customerAccount } from '../lib/customerAccounts'
+import { cairoToday } from '../lib/cairoTime'
 
 export default function CheckoutPage() {
   const fid = useId()
@@ -414,7 +415,7 @@ export default function CheckoutPage() {
           <div className="grid grid-cols-2 gap-2">
             {slots.map(sl => {
               const on = slot?.id === sl.id && slot?.scheduled_date === sl.scheduled_date
-              const today = sl.scheduled_date === new Date().toISOString().slice(0, 10)
+              const today = sl.scheduled_date === cairoToday()
               return (
                 <button key={`${sl.id}-${sl.scheduled_date}`} className={`card p-3 text-right ${on ? 'border-sea' : ''}`} onClick={() => setSlot(sl)}>
                   <p className="text-sm font-semibold">{sl.start_time.slice(0, 5)} — {sl.end_time.slice(0, 5)}</p>

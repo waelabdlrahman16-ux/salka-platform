@@ -2,6 +2,7 @@ import { useEffect, useId, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { describeError } from '../lib/rpc'
 import { compressImage } from '../lib/upload'
+import { isoToCairoLocalInput, cairoLocalInputToISO } from '../lib/cairoTime'
 import { useSheets } from './ActionSheets'
 
 interface BannerRow {
@@ -59,8 +60,8 @@ export default function BannersAdmin() {
     setForm(r === 'new' ? { ...BLANK } : {
       title: r.title, subtitle: r.subtitle ?? '', image_url: r.image_url ?? '',
       bg_color: r.bg_color, link_url: r.link_url ?? '', active: r.active,
-      starts_at: r.starts_at ? r.starts_at.slice(0, 16) : '',
-      ends_at: r.ends_at ? r.ends_at.slice(0, 16) : '',
+      starts_at: isoToCairoLocalInput(r.starts_at),
+      ends_at: isoToCairoLocalInput(r.ends_at),
     })
     setEditing(r)
   }
@@ -98,8 +99,8 @@ export default function BannersAdmin() {
       bg_color: form.bg_color,
       link_url: form.link_url.trim() || null,
       active: form.active,
-      starts_at: form.starts_at || null,
-      ends_at: form.ends_at || null,
+      starts_at: cairoLocalInputToISO(form.starts_at),
+      ends_at: cairoLocalInputToISO(form.ends_at),
     }
     const res = editing === 'new'
       ? await supabase.from('banners').insert({ ...payload, sort: rows.length + 1 })

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Compound, Restaurant } from '../lib/types'
 import { PROMO_SCOPES, PROMO_SCOPE_ADMIN_LABEL as SCOPE_LABEL, type PromoScope } from '../lib/promoScope'
+import { isoToCairoLocalInput, cairoLocalInputToISO } from '../lib/cairoTime'
 
 type Promo = { id: number; code: string; active: boolean; discount_type: 'percent' | 'fixed'; discount_value: number; max_discount_egp: number | null; minimum_subtotal_egp: number; applies_to: PromoScope; restaurant_id: number | null; compound_id: number | null; starts_at: string | null; ends_at: string | null; max_redemptions: number | null; max_redemptions_per_customer: number; redemption_count: number }
 type Draft = { code: string; discount_type: 'percent' | 'fixed'; discount_value: string; max_discount_egp: string; minimum_subtotal_egp: string; applies_to: PromoScope; restaurant_id: string; compound_id: string; starts_at: string; ends_at: string; max_redemptions: string; max_redemptions_per_customer: string }
@@ -41,13 +42,13 @@ export default function PromoCodesTab({ restaurants, compounds }: { restaurants:
   function reset() { setDraft(emptyDraft()); setEditing(null); setError('') }
   function startEdit(p: Promo) {
     setEditing(p.id)
-    setDraft({ code: p.code, discount_type: p.discount_type, discount_value: String(p.discount_value), max_discount_egp: p.max_discount_egp == null ? '' : String(p.max_discount_egp), minimum_subtotal_egp: String(p.minimum_subtotal_egp), applies_to: p.applies_to ?? 'delivery', restaurant_id: p.restaurant_id == null ? '' : String(p.restaurant_id), compound_id: p.compound_id == null ? '' : String(p.compound_id), starts_at: p.starts_at?.slice(0,16) ?? '', ends_at: p.ends_at?.slice(0,16) ?? '', max_redemptions: p.max_redemptions == null ? '' : String(p.max_redemptions), max_redemptions_per_customer: String(p.max_redemptions_per_customer) })
+    setDraft({ code: p.code, discount_type: p.discount_type, discount_value: String(p.discount_value), max_discount_egp: p.max_discount_egp == null ? '' : String(p.max_discount_egp), minimum_subtotal_egp: String(p.minimum_subtotal_egp), applies_to: p.applies_to ?? 'delivery', restaurant_id: p.restaurant_id == null ? '' : String(p.restaurant_id), compound_id: p.compound_id == null ? '' : String(p.compound_id), starts_at: isoToCairoLocalInput(p.starts_at), ends_at: isoToCairoLocalInput(p.ends_at), max_redemptions: p.max_redemptions == null ? '' : String(p.max_redemptions), max_redemptions_per_customer: String(p.max_redemptions_per_customer) })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
   async function save() {
     if (!canSave) { setError('اكتب كود صحيح وقيمة خصم أكبر من صفر'); return }
     setBusy(true); setError('')
-    const payload = { id: editing, code: draft.code.trim().toUpperCase(), discount_type: draft.discount_type, discount_value: asNumber(draft.discount_value), max_discount_egp: asNumber(draft.max_discount_egp, true), minimum_subtotal_egp: asNumber(draft.minimum_subtotal_egp), applies_to: draft.applies_to, restaurant_id: asNumber(draft.restaurant_id, true), compound_id: asNumber(draft.compound_id, true), starts_at: draft.starts_at || null, ends_at: draft.ends_at || null, max_redemptions: asNumber(draft.max_redemptions, true), max_redemptions_per_customer: asNumber(draft.max_redemptions_per_customer) }
+    const payload = { id: editing, code: draft.code.trim().toUpperCase(), discount_type: draft.discount_type, discount_value: asNumber(draft.discount_value), max_discount_egp: asNumber(draft.max_discount_egp, true), minimum_subtotal_egp: asNumber(draft.minimum_subtotal_egp), applies_to: draft.applies_to, restaurant_id: asNumber(draft.restaurant_id, true), compound_id: asNumber(draft.compound_id, true), starts_at: cairoLocalInputToISO(draft.starts_at), ends_at: cairoLocalInputToISO(draft.ends_at), max_redemptions: asNumber(draft.max_redemptions, true), max_redemptions_per_customer: asNumber(draft.max_redemptions_per_customer) }
     try { await call(editing ? 'update' : 'create', payload); reset(); await refresh() }
     catch (e) { setError(e instanceof Error && e.message === 'duplicate_code' ? 'الكود مستخدم بالفعل' : 'مش قادرين نحفظ الكود، راجع البيانات وجرب تاني') }
     finally { setBusy(false) }

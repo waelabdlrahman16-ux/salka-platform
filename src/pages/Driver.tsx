@@ -22,6 +22,7 @@ import { vendorNoun } from '../lib/vendorWords'
 import { SkeletonBlock, SkeletonCard } from '../components/Skeleton'
 import { getDeviceId, getDeviceLabel } from '../lib/deviceId'
 import { assignmentStatusLabel, driverStatusLabel } from '../lib/statusLabels'
+import { cairoToday, cairoDayKey, shiftDayKey } from '../lib/cairoTime'
 
 interface PoolOrder {
   id: number; total: number; zone: string
@@ -283,7 +284,7 @@ export default function DriverPage() {
   async function runLoad() {
     if (!id) return
     try {
-      const today = new Date().toISOString().slice(0, 10)
+      const today = cairoToday()
       // supabase-js is created with no timeout, so a request that never settles
       // would pin inFlightRef forever: every later load() would wait on a dead
       // promise, no setState would run, the component would never re-render, and
@@ -749,12 +750,16 @@ export default function DriverPage() {
   // them apart.
   const fmtWhen = (t: string | null) => {
     if (!t) return ''
-    const d = new Date(t)
-    const today = new Date().toDateString()
-    const yday = new Date(Date.now() - 86400000).toDateString()
-    const day = d.toDateString() === today ? '' 
-      : d.toDateString() === yday ? 'امبارح '
-      : `${d.toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', day: '2-digit', month: '2-digit' })} `
+    // Compared as CAIRO calendar days, not the device's own -- a phone left on
+    // UTC (or a driver who just landed from travel) would otherwise mislabel
+    // an order delivered right after Cairo midnight as "today" a device-day
+    // early, or the reverse.
+    const key = cairoDayKey(t)
+    const today = cairoToday()
+    const yday = shiftDayKey(today, -1)
+    const day = key === today ? ''
+      : key === yday ? 'امبارح '
+      : `${new Date(t).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', day: '2-digit', month: '2-digit' })} `
     return day + fmt(t)
   }
 

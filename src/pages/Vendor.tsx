@@ -21,6 +21,7 @@ import type { Compound, DeliverySlotRow, MenuItem, Order, OrderItem, Restaurant 
 import Icon from '../components/Icon'
 import Toggle from '../components/Toggle'
 import { useSheets } from '../components/ActionSheets'
+import { cairoToday, cairoLocalInputToISO } from '../lib/cairoTime'
 
 const KITCHEN = [
   { key: 'new', label: 'طلب جديد', next: 'preparing', action: 'قبول وبدء التحضير' },
@@ -520,10 +521,12 @@ function KitchenVendor({ rid }: { rid: number }) {
     setLoadError('')
     setOrders(o ?? [])
 
-    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
+    // Cairo midnight, not the device's own -- a shared tablet or a phone left
+    // on UTC would otherwise drop or include orders around the actual rollover.
+    const todayStartIso = cairoLocalInputToISO(`${cairoToday()}T00:00`)
     const { data: done, error: dErr } = await supabase.from('orders').select('*')
       .eq('restaurant_id', rid).in('status', ['Delivered', 'Cancelled', 'Failed_Delivery'])
-      .gte('created_at', todayStart.toISOString())
+      .gte('created_at', todayStartIso ?? new Date().toISOString())
       .order('id', { ascending: false }).limit(50)
     if (!dErr) setCompletedToday(done ?? [])
 

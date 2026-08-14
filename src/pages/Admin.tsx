@@ -41,6 +41,7 @@ import Toggle from '../components/Toggle'
 import RestaurantDeliverySettings from '../components/RestaurantDeliverySettings'
 import { useSheets } from '../components/ActionSheets'
 import { useCatalogSync } from '../lib/useCatalogSync'
+import { cairoDayKey, shiftDayKey } from '../lib/cairoTime'
 
 /**
  * The batch load below is a `Promise.all` of raw postgrest queries, each
@@ -178,30 +179,8 @@ const ORDERS_LIMIT = 500
 const LOAD_TIMEOUT_MS = 20000
 const ACTIVE_ASSIGNMENT_STATUSES = ['Offered', 'Accepted', 'Picked_Up', 'Out_for_Delivery']
 
-/**
- * Which CAIRO day a timestamp belongs to, as YYYY-MM-DD.
- *
- * 'en-CA' is the trick: it is the one common locale whose short date format is
- * already ISO order, so this needs no padding or reassembly. The timeZone is
- * the whole point -- an order placed at 01:30 Cairo is 22:30 UTC the previous
- * day, so keying on the raw date would file it under yesterday, and «النهاردة»
- * would quietly drop the small hours.
- */
-const cairoDayKey = (iso: string) =>
-  new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' })
-
-/**
- * Move a YYYY-MM-DD key by whole days, in date space rather than by adding
- * 86400000ms. Egypt observes DST, so a 24-hour subtraction lands on the same
- * calendar day twice a year -- which would make «إمبارح» show today's orders on
- * exactly the day someone is most likely to be reconciling them.
- */
-function shiftDayKey(key: string, delta: number): string {
-  const [y, m, d] = key.split('-').map(Number)
-  const dt = new Date(Date.UTC(y, m - 1, d))
-  dt.setUTCDate(dt.getUTCDate() + delta)
-  return dt.toISOString().slice(0, 10)
-}
+// cairoDayKey / shiftDayKey now live in ../lib/cairoTime -- shared with
+// Driver.tsx and CustomersTab.tsx so every "today" in the app agrees.
 
 type OrderDateFilter = 'today' | 'yesterday' | 'older' | 'all'
 
