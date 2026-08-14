@@ -17,6 +17,7 @@ import EnableSoundButton from '../components/EnableSoundButton'
 import LiveDeliveryDetail from '../components/LiveDeliveryDetail'
 import PhoneOrderForm from '../components/PhoneOrderForm'
 import { useSheets } from '../components/ActionSheets'
+import { OrderLines, PriceBreakdown } from '../components/OrderDetail'
 
 // The operations supervisor.
 //
@@ -333,6 +334,7 @@ export default function Supervisor() {
                   <OrderLines order={o} />
                 </div>
                 <PaymentSummary order={o} />
+                <PriceBreakdown order={o} />
 
                 <button className="btn-sea w-full !py-2 text-sm mt-3"
                   disabled={busy === `ready:${o.id}`}
@@ -376,6 +378,7 @@ export default function Supervisor() {
               <OrderLines order={o} />
             </div>
             <PaymentSummary order={o} />
+                <PriceBreakdown order={o} />
 
             {o.kitchen_status === 'new' ? (
               <>
@@ -431,6 +434,7 @@ export default function Supervisor() {
               <OrderLines order={o} />
             </div>
             <PaymentSummary order={o} />
+                <PriceBreakdown order={o} />
             <button className="btn-sea w-full !py-2 text-sm mt-3" onClick={() => { setAssigning(o); setModalError('') }}>
               عيّن مندوب
             </button>
@@ -502,100 +506,6 @@ export default function Supervisor() {
   )
 }
 
-// The supervisor is reading this list down a phone line to a restaurant, or off
-// their own screen while walking a supermarket aisle, so it has to be the real
-// thing -- sizes, combo and add-ons included, exactly as the kitchen screen
-// would show it.
-//
-// The two kinds of order keep their contents in DIFFERENT PLACES. A catalog
-// order has order_items rows. A pharmacy or market order has none at all --
-// there is no menu to reference -- and carries what the customer typed in
-// orders.request_items instead. Reading only order_items is why every custom
-// order rendered "مفيش أصناف على الطلب ده": an empty shopping list, which is
-// exactly the thing the supervisor is being sent out to buy.
-// admin_live_deliveries() has always merged both; this now matches it.
-function OrderLines({ order }: { order: Order }) {
-  const [lines, setLines] = useState<
-    { id: number; name: string; qty: number; size_name: string | null; combo_name: string | null; addon_names: string[] | null }[] | null
-  >(null)
-  const [failed, setFailed] = useState(false)
-
-  // Only a custom_request carries request_items. A pickup_request is an errand
-  // -- collect a parcel, take the payment -- and legitimately has no item list
-  // at all, so it must NOT be told "the customer typed nothing, ring them".
-  const fromRequest: RequestItem[] | null =
-    order.order_type === 'custom_request' ? (order.request_items ?? []) : null
-
-  useEffect(() => {
-    if (fromRequest) return
-    let live = true
-    supabase.from('order_items').select('id, name, qty, size_name, combo_name, addon_names')
-      .eq('order_id', order.id)
-      .then(({ data, error }) => {
-        if (!live) return
-        // postgrest resolves with { error } rather than rejecting, so an
-        // unchecked read here renders "no items" for a failure -- and the
-        // supervisor dispatches a bag they think is empty.
-        if (error) { setFailed(true); return }
-        setLines((data as any) ?? [])
-      })
-    return () => { live = false }
-  }, [order.id, fromRequest])
-
-  const note = order.request_notes?.trim()
-  const extras = (
-    <>
-      {note && <p className="text-xs text-sandink mt-2 pt-2 border-t border-dashed border-line">📝 {note}</p>}
-      {order.prescription_path && (
-        <p className="text-xs text-sandink mt-1">📎 العميل رفع صورة روشتة — شوفها من شاشة الإدارة</p>
-      )}
-    </>
-  )
-
-  if (fromRequest) {
-    if (fromRequest.length === 0 && !note) {
-      return <p className="text-mist text-xs">العميل ما كتبش أصناف — كلّمه قبل ما تشتري</p>
-    }
-    return (
-      <>
-        {fromRequest.map((l, i) => (
-          <div key={i} className="flex justify-between gap-2">
-            <span className="font-semibold">{l.name}</span>
-            <span className="text-xs text-mist shrink-0">×{l.qty}</span>
-          </div>
-        ))}
-        {extras}
-      </>
-    )
-  }
-
-  if (failed) {
-    return <p className="text-red-600 text-xs">مش قادرين نحمّل أصناف الطلب — حدّث الصفحة قبل ما تكلّم المطعم</p>
-  }
-  if (lines === null) return <p className="text-mist text-xs">…</p>
-  // Still render the note on an item-less order: a pickup_request keeps the
-  // whole instruction there, so returning early would hide the only content.
-  if (lines.length === 0) {
-    return <><p className="text-mist text-xs">مفيش أصناف على الطلب ده</p>{extras}</>
-  }
-
-  return (
-    <>
-      {lines.map(l => (
-        <div key={l.id}>
-          <span className="font-semibold">{l.name} × {l.qty}</span>
-          {(l.combo_name || l.size_name || (l.addon_names && l.addon_names.length > 0)) && (
-            <span className="block text-xs text-mist">
-              {[l.combo_name && `كومبو ${l.combo_name}`, l.size_name, ...(l.addon_names ?? [])]
-                .filter(Boolean).join(' · ')}
-            </span>
-          )}
-        </div>
-      ))}
-      {extras}
-    </>
-  )
-}
 
 function CustomerNote({ order }: { order: Order }) {
   const note = order.customer_note?.trim()
