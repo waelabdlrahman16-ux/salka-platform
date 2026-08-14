@@ -549,6 +549,18 @@ export default function Admin() {
     return () => clearInterval(t)
   }, [])
 
+  // syncFailed and lastSyncAt were tracked but never shown anywhere -- the
+  // board kept displaying the last successful snapshot with no visual
+  // difference from a live one when the 15s poll failed, on the one page
+  // where staff act on it being current (assigning drivers, confirming
+  // InstaPay, settling cash). This is the manualRefresh() the `refreshing`
+  // state above was already written for.
+  async function manualRefresh() {
+    setRefreshing(true)
+    await load(true)
+    setRefreshing(false)
+  }
+
   // The normal 15s board refresh remains the fallback. Realtime makes a menu
   // or restaurant edit made by a vendor visible to the admin immediately.
   useCatalogSync({ refresh: () => load(true), fallbackIntervalMs: 60_000 })
@@ -1563,7 +1575,33 @@ export default function Admin() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">لوحة التحكم</h1>
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <h1 className="text-2xl font-bold">لوحة التحكم</h1>
+        {/* syncFailed/lastSyncAt were tracked since the board's very first
+            version but never shown -- a failed 15s poll left the exact same
+            snapshot on screen as a live one, on the one page where staff act
+            on it being current (assigning drivers, confirming InstaPay,
+            settling cash). */}
+        <div className="flex items-center gap-2 text-xs shrink-0">
+          {lastSyncAt && (
+            <span className={syncFailed ? 'text-red-600 font-semibold' : 'text-mist'}>
+              {syncFailed ? '⚠️ آخر تحديث ناجح' : 'آخر تحديث'}{' '}
+              {new Date(lastSyncAt).toLocaleTimeString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </span>
+          )}
+          <button className="btn-ghost !py-1.5 !px-3 text-xs" onClick={manualRefresh} disabled={refreshing}>
+            {refreshing ? 'جاري التحديث…' : '🔄 حدّث'}
+          </button>
+        </div>
+      </div>
+
+      {syncFailed && (
+        <div className="card p-3 mb-4 border-red-400/50 bg-red-500/5">
+          <p className="text-sm text-red-700 font-semibold">
+            ⚠️ آخر محاولة تحديث فشلت — اللي شايفه دلوقتي ممكن يكون مش أحدث حاجة. جرب "حدّث" فوق.
+          </p>
+        </div>
+      )}
 
       {actionError && (
         <div ref={actionErrorRef} className="card p-3 mb-4 border-red-400/50 bg-red-500/5 flex items-center justify-between gap-3">
@@ -2334,6 +2372,9 @@ export default function Admin() {
             <div className="card p-4 text-center"><p className="text-sm text-mist">أرباح المندوبين</p><p className="text-2xl font-bold mt-1 text-sea">{totalDriver} ج.م</p></div>
             <div className="card p-4 text-center"><p className="text-sm text-mist">أرباح الإدارة</p><p className="text-2xl font-bold mt-1 text-sandink">{totalAdmin} ج.م</p></div>
           </div>
+          {earnings.length === 0 && (
+            <div className="card p-6 text-center text-mist">مفيش أرباح مسجّلة لسه</div>
+          )}
           <div className="space-y-2.5">
             {earnings.map(e => (
               <div key={e.id} className="card p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-sm">
@@ -2821,6 +2862,9 @@ export default function Admin() {
               onClick={addShift}>إضافة</button>
           </div>
 
+          {shifts.length === 0 && (
+            <div className="card p-6 text-center text-mist">مفيش ورديات متسجّلة لسه</div>
+          )}
           <div className="space-y-2.5">
             {shifts.map(sh => {
               const d = drivers.find(x => x.id === sh.driver_id)
