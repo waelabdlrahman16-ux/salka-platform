@@ -24,6 +24,11 @@ export default function Home() {
   const [discountLabels, setDiscountLabels] = useState<Map<number, string>>(new Map())
   const [loading, setLoading] = useState(true)
   const [picking, setPicking] = useState(false)
+  // Whether BannerRail actually has anything to show, so the pharmacy/
+  // supermarket shortcuts can sit under real ads but move up to fill that
+  // same slot the moment there are none -- never a gap, never two things
+  // fighting for the top of the screen.
+  const [hasBanners, setHasBanners] = useState(false)
   // In the URL for the same reason as the restaurant categories: on a phone,
   // Back is how people undo a filter, and as state it would instead take them
   // off the home screen entirely.
@@ -278,6 +283,21 @@ export default function Home() {
     catalogRestaurants.filter(r => vendorKind(r.category) === k && r.is_open).length
   const filtered = search.trim() ? compounds.filter(c => c.name.toLowerCase().includes(search.toLowerCase())) : []
 
+  // Needs a compound the same way the restaurant list does -- without one
+  // there is nothing for either destination to deliver to yet.
+  const quickAccessTiles = compoundId ? (
+    <div className="grid grid-cols-2 gap-3 mb-4">
+      <Link to="/custom-order?type=supermarket" className="card p-3 flex flex-col items-center text-center gap-2 hover:border-sea/50 transition-colors">
+        <span className="w-11 h-11 rounded-xl grid place-items-center text-2xl shrink-0" style={{ background: 'rgba(212,163,42,.12)' }}>🛒</span>
+        <span className="font-bold text-sm leading-tight">سوبر ماركت</span>
+      </Link>
+      <Link to="/custom-order?type=pharmacy" className="card p-3 flex flex-col items-center text-center gap-2 hover:border-sea/50 transition-colors">
+        <span className="w-11 h-11 rounded-xl grid place-items-center text-2xl shrink-0" style={{ background: 'rgba(200,60,60,.1)' }}>💊</span>
+        <span className="font-bold text-sm leading-tight">صيدلية</span>
+      </Link>
+    </div>
+  ) : null
+
   return (
     <div>
       {/* The place is not a secondary control, it is the decision that governs
@@ -322,8 +342,16 @@ export default function Home() {
       )}
 
       {/* Ads sit above the fee strip but below the place picker: the compound
-          decides everything else on this screen, so it stays first. */}
-      {!picking && <BannerRail />}
+          decides everything else on this screen, so it stays first.
+
+          صيدلية / سوبر ماركت share that same top-of-content slot with the ad
+          rail rather than owning a fixed position of their own: under real
+          banners when there are any (an admin who paid for that space should
+          not have it shared), but promoted above -- filling the gap, not
+          leaving one -- the moment there are none. */}
+      {!picking && !hasBanners && quickAccessTiles}
+      {!picking && <BannerRail onBanners={setHasBanners} />}
+      {!picking && hasBanners && quickAccessTiles}
 
       {/* The delivery-fee strip that used to sit here has moved onto each
           restaurant card. It still has to appear before the cart -- the reason

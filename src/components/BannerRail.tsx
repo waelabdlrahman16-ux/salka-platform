@@ -41,7 +41,7 @@ export interface Banner {
  * customer sees. Nothing is lost: previewing banners happens in the banners
  * tab, not on the customer home screen.
  */
-export default function BannerRail() {
+export default function BannerRail({ onBanners }: { onBanners?: (has: boolean) => void }) {
   const nav = useNavigate()
   const [banners, setBanners] = useState<Banner[]>([])
 
@@ -64,11 +64,14 @@ export default function BannerRail() {
       .then(({ data, error }) => {
         if (error) return
         const now = Date.now()
-        setBanners((data ?? []).filter(b =>
+        const visible = (data ?? []).filter(b =>
           (!b.starts_at || new Date(b.starts_at).getTime() <= now) &&
           (!b.ends_at   || new Date(b.ends_at).getTime()   >  now)
-        ))
+        )
+        setBanners(visible)
+        onBanners?.(visible.length > 0)
       })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   if (banners.length === 0) return null
