@@ -57,6 +57,7 @@ interface TrackData {
     order_type: 'catalog' | 'custom_request' | 'pickup_request'
     request_items: { name: string; qty: number }[] | null
     request_notes: string | null
+    customer_note: string | null
     pricing_status: 'n/a' | 'pending_quote' | 'confirmed'
     payment_mode: 'prepaid' | 'driver_pays' | null
     collect_amount: number | null
@@ -786,6 +787,9 @@ export default function Track() {
         <div>
           <p className="font-semibold text-sm">{o.zone}</p>
           <p className="text-sm text-mist">وحدة {o.unit_number}{o.address_notes ? ` — ${o.address_notes}` : ''}</p>
+          {o.customer_note?.trim() && (
+            <p className="text-sm text-mist mt-1">📝 {o.customer_note}</p>
+          )}
         </div>
       </div>
 
