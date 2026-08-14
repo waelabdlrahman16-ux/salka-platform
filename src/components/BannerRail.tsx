@@ -133,12 +133,6 @@ export default function BannerRail({ onBanners }: { onBanners?: (has: boolean) =
                   className="absolute inset-0 w-full h-full object-cover" />
               )}
 
-              {/* Only drawn over an image, and only on the text side. Without it
-                  white copy over a light photo is unreadable, which is exactly
-                  the sort of thing nobody checks before uploading artwork. */}
-              {b.image_url && (
-                <span className="absolute inset-0 bg-gradient-to-l from-black/70 via-black/25 to-transparent" />
-              )}
 
               <span className="relative flex flex-col justify-center h-full px-4 py-3">
                 {b.title && (
