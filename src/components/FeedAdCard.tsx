@@ -41,9 +41,6 @@ export default function FeedAdCard({ ad }: { ad: FeedAdCardData }) {
           onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
           className="absolute inset-0 w-full h-full object-cover" />
       )}
-      {ad.image_url && (
-        <span className="absolute inset-0 bg-gradient-to-l from-black/70 via-black/25 to-transparent" />
-      )}
       <span className="relative flex flex-col justify-center h-full px-4">
         <span className="text-white font-bold text-base leading-snug drop-shadow-sm">{ad.title}</span>
         {ad.subtitle && <span className="text-white/90 text-xs mt-1 drop-shadow-sm">{ad.subtitle}</span>}

@@ -133,7 +133,6 @@ export default function BannerRail({ onBanners }: { onBanners?: (has: boolean) =
                   className="absolute inset-0 w-full h-full object-cover" />
               )}
 
-
               <span className="relative flex flex-col justify-center h-full px-4 py-3">
                 {b.title && (
                   <span className="text-white font-bold text-base leading-snug drop-shadow-sm">{b.title}</span>
