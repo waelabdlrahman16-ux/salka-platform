@@ -7,7 +7,7 @@ import { useSheets } from './ActionSheets'
 
 interface BannerRow {
   id: number
-  title: string
+  title: string | null
   subtitle: string | null
   image_url: string | null
   bg_color: string
@@ -58,7 +58,7 @@ export default function BannersAdmin() {
   function startEdit(r: BannerRow | 'new') {
     setError('')
     setForm(r === 'new' ? { ...BLANK } : {
-      title: r.title, subtitle: r.subtitle ?? '', image_url: r.image_url ?? '',
+      title: r.title ?? '', subtitle: r.subtitle ?? '', image_url: r.image_url ?? '',
       bg_color: r.bg_color, link_url: r.link_url ?? '', active: r.active,
       starts_at: isoToCairoLocalInput(r.starts_at),
       ends_at: isoToCairoLocalInput(r.ends_at),
@@ -83,11 +83,12 @@ export default function BannersAdmin() {
   }
 
   async function save() {
-    // Nothing here is required any more. A banner can legitimately be an image
-    // with no words on it at all -- the artwork carries the message and a
-    // forced headline just paints text over someone's design.
-    if (!form.title.trim() && !form.subtitle.trim() && !form.image_url) {
-      setError('اكتب عنوان أو حط صورة — لازم يكون فيه حاجة تتعرض')
+    // Title, subtitle and image are all optional -- a banner can legitimately
+    // be an image with no words on it at all, or just a colour. The window is
+    // the one thing that has to be there: an untimed banner is how one got
+    // left switched on with a two-minute schedule nobody noticed had expired.
+    if (!form.starts_at || !form.ends_at) {
+      setError('لازم تحدد معاد البداية والنهاية')
       return
     }
     if (!LINK_OK(form.link_url)) { setError('اللينك لازم يبدأ بـ / أو https://'); return }
@@ -134,7 +135,7 @@ export default function BannersAdmin() {
   }
 
   async function remove(r: BannerRow) {
-    if (!(await confirmSheet({ title: `حذف «${r.title}»؟`, danger: true, confirmLabel: 'احذف' }))) return
+    if (!(await confirmSheet({ title: `حذف «${r.title || 'إعلان من غير عنوان'}»؟`, danger: true, confirmLabel: 'احذف' }))) return
     setError('')
     const { error } = await supabase.from('banners').delete().eq('id', r.id)
     if (error) { setError(describeError(error.message)); return }
@@ -212,14 +213,14 @@ export default function BannersAdmin() {
               : <p className="text-xs text-mist mt-1">سيبه فاضي لو الإعلان للعرض بس.</p>}</div>
 
           <div className="grid grid-cols-2 gap-2">
-            <div><label className="label" htmlFor={`${fid}-from`}>يبدأ</label>
-              <input id={`${fid}-from`} type="datetime-local" className="field" value={form.starts_at}
+            <div><label className="label" htmlFor={`${fid}-from`}>يبدأ *</label>
+              <input id={`${fid}-from`} type="datetime-local" required className="field" value={form.starts_at}
                 onChange={e => setForm(f => ({ ...f, starts_at: e.target.value }))} /></div>
-            <div><label className="label" htmlFor={`${fid}-to`}>ينتهي</label>
-              <input id={`${fid}-to`} type="datetime-local" className="field" value={form.ends_at}
+            <div><label className="label" htmlFor={`${fid}-to`}>ينتهي *</label>
+              <input id={`${fid}-to`} type="datetime-local" required className="field" value={form.ends_at}
                 onChange={e => setForm(f => ({ ...f, ends_at: e.target.value }))} /></div>
           </div>
-          <p className="text-xs text-mist -mt-1">سيبهم فاضيين عشان يفضل شغال على طول.</p>
+          <p className="text-xs text-mist -mt-1">الاتنين لازم يتحددوا — العنوان والصورة اختياريين.</p>
 
           <label className="flex items-center gap-2.5 min-h-[44px] cursor-pointer">
             <input type="checkbox" className="w-5 h-5 accent-sea" checked={form.active}
@@ -229,7 +230,7 @@ export default function BannersAdmin() {
 
           <div className="flex gap-2">
             <button className="btn-ghost flex-1 text-sm" onClick={() => setEditing(null)} disabled={saving}>إلغاء</button>
-            <button className="btn-sea flex-1 text-sm" onClick={save} disabled={saving || uploading || (!form.title.trim() && !form.subtitle.trim() && !form.image_url)}>
+            <button className="btn-sea flex-1 text-sm" onClick={save} disabled={saving || uploading || !form.starts_at || !form.ends_at}>
               {saving ? 'جاري الحفظ…' : 'حفظ'}
             </button>
           </div>
@@ -248,7 +249,7 @@ export default function BannersAdmin() {
               {r.image_url && <img src={r.image_url} alt="" className="absolute inset-0 w-full h-full object-cover" />}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm truncate">{r.title}</p>
+              <p className="font-semibold text-sm truncate">{r.title || <span className="text-mist font-normal">من غير عنوان</span>}</p>
               <p className="text-xs text-mist truncate">
                 {r.link_url || 'من غير لينك'}{note ? ` · ${note}` : ''}
               </p>

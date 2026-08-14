@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 
 export interface Banner {
   id: number
-  title: string
+  title: string | null
   subtitle: string | null
   image_url: string | null
   bg_color: string
@@ -105,7 +105,7 @@ export default function BannerRail({ onBanners }: { onBanners?: (has: boolean) =
             <Tag
               key={b.id}
               {...(clickable ? { onClick: () => open(b), type: 'button' as const } : {})}
-              aria-label={clickable ? `${b.title}${b.subtitle ? ` — ${b.subtitle}` : ''}` : undefined}
+              aria-label={clickable ? [b.title, b.subtitle].filter(Boolean).join(' — ') || undefined : undefined}
               className={`relative shrink-0 snap-start w-[86%] sm:w-[420px] h-[188px] rounded-2xl overflow-hidden
                           text-right ${clickable ? 'cursor-pointer' : ''}`}
               style={{ background: b.bg_color }}>
@@ -122,7 +122,7 @@ export default function BannerRail({ onBanners }: { onBanners?: (has: boolean) =
                 // complete=false, naturalWidth=0 forever, while `new Image()`
                 // on the exact same URL loaded it at 704x704 immediately. The
                 // customer saw a flat colour block where the advert should be.
-                <img src={b.image_url} alt={b.title} loading="eager" fetchPriority="high"
+                <img src={b.image_url} alt={b.title ?? ''} loading="eager" fetchPriority="high"
                   onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
                   className="absolute inset-0 w-full h-full object-cover" />
               )}
@@ -135,7 +135,9 @@ export default function BannerRail({ onBanners }: { onBanners?: (has: boolean) =
               )}
 
               <span className="relative flex flex-col justify-center h-full px-4 py-3">
-                <span className="text-white font-bold text-base leading-snug drop-shadow-sm">{b.title}</span>
+                {b.title && (
+                  <span className="text-white font-bold text-base leading-snug drop-shadow-sm">{b.title}</span>
+                )}
                 {b.subtitle && (
                   <span className="text-white/90 text-xs mt-1 drop-shadow-sm">{b.subtitle}</span>
                 )}
