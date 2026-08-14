@@ -97,6 +97,12 @@ export default function BannerRail({ onBanners }: { onBanners?: (has: boolean) =
 
   return (
     <div className="mb-4">
+      {/* snap-center, not snap-start: start-aligned in RTL rests each card
+          against the right edge, so the NEXT banner peeked in on the left but
+          the PREVIOUS one was already fully scrolled past -- a peek on only
+          one side. Centering a card narrower than the viewport leaves a
+          sliver of the neighbour on both edges at once, in either direction,
+          which is what "coming next" is supposed to look like. */}
       <div className="flex gap-3 overflow-x-auto pb-1 -mx-4 px-4 snap-x snap-mandatory scrollbar-none">
         {banners.map(b => {
           const clickable = !!b.link_url
@@ -106,7 +112,7 @@ export default function BannerRail({ onBanners }: { onBanners?: (has: boolean) =
               key={b.id}
               {...(clickable ? { onClick: () => open(b), type: 'button' as const } : {})}
               aria-label={clickable ? [b.title, b.subtitle].filter(Boolean).join(' — ') || undefined : undefined}
-              className={`relative shrink-0 snap-start w-[86%] sm:w-[420px] h-[188px] rounded-2xl overflow-hidden
+              className={`relative shrink-0 snap-center w-[88%] sm:w-[420px] h-[188px] rounded-2xl overflow-hidden
                           text-right ${clickable ? 'cursor-pointer' : ''}`}
               style={{ background: b.bg_color }}>
 
