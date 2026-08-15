@@ -527,33 +527,6 @@ export default function RestaurantDetail() {
                       // so the plain price is a starting point there too -- not
                       // only when there are sizes.
                       isFromPrice={itemSizes.length > 0 || itemCombos.length > 0}
-                      // Say what the sheet will actually ask. Taken from the
-                      // item's own option group, so "اتاك كومبو" reads
-                      // "اختار: بيف أو تشيكن" rather than a bare "اختيار".
-                      // «5 أحجام» would be a lie when two of the five are combo
-                      // upgrades rather than sizes. Only claim "sizes" when that
-                      // is all they are.
-                      // The add-on branch used to be `itemGroups[0]?.name`, i.e.
-                      // the name of the FIRST group, while optionCount below
-                      // counted ALL the groups. An item with «الصوص» and
-                      // «الإضافات» therefore rendered «2 الصوص» -- "2 the
-                      // sauce". Only name a group when there is exactly one to
-                      // name; otherwise the neutral noun.
-                      optionLabel={
-                        itemCombos.length > 0 ? 'اختيارات'
-                        : itemSizes.length > 0 ? 'أحجام'
-                        : itemGroups.length === 1 ? itemGroups[0].name
-                        : itemGroups.length > 1 ? 'اختيارات'
-                        : null
-                      }
-                      // How many choices there are, so the pill reads «3 أحجام»
-                      // rather than a bare «اختار» -- the customer can tell
-                      // whether the sheet is worth the tap before taking it.
-                      optionCount={
-                        itemSizes.length > 0 || itemCombos.length > 0
-                          ? itemSizes.length + itemCombos.length
-                          : itemGroups.length
-                      }
                       onAdd={() => cart.add(it, 1)}
                       onRemove={() => cart.add(it, -1)}
                       onCustomize={() => openCustomization(it)}

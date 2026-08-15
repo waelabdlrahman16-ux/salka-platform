@@ -39,7 +39,7 @@ function usefulDescription(item: MenuItem): string | null {
 
 export default function ProductCard({
   item, qty, disabled, onAdd, onRemove, hasOptions, onCustomize, onOpenDetail,
-  displayPrice, originalPrice, isFromPrice, optionLabel, optionCount,
+  displayPrice, originalPrice, isFromPrice,
 }: {
   item: MenuItem
   qty: number
@@ -52,25 +52,11 @@ export default function ProductCard({
   displayPrice: number
   originalPrice?: number
   isFromPrice?: boolean
-  /**
-   * What the options sheet will actually ask, taken from the item's own option
-   * group -- "بيف أو تشيكن", "الحجم". Null falls back to a generic label.
-   */
-  optionLabel?: string | null
-  /**
-   * How many choices that group actually offers, so the pill can say «3 أحجام»
-   * instead of a bare «اختار». The customer then knows why they are being sent
-   * to a sheet before they tap it.
-   */
-  optionCount?: number
 }) {
   const art = artFor(item.category)
   const desc = usefulDescription(item)
   const discountPct = originalPrice != null && originalPrice > 0
     ? (() => { const p = Math.round((1 - displayPrice / originalPrice) * 100); return p >= 1 ? p : null })()
-    : null
-  const optionsChip = optionCount && optionCount > 1 && optionLabel
-    ? `${optionCount} ${optionLabel}`
     : null
 
   return (
@@ -129,20 +115,12 @@ export default function ProductCard({
               خصم <bdi dir="ltr">{discountPct}%</bdi>
             </span>
           )}
-          {/* On the photo, but small and in a corner, because it is a FACT about
-              the item rather than a control -- it tells you a sheet is coming
-              before you tap, instead of ambushing you after. The button itself
-              is down with the price with everything else. */}
-          {/* border + shadow: bg-white/92 alone had no defined edge, so
-              against a light-colored photo (a bun, a plate, foam on a
-              drink) the pill itself vanished and the text looked like it
-              was floating loose on the image rather than sitting on a
-              badge. */}
-          {optionsChip && discountPct == null && (
-            <span className="absolute bottom-1.5 right-1.5 bg-white/95 text-seadeep rounded-full px-2 py-0.5 text-[10px] font-bold border border-black/5 shadow-sm">
-              {optionsChip}
-            </span>
-          )}
+          {/* Removed at Wael's call, 2026-08-15: sat directly on the photo and
+              read as too prominent regardless of styling (tried a plain
+              overlay, then a bordered white pill). The "اختار"/"3 أحجام"-style
+              option button down with the price already tells the customer a
+              sheet is coming before they tap -- this was a second, louder copy
+              of the same fact. */}
         </div>
 
         {/* No reserved min-height. It was holding two lines open on every card

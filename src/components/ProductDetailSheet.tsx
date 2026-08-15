@@ -28,11 +28,17 @@ export default function ProductDetailSheet({
   const overlayRef = useDismissable(onClose)
   const [activeId, setActiveId] = useState(item.id)
   const active = items.find(i => i.id === activeId) ?? item
+  const [imgFailed, setImgFailed] = useState(false)
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
     return () => { document.body.style.overflow = '' }
   }, [])
+
+  // Reset per item -- otherwise a broken photo on one dish would keep the
+  // fallback emoji showing after switching to a related item (setActiveId)
+  // whose own photo is fine.
+  useEffect(() => { setImgFailed(false) }, [activeId])
 
   const art = artFor(active.category)
   const itemSizes = sizes.filter(s => s.menu_item_id === active.id)
@@ -52,16 +58,17 @@ export default function ProductDetailSheet({
   const sameCategory = available.filter(i => i.category === active.category)
   const related = (sameCategory.length >= 3 ? sameCategory : available).slice(0, 8)
 
-  // Fixed inset-x-0/bottom-0 on the SHEET itself, not flex/grid alignment on
-  // a wrapping backdrop. Both grid place-items and flex justify-content left
-  // a gap down one side of the sheet on at least one real device (Wael's
-  // installed app, confirmed by screenshot) that no amount of local testing
-  // reproduced -- some box-alignment computation was landing on a narrower
-  // width than the viewport there. Direct inset positioning has no alignment
-  // step to get wrong: inset-x-0 IS full-bleed, unconditionally.
+  // ALWAYS a full-bleed bottom sheet, no sm: desktop-centered variant. The
+  // grid/flex fixes still weren't enough -- confirmed by screenshot that
+  // Wael's installed app renders the sm:640px "centered dialog" branch on an
+  // actual phone screen, meaning the WebView is reporting (or Tailwind's
+  // media query is matching against) a viewport wider than the real device.
+  // Customers only ever see this on that same installed app, so there is no
+  // real desktop case to preserve here -- dropping the breakpoint entirely
+  // removes the whole failure mode instead of chasing why it misfires.
   return (
     <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60" onClick={onClose}>
-      <div className="fixed inset-x-0 bottom-0 sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:w-full sm:max-w-md max-h-[90vh] overflow-y-auto bg-shell rounded-t-2xl sm:rounded-2xl" onClick={e => e.stopPropagation()}>
+      <div className="fixed inset-x-0 bottom-0 w-full max-h-[90vh] overflow-y-auto bg-shell rounded-t-2xl" onClick={e => e.stopPropagation()}>
         {/* aspect-square on a phone is a full-width square, so the name, the
             price and the add button all started below the fold -- the customer
             had to scroll past a picture of a can to find out what it costs.
@@ -74,13 +81,21 @@ export default function ProductDetailSheet({
             being bigger. A vendor with no picture gets a short band instead,
             which reads as "no photo" rather than as a broken image. */}
         <div className={`relative grid place-items-center text-5xl overflow-hidden ${
-            active.image_url ? 'aspect-[4/3] max-h-[30vh]' : 'h-28'}`}
-          style={{ background: active.image_url ? '#F4EEE3' : art.tint }}>
-          {active.image_url
+            active.image_url && !imgFailed ? 'aspect-[4/3] max-h-[30vh]' : 'h-28'}`}
+          style={{ background: active.image_url && !imgFailed ? '#F4EEE3' : art.tint }}>
+          {active.image_url && !imgFailed
             // Fills the frame, always. Same reasoning as the grid card: with
             // `contain`, every photo was a different shape inside the same box
             // and the sheet opened on a picture floating in beige.
-            ? <img src={active.image_url} alt={active.name} className="w-full h-full object-cover" />
+            //
+            // onError: a broken URL (404, dropped CDN request) used to leave
+            // this exact box empty -- image_url was truthy so the emoji
+            // branch never ran, and nothing else filled the frame. "Sometimes
+            // the sheet opens with no image at all" was this, not a random
+            // glitch: the fallback only ever triggered on a MISSING url, never
+            // a FAILED one.
+            ? <img src={active.image_url} alt={active.name} className="w-full h-full object-cover"
+                onError={() => setImgFailed(true)} />
             : art.emoji}
           <button className="absolute top-3 left-3 bg-white/80 rounded-full w-7 h-7 grid place-items-center text-mist text-sm" onClick={onClose}>✗</button>
           {active.requires_prescription && (
