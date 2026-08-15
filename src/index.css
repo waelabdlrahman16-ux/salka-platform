@@ -2,8 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
-html { font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif; }
-body { @apply bg-night text-foam antialiased; }
+/* overflow-x: hidden -- no page in this app scrolls horizontally at the
+   BODY level; only specific inner carousels (banners, category chips) do,
+   deliberately, via their own overflow-x-auto. Without this guard, any
+   element that bled even a pixel past the viewport (an edge-bleed carousel
+   miscalculating by a rounding error, e.g.) gave real iOS Safari a reason to
+   allow horizontal elastic rubber-band scroll on the whole page -- and a
+   `position: fixed` bottom sheet opened during or right after that bounce
+   can render offset from the true viewport edge on iOS WebKit, which is the
+   most likely explanation for a full-height gap down one side of a sheet
+   that measures as a perfect 0-to-100%-width box in every other engine. */
+html { font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif; overflow-x: hidden; }
+body { @apply bg-night text-foam antialiased; overflow-x: hidden; }
 
 .card { @apply bg-shell border border-line rounded-xl; }
 

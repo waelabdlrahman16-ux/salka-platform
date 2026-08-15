@@ -156,9 +156,15 @@ export default function ProductDetailSheet({
                           visible edge against the sheet's own white
                           background -- the thumbnail "melted" into the page
                           with nothing marking where the tile actually was. */}
+                      {/* object-cover, not object-contain: contain preserves
+                          the whole (usually non-square) photo and letterboxes
+                          the rest of the square frame, which read as the
+                          image "not filling the tile" -- same fix already
+                          applied to the main sheet photo and every ProductCard
+                          grid tile elsewhere in the app. */}
                       <div className="rounded-xl aspect-square grid place-items-center text-2xl mb-1.5 overflow-hidden border border-line"
                         style={{ background: r.image_url ? '#fff' : rArt.tint }}>
-                        {r.image_url ? <img src={r.image_url} alt={r.name} className="w-full h-full object-contain" /> : rArt.emoji}
+                        {r.image_url ? <img src={r.image_url} alt={r.name} className="w-full h-full object-cover" /> : rArt.emoji}
                       </div>
                       <p className="text-xs font-semibold line-clamp-2 leading-snug">{r.name}</p>
                       <p className="text-xs mt-0.5">
