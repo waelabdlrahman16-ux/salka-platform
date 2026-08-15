@@ -7,7 +7,7 @@ import { useSheets } from './ActionSheets'
 
 interface FeedAdRow {
   id: number
-  title: string
+  title: string | null
   subtitle: string | null
   image_url: string | null
   bg_color: string
@@ -63,7 +63,7 @@ export default function FeedAdsAdmin() {
   function startEdit(r: FeedAdRow | 'new') {
     setError('')
     setForm(r === 'new' ? { ...BLANK } : {
-      title: r.title, subtitle: r.subtitle ?? '', image_url: r.image_url ?? '',
+      title: r.title ?? '', subtitle: r.subtitle ?? '', image_url: r.image_url ?? '',
       bg_color: r.bg_color, link_url: r.link_url ?? '', active: r.active,
       starts_at: isoToCairoLocalInput(r.starts_at),
       ends_at: isoToCairoLocalInput(r.ends_at),
@@ -89,11 +89,10 @@ export default function FeedAdsAdmin() {
   }
 
   async function save() {
-    if (!form.title.trim()) { setError('لازم عنوان'); return }
     if (!LINK_OK(form.link_url)) { setError('اللينك لازم يبدأ بـ / أو https://'); return }
     setSaving(true); setError('')
     const payload = {
-      title: form.title.trim(),
+      title: form.title.trim() || null,
       subtitle: form.subtitle.trim() || null,
       image_url: form.image_url.trim() || null,
       bg_color: form.bg_color,
@@ -132,7 +131,7 @@ export default function FeedAdsAdmin() {
   }
 
   async function remove(r: FeedAdRow) {
-    if (!(await confirmSheet({ title: `حذف «${r.title}»؟`, danger: true, confirmLabel: 'احذف' }))) return
+    if (!(await confirmSheet({ title: `حذف «${r.title || 'إعلان من غير عنوان'}»؟`, danger: true, confirmLabel: 'احذف' }))) return
     setError('')
     const { error } = await supabase.from('feed_ads').delete().eq('id', r.id)
     if (error) { setError(describeError(error.message)); return }
@@ -227,7 +226,7 @@ export default function FeedAdsAdmin() {
 
           <div className="flex gap-2">
             <button className="btn-ghost flex-1 text-sm" onClick={() => setEditing(null)} disabled={saving}>إلغاء</button>
-            <button className="btn-sea flex-1 text-sm" onClick={save} disabled={saving || uploading || !form.title.trim()}>
+            <button className="btn-sea flex-1 text-sm" onClick={save} disabled={saving || uploading}>
               {saving ? 'جاري الحفظ…' : 'حفظ'}
             </button>
           </div>
@@ -246,7 +245,7 @@ export default function FeedAdsAdmin() {
               {r.image_url && <img src={r.image_url} alt="" className="absolute inset-0 w-full h-full object-cover" />}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm truncate">{r.title}</p>
+              <p className="font-semibold text-sm truncate">{r.title || 'من غير عنوان'}</p>
               <p className="text-xs text-mist truncate">
                 {r.link_url || 'من غير لينك'}{note ? ` · ${note}` : ''}
               </p>

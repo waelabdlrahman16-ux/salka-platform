@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 
 export interface FeedAdCardData {
   id: number
-  title: string
+  title: string | null
   subtitle: string | null
   image_url: string | null
   bg_color: string
@@ -33,16 +33,16 @@ export default function FeedAdCard({ ad }: { ad: FeedAdCardData }) {
   return (
     <Tag
       {...(clickable ? { onClick: open, type: 'button' as const } : {})}
-      aria-label={clickable ? `${ad.title}${ad.subtitle ? ` — ${ad.subtitle}` : ''}` : undefined}
+      aria-label={clickable ? `${ad.title ?? ''}${ad.subtitle ? ` — ${ad.subtitle}` : ''}` : undefined}
       className={`relative w-full h-[140px] rounded-2xl overflow-hidden text-right mb-3 ${clickable ? 'cursor-pointer' : ''}`}
       style={{ background: ad.bg_color }}>
       {ad.image_url && (
-        <img src={ad.image_url} alt={ad.title} loading="lazy"
+        <img src={ad.image_url} alt={ad.title ?? ''} loading="lazy"
           onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
           className="absolute inset-0 w-full h-full object-cover" />
       )}
       <span className="relative flex flex-col justify-center h-full px-4">
-        <span className="text-white font-bold text-base leading-snug drop-shadow-sm">{ad.title}</span>
+        {ad.title && <span className="text-white font-bold text-base leading-snug drop-shadow-sm">{ad.title}</span>}
         {ad.subtitle && <span className="text-white/90 text-xs mt-1 drop-shadow-sm">{ad.subtitle}</span>}
       </span>
     </Tag>

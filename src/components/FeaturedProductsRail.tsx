@@ -21,7 +21,7 @@ export default function FeaturedProductsRail({ items }: { items: FeaturedProduct
   return (
     <div className="mb-4">
       <h2 className="font-bold text-base mb-2">أصناف مميزة</h2>
-      <div className="flex gap-3 overflow-x-auto pb-1 -mx-4 px-4 snap-x snap-mandatory scrollbar-none">
+      <div className="flex gap-3 overflow-x-auto pb-1 snap-x snap-mandatory scrollbar-none">
         {items.map(it => (
           <Link key={it.menu_item_id} to={`/restaurant/${it.restaurant_id}`}
             className="shrink-0 snap-start w-28 text-right">
