@@ -769,12 +769,24 @@ export default function CheckoutPage() {
         const m: { text: string; field?: string; touch?: string } | null =
           !name.trim() ? { text: 'اكتب اسمك', field: `${fid}-1`, touch: 'name' }
           : !isValidEgyptPhone(phone) ? { text: 'اكتب رقم موبايل صحيح', field: `${fid}-2` }
+          // Checked before !selectedCompound, which is also true on this
+          // failure (the dropdown that would set it has nothing in it). The
+          // generic "اختار مكانك ←" pointed a customer at an empty <select>
+          // with no hint that the list itself failed to load, while the
+          // honest message + reload button sat in a separate banner far
+          // below the fold, easy to miss.
+          : compoundsFailed ? { text: 'مش قادرين نجيب الأماكن دلوقتي — حدّث الصفحة' }
           : !selectedCompound ? { text: 'اختار مكانك', field: `${fid}-3` }
           : !unit.trim() ? { text: 'اكتب رقم الشاليه / الفيلا', field: `${fid}-4`, touch: 'unit' }
           : !optionsLoaded ? { text: 'بنحمّل تفاصيل الأصناف…' }
           : deliveryFee === null ? { text: 'بنحسب رسوم التوصيل…' }
           : serviceFee === null ? { text: 'بنحسب رسوم الخدمة…' }
-          : (scheduled && !slot) ? { text: 'اختار فترة التوصيل' }
+          // slots.length === 0 is a dead end, not a pending choice -- there is
+          // nothing to select, so telling the customer to select one is a
+          // false instruction with no way forward.
+          : (scheduled && !slot) ? (slots.length === 0
+              ? { text: 'مفيش فترات توصيل متاحة دلوقتي — جرب تاني بعد شوية' }
+              : { text: 'اختار فترة التوصيل' })
           : (paymentMethod === 'cod' && codThresholdFailed)
             ? { text: 'مش قادرين نتأكد من شروط الدفع كاش — جرب تاني أو اختار InstaPay' }
           : null
