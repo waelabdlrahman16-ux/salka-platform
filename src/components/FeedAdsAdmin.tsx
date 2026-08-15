@@ -52,6 +52,8 @@ export default function FeedAdsAdmin({ restaurants }: { restaurants: Restaurant[
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
+  // Off by default -- see the matching flag in BannersAdmin.
+  const [manualLink, setManualLink] = useState(false)
 
   async function load() {
     const { data, error } = await supabase.from('feed_ads').select('*').order('sort').order('id')
@@ -70,6 +72,8 @@ export default function FeedAdsAdmin({ restaurants }: { restaurants: Restaurant[
       starts_at: isoToCairoLocalInput(r.starts_at),
       ends_at: isoToCairoLocalInput(r.ends_at),
     })
+    // See the matching comment in BannersAdmin.startEdit.
+    setManualLink(r !== 'new' && !!r.link_url)
     setEditing(r)
   }
 
@@ -205,12 +209,31 @@ export default function FeedAdsAdmin({ restaurants }: { restaurants: Restaurant[
           <div><label className="label" htmlFor={`${fid}-l`}>لما حد يضغط، يروح فين؟</label>
             {/* Same picker as BannersAdmin: restaurant, then item (with a
                 thumbnail, grouped by category) instead of hand-typing
-                /restaurant/9?item=42. Still just an input underneath, so a
-                non-restaurant link works too. */}
-            <LinkItemPicker restaurants={restaurants} onPick={url => setForm(f => ({ ...f, link_url: url }))} />
-            <input id={`${fid}-l`} className={`field mt-2 ${!LINK_OK(form.link_url) ? '!border-red-400' : ''}`}
-              dir="ltr" placeholder="/restaurant/9  أو  https://..." value={form.link_url}
-              onChange={e => setForm(f => ({ ...f, link_url: e.target.value }))} />
+                /restaurant/9?item=42. The raw box only shows on request. */}
+            {!manualLink ? (
+              <>
+                <LinkItemPicker restaurants={restaurants} onPick={url => setForm(f => ({ ...f, link_url: url }))} />
+                {form.link_url && (
+                  <div className="flex items-center gap-2 bg-shellup rounded-lg px-3 py-2.5 mt-2 text-sm">
+                    <span className="flex-1 min-w-0 truncate">✓ هيروح لـ: <bdi dir="ltr">{form.link_url}</bdi></span>
+                    <button type="button" className="text-xs text-red-600 font-semibold shrink-0"
+                      onClick={() => setForm(f => ({ ...f, link_url: '' }))}>مسح</button>
+                  </div>
+                )}
+                <button type="button" className="text-xs text-sea font-semibold mt-2" onClick={() => setManualLink(true)}>
+                  أو اكتب لينك يدوي (مثلاً صفحة العروض أو رابط خارجي)
+                </button>
+              </>
+            ) : (
+              <>
+                <input id={`${fid}-l`} className={`field ${!LINK_OK(form.link_url) ? '!border-red-400' : ''}`}
+                  dir="ltr" placeholder="/restaurant/9  أو  https://..." value={form.link_url}
+                  onChange={e => setForm(f => ({ ...f, link_url: e.target.value }))} />
+                <button type="button" className="text-xs text-sea font-semibold mt-2" onClick={() => setManualLink(false)}>
+                  رجوع للاختيار من القايمة
+                </button>
+              </>
+            )}
             {!LINK_OK(form.link_url)
               ? <p className="text-xs text-red-600 mt-1">لازم يبدأ بـ / (صفحة جوه التطبيق) أو https://</p>
               : <p className="text-xs text-mist mt-1">سيبه فاضي لو الإعلان للعرض بس.</p>}</div>

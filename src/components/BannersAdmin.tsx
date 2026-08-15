@@ -45,6 +45,11 @@ export default function BannersAdmin({ restaurants }: { restaurants: Restaurant[
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
+  // Off by default: the raw /restaurant/9?item=42 text box is the thing this
+  // whole picker exists to stop admins from having to look at, let alone
+  // type into. It only surfaces on request, for the offer-page/external-URL
+  // cases the picker cannot cover.
+  const [manualLink, setManualLink] = useState(false)
 
   async function load() {
     // No .eq('active', true) here: the admin policy returns everything,
@@ -65,6 +70,11 @@ export default function BannersAdmin({ restaurants }: { restaurants: Restaurant[
       starts_at: isoToCairoLocalInput(r.starts_at),
       ends_at: isoToCairoLocalInput(r.ends_at),
     })
+    // An existing link can't be reverse-mapped back onto a restaurant/item
+    // selection, so editing a banner that already has one opens straight to
+    // the raw box -- otherwise the admin sees the picker's empty "اختار
+    // مطعم…" and no sign the banner already links somewhere.
+    setManualLink(r !== 'new' && !!r.link_url)
     setEditing(r)
   }
 
@@ -207,16 +217,35 @@ export default function BannersAdmin({ restaurants }: { restaurants: Restaurant[
               value={form.bg_color} onChange={e => setForm(f => ({ ...f, bg_color: e.target.value }))} /></div>
 
           <div><label className="label" htmlFor={`${fid}-l`}>لما حد يضغط، يروح فين؟</label>
-            {/* The common case is "open this dish" or "open this restaurant",
-                which meant copying an id out of another tab and hand-typing
-                /restaurant/9 -- easy to fat-finger and impossible to verify
-                without opening the link. LinkItemPicker fills the text field
-                instead of replacing it, so a non-restaurant link (an offer
-                page, an external URL) is still just typed in below. */}
-            <LinkItemPicker restaurants={restaurants} onPick={url => setForm(f => ({ ...f, link_url: url }))} />
-            <input id={`${fid}-l`} className={`field mt-2 ${!LINK_OK(form.link_url) ? '!border-red-400' : ''}`}
-              dir="ltr" placeholder="/restaurant/9  أو  https://..." value={form.link_url}
-              onChange={e => setForm(f => ({ ...f, link_url: e.target.value }))} />
+            {/* The picker is the whole interaction now, not a shortcut above
+                a text box the admin still has to look at. The raw
+                /restaurant/9?item=42 field only appears on request (an
+                external URL, the offers page) or when editing a banner
+                whose link the picker cannot reverse-map back to a selection. */}
+            {!manualLink ? (
+              <>
+                <LinkItemPicker restaurants={restaurants} onPick={url => setForm(f => ({ ...f, link_url: url }))} />
+                {form.link_url && (
+                  <div className="flex items-center gap-2 bg-shellup rounded-lg px-3 py-2.5 mt-2 text-sm">
+                    <span className="flex-1 min-w-0 truncate">✓ هيروح لـ: <bdi dir="ltr">{form.link_url}</bdi></span>
+                    <button type="button" className="text-xs text-red-600 font-semibold shrink-0"
+                      onClick={() => setForm(f => ({ ...f, link_url: '' }))}>مسح</button>
+                  </div>
+                )}
+                <button type="button" className="text-xs text-sea font-semibold mt-2" onClick={() => setManualLink(true)}>
+                  أو اكتب لينك يدوي (مثلاً صفحة العروض أو رابط خارجي)
+                </button>
+              </>
+            ) : (
+              <>
+                <input id={`${fid}-l`} className={`field ${!LINK_OK(form.link_url) ? '!border-red-400' : ''}`}
+                  dir="ltr" placeholder="/restaurant/9  أو  https://..." value={form.link_url}
+                  onChange={e => setForm(f => ({ ...f, link_url: e.target.value }))} />
+                <button type="button" className="text-xs text-sea font-semibold mt-2" onClick={() => setManualLink(false)}>
+                  رجوع للاختيار من القايمة
+                </button>
+              </>
+            )}
             {!LINK_OK(form.link_url)
               ? <p className="text-xs text-red-600 mt-1">لازم يبدأ بـ / (صفحة جوه التطبيق) أو https://</p>
               : <p className="text-xs text-mist mt-1">سيبه فاضي لو الإعلان للعرض بس.</p>}</div>
