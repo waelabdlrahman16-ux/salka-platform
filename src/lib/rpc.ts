@@ -116,7 +116,7 @@ export const ERROR_AR: Record<string, string> = {
   already_taken: 'الطلب اتاخد من مندوب تاني',
   wrong_vehicle_type: 'الطلب ده محتاج فان',
   not_ready_yet: 'الطلب لسه بيتحضر، استنى شوية',
-  dispatch_rule_blocked: 'وصلت للحد الأقصى (٣ طلبات) أو الطلب ده في اتجاه مختلف عن طلباتك الحالية',
+  dispatch_rule_blocked: 'وصلت للحد الأقصى (٤ طلبات) أو الطلب ده في اتجاه مختلف عن طلباتك الحالية',
   order_not_ready: 'الطلب لسه بيتحضر — استنى لحد ما المطعم يخليه جاهز',
   must_arrive_first: 'لازم تسجل إنك وصلت المطعم الأول',
   must_confirm_cash_first: 'أكد إنك استلمت الكاش الأول',

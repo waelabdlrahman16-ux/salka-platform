@@ -141,7 +141,7 @@ export default function DriverPage() {
   const [lastSyncAt, setLastSyncAt] = useState<number | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   // A single global slot meant that acting on order A silently swallowed every
-  // action on orders B and C (a driver holds up to 3). The worst case was two
+  // action on orders B and C (a driver holds up to 4). The worst case was two
   // orders at the same compound: confirming cash on A made B's cash checkbox
   // no-op after the driver had already agreed to the irreversible dialog, and B's
   // delivery swipe stayed disabled with nothing on screen explaining why.
@@ -480,7 +480,7 @@ export default function DriverPage() {
         const res = await driverAssignmentAction('acceptAssignment', { assignmentId: a.id, orderId: a.order_id })
         if (!res.ok) {
           await alertSheet(res.code === 'dispatch_rule_blocked'
-            ? 'وصلت للحد الأقصى (٣ طلبات) أو الطلب ده في اتجاه مختلف عن طلباتك الحالية'
+            ? 'وصلت للحد الأقصى (٤ طلبات) أو الطلب ده في اتجاه مختلف عن طلباتك الحالية'
             : 'حصل خطأ، جرب تاني')
           return
         }

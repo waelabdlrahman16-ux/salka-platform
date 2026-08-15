@@ -169,7 +169,7 @@ export default function Supervisor() {
     setModalError('')
     run(`assign:${o.id}`, async () => {
       const res = await dispatchOperation('assign', { orderId: o.id, driverId: driver.id }, {
-        dispatch_rule_blocked: 'المندوب ده وصل للحد الأقصى (٣ طلبات) أو شغال في اتجاه مختلف',
+        dispatch_rule_blocked: 'المندوب ده وصل للحد الأقصى (٤ طلبات) أو شغال في اتجاه مختلف',
         driver_already_declined: 'المندوب ده رفض الطلب ده قبل كده',
         already_assigned: 'الطلب ده معروض على مندوب بالفعل',
       })

@@ -646,7 +646,7 @@ export default function Admin() {
   async function assign(order: Order, driver: Driver) {
     setModalError('')
     const res = await dispatchOperation('assign', { orderId: order.id, driverId: driver.id }, {
-      dispatch_rule_blocked: 'المندوب ده وصل للحد الأقصى (٣ طلبات) أو شغال في اتجاه مختلف',
+      dispatch_rule_blocked: 'المندوب ده وصل للحد الأقصى (٤ طلبات) أو شغال في اتجاه مختلف',
       driver_already_declined: `${driver.name} رفض الطلب ده قبل كده — اختار مندوب تاني`,
       too_many_attempts: 'الطلب ده اتعرض على مندوبين ٥ مرات. ده مشكلة توزيع مش مشكلة إعادة محاولة — كلّم مندوب بنفسك أو الغِ الطلب',
       already_assigned: 'الطلب ده مع مندوب بالفعل — حدّث الصفحة',
@@ -1388,7 +1388,7 @@ export default function Admin() {
     const res = await dispatchOperation('reassign', {
       orderId: a.order_id, driverId: driver.id, reason: 'admin_reassigned'
     }, {
-      dispatch_rule_blocked: 'المندوب ده وصل للحد الأقصى (٣ طلبات) أو شغال في اتجاه مختلف',
+      dispatch_rule_blocked: 'المندوب ده وصل للحد الأقصى (٤ طلبات) أو شغال في اتجاه مختلف',
       wrong_vehicle_type: 'الطلب ده محتاج فان',
       no_active_assignment: 'الطلب ده مابقاش مع مندوب — حدّث الصفحة',
     })
