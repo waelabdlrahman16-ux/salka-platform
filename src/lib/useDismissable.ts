@@ -101,7 +101,19 @@ export function useDismissable<T extends HTMLElement = HTMLDivElement>(
     const marker = dismissable ? `salka-overlay-${Date.now()}-${Math.random()}` : null
     let closedByBack = false
 
+    // A NESTED overlay (a confirmSheet/promptSheet/alertSheet opened from
+    // inside this one -- e.g. MenuItemEditor's "حذف الحجم؟" confirmation)
+    // also runs this same hook, and pushes its OWN marker on top of ours.
+    // Confirming it unmounts it, and ITS cleanup calls history.back() to
+    // unwind its own entry -- but popstate is a window-global event, so OUR
+    // still-mounted listener receives that same event too, even though our
+    // entry was never touched. Landing back on our OWN marker is proof nothing
+    // actually popped past us; only treat this as a real Back-button dismissal
+    // once the current state is no longer ours. Without this check, confirming
+    // any delete inside an already-open editor closed the editor along with
+    // it -- reported as "removing an item closes the whole popup".
     const onPop = () => {
+      if (history.state?.salkaOverlay === marker) return
       closedByBack = true
       onDismissRef.current?.()
     }
