@@ -1111,8 +1111,9 @@ function CancelReasonSheet({ busy, onClose, onConfirm }: {
   const [reason, setReason] = useState<CustomerCancelReason | null>(null)
   const ref = useDismissable<HTMLDivElement>(onClose)
 
+  // flex, not grid place-items-end -- see the note in ProductDetailSheet.
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 grid place-items-end sm:place-items-center"
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center sm:items-center"
       onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}>
       <div ref={ref} role="dialog" aria-modal="true" aria-labelledby="cancel-reason-title"
         className="card w-full sm:max-w-sm p-5 rounded-b-none sm:rounded-2xl">

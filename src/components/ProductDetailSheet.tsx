@@ -52,8 +52,14 @@ export default function ProductDetailSheet({
   const sameCategory = available.filter(i => i.category === active.category)
   const related = (sameCategory.length >= 3 ? sameCategory : available).slice(0, 8)
 
+  // flex, not grid place-items-end: on at least one real device (Wael's
+  // installed app) the grid column track sized narrower than the viewport
+  // before the item's image reported its intrinsic size, leaving a strip of
+  // the dark backdrop visible on one side of the sheet for its full height.
+  // flex's cross-axis alignment doesn't carry that same track-sizing step,
+  // and the child's own w-full still wins regardless.
   return (
-    <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 grid place-items-end sm:place-items-center p-0 sm:p-4" onClick={onClose}>
+    <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center sm:items-center p-0 sm:p-4" onClick={onClose}>
       <div className="w-full sm:max-w-md max-h-[90vh] overflow-y-auto bg-shell rounded-t-2xl sm:rounded-2xl" onClick={e => e.stopPropagation()}>
         {/* aspect-square on a phone is a full-width square, so the name, the
             price and the add button all started below the fold -- the customer

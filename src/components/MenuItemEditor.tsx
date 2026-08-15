@@ -348,8 +348,9 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
     loadOptions()
   }
 
+  // flex, not grid place-items-end -- see the note in ProductDetailSheet.
   return (
-    <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 grid place-items-end sm:place-items-center p-0 sm:p-4" onClick={onClose}>
+    <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center sm:items-center p-0 sm:p-4" onClick={onClose}>
       <div className="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto bg-shellup rounded-t-2xl sm:rounded-2xl p-4" onClick={e => e.stopPropagation()}>
         {sheetElement}
         {writeError && (
