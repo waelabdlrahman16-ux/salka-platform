@@ -116,10 +116,16 @@ export default function Home() {
   // the chosen compound (publicCatalog('restaurants', {compoundId}) above),
   // so a featured item whose restaurant does not deliver here is dropped
   // rather than promoting a dish the customer cannot actually order.
+  //
+  // Also open-safe. `restaurants` holds every covering vendor, open or not --
+  // openRestaurants below is the further filter the main list uses -- and
+  // this shelf skipped that filter entirely, so a closed restaurant's dish
+  // sat right on Home advertising a shop that would just say "مغلق" the
+  // moment someone tapped it.
   const coveredFeaturedProducts = featuredProducts
     .map(p => {
       const r = restaurants.find(r => r.id === p.restaurant_id)
-      return r ? { ...p, restaurant_name: r.name } : null
+      return r && r.is_open ? { ...p, restaurant_name: r.name } : null
     })
     .filter((p): p is FeaturedProductCard => p !== null)
 
