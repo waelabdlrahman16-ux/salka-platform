@@ -52,15 +52,16 @@ export default function ProductDetailSheet({
   const sameCategory = available.filter(i => i.category === active.category)
   const related = (sameCategory.length >= 3 ? sameCategory : available).slice(0, 8)
 
-  // flex, not grid place-items-end: on at least one real device (Wael's
-  // installed app) the grid column track sized narrower than the viewport
-  // before the item's image reported its intrinsic size, leaving a strip of
-  // the dark backdrop visible on one side of the sheet for its full height.
-  // flex's cross-axis alignment doesn't carry that same track-sizing step,
-  // and the child's own w-full still wins regardless.
+  // Fixed inset-x-0/bottom-0 on the SHEET itself, not flex/grid alignment on
+  // a wrapping backdrop. Both grid place-items and flex justify-content left
+  // a gap down one side of the sheet on at least one real device (Wael's
+  // installed app, confirmed by screenshot) that no amount of local testing
+  // reproduced -- some box-alignment computation was landing on a narrower
+  // width than the viewport there. Direct inset positioning has no alignment
+  // step to get wrong: inset-x-0 IS full-bleed, unconditionally.
   return (
-    <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center sm:items-center p-0 sm:p-4" onClick={onClose}>
-      <div className="w-full sm:max-w-md max-h-[90vh] overflow-y-auto bg-shell rounded-t-2xl sm:rounded-2xl" onClick={e => e.stopPropagation()}>
+    <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60" onClick={onClose}>
+      <div className="fixed inset-x-0 bottom-0 sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:w-full sm:max-w-md max-h-[90vh] overflow-y-auto bg-shell rounded-t-2xl sm:rounded-2xl" onClick={e => e.stopPropagation()}>
         {/* aspect-square on a phone is a full-width square, so the name, the
             price and the add button all started below the fold -- the customer
             had to scroll past a picture of a can to find out what it costs.
@@ -135,7 +136,12 @@ export default function ProductDetailSheet({
                   const rPrice = applyDiscount(rBasePrice, rDiscount)
                   return (
                     <button key={r.id} className="shrink-0 w-28 text-right" onClick={() => setActiveId(r.id)}>
-                      <div className="rounded-xl aspect-square grid place-items-center text-2xl mb-1.5 overflow-hidden"
+                      {/* border: object-contain on a white background means a
+                          product photo shot on white (most of them) had no
+                          visible edge against the sheet's own white
+                          background -- the thumbnail "melted" into the page
+                          with nothing marking where the tile actually was. */}
+                      <div className="rounded-xl aspect-square grid place-items-center text-2xl mb-1.5 overflow-hidden border border-line"
                         style={{ background: r.image_url ? '#fff' : rArt.tint }}>
                         {r.image_url ? <img src={r.image_url} alt={r.name} className="w-full h-full object-contain" /> : rArt.emoji}
                       </div>

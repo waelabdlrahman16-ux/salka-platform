@@ -348,10 +348,11 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
     loadOptions()
   }
 
-  // flex, not grid place-items-end -- see the note in ProductDetailSheet.
+  // Direct inset positioning on the sheet itself -- see the note in
+  // ProductDetailSheet.
   return (
-    <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center sm:items-center p-0 sm:p-4" onClick={onClose}>
-      <div className="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto bg-shellup rounded-t-2xl sm:rounded-2xl p-4" onClick={e => e.stopPropagation()}>
+    <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60" onClick={onClose}>
+      <div className="fixed inset-x-0 bottom-0 sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:w-full sm:max-w-lg max-h-[90vh] overflow-y-auto bg-shellup rounded-t-2xl sm:rounded-2xl p-4" onClick={e => e.stopPropagation()}>
         {sheetElement}
         {writeError && (
           <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3" role="alert">

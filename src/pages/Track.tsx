@@ -1111,12 +1111,13 @@ function CancelReasonSheet({ busy, onClose, onConfirm }: {
   const [reason, setReason] = useState<CustomerCancelReason | null>(null)
   const ref = useDismissable<HTMLDivElement>(onClose)
 
-  // flex, not grid place-items-end -- see the note in ProductDetailSheet.
+  // Direct inset positioning on the sheet itself -- see the note in
+  // ProductDetailSheet.
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center sm:items-center"
+    <div className="fixed inset-0 z-50 bg-black/50"
       onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}>
       <div ref={ref} role="dialog" aria-modal="true" aria-labelledby="cancel-reason-title"
-        className="card w-full sm:max-w-sm p-5 rounded-b-none sm:rounded-2xl">
+        className="card fixed inset-x-0 bottom-0 sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:w-full sm:max-w-sm p-5 rounded-b-none sm:rounded-2xl">
         <h2 id="cancel-reason-title" className="font-bold text-lg">ليه عايز تلغي الطلب؟</h2>
         <p className="text-xs text-mist mt-1 mb-4">اختار السبب عشان نعرف نصلّح المشكلة.</p>
 

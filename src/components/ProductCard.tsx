@@ -133,8 +133,13 @@ export default function ProductCard({
               the item rather than a control -- it tells you a sheet is coming
               before you tap, instead of ambushing you after. The button itself
               is down with the price with everything else. */}
+          {/* border + shadow: bg-white/92 alone had no defined edge, so
+              against a light-colored photo (a bun, a plate, foam on a
+              drink) the pill itself vanished and the text looked like it
+              was floating loose on the image rather than sitting on a
+              badge. */}
           {optionsChip && discountPct == null && (
-            <span className="absolute bottom-1.5 right-1.5 bg-white/92 text-seadeep rounded-full px-2 py-0.5 text-[10px] font-bold">
+            <span className="absolute bottom-1.5 right-1.5 bg-white/95 text-seadeep rounded-full px-2 py-0.5 text-[10px] font-bold border border-black/5 shadow-sm">
               {optionsChip}
             </span>
           )}

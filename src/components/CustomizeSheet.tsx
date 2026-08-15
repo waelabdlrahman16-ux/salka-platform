@@ -88,10 +88,11 @@ export default function CustomizeSheet({
   })
   const valid = (chosenCombo != null || sizes.length === 0 || sizeId != null) && groupsValid
 
-  // flex, not grid place-items-end -- see the note in ProductDetailSheet.
+  // Direct inset positioning on the sheet itself -- see the note in
+  // ProductDetailSheet.
   return (
-    <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center sm:items-center p-0 sm:p-4" onClick={onClose}>
-      <div className="card w-full sm:max-w-md p-5 rounded-b-none sm:rounded-2xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60" onClick={onClose}>
+      <div className="card fixed inset-x-0 bottom-0 sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:w-full sm:max-w-md p-5 rounded-b-none sm:rounded-2xl max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <h2 className="font-bold text-lg mb-1">{item.name}</h2>
         {item.description && <p className="text-sm text-mist mb-4">{item.description}</p>}
 
