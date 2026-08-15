@@ -643,9 +643,9 @@ export default function Admin() {
   // that exact order, both read as a broken button. The system was working and
   // refusing to say so, which is worse than a bug: it sends you back to tap
   // again, which is how order #41 reached attempt number 8.
-  async function assign(order: Order, driver: Driver) {
+  async function assign(order: Order, driver: Driver, force = false) {
     setModalError('')
-    const res = await dispatchOperation('assign', { orderId: order.id, driverId: driver.id }, {
+    const res = await dispatchOperation('assign', { orderId: order.id, driverId: driver.id, force }, {
       dispatch_rule_blocked: 'المندوب ده وصل للحد الأقصى (٤ طلبات) أو شغال في اتجاه مختلف',
       driver_already_declined: `${driver.name} رفض الطلب ده قبل كده — اختار مندوب تاني`,
       too_many_attempts: 'الطلب ده اتعرض على مندوبين ٥ مرات. ده مشكلة توزيع مش مشكلة إعادة محاولة — كلّم مندوب بنفسك أو الغِ الطلب',
@@ -658,7 +658,24 @@ export default function Admin() {
       order_not_found: 'الطلب ده مش موجود — حدّث الصفحة',
       admin_only: 'مش من صلاحياتك تعيّن مندوب للطلب ده',
     })
-    if (!res.ok) { setModalError(res.error); return }
+    if (!res.ok) {
+      // admin_assign_order already accepts p_force to skip this exact refusal
+      // (and the five-attempt one) -- it was just never wired to the UI, so an
+      // admin who actually wants to send THIS driver back to THIS order had no
+      // way to say so short of touching the database directly.
+      if (res.error.includes('رفض الطلب ده قبل كده') && !force) {
+        if (await confirmSheet({
+          title: `${driver.name} رفض الطلب ده قبل كده`,
+          body: 'تحب تجبره ياخده تاني؟',
+          confirmLabel: 'أجبره ياخده',
+        })) {
+          await assign(order, driver, true)
+        }
+        return
+      }
+      setModalError(res.error)
+      return
+    }
     setAssigning(null); setModalError(''); load(true)
   }
 
