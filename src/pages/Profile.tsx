@@ -10,7 +10,6 @@ import { useSheets } from '../components/ActionSheets'
 import { describeError } from '../lib/rpc'
 import { SUPPORT_WHATSAPP_URL } from '../lib/support'
 import type { Compound } from '../lib/types'
-import VerifiedPhoneEditor from '../components/VerifiedPhoneEditor'
 import { displayEgyptPhone } from '../lib/validation'
 
 interface Address {
@@ -125,10 +124,13 @@ export default function Profile() {
   return (
     <div className="max-w-sm mx-auto space-y-4 pb-6">
       {sheetElement}
-      {/* Names can be corrected directly. Phone changes live in their own OTP
-          card below because a phone number also unlocks historical orders. */}
+      {/* Names can be corrected directly. Phone changes are hidden below,
+          not deleted -- see the note above VerifiedPhoneEditor's old spot. */}
       <div className="card p-4">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-14 h-14 rounded-full bg-sea/10 text-sea grid place-items-center text-xl font-bold shrink-0">
+            {(customer.name || 'ح').trim().charAt(0)}
+          </div>
           <div className="min-w-0 flex-1">
             {editingIdentity ? (
               <IdentityEditor
@@ -138,59 +140,28 @@ export default function Profile() {
               />
             ) : (
               <>
-                <p className="font-bold">{customer.name || 'حسابك'}</p>
-                {customer.email && <p className="text-xs text-mist mt-0.5" dir="ltr">{customer.email}</p>}
+                <p className="font-bold text-lg truncate">{customer.name || 'حسابك'}</p>
+                {customer.email && <p className="text-xs text-mist mt-0.5 truncate" dir="ltr">{customer.email}</p>}
                 {customer.phone
                   ? <p className="text-xs text-mist mt-0.5" dir="ltr">{displayEgyptPhone(customer.phone)}</p>
                   : <p className="text-xs text-sandink mt-0.5">لسه ما ضفتش رقم موبايل</p>}
               </>
             )}
           </div>
-          {!editingIdentity && (
-            <div className="flex flex-col gap-2 shrink-0">
-              <button className="btn-ghost !py-1.5 !px-3 text-sm" onClick={() => setEditingIdentity(true)}>تعديل</button>
-              <button className="btn-ghost !py-1.5 !px-3 text-sm" onClick={async () => { await logout(); nav('/') }}>خروج</button>
-            </div>
-          )}
         </div>
-      </div>
-
-      {!editingIdentity && (
-        <div className="card p-4 bg-sand/10 mt-3">
-          <p className="text-sm font-semibold mb-3">
-            {customer.phone ? 'تغيير رقم الموبايل' : 'محتاجين رقم موبايلك عشان نقدر نوصلك'}
-          </p>
-          {/* VerifiedPhoneEditor renders its own "SMS not available yet"
-              explanation while smsEnabled is false -- this card used to say
-              the same thing again first, in slightly different words,
-              stacked directly above it. */}
-          <VerifiedPhoneEditor compact />
-        </div>
-      )}
-
-      <div className="card p-4">
-        <p className="text-sm text-mist">رصيدك في المحفظة</p>
-        <p className="text-2xl font-bold text-sea mt-1">{walletBalance ?? '—'} ج.م</p>
-      </div>
-
-      {orders.length > 0 && (
-        <div>
-          <h2 className="font-bold mb-2.5">طلباتي</h2>
-          <div className="space-y-2">
-            {orders.slice(0, 5).map(o => (
-              <Link key={o.id} to={`/track/${o.public_token}`} className="card p-3.5 flex items-center justify-between hover:border-sea/50 transition-colors">
-                <div className="min-w-0">
-                  <p className="font-semibold text-sm truncate">#{o.id} — {o.restaurant_name}</p>
-                  <p className="text-xs text-mist mt-0.5">{orderStatusLabel(o.status)}</p>
-                </div>
-                <span className="text-sea font-bold text-sm shrink-0">
-                  {o.pricing_status === 'pending_quote' ? 'قيد التسعير' : `${o.total} ج.م`}
-                </span>
-              </Link>
-            ))}
+        {!editingIdentity && (
+          <div className="flex gap-2 mt-3 pt-3 border-t border-line">
+            <button className="btn-ghost flex-1 !py-2 text-sm" onClick={() => setEditingIdentity(true)}>تعديل</button>
+            <button className="btn-ghost flex-1 !py-2 text-sm" onClick={async () => { await logout(); nav('/') }}>خروج</button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+
+      {/* Hidden for now, at Wael's call, 2026-08-15 -- SMS Misr isn't live, so
+          this card was a full section (heading, explanation, form shell) that
+          existed only to say "not available yet" twice over. Not deleted:
+          VerifiedPhoneEditor still backs PhonePrompt.tsx elsewhere, and this
+          section comes back the moment smsEnabled flips true. */}
 
       <div>
         <div className="flex items-center justify-between mb-2.5">
@@ -256,6 +227,30 @@ export default function Profile() {
           ))}
         </div>
       </div>
+
+      <div className="card p-4">
+        <p className="text-sm text-mist">رصيدك في المحفظة</p>
+        <p className="text-2xl font-bold text-sea mt-1">{walletBalance ?? '—'} ج.م</p>
+      </div>
+
+      {orders.length > 0 && (
+        <div>
+          <h2 className="font-bold mb-2.5">طلباتي</h2>
+          <div className="space-y-2">
+            {orders.slice(0, 5).map(o => (
+              <Link key={o.id} to={`/track/${o.public_token}`} className="card p-3.5 flex items-center justify-between hover:border-sea/50 transition-colors">
+                <div className="min-w-0">
+                  <p className="font-semibold text-sm truncate">#{o.id} — {o.restaurant_name}</p>
+                  <p className="text-xs text-mist mt-0.5">{orderStatusLabel(o.status)}</p>
+                </div>
+                <span className="text-sea font-bold text-sm shrink-0">
+                  {o.pricing_status === 'pending_quote' ? 'قيد التسعير' : `${o.total} ج.م`}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noreferrer"
         className="card p-4 flex items-center gap-3 hover:border-sea/50 transition-colors">
