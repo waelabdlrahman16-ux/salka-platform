@@ -4,6 +4,7 @@ import { describeError } from '../lib/rpc'
 import { compressImage } from '../lib/upload'
 import { isoToCairoLocalInput, cairoLocalInputToISO } from '../lib/cairoTime'
 import { useSheets } from './ActionSheets'
+import LinkItemPicker from './LinkItemPicker'
 import type { Restaurant } from '../lib/types'
 
 interface FeedAdRow {
@@ -202,15 +203,12 @@ export default function FeedAdsAdmin({ restaurants }: { restaurants: Restaurant[
               value={form.bg_color} onChange={e => setForm(f => ({ ...f, bg_color: e.target.value }))} /></div>
 
           <div><label className="label" htmlFor={`${fid}-l`}>لما حد يضغط، يروح فين؟</label>
-            {/* Same convenience as BannersAdmin: pick a restaurant to fill
-                the text field instead of hand-typing /restaurant/9. Still
-                just an input underneath, so a non-restaurant link works too. */}
-            <select className="field mb-2" value=""
-              onChange={e => { if (e.target.value) setForm(f => ({ ...f, link_url: `/restaurant/${e.target.value}` })) }}>
-              <option value="">اختار مطعم يملا اللينك أوتوماتيك…</option>
-              {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-            </select>
-            <input id={`${fid}-l`} className={`field ${!LINK_OK(form.link_url) ? '!border-red-400' : ''}`}
+            {/* Same picker as BannersAdmin: restaurant, then item (with a
+                thumbnail, grouped by category) instead of hand-typing
+                /restaurant/9?item=42. Still just an input underneath, so a
+                non-restaurant link works too. */}
+            <LinkItemPicker restaurants={restaurants} onPick={url => setForm(f => ({ ...f, link_url: url }))} />
+            <input id={`${fid}-l`} className={`field mt-2 ${!LINK_OK(form.link_url) ? '!border-red-400' : ''}`}
               dir="ltr" placeholder="/restaurant/9  أو  https://..." value={form.link_url}
               onChange={e => setForm(f => ({ ...f, link_url: e.target.value }))} />
             {!LINK_OK(form.link_url)

@@ -152,8 +152,18 @@ export default function Offers() {
       <div className="space-y-3">
         {offers?.map(({ restaurant, discounts }) => {
           const art = artFor(restaurant.category)
+          // A single item-scoped discount has one obvious destination: the
+          // dish itself. Landing on the restaurant page and making the
+          // customer go find it was the same dead-end the featured-products
+          // shelf had. Anything else (multiple discounts, or category-scoped
+          // with no one item) still goes to the restaurant page -- there is
+          // no single dish to land on.
+          const only = discounts.length === 1 ? discounts[0] : null
+          const href = only?.scope === 'item' && only.menu_item_id != null
+            ? `/restaurant/${restaurant.id}?item=${only.menu_item_id}`
+            : `/restaurant/${restaurant.id}`
           return (
-            <Link key={restaurant.id} to={`/restaurant/${restaurant.id}`} className="card p-4 flex items-center gap-3 hover:border-sea/50 transition-colors">
+            <Link key={restaurant.id} to={href} className="card p-4 flex items-center gap-3 hover:border-sea/50 transition-colors">
               {restaurant.logo_url
                 ? <img src={restaurant.logo_url} alt="" className="w-14 h-14 rounded-xl object-cover shrink-0 border border-line" />
                 : <div className="w-14 h-14 rounded-xl grid place-items-center text-2xl shrink-0" style={{ background: art.tint }}>{art.emoji}</div>}
