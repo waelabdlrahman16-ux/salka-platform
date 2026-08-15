@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 export interface FeaturedProductCard {
   menu_item_id: number
   restaurant_id: number
+  restaurant_name: string
   name: string
   price: number
   image_url: string | null
@@ -29,6 +30,7 @@ export default function FeaturedProductsRail({ items }: { items: FeaturedProduct
               {it.image_url ? <img src={it.image_url} alt="" className="w-full h-full object-cover" /> : '🍽️'}
             </div>
             <p className="text-xs font-semibold line-clamp-2 leading-snug">{it.name}</p>
+            <p className="text-[11px] text-mist truncate mt-0.5">{it.restaurant_name}</p>
             <p className="text-xs mt-0.5 text-sea font-bold">{it.price} ج.م</p>
           </Link>
         ))}

@@ -99,7 +99,14 @@ export default function Home() {
           .filter(row => inWindow(row.starts_at, row.ends_at) && row.menu_items)
           .map(row => {
             const item = row.menu_items as unknown as { id: number; name: string; price: number; image_url: string | null; restaurant_id: number }
-            return { menu_item_id: item.id, restaurant_id: item.restaurant_id, name: item.name, price: item.price, image_url: item.image_url }
+            return {
+              menu_item_id: item.id, restaurant_id: item.restaurant_id,
+              // Filled in below once `restaurants` is known -- this query has
+              // no join to restaurants and isn't compound-scoped, so the name
+              // isn't available here yet.
+              restaurant_name: '',
+              name: item.name, price: item.price, image_url: item.image_url,
+            }
           })
         setFeaturedProducts(cards)
       })
@@ -109,7 +116,12 @@ export default function Home() {
   // the chosen compound (publicCatalog('restaurants', {compoundId}) above),
   // so a featured item whose restaurant does not deliver here is dropped
   // rather than promoting a dish the customer cannot actually order.
-  const coveredFeaturedProducts = featuredProducts.filter(p => restaurants.some(r => r.id === p.restaurant_id))
+  const coveredFeaturedProducts = featuredProducts
+    .map(p => {
+      const r = restaurants.find(r => r.id === p.restaurant_id)
+      return r ? { ...p, restaurant_name: r.name } : null
+    })
+    .filter((p): p is FeaturedProductCard => p !== null)
 
   function loadCompounds() {
     setCompoundsFailed(false)
