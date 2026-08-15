@@ -58,8 +58,18 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
   // about sizes and the save button sat below all of it.
   const [openSection, setOpenSection] = useState<'sizes' | 'combo' | 'addons' | 'discount' | null>(null)
 
+  // Every write below funnels through here, so this is also the one place
+  // that guards against double-submission -- a double-tap on a preset chip
+  // or a library option on a slow connection used to fire the insert twice,
+  // since the dedupe checks (`sizes.some(...)`, `addons.some(...)`) read
+  // state that is only refreshed by loadOptions() AFTER the first insert
+  // resolves. `busy` disables every button that calls write() while one is
+  // already in flight.
+  const [busy, setBusy] = useState(false)
   async function write(q: PromiseLike<{ error: { message?: string } | null }>, what: string): Promise<boolean> {
+    setBusy(true)
     const { error } = await q
+    setBusy(false)
     if (error) { setWriteError(`${what} — ${error.message ?? 'الحفظ فشل'}`); return false }
     setWriteError('')
     return true
@@ -70,6 +80,25 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
   const [library, setLibrary] = useState<VendorAddonLibraryItem[]>([])
   const [groups, setGroups] = useState<MenuItemAddonGroup[]>([])
   const [addons, setAddons] = useState<MenuItemAddon[]>([])
+
+  // Same rule AddMenuItemModal already enforces on a NEW item: once sizes
+  // exist, place_order refuses an order that doesn't name one, so
+  // menu_items.price is never actually charged -- it just sits there, free
+  // to disagree with what the sizes say. Before this, the editor let that
+  // number drift on its own: create an item correctly through the modal
+  // (base price locked to the cheapest size), then open it here later and
+  // type a different price straight into a plain, unlocked field -- exactly
+  // the «٦ وينجز» bug (190 advertised, 300 charged) the modal was rewritten
+  // to prevent, still reachable one screen over.
+  const lowestSizePrice = sizes.length
+    ? Math.min(...sizes.map(s => Number(s.price)).filter(p => p > 0))
+    : null
+  const priceLocked = sizes.length > 0 && Number.isFinite(lowestSizePrice)
+  const effectivePrice = priceLocked ? String(lowestSizePrice) : price
+  // Same reasoning as AddMenuItemModal's comboBlocking: a combo priced at or
+  // below the item hands over its fries and drink for free on every order.
+  const comboBlocking = combos.length > 0 && Number(effectivePrice) > 0
+    && combos.some(c => Number(c.price) <= Number(effectivePrice))
   const [newGroup, setNewGroup] = useState<{ name: string; kind: 'multi' | 'swap'; required: boolean; maxSelect: string }>(
     { name: '', kind: 'multi', required: false, maxSelect: '' }
   )
@@ -129,14 +158,28 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
     setCombos((cb as MenuItemCombo[]) ?? [])
     setGroups(gr ?? [])
     const groupIds = (gr ?? []).map(g => g.id)
+    let addonRows: MenuItemAddon[] = []
     if (groupIds.length) {
       const { data: ad, error: adErr } = await supabase.from('menu_item_addons').select('*').in('group_id', groupIds).order('display_order').order('id')
       if (adErr) { setLoadError('مش قادرين نجيب الإضافات — ماتضيفش حاجة قبل ما تحدّث، عشان ما تتكررش'); return }
-      setAddons(ad ?? [])
-    } else {
-      setAddons([])
+      addonRows = ad ?? []
     }
+    setAddons(addonRows)
     setLoadError('')
+
+    // Self-heal: a group can end up "required" (min_select > 0) with zero
+    // choices -- interrupted before the first choice was typed (تعديل closed
+    // right after "🔁 اختيار مطلوب"), or its last choice was just deleted.
+    // place_order rejects EVERY order containing this item while that's true
+    // (addon_group_min_not_met, with nothing for the customer to pick), so
+    // demote it back to optional the moment it's empty rather than leaving it
+    // silently blocking checkout until someone happens to notice.
+    const emptyRequired = (gr ?? []).filter(g => g.min_select > 0 && !addonRows.some(a => a.group_id === g.id))
+    if (emptyRequired.length) {
+      await Promise.all(emptyRequired.map(g =>
+        supabase.from('menu_item_addon_groups').update({ min_select: 0 }).eq('id', g.id)))
+      setGroups(prev => prev.map(g => emptyRequired.some(e => e.id === g.id) ? { ...g, min_select: 0 } : g))
+    }
   }
 
   async function upload(file: File) {
@@ -148,10 +191,10 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
   }
 
   async function save() {
-    if (!name.trim() || !price) return
+    if (!name.trim() || !effectivePrice || Number(effectivePrice) <= 0 || comboBlocking) return
     setSaving(true)
     const ok = await write(supabase.from('menu_items').update({
-      name: name.trim(), description: description.trim(), category: category.trim(), price: Number(price), available,
+      name: name.trim(), description: description.trim(), category: category.trim(), price: Number(effectivePrice), available,
       image_url: imageUrl,
       available_from: hasWindow ? availFrom : null,
       available_until: hasWindow ? availUntil : null
@@ -287,6 +330,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
    * anywhere. Now the intent is the button.
    */
   async function applyGroupPreset(kind: 'required-one' | 'extras') {
+    setBusy(true)
     const { data, error: groupErr } = await supabase.from('menu_item_addon_groups').insert({
       menu_item_id: item.id,
       name: kind === 'required-one' ? 'اختار نوع الساندوتش' : 'إضافات',
@@ -294,6 +338,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
       max_select: kind === 'required-one' ? 1 : null,
       display_order: groups.length
     }).select('id').single()
+    setBusy(false)
     if (groupErr) { setWriteError(`إضافة مجموعة — ${groupErr.message}`); return }
     setWriteError('')
     await loadOptions()
@@ -383,6 +428,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
           hasWindow={hasWindow} setHasWindow={setHasWindow}
           availFrom={availFrom} setAvailFrom={setAvailFrom}
           availUntil={availUntil} setAvailUntil={setAvailUntil}
+          priceLocked={priceLocked} effectivePrice={effectivePrice}
         />
 
         {/* One row instead of four cards. Each chip carries the count of what is
@@ -436,7 +482,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
           // silently wrong; identical prices are loudly wrong until fixed.
           warning={sizes.length > 1 && new Set(sizes.map(s => Number(s.price))).size < sizes.length
             ? 'فيه حجمين بنفس السعر — عدّلهم.' : null}
-          addPlaceholder="حجم تاني"
+          addPlaceholder="حجم تاني" disabled={busy}
           onApplyPreset={applySizePreset} onAdd={addSizeNamed}
           onRemove={removeSize} onPriceChange={updateSizePrice} onNameChange={updateSizeName}
         />}
@@ -449,19 +495,21 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
           presets={[{ label: 'ابدأ بـ وسط / كبير', names: ['وسط', 'كبير'] }]}
           // A combo at or below the item's own price hands over fries and a
           // drink for free, on every order, and nothing else would notice:
-          // place_order charges exactly what this table says.
+          // place_order charges exactly what this table says. Blocks save now
+          // (comboBlocking), not just a dismissable note -- see the same
+          // reasoning duplicated in AddMenuItemModal.
           warning={(() => {
-            const base = Number(price) || 0
+            const base = Number(effectivePrice) || 0
             const cheap = combos.filter(c => Number(c.price) <= base)
-            return cheap.length ? `${cheap.map(c => c.name).join('، ')} — السعر مش أعلى من ${base} ج.م، يعني الكومبو ببلاش.` : null
+            return cheap.length ? `${cheap.map(c => c.name).join('، ')} — السعر مش أعلى من ${base} ج.م، يعني الكومبو ببلاش. لازم تعدّل السعر قبل ما تحفظ.` : null
           })()}
-          addPlaceholder="حجم تاني"
+          addPlaceholder="حجم تاني" disabled={busy}
           onApplyPreset={applyComboPreset} onAdd={addCombo}
           onRemove={removeCombo} onPriceChange={updateComboPrice} onNameChange={updateComboName}
         />}
 
         {openSection === 'addons' && <AddonsCard
-          restaurantId={item.restaurant_id}
+          restaurantId={item.restaurant_id} disabled={busy}
           groups={groups} addons={addons}
           newGroup={newGroup} setNewGroup={setNewGroup}
           newAddon={newAddon} setNewAddon={setNewAddon}
@@ -473,7 +521,9 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
           menuOptions={menuOptions} onAddFromMenu={addAddonFromMenuItem}
         />}
 
-        <button className="btn-sea w-full !py-3 mb-3" disabled={saving || !name.trim() || !category.trim() || !price} onClick={save}>
+        <button className="btn-sea w-full !py-3 mb-3"
+          disabled={saving || !name.trim() || !category.trim() || !effectivePrice || Number(effectivePrice) <= 0 || comboBlocking}
+          onClick={save}>
           {saving ? 'جاري الحفظ…' : 'حفظ'}
         </button>
 

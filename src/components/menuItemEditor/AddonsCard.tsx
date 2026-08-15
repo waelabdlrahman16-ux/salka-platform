@@ -9,9 +9,12 @@ export default function AddonsCard({
   groups, addons, newGroup, setNewGroup, newAddon, setNewAddon,
   onAddGroup, onRemoveGroup, onAddAddon, onRemoveAddon,
   onApplyPreset, onRenameGroup, onAddonPriceChange, menuOptions, onAddFromMenu,
-  library, onAddFromLibrary
+  library, onAddFromLibrary, disabled
 }: {
   restaurantId: number
+  /** True while a write from this or a sibling card is already in flight --
+   *  see the matching prop on OptionRowsCard. */
+  disabled?: boolean
   /** The vendor's saved add-ons, offered as one-tap chips. */
   library: VendorAddonLibraryItem[]
   onAddFromLibrary: (groupId: number, entry: VendorAddonLibraryItem) => void
@@ -56,13 +59,13 @@ export default function AddonsCard({
           kinds of group in prose, then asked for the same distinction again as
           a dropdown -- the button labels carry it now. */}
       <div className="grid grid-cols-2 gap-2 mb-3">
-          <button className="text-xs py-2.5 px-2 rounded-lg border-2 border-line hover:border-sea text-right"
-            onClick={() => onApplyPreset('extras')}>
+          <button className="text-xs py-2.5 px-2 rounded-lg border-2 border-line hover:border-sea text-right disabled:opacity-40"
+            disabled={disabled} onClick={() => onApplyPreset('extras')}>
             <span className="block font-bold">إضافات</span>
             <span className="block text-mist mt-0.5">يختار قد ما يحب</span>
           </button>
-          <button className="text-xs py-2.5 px-2 rounded-lg border-2 border-line hover:border-sea text-right"
-            onClick={() => onApplyPreset('required-one')}>
+          <button className="text-xs py-2.5 px-2 rounded-lg border-2 border-line hover:border-sea text-right disabled:opacity-40"
+            disabled={disabled} onClick={() => onApplyPreset('required-one')}>
             <span className="block font-bold">🔁 اختيار مطلوب</span>
             <span className="block text-mist mt-0.5">واحد بس، ولازم يختار</span>
           </button>
@@ -87,7 +90,7 @@ export default function AddonsCard({
                   {!isSwap && g.max_select != null && <span> · حد أقصى {g.max_select}</span>}
                 </p>
               </div>
-              <button className="text-red-500 text-xs shrink-0" onClick={() => onRemoveGroup(g.id)}>حذف المجموعة</button>
+              <button className="text-red-500 text-xs shrink-0 disabled:opacity-40" disabled={disabled} onClick={() => onRemoveGroup(g.id)}>حذف المجموعة</button>
             </div>
 
             <div className="space-y-2 mb-3">
@@ -102,7 +105,7 @@ export default function AddonsCard({
                     onBlur={e => { if (Number(e.target.value) !== Number(a.price)) onAddonPriceChange(a.id, e.target.value) }}
                     onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }} />
                   <span className="text-xs text-mist shrink-0">{Number(a.price) > 0 ? 'ج.م' : 'مجانًا'}</span>
-                  <button className="text-red-500 text-xs shrink-0" onClick={() => onRemoveAddon(a.id)}>حذف</button>
+                  <button className="text-red-500 text-xs shrink-0 disabled:opacity-40" disabled={disabled} onClick={() => onRemoveAddon(a.id)}>حذف</button>
                 </div>
               ))}
               {addons.filter(a => a.group_id === g.id).length === 0 && (
@@ -123,8 +126,8 @@ export default function AddonsCard({
                   .filter(l => !addons.some(a => a.group_id === g.id && a.name === l.name))
                   .map(l => (
                     <button key={l.id}
-                      className="flex items-center gap-1.5 text-xs py-1 pr-1 pl-2.5 rounded-full border-2 border-line hover:border-sea"
-                      onClick={() => onAddFromLibrary(g.id, l)}>
+                      className="flex items-center gap-1.5 text-xs py-1 pr-1 pl-2.5 rounded-full border-2 border-line hover:border-sea disabled:opacity-40"
+                      disabled={disabled} onClick={() => onAddFromLibrary(g.id, l)}>
                       {l.image_url
                         ? <img src={l.image_url} alt="" className="w-5 h-5 rounded-full object-cover" />
                         : <span className="w-5 h-5 rounded-full bg-shellup grid place-items-center text-[10px]">+</span>}
@@ -150,8 +153,8 @@ export default function AddonsCard({
                     .filter(m => !addons.some(a => a.group_id === g.id && a.name === m.name))
                     .map(m => (
                       <button key={m.id}
-                        className="flex items-center gap-1.5 text-xs py-1 pr-1 pl-2.5 rounded-full border-2 border-line hover:border-sea"
-                        onClick={() => onAddFromMenu(g.id, m)}>
+                        className="flex items-center gap-1.5 text-xs py-1 pr-1 pl-2.5 rounded-full border-2 border-line hover:border-sea disabled:opacity-40"
+                        disabled={disabled} onClick={() => onAddFromMenu(g.id, m)}>
                         {m.image_url
                           ? <img src={m.image_url} alt="" className="w-5 h-5 rounded-full object-cover" />
                           : <span className="w-5 h-5 rounded-full bg-shellup grid place-items-center text-[10px]">+</span>}
@@ -183,7 +186,7 @@ export default function AddonsCard({
                   onChange={e => setNewAddon({ ...newAddon, [g.id]: { ...draft, name: e.target.value } })} />
                 <input className="field !py-1.5 !w-20 text-sm" type="number" placeholder="السعر" value={draft.price}
                   onChange={e => setNewAddon({ ...newAddon, [g.id]: { ...draft, price: e.target.value } })} />
-                <button className="btn-ghost !py-1.5 !px-3 text-sm shrink-0" onClick={() => onAddAddon(g.id)}>إضافة</button>
+                <button className="btn-ghost !py-1.5 !px-3 text-sm shrink-0" disabled={disabled} onClick={() => onAddAddon(g.id)}>إضافة</button>
               </div>
             </div>
           </div>
@@ -226,7 +229,7 @@ export default function AddonsCard({
           )}
         </div>
 
-        <button className="btn-ghost w-full !py-1.5 text-sm" onClick={onAddGroup}>إضافة مجموعة</button>
+        <button className="btn-ghost w-full !py-1.5 text-sm" disabled={disabled} onClick={onAddGroup}>إضافة مجموعة</button>
       </div>
       )}
     </div>

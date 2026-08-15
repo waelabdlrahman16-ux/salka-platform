@@ -23,7 +23,7 @@ export interface OptionRow {
  */
 export default function OptionRowsCard({
   title, hint, rows, presets, warning, addPlaceholder,
-  onApplyPreset, onAdd, onRemove, onPriceChange, onNameChange, children
+  onApplyPreset, onAdd, onRemove, onPriceChange, onNameChange, children, disabled
 }: {
   title: string
   hint: string
@@ -36,6 +36,10 @@ export default function OptionRowsCard({
   onAdd: (name: string, price: string) => void
   onRemove: (id: number) => void
   onPriceChange: (id: number, price: string) => void
+  /** True while a write from this or a sibling card is already in flight --
+   *  every button here disables, so a double-tap on a slow connection can't
+   *  fire the same insert twice before the dedupe state has refreshed. */
+  disabled?: boolean
   /**
    * A preset names these rows for you (عادي / دوبل, وسط / كبير). Those names
    * are shown to the customer on the options sheet and printed on the driver's
@@ -60,8 +64,8 @@ export default function OptionRowsCard({
       {rows.length === 0 ? (
         <div className="flex flex-wrap gap-2">
           {presets.map(p => (
-            <button key={p.label} className="text-xs py-2 px-3 rounded-lg border-2 border-line hover:border-sea"
-              onClick={() => onApplyPreset(p.names)}>
+            <button key={p.label} className="text-xs py-2 px-3 rounded-lg border-2 border-line hover:border-sea disabled:opacity-40"
+              disabled={disabled} onClick={() => onApplyPreset(p.names)}>
               {p.label}
             </button>
           ))}
@@ -87,7 +91,7 @@ export default function OptionRowsCard({
                   onBlur={e => { onPriceChange(r.id, e.target.value); setPriceDraft(d => { const n = { ...d }; delete n[r.id]; return n }) }}
                   onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }} />
                 <span className="text-xs text-mist shrink-0">ج.م</span>
-                <button className="text-red-500 text-xs shrink-0" onClick={() => onRemove(r.id)}>حذف</button>
+                <button className="text-red-500 text-xs shrink-0 disabled:opacity-40" disabled={disabled} onClick={() => onRemove(r.id)}>حذف</button>
               </div>
             ))}
           </div>
@@ -101,7 +105,7 @@ export default function OptionRowsCard({
               onChange={e => setDraft({ ...draft, name: e.target.value })} />
             <input className="field !py-1.5 !w-24 text-sm" type="number" placeholder="السعر" value={draft.price}
               onChange={e => setDraft({ ...draft, price: e.target.value })} />
-            <button className="btn-ghost !py-1.5 !px-3 text-sm shrink-0"
+            <button className="btn-ghost !py-1.5 !px-3 text-sm shrink-0" disabled={disabled}
               onClick={() => { onAdd(draft.name, draft.price); setDraft({ name: '', price: '' }) }}>إضافة</button>
           </div>
         </>

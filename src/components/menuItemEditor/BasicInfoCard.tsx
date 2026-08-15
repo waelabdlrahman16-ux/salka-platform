@@ -3,7 +3,8 @@ import ImageCropPreview from '../ImageCropPreview'
 export default function BasicInfoCard({
   name, setName, description, setDescription, category, setCategory, price, setPrice,
   available, setAvailable, imageUrl, uploading, imageError, onUpload,
-  hasWindow, setHasWindow, availFrom, setAvailFrom, availUntil, setAvailUntil
+  hasWindow, setHasWindow, availFrom, setAvailFrom, availUntil, setAvailUntil,
+  priceLocked, effectivePrice
 }: {
   name: string; setName: (v: string) => void
   description: string; setDescription: (v: string) => void
@@ -14,6 +15,12 @@ export default function BasicInfoCard({
   hasWindow: boolean; setHasWindow: (v: boolean) => void
   availFrom: string; setAvailFrom: (v: string) => void
   availUntil: string; setAvailUntil: (v: string) => void
+  /** Once the item has sizes, its own price is only ever a display floor --
+   *  place_order charges the size's price, never this column. Same lock
+   *  AddMenuItemModal already applies to a new item; see the comment beside
+   *  where this is computed in MenuItemEditor. */
+  priceLocked: boolean
+  effectivePrice: string
 }) {
   const fid = useId()
   return (
@@ -32,9 +39,17 @@ export default function BasicInfoCard({
         </div>
         <div className="w-20 shrink-0">
           <label className="label !mb-0.5" htmlFor={`${fid}-4`}>السعر</label>
-          <input id={`${fid}-4`} className="field !h-8 !py-1 text-sm text-center" type="number" value={price} onChange={e => setPrice(e.target.value)} />
+          {priceLocked ? (
+            <input className="field !h-8 !py-1 text-xs text-center !border-dashed bg-shellup text-mist" readOnly
+              value={`من ${effectivePrice}`} aria-label="السعر — محسوب من الأحجام" />
+          ) : (
+            <input id={`${fid}-4`} className="field !h-8 !py-1 text-sm text-center" type="number" value={price} onChange={e => setPrice(e.target.value)} />
+          )}
         </div>
       </div>
+      {priceLocked && (
+        <p className="text-[11px] text-mist -mt-1.5 mb-2.5">ⓘ السعر بيتحسب من أقل حجم دلوقتي — عدّل من الأحجام تحت.</p>
+      )}
 
       <label className="text-xs text-sea cursor-pointer block mb-2.5">
         <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { uploadVendorImage } from '../lib/upload'
 import { useDismissable } from '../lib/useDismissable'
+import { useSheets } from './ActionSheets'
 import ImageCropPreview from './ImageCropPreview'
 import OptionRowsCard, { type OptionRow } from './menuItemEditor/OptionRowsCard'
 import type { MenuItem, Restaurant } from '../lib/types'
@@ -60,7 +61,22 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
    */
   onSaved: (created?: MenuItem) => void
 }) {
-  const overlayRef = useDismissable(onClose)
+  const { confirmSheet, sheetElement } = useSheets()
+  // A backdrop tap or the Android Back gesture used to discard everything --
+  // name, description, uploaded photo (now orphaned in storage), sizes,
+  // combos, every addon group typed so far -- with no confirmation. One
+  // mistaken tap while filling in a ten-field item lost all of it.
+  function hasUnsavedContent() {
+    return !!(form.name.trim() || form.description.trim() || form.category.trim()
+      || form.price || form.imageUrl || sizes.length || combos.length || modifierGroups.length)
+  }
+  async function requestClose() {
+    if (hasUnsavedContent() && !(await confirmSheet({
+      title: 'تقفل من غير ما تحفظ؟', body: 'كل حاجة كتبتها هتتشال.', danger: true, confirmLabel: 'قفل من غير حفظ',
+    }))) return
+    onClose()
+  }
+  const overlayRef = useDismissable(requestClose)
   const [form, setForm] = useState(EMPTY)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -110,9 +126,13 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
   const lowestSize = sizes.length
     ? Math.min(...sizes.map(s => s.price).filter(p => p > 0))
     : null
-  const effectivePrice = sizes.length && Number.isFinite(lowestSize) ? String(lowestSize) : form.price
-
-  const valid = form.name.trim() && form.category.trim() && effectivePrice && Number(effectivePrice) > 0
+  // Only lock once a size actually HAS a price. Sizes seeded at 0 (a preset
+  // applied before typing a base price) used to lock the field immediately --
+  // effectivePrice fell through to form.price, which was also empty, so the
+  // read-only box showed «من » with nothing to type and no way to fix it
+  // short of deleting the size rows.
+  const priceLocked = sizes.length > 0 && Number.isFinite(lowestSize)
+  const effectivePrice = priceLocked ? String(lowestSize) : form.price
 
   const addRow = (set: typeof setSizes) => (name: string, price: string) => {
     if (!name.trim()) return
@@ -127,10 +147,19 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
   const sizeWarning = sizes.length > 1 && new Set(sizes.map(s => s.price)).size < sizes.length
     ? 'في حجمين بنفس السعر — راجعهم قبل ما تحفظ'
     : null
-  const comboWarning = combos.length > 0 && Number(effectivePrice) > 0
+  // A combo at or below the item's own price hands over its fries and drink
+  // for free, on every order, forever -- place_order uses the combo price as
+  // a straight replacement for the base price. This used to only be a
+  // dismissable warning; a vendor could close the sheet with it still
+  // showing and start selling below cost immediately. Now it blocks save.
+  const comboBlocking = combos.length > 0 && Number(effectivePrice) > 0
     && combos.some(c => c.price <= Number(effectivePrice))
-    ? 'في كومبو بسعر أقل من أو يساوي سعر الصنف — يبقى بتديه ببلاش'
+  const comboWarning = comboBlocking
+    ? 'في كومبو بسعر أقل من أو يساوي سعر الصنف — يبقى بتديه ببلاش. لازم تعدّل السعر قبل ما تحفظ.'
     : null
+
+  const valid = form.name.trim() && form.category.trim() && effectivePrice && Number(effectivePrice) > 0
+    && !comboBlocking
 
   async function upload(file: File) {
     setUploading(true); setFormError('')
@@ -150,6 +179,19 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
    */
   async function save(after: 'another' | 'close' | 'addons') {
     if (!valid) return
+    // Validated BEFORE anything is written. This used to run after the item,
+    // its sizes and its combos were already inserted -- so a blank addon
+    // choice failed validation on a row that had already landed live, the
+    // error read like nothing had saved, and pressing حفظ again (the obvious
+    // next move) inserted a second, duplicate item.
+    for (const group of modifierGroups) {
+      const name = group.name.trim()
+      const hasChoice = group.choices.some(c => c.name.trim())
+      if (!name || !hasChoice) {
+        setFormError('اكتب اسم كل مجموعة واختيار واحد على الأقل، أو احذف المجموعة الفاضية.')
+        return
+      }
+    }
     setSaving(true); setFormError('')
     const { data: created, error } = await supabase.from('menu_items').insert({
       restaurant_id: restaurant.id, name: form.name.trim(), description: form.description.trim(),
@@ -262,11 +304,12 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
   // Direct inset positioning on the sheet itself -- see the note in
   // ProductDetailSheet.
   return (
-    <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60" onClick={onClose}>
+    <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60" onClick={requestClose}>
       <div className="fixed inset-x-0 bottom-0 sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:w-full sm:max-w-md max-h-[90vh] overflow-y-auto bg-shellup rounded-t-2xl sm:rounded-2xl p-4" onClick={e => e.stopPropagation()}>
+        {sheetElement}
         <div className="flex items-center justify-between mb-3 px-1">
           <h2 className="font-bold text-lg text-foam">إضافة صنف — {restaurant.name}</h2>
-          <button className="text-mist text-sm bg-shell rounded-full px-3 py-1" onClick={onClose}>✗ إغلاق</button>
+          <button className="text-mist text-sm bg-shell rounded-full px-3 py-1" onClick={requestClose}>✗ إغلاق</button>
         </div>
 
         {formError && (
@@ -303,7 +346,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
           <div className="flex gap-2">
             <input className={inputCls} placeholder="القسم (مشويات…)" value={form.category}
               onChange={e => setForm({ ...form, category: e.target.value })} />
-            {sizes.length ? (
+            {priceLocked ? (
               <input className={`${inputCls} !w-28 !border-dashed bg-shellup text-mist`} readOnly
                 value={`من ${effectivePrice}`} aria-label="السعر — محسوب من الأحجام" />
             ) : (
@@ -311,7 +354,12 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
                 onChange={e => setForm({ ...form, price: e.target.value })} />
             )}
           </div>
-          {sizes.length > 0 && (
+          {sizes.length > 0 && !priceLocked && (
+            <p className="text-[11px] text-sandink">
+              ⓘ الأحجام تحت لسه من غير سعر — اكتب سعر لأي حجم عشان سعر الصنف يتحسب منه.
+            </p>
+          )}
+          {priceLocked && (
             <p className="text-[11px] text-mist">
               ⓘ السعر بقى بيتحسب من أقل حجم — العميل هيشوف «من {effectivePrice}».
             </p>
