@@ -20,6 +20,7 @@ interface Address {
 interface OrderRow {
   id: number; public_token: string; total: number
   status: string; created_at: string; restaurant_name: string
+  pricing_status?: 'n/a' | 'pending_quote' | 'confirmed'
 }
 
 export default function Profile() {
@@ -181,7 +182,9 @@ export default function Profile() {
                   <p className="font-semibold text-sm truncate">#{o.id} — {o.restaurant_name}</p>
                   <p className="text-xs text-mist mt-0.5">{orderStatusLabel(o.status)}</p>
                 </div>
-                <span className="text-sea font-bold text-sm shrink-0">{o.total} ج.م</span>
+                <span className="text-sea font-bold text-sm shrink-0">
+                  {o.pricing_status === 'pending_quote' ? 'قيد التسعير' : `${o.total} ج.م`}
+                </span>
               </Link>
             ))}
           </div>
