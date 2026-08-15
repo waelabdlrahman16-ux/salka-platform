@@ -69,6 +69,14 @@ export default function ProductDetailSheet({
   return (
     <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60" onClick={onClose}>
       <div className="fixed inset-x-0 bottom-0 w-full max-h-[90vh] overflow-y-auto bg-shell rounded-t-2xl" onClick={e => e.stopPropagation()}>
+        {/* Drag handle: a purely visual affordance signalling "this sheet
+            swipes down to close" -- it does not itself carry a gesture,
+            useDismissable's backdrop tap/Back-button handling already does
+            that job. */}
+        <div className="flex justify-center pt-2.5 pb-1.5">
+          <div className="w-9 h-1 rounded-full bg-line" />
+        </div>
+
         {/* aspect-square on a phone is a full-width square, so the name, the
             price and the add button all started below the fold -- the customer
             had to scroll past a picture of a can to find out what it costs.
@@ -79,9 +87,13 @@ export default function ProductDetailSheet({
             a 60px emoji floating in the middle of it, above the name of a
             250 ج.م item. An empty box does not become more informative by
             being bigger. A vendor with no picture gets a short band instead,
-            which reads as "no photo" rather than as a broken image. */}
-        <div className={`relative grid place-items-center text-5xl overflow-hidden ${
-            active.image_url && !imgFailed ? 'aspect-[4/3] max-h-[30vh]' : 'h-28'}`}
+            which reads as "no photo" rather than as a broken image.
+
+            Inset with side/top padding and rounded corners, not full-bleed
+            against the sheet edges -- matches the redesign Wael supplied. */}
+        <div className="px-4">
+        <div className={`relative grid place-items-center text-5xl overflow-hidden rounded-xl ${
+            active.image_url && !imgFailed ? 'aspect-[4/3] max-h-[22vh]' : 'h-28'}`}
           style={{ background: active.image_url && !imgFailed ? '#F4EEE3' : art.tint }}>
           {active.image_url && !imgFailed
             // Fills the frame, always. Same reasoning as the grid card: with
@@ -104,6 +116,7 @@ export default function ProductDetailSheet({
             </span>
           )}
         </div>
+        </div>
 
         {/* The image was taking 38vh and the item itself got whatever was left.
             Reversed: the picture is capped at 30vh and 4:3 rather than square,
@@ -119,12 +132,12 @@ export default function ProductDetailSheet({
 
           <div className="mt-5">
             {hasOptions ? (
-              <button className="btn-sea w-full !py-3" disabled={disabled} onClick={() => onCustomize(active)}>
+              <button className="btn-sea w-full !py-3 !rounded-full" disabled={disabled} onClick={() => onCustomize(active)}>
                 اختيار
               </button>
             ) : qty === 0 ? (
-              <button className="btn-sea w-full !py-3" disabled={disabled} onClick={() => onAdd(active)}>
-                <span className="flex items-center justify-center gap-1.5"><Icon name="plus" className="w-3 h-3" /> إضافة للسلة</span>
+              <button className="btn-sea w-full !py-3 !rounded-full" disabled={disabled} onClick={() => onAdd(active)}>
+                إضافة
               </button>
             ) : (
               <div className="w-full h-11 rounded-xl bg-shellup flex items-center justify-between px-1.5">
