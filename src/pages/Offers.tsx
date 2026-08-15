@@ -18,6 +18,12 @@ export default function Offers() {
   // «مفيش عروض دلوقتي» -- a confident factual claim made on a failed fetch.
   const [failed, setFailed] = useState(false)
   const [attempt, setAttempt] = useState(0)
+  // scope: 'item' discounts only carry menu_item_id -- describe() had no name
+  // to put next to it, so every one of these read "خصم 20% على صنف معيّن"
+  // regardless of which item, and finding out which meant opening the
+  // restaurant and reading every price on the menu.
+  const [itemNames, setItemNames] = useState<Map<number, string>>(new Map())
+  const [compoundId] = useState(() => getCompoundId())
 
   useEffect(() => {
     (async () => {
@@ -28,6 +34,12 @@ export default function Offers() {
       const inEffect = (d: Discount) => (!d.starts_at || new Date(d.starts_at) <= now) && (!d.ends_at || new Date(d.ends_at) >= now)
       const live = (discounts ?? []).filter(inEffect)
       if (live.length === 0) { setOffers([]); return }
+
+      const itemIds = [...new Set(live.filter(d => d.scope === 'item' && d.menu_item_id != null).map(d => d.menu_item_id!))]
+      if (itemIds.length > 0) {
+        const { data: items } = await supabase.from('menu_items').select('id, name').in('id', itemIds)
+        setItemNames(new Map((items ?? []).map(i => [i.id, i.name])))
+      }
 
       const restaurantIds = [...new Set(live.map(d => d.restaurant_id))]
       // NOT `.eq('is_open', true)`.
@@ -57,14 +69,15 @@ export default function Offers() {
         const coveringResult = await publicCatalog<Restaurant[]>('restaurants', {
           compoundId: Number(savedCompound)
         })
-        // Branch on the error, not on an empty result. "Zero vendors cover this
-        // compound" is a real and now-common answer (Home no longer hides far
-        // compounds), and treating it as a failed lookup would show offers the
-        // customer cannot order -- exactly the trap this filter exists to close.
-        if (coveringResult.ok) {
-          const coveringIds = new Set((coveringResult.data ?? []).map(r => r.id))
-          visible = visible.filter(r => coveringIds.has(r.id))
-        }
+        // A dropped request here used to fall through silently and show every
+        // open vendor with a live discount, coverage unchecked -- the exact
+        // trap this filter exists to close, just conditioned on a network
+        // hiccup instead of always. "Zero vendors cover this compound" is
+        // still a real, distinct answer (coveringResult.ok with an empty
+        // list), so only an actual failed lookup is treated as a load error.
+        if (!coveringResult.ok) { setFailed(true); setOffers([]); return }
+        const coveringIds = new Set((coveringResult.data ?? []).map(r => r.id))
+        visible = visible.filter(r => coveringIds.has(r.id))
       }
 
       const grouped = visible.map(r => ({
@@ -78,7 +91,31 @@ export default function Offers() {
 
   function describe(d: Discount): string {
     const amount = d.discount_type === 'percent' ? `${d.value}%` : `${d.value} ج.م`
-    return d.scope === 'item' ? `خصم ${amount} على صنف معيّن` : `خصم ${amount} على قسم ${d.category}`
+    if (d.scope === 'item') {
+      const name = d.menu_item_id != null ? itemNames.get(d.menu_item_id) : null
+      return name ? `خصم ${amount} على ${name}` : `خصم ${amount} على صنف معيّن`
+    }
+    return `خصم ${amount} على قسم ${d.category}`
+  }
+
+  // Home requires a compound before it will show a single restaurant; this
+  // page had no such gate, so a customer who opened Offers before ever
+  // picking a location (first visit, bottom-nav straight in) saw every
+  // active discount platform-wide with nothing filtering it by distance,
+  // and could tap straight into a restaurant nowhere near them.
+  if (!compoundId) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold mb-1">العروض والخصومات</h1>
+        <div className="card p-6 text-center mt-4">
+          <p className="font-semibold">اختار مكانك الأول</p>
+          <p className="text-sm text-mist mt-1.5 mb-4">
+            عشان نوريك العروض اللي بتوصل لمكانك بس
+          </p>
+          <Link to="/" className="btn-sea !py-2 !px-5 text-sm inline-block">اختار مكانك</Link>
+        </div>
+      </div>
+    )
   }
 
   return (
