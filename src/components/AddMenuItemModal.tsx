@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { uploadVendorImage } from '../lib/upload'
 import { useDismissable } from '../lib/useDismissable'
+import ImageCropPreview from './ImageCropPreview'
 import OptionRowsCard, { type OptionRow } from './menuItemEditor/OptionRowsCard'
 import type { MenuItem, Restaurant } from '../lib/types'
 
@@ -293,6 +294,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
               {uploading ? 'جاري الرفع…' : (form.imageUrl ? 'تغيير الصورة' : '🖼️ صورة (اختياري)')}
             </label>
           </div>
+          {form.imageUrl && <ImageCropPreview url={form.imageUrl} />}
 
           <input className={inputCls} placeholder="اسم الصنف" value={form.name}
             onChange={e => setForm({ ...form, name: e.target.value })} />

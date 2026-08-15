@@ -1,4 +1,5 @@
 import { useId } from 'react'
+import ImageCropPreview from '../ImageCropPreview'
 export default function BasicInfoCard({
   name, setName, description, setDescription, category, setCategory, price, setPrice,
   available, setAvailable, imageUrl, uploading, imageError, onUpload,
@@ -45,6 +46,7 @@ export default function BasicInfoCard({
         {uploading ? 'جاري الرفع…' : (imageUrl ? '🖼️ تغيير الصورة' : '🖼️ إضافة صورة')}
       </label>
       {imageError && <p className="text-xs text-sandink mb-2">{imageError}</p>}
+      {imageUrl && <div className="mb-2.5"><ImageCropPreview url={imageUrl} /></div>}
 
       <div className="grid grid-cols-2 gap-2.5 mb-2.5">
         <div>
