@@ -153,8 +153,13 @@ export default function CartPage() {
                   </p>
                 )}
                 <p className="text-sm mt-0.5">
-                  {original != null && <span className="text-mist text-xs line-through ml-1.5">{original}</span>}
-                  <span className="text-sea font-bold">{unit} ج.م</span>
+                  {/* Line total, not per-unit -- Checkout's identical summary
+                      multiplies by qty (`l.qty * unit`) for the same line, so a
+                      qty-3 item read "50 ج.م" here and "150 ج.م" one tap later
+                      with nothing that looked like an error, just an
+                      unexplained jump. */}
+                  {original != null && <span className="text-mist text-xs line-through ml-1.5">{l.qty * original}</span>}
+                  <span className="text-sea font-bold">{l.qty * unit} ج.م</span>
                 </p>
               </div>
               <div className="flex items-center gap-2 bg-shellup rounded-lg px-1 py-1 shrink-0">
