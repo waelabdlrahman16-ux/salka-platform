@@ -84,7 +84,7 @@ export default function CartPage() {
   // Vendor passed so the cached quote is keyed per vendor -- the SLA is
   // prep + travel, and the two differ by 35 minutes between a burger and a
   // supermarket shop to the same address.
-  const { fee: deliveryFee, quote, loading: feeLoading } = useDeliveryQuote(compoundId, cart.restaurantId)
+  const { fee: deliveryFee, loading: feeLoading } = useDeliveryQuote(compoundId, cart.restaurantId)
   // The rate lives in settings.service_fee_percent and place_order applies it.
   // This used to be a hardcoded 0.02 that silently understated the total by
   // whatever the admin had since changed the setting to.
@@ -116,7 +116,16 @@ export default function CartPage() {
         <h1 className="text-2xl font-bold">عربتك</h1>
         <button className="text-sm text-seadeep font-semibold" onClick={() => cart.clear()}>مسح الكل</button>
       </div>
-      {restaurant && <p className="text-mist text-sm mb-4">من {restaurant.name}</p>}
+      {restaurant && (
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="w-9 h-9 rounded-lg overflow-hidden shrink-0 border border-line bg-shellup grid place-items-center text-base">
+            {restaurant.logo_url
+              ? <img src={restaurant.logo_url} alt="" className="w-full h-full object-cover" />
+              : '🍽️'}
+          </div>
+          <p className="font-bold truncate">{restaurant.name}</p>
+        </div>
+      )}
       {removedNotice && <p className="text-sandink text-sm mb-4 bg-sand/10 rounded-xl p-3">{removedNotice}</p>}
 
       {/* Without this the failure showed as «لحظة…» on a permanently disabled
@@ -175,7 +184,7 @@ export default function CartPage() {
       <div className="card p-3.5 mb-24 space-y-1.5">
         <div className="flex justify-between text-sm text-mist"><span>المنتجات</span><span>{subtotal} ج.م</span></div>
         <div className="flex justify-between text-sm text-mist">
-          <span>التوصيل{quote ? ` لـ ${quote.compound_name}` : ''}</span>
+          <span>التوصيل</span>
           <span>
             {deliveryFee !== null ? `${deliveryFee} ج.م`
               : feeLoading ? '…'
