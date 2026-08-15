@@ -459,6 +459,7 @@ function KitchenVendor({ rid }: { rid: number }) {
   const [slotError, setSlotError] = useState('')
   const [declining, setDeclining] = useState<Order | null>(null)
   const [declineError, setDeclineError] = useState('')
+  const [declineBusy, setDeclineBusy] = useState(false)
   const decliningRef = useDismissable(() => { setDeclining(null); setDeclineError('') }, !!declining)
   const [reliability, setReliability] = useState<{ avg_accept_minutes: number | null; total_orders: number } | null>(null)
   // Non-empty while the last poll failed. Never blanks the board -- it sits
@@ -675,10 +676,12 @@ function KitchenVendor({ rid }: { rid: number }) {
   // repainted from server state, and the vendor was left believing they had
   // declined an order that was still coming.
   async function decline() {
-    if (!declining) return
+    if (!declining || declineBusy) return
+    setDeclineBusy(true)
     const res = await rpc('cancel_order', { p_order_id: declining.id, p_reason: 'vendor_declined' }, {
       too_late_to_cancel: 'الطلب اتقبل بالفعل ومعاه مندوب — كلّم الإدارة عشان تلغيه',
     })
+    setDeclineBusy(false)
     if (!res.ok) { setDeclineError(res.error); return }
     setDeclining(null); setDeclineError(''); load()
   }
@@ -1153,8 +1156,10 @@ function KitchenVendor({ rid }: { rid: number }) {
               <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3">{declineError}</p>
             )}
             <div className="flex gap-3">
-              <button className="btn-ghost !rounded-2xl flex-1" onClick={() => { setDeclining(null); setDeclineError('') }}>تراجع</button>
-              <button className="btn-danger !rounded-2xl flex-1" onClick={decline}>تأكيد الرفض</button>
+              <button className="btn-ghost !rounded-2xl flex-1" disabled={declineBusy} onClick={() => { setDeclining(null); setDeclineError('') }}>تراجع</button>
+              <button className="btn-danger !rounded-2xl flex-1" disabled={declineBusy} onClick={decline}>
+                {declineBusy ? 'لحظة…' : 'تأكيد الرفض'}
+              </button>
             </div>
           </div>
         </div>
