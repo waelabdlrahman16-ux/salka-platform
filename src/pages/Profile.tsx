@@ -157,12 +157,13 @@ export default function Profile() {
 
       {!editingIdentity && (
         <div className="card p-4 bg-sand/10 mt-3">
-          <p className="text-sm font-semibold mb-1">
+          <p className="text-sm font-semibold mb-3">
             {customer.phone ? 'تغيير رقم الموبايل' : 'محتاجين رقم موبايلك عشان نقدر نوصلك'}
           </p>
-          <p className="text-xs text-mist mb-3">
-            تأكيد الرقم بالرسالة هيتاح بعد تفعيل خدمة الرسائل. لحد وقتها، اكتب رقم التواصل في صفحة الدفع.
-          </p>
+          {/* VerifiedPhoneEditor renders its own "SMS not available yet"
+              explanation while smsEnabled is false -- this card used to say
+              the same thing again first, in slightly different words,
+              stacked directly above it. */}
           <VerifiedPhoneEditor compact />
         </div>
       )}
