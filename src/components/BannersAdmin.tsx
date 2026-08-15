@@ -4,6 +4,7 @@ import { describeError } from '../lib/rpc'
 import { compressImage } from '../lib/upload'
 import { isoToCairoLocalInput, cairoLocalInputToISO } from '../lib/cairoTime'
 import { useSheets } from './ActionSheets'
+import type { Restaurant } from '../lib/types'
 
 interface BannerRow {
   id: number
@@ -33,7 +34,7 @@ const LINK_OK = (v: string) => !v.trim() || /^\/[A-Za-z0-9/_?=&%.:-]*$/.test(v) 
 const MAX_BYTES = 2 * 1024 * 1024
 const OK_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif']
 
-export default function BannersAdmin() {
+export default function BannersAdmin({ restaurants }: { restaurants: Restaurant[] }) {
   const fid = useId()
   const [rows, setRows] = useState<BannerRow[]>([])
   const { confirmSheet, sheetElement } = useSheets()
@@ -205,6 +206,18 @@ export default function BannersAdmin() {
               value={form.bg_color} onChange={e => setForm(f => ({ ...f, bg_color: e.target.value }))} /></div>
 
           <div><label className="label" htmlFor={`${fid}-l`}>لما حد يضغط، يروح فين؟</label>
+            {/* The common case is "open this restaurant", which meant
+                copying an id out of another tab and hand-typing
+                /restaurant/9 -- easy to fat-finger and impossible to verify
+                without opening the link. Picking from the same restaurant
+                list the rest of the admin panel already uses fills the text
+                field instead of replacing it, so a non-restaurant link
+                (an offer page, an external URL) is still just typed in. */}
+            <select className="field mb-2" value=""
+              onChange={e => { if (e.target.value) setForm(f => ({ ...f, link_url: `/restaurant/${e.target.value}` })) }}>
+              <option value="">اختار مطعم يملا اللينك أوتوماتيك…</option>
+              {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+            </select>
             <input id={`${fid}-l`} className={`field ${!LINK_OK(form.link_url) ? '!border-red-400' : ''}`}
               dir="ltr" placeholder="/restaurant/9  أو  https://..." value={form.link_url}
               onChange={e => setForm(f => ({ ...f, link_url: e.target.value }))} />

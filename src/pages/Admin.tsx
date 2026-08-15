@@ -2713,8 +2713,8 @@ export default function Admin() {
 
       {tab === 'customers' && <CustomersTab />}
 
-      {tab === 'banners' && <BannersAdmin />}
-      {tab === 'feed_ads' && <FeedAdsAdmin />}
+      {tab === 'banners' && <BannersAdmin restaurants={restaurants} />}
+      {tab === 'feed_ads' && <FeedAdsAdmin restaurants={restaurants} />}
       {tab === 'featured_products' && <FeaturedProductsAdmin restaurants={restaurants} />}
 
       {tab === 'settings' && (

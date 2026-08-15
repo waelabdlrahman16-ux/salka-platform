@@ -12,9 +12,10 @@ export interface FeaturedProductCard {
 /**
  * A cross-restaurant "featured" shelf between restaurant cards on Home --
  * admin-picked dishes from any vendor, not one restaurant's own menu order.
- * Links to the restaurant page rather than opening the item directly: there
- * is no per-item deep link into RestaurantDetail yet, and the restaurant
- * page is never a wrong destination for "I want that dish."
+ * Links straight into the item's own detail sheet on the restaurant page
+ * (RestaurantDetail reads ?item=<id> and opens it once the menu loads) --
+ * landing on the restaurant page and making the customer go find the dish
+ * themselves defeated the point of featuring it in the first place.
  */
 export default function FeaturedProductsRail({ items }: { items: FeaturedProductCard[] }) {
   if (items.length === 0) return null
@@ -24,7 +25,7 @@ export default function FeaturedProductsRail({ items }: { items: FeaturedProduct
       <h2 className="font-bold text-base mb-2">أصناف مميزة</h2>
       <div className="flex gap-3 overflow-x-auto pb-1 snap-x snap-mandatory scrollbar-none">
         {items.map(it => (
-          <Link key={it.menu_item_id} to={`/restaurant/${it.restaurant_id}`}
+          <Link key={it.menu_item_id} to={`/restaurant/${it.restaurant_id}?item=${it.menu_item_id}`}
             className="shrink-0 snap-start w-28 text-right">
             <div className="rounded-xl aspect-square grid place-items-center text-2xl mb-1.5 overflow-hidden bg-shellup">
               {it.image_url ? <img src={it.image_url} alt="" className="w-full h-full object-cover" /> : '🍽️'}

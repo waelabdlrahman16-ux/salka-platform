@@ -129,6 +129,27 @@ export default function RestaurantDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurant?.id])
 
+  // Deep link into a single item's sheet -- e.g. Home's featured-products
+  // shelf, which used to only be able to land someone on the restaurant page
+  // and make them go find the dish themselves. Guarded to fire once: without
+  // openedFromUrlRef, closing the sheet while ?item= was still in the URL
+  // (or any catalogRevision refetch) would pop it straight back open.
+  const openedFromUrlRef = useRef(false)
+  useEffect(() => {
+    if (openedFromUrlRef.current || !items.length) return
+    const itemParam = searchParams.get('item')
+    if (!itemParam) return
+    openedFromUrlRef.current = true
+    const found = items.find(it => it.id === Number(itemParam))
+    if (found) setDetailItem(found)
+    // Consumed either way -- an invalid/stale id should not linger and retry
+    // forever, and a valid one has done its job once the sheet is open.
+    const next = new URLSearchParams(searchParams)
+    next.delete('item')
+    setSearchParams(next, { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items])
+
   // Funnel step 3. Keyed on the LOADED restaurant rather than the URL param, so
   // a vendor that failed to load is not counted as one the customer opened --
   // that would make a broken page look like interest.
