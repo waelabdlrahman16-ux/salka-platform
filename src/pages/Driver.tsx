@@ -695,9 +695,12 @@ export default function DriverPage() {
 
   async function reject() {
     if (!rejecting) return
-    const res = await driverAssignmentAction('rejectAssignment', { assignmentId: rejecting.id, reason: reason.trim() })
-    if (!res.ok) { await alertSheet(res.error); return }
-    setRejecting(null); setReason(''); load(true)
+    const a = rejecting
+    await runAction(`reject:${a.id}`, async () => {
+      const res = await driverAssignmentAction('rejectAssignment', { assignmentId: a.id, reason: reason.trim() })
+      if (!res.ok) { await alertSheet(res.error); return }
+      setRejecting(null); setReason(''); load(true)
+    })
   }
 
   // Shown INSTEAD of the board, not over it: the point is that this phone must
@@ -727,7 +730,13 @@ export default function DriverPage() {
   // "جاري التحميل…" line here left the page looking blank on slow cellular
   // for up to LOAD_TIMEOUT_MS; a skeleton roughly matching the real layout
   // (header + card list) at least shows something is happening.
-  if (!driver) {
+  //
+  // deviceLocked === null (not yet checked) also holds here, not just !driver.
+  // claimDevice() and load() fire in separate effects and race: without this,
+  // a phone an admin had just unbound could render the full board -- customer
+  // names, phones, addresses -- for however long claimDevice() took to answer,
+  // on the exact device the block above exists to keep all of that away from.
+  if (!driver || deviceLocked === null) {
     return (
       <div className="max-w-lg mx-auto">
         <div className="flex items-center justify-between mb-3">
@@ -955,6 +964,14 @@ export default function DriverPage() {
                     </p>
                   )}
                 </div>
+                {/* Same number as the device-locked screen's call button.
+                    Telling a driver standing somewhere holding food to "call
+                    admin" with no number on screen is not a real instruction. */}
+                {dead.held && (
+                  <a href="tel:+201150068077" className="btn-sea !py-2 !px-3 text-xs shrink-0 !flex items-center gap-1">
+                    📞 اتصال
+                  </a>
+                )}
               </div>
             )
           }
@@ -1533,8 +1550,10 @@ export default function DriverPage() {
             <h3 className="font-bold mb-3">سبب الرفض</h3>
             <input className="field" value={reason} onChange={e => setReason(e.target.value)} placeholder="مثال: بعيد عن منطقتي" />
             <div className="flex gap-3 mt-4">
-              <button className="btn-ghost flex-1" onClick={() => setRejecting(null)}>إلغاء</button>
-              <button className="btn-danger flex-1" onClick={reject}>تأكيد الرفض</button>
+              <button className="btn-ghost flex-1" disabled={isBusy(`reject:${rejecting.id}`)} onClick={() => setRejecting(null)}>إلغاء</button>
+              <button className="btn-danger flex-1" disabled={isBusy(`reject:${rejecting.id}`)} onClick={reject}>
+                {isBusy(`reject:${rejecting.id}`) ? 'لحظة…' : 'تأكيد الرفض'}
+              </button>
             </div>
           </div>
         </div>
