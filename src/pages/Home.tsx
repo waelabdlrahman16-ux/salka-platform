@@ -350,21 +350,19 @@ export default function Home() {
         r.name.toLowerCase().includes(foodQ.trim().toLowerCase()) ||
         (r.category ?? '').toLowerCase().includes(foodQ.trim().toLowerCase()))
     : []
-  const kindCount = (k: VendorKind) =>
-    catalogRestaurants.filter(r => vendorKind(r.category) === k && r.is_open).length
   const filtered = search.trim() ? compounds.filter(c => c.name.toLowerCase().includes(search.toLowerCase())) : []
 
   // Needs a compound the same way the restaurant list does -- without one
   // there is nothing for either destination to deliver to yet.
   const quickAccessTiles = compoundId ? (
-    <div className="grid grid-cols-2 gap-3 mb-4">
-      <Link to="/custom-order?type=supermarket" className="card p-3 flex flex-col items-center text-center gap-2 hover:border-sea/50 transition-colors">
-        <span className="w-11 h-11 rounded-xl grid place-items-center text-2xl shrink-0" style={{ background: 'rgba(212,163,42,.12)' }}>🛒</span>
-        <span className="font-bold text-sm leading-tight">سوبر ماركت</span>
+    <div className="grid grid-cols-2 gap-2.5 mb-4">
+      <Link to="/custom-order?type=supermarket" className="card p-2.5 flex items-center gap-2 hover:border-sea/50 transition-colors">
+        <span className="w-8 h-8 rounded-lg grid place-items-center text-base shrink-0" style={{ background: 'rgba(212,163,42,.12)' }}>🛒</span>
+        <span className="font-bold text-sm truncate">سوبر ماركت</span>
       </Link>
-      <Link to="/custom-order?type=pharmacy" className="card p-3 flex flex-col items-center text-center gap-2 hover:border-sea/50 transition-colors">
-        <span className="w-11 h-11 rounded-xl grid place-items-center text-2xl shrink-0" style={{ background: 'rgba(200,60,60,.1)' }}>💊</span>
-        <span className="font-bold text-sm leading-tight">صيدلية</span>
+      <Link to="/custom-order?type=pharmacy" className="card p-2.5 flex items-center gap-2 hover:border-sea/50 transition-colors">
+        <span className="w-8 h-8 rounded-lg grid place-items-center text-base shrink-0" style={{ background: 'rgba(200,60,60,.1)' }}>💊</span>
+        <span className="font-bold text-sm truncate">صيدلية</span>
       </Link>
     </div>
   ) : null
@@ -493,17 +491,12 @@ export default function Home() {
           {availableKinds.length > 1 && (
             <div className="flex gap-2 overflow-x-auto pb-1 mb-4 -mx-4 px-4 scrollbar-none">
               {availableKinds.map(({ kind: k, emoji }) => {
-                // The count is how many are OPEN, not how many exist. A chip
-                // that leads to three shut restaurants is a wasted tap, and the
-                // number is the only warning available before taking it.
-                const n = kindCount(k)
                 return (
                   <button key={k}
                     className={`tab shrink-0 ${kind === k ? 'tab-active' : 'bg-shellup/60'}`}
                     onClick={() => setKind(kind === k ? null : k)}>
                     <span className="flex items-center gap-1.5">
                       <span aria-hidden="true">{emoji}</span>{k}
-                      {n > 0 && <span className="text-[11px] text-mist">{n}</span>}
                     </span>
                   </button>
                 )
