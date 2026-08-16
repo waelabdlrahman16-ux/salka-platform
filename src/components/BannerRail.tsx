@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { sized, IMG } from '../lib/imageUrl'
 
 export interface Banner {
   id: number
@@ -111,7 +112,16 @@ export default function BannerRail({ onBanners }: { onBanners?: (has: boolean) =
             <Tag
               key={b.id}
               {...(clickable ? { onClick: () => open(b), type: 'button' as const } : {})}
-              aria-label={clickable ? [b.title, b.subtitle].filter(Boolean).join(' — ') || undefined : undefined}
+              // A banner is allowed to carry no title and no subtitle -- the
+              // artwork often says everything (20260814144254_banners_optional_
+              // title_required_window). When that happens this used to fall
+              // through to `undefined`, leaving a tappable control a screen
+              // reader announces as just "button". Lighthouse caught exactly
+              // this on production, two instances, and it was the whole of the
+              // accessibility drop from 96 to 93.
+              aria-label={clickable
+                ? [b.title, b.subtitle].filter(Boolean).join(' — ') || 'إعلان — اضغط للتفاصيل'
+                : undefined}
               className={`relative shrink-0 snap-center w-[96%] sm:w-[358px] h-[140px] rounded-2xl overflow-hidden
                           text-right ${clickable ? 'cursor-pointer' : ''}`}
               style={{ background: b.bg_color }}>
@@ -128,7 +138,7 @@ export default function BannerRail({ onBanners }: { onBanners?: (has: boolean) =
                 // complete=false, naturalWidth=0 forever, while `new Image()`
                 // on the exact same URL loaded it at 704x704 immediately. The
                 // customer saw a flat colour block where the advert should be.
-                <img src={b.image_url} alt={b.title ?? ''} loading="eager" fetchPriority="high"
+                <img src={sized(b.image_url, IMG.wide)} alt={b.title ?? ''} loading="eager" fetchPriority="high"
                   onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
                   className="absolute inset-0 w-full h-full object-cover" />
               )}

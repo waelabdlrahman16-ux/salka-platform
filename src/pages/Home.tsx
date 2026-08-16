@@ -433,6 +433,15 @@ export default function Home() {
             <span className="font-bold text-[17px] truncate">{selected ? selected.name : 'اختر مكانك'}</span>
             <span className="text-mist text-xs shrink-0">▾</span>
           </span>
+          {/* The reason, but only while there is no answer yet. Once a compound
+              is set the name above says everything and this would be noise on
+              every subsequent visit. This replaced a separate full-width card
+              that repeated the question a second time, lower down the page. */}
+          {!selected && (
+            <span className="block text-[11px] text-mist mt-0.5">
+              عشان نعرفك سعر التوصيل والمطاعم اللي بتوصلك
+            </span>
+          )}
         </button>
         {deliveryFee !== null && (
           <span className="shrink-0 text-[11px] font-bold text-sandink bg-sand/20 rounded-lg px-2.5 py-1 mt-3">
@@ -478,23 +487,14 @@ export default function Home() {
 
       {loading && <p className="text-mist">جاري التحميل…</p>}
 
-      {/* An invitation, not a wall.
-          This slot used to hold «اختار مكانك الأول» -- a card that replaced the
-          entire menu until a compound was chosen. It is now a single line above
-          a fully browsable catalogue, because the thing that persuades somebody
-          to tell you where they live is seeing the food first. */}
-      {!loading && !compoundId && !compoundsFailed && restaurants.length > 0 && (
-        <button
-          className="w-full card px-4 py-3 mb-3 flex items-center gap-2 text-right min-h-11"
-          onClick={() => setPicking(true)}>
-          <Icon name="locationDot" className="w-4 h-4 shrink-0 text-sea" />
-          <span className="text-sm flex-1 min-w-0">
-            <span className="font-semibold">اختار مكانك</span>
-            <span className="text-mist"> — عشان نعرفك سعر التوصيل والمطاعم اللي بتوصلك</span>
-          </span>
-          <span className="text-mist text-xs shrink-0">▾</span>
-        </button>
-      )}
+      {/* There is no separate «اختار مكانك» card here.
+          There was one for a few hours: a full-width invitation above the food.
+          It said exactly what the header control two rows above it already
+          says, so the screen asked the same question twice and spent a chunk of
+          the first viewport doing it. The header button carries it alone --
+          it grows a prompt underneath itself while no place is set (see the
+          header block above), which is the same nudge in the space that was
+          already committed to it. */}
 
       {/* The compounds query itself failed -- a different problem from having no
           compound chosen, and the only one that still needs its own card,

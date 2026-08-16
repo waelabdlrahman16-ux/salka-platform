@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { sized, IMG } from '../lib/imageUrl'
 
 export interface FeedAdCardData {
   id: number
@@ -37,7 +38,7 @@ export default function FeedAdCard({ ad }: { ad: FeedAdCardData }) {
       className={`relative w-full h-[140px] rounded-2xl overflow-hidden text-right mb-3 ${clickable ? 'cursor-pointer' : ''}`}
       style={{ background: ad.bg_color }}>
       {ad.image_url && (
-        <img src={ad.image_url} alt={ad.title ?? ''} loading="lazy"
+        <img src={sized(ad.image_url, IMG.wide)} alt={ad.title ?? ''} loading="lazy"
           onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
           className="absolute inset-0 w-full h-full object-cover" />
       )}
