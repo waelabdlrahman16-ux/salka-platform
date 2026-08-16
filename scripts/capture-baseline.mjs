@@ -26,9 +26,17 @@
 // order data, no secrets. Review `git diff supabase/baseline/` before
 // committing, which is the entire point of the exercise.
 //
-// database.types.ts is NOT produced here -- it comes from the Supabase CLI:
+// database.types.ts is NOT produced here -- it comes from the Supabase CLI.
+// Note the temp file: `>` truncates the target BEFORE the command runs, so a
+// failing gen-types wipes the previous 84 KB and leaves an empty file. That
+// happened twice while writing this. Write elsewhere, move on success only:
 //
-//   supabase gen types typescript --project-id pqpnwxyevrsipklzmwex > supabase/baseline/database.types.ts
+//   supabase login   # one time; --project-id uses the API and needs no Docker
+//   supabase gen types typescript --project-id pqpnwxyevrsipklzmwex > /tmp/types.ts \
+//     && mv /tmp/types.ts supabase/baseline/database.types.ts
+//
+// Do NOT use `--db-url` instead: that path introspects through a container and
+// fails on a machine without Docker or Podman installed.
 
 import { writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -250,8 +258,18 @@ write('manifest.json', {
 await client.end()
 console.log(`
 Done. Now:
-  1. supabase gen types typescript --project-id ${PROJECT_REF} > supabase/baseline/database.types.ts
+
+  1. Refresh the types (needs 'supabase login' once; do NOT use --db-url, it
+     wants Docker). The temp file matters: '>' empties the target before the
+     command runs, so a failure would wipe the existing file.
+
+       supabase gen types typescript --project-id ${PROJECT_REF} > /tmp/types.ts \\
+         && mv /tmp/types.ts supabase/baseline/database.types.ts
+
   2. git diff supabase/baseline/   <-- READ THIS. It is the whole point.
-     Look for privilege changes you did not make.
+     Look for privilege changes you did not make. Compare by function NAME, not
+     by signature: this file records parameter types where older captures
+     recorded parameter names, so a textual diff overstates the churn wildly.
+
   3. Commit.
 `)
