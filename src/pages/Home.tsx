@@ -49,10 +49,13 @@ export default function Home() {
     if (k) next.set('kind', k); else next.delete('kind')
     setSearchParams(next)
   }
-  // Escape only closes the picker when there is something to fall back to --
-  // the same guard the backdrop uses. With no compound chosen and the query
-  // working, closing it would leave the page with no address at all.
-  const pickerRef = useDismissable(() => { if (selected || compoundsFailed) setPicking(false) }, picking)
+  // Always closable, by Escape or by the backdrop. It used to refuse unless a
+  // compound had already been chosen, on the reasoning that dismissing it left
+  // the page with no address -- true when the page rendered nothing without
+  // one. The catalogue now renders unfiltered, so there is always something to
+  // go back to, and a modal a first-time visitor cannot close is exactly what
+  // turned 4,770 paid arrivals into zero orders.
+  const pickerRef = useDismissable(() => setPicking(false), picking)
   const [search, setSearch] = useState('')
   const [nearby, setNearby] = useState<Compound[] | null>(null)
   const [myCoords, setMyCoords] = useState<{ lat: number; lng: number } | null>(null)
@@ -141,22 +144,31 @@ export default function Home() {
         const saved = getCompoundId()
         if (error) {
           setCompoundsFailed(true)
-          // Restore the saved choice even on failure. Returning customers keep
-          // a usable app (and their in-flight order page) instead of being
-          // pinned behind a modal they cannot dismiss; only open the picker for
-          // someone who has no place selected at all.
-          if (saved) { setCompoundId(saved); return }
-          setPicking(true)
+          if (saved) setCompoundId(saved)
           return
         }
         setCompounds(data ?? [])
-        if (saved) { setCompoundId(saved); return }
-        setPicking(true)
-        // try detecting location automatically on first visit rather than
-        // making everyone tap a button first -- useMyLocation already has its
-        // own permission-denied/error handling, which leaves the manual
-        // picker/search showing as a graceful fallback
-        useMyLocation(data ?? [])
+        if (saved) setCompoundId(saved)
+        // NOTHING ELSE HAPPENS HERE ON A FIRST VISIT, AND THAT IS THE POINT.
+        //
+        // This used to do two things to a stranger before they had seen a
+        // single price: open the «فين مكانك؟» modal over an empty screen, and
+        // fire useMyLocation() -- which in turn asked for GPS permission on
+        // page load and, when that was refused or unavailable, printed an error
+        // telling them to go and change their browser settings.
+        //
+        // In Facebook's in-app browser, where 4,049 of 4,770 ad clicks landed,
+        // there is no reachable settings screen, so that instruction could not
+        // be followed. Between 7 and 16 August those 4,770 paid arrivals
+        // produced ZERO orders, while organic visitors -- people who already
+        // knew what was behind the gate -- picked a compound 48% of the time.
+        //
+        // So: no modal, no permission prompt, no error. The catalogue renders
+        // unfiltered (see the restaurants effect below) and the customer is
+        // asked where they are when it starts to matter -- at checkout, which
+        // still requires a compound, or whenever they tap the picker.
+        // useMyLocation() still exists and still works; it now runs only when
+        // somebody presses the button that asks for it.
       })
   }
 
@@ -181,10 +193,19 @@ export default function Home() {
   }, [foodQ, compoundId])
 
   useEffect(() => {
-    if (!compoundId) { setLoading(false); return }
     setLoading(true)
     setRestaurantsFailed(false)
-    publicCatalog<Restaurant[]>('restaurants', { compoundId })
+    // No compound means "browsing before telling us where they are", not an
+    // error. public-catalog treats an ABSENT compoundId as a request for the
+    // whole catalogue (restaurants_all_public); a malformed one is still
+    // rejected, so this cannot widen the list by accident.
+    //
+    // The gap is small and measured: 16 vendors platform-wide against a
+    // per-compound average of 15.3 (min 7, max 16, across 85 compounds, none
+    // with zero coverage). As soon as a compound is chosen this effect re-runs
+    // and the list narrows to the vendors that actually deliver there, and
+    // place_order rejects an out-of-coverage vendor regardless.
+    publicCatalog<Restaurant[]>('restaurants', compoundId ? { compoundId } : {})
       .then(async res => {
         if (!res.ok) { setRestaurants([]); setRestaurantsFailed(true); setLoading(false); return }
         const list = res.data ?? []
@@ -248,7 +269,7 @@ export default function Home() {
       if (msg) setLocationError(msg)
     }
     const watchdog = setTimeout(
-      () => finish('الموقع اتأخر — اسمح للتطبيق بالوصول لموقعك من إعدادات المتصفح، أو دوّر على اسم مكانك تحت'),
+      () => finish('الموقع اتأخر — اكتب اسم مكانك تحت'),
       20000
     )
 
@@ -304,16 +325,21 @@ export default function Home() {
         finish()
       },
       err => {
-        // Naming the reason matters: "denied" needs a settings change and no
-        // amount of re-tapping will help, while "unavailable" or "timeout" are
-        // worth another try. One generic sentence for all three sent people
-        // back to a button that could not work.
+        // Naming the reason still matters -- "timeout" is worth another tap and
+        // "denied" is not -- but EVERY branch now leads with the thing that
+        // always works: type the name.
+        //
+        // The denied branch used to read «فعّلها من إعدادات المتصفح» — enable it
+        // in your browser settings. Inside Facebook's in-app browser, where
+        // 4,049 of 4,770 paid arrivals landed, there is no settings screen to
+        // reach, so the only instruction on the customer's first screen was one
+        // they could not carry out. Never send someone somewhere they cannot go.
         finish(
           err.code === err.PERMISSION_DENIED
-            ? 'التطبيق مش مسموحله يشوف موقعك — فعّلها من إعدادات المتصفح، أو دوّر على اسم مكانك تحت'
+            ? 'مفيش مشكلة — اكتب اسم مكانك تحت وهتلاقيه'
             : err.code === err.TIMEOUT
-              ? 'الموقع اتأخر — جرب تاني، أو دوّر على اسم مكانك تحت'
-              : 'مش قادرين نوصل لموقعك — دوّر على اسم مكانك تحت'
+              ? 'الموقع اتأخر — اكتب اسم مكانك تحت، أو جرب تاني'
+              : 'مش قادرين نوصل لموقعك — اكتب اسم مكانك تحت'
         )
       },
       // 12s, not 15: it has to expire comfortably inside the 20s watchdog so
@@ -417,7 +443,7 @@ export default function Home() {
 
       {/* One box, two kinds of answer: vendor names matched locally, dishes
           matched on the server across every vendor delivering here. */}
-      {compoundId && !picking && (
+      {compoundId && (
         <div className="relative mb-3">
           <input className="field !pr-10" value={foodQ} onChange={e => setFoodQ(e.target.value)}
             aria-label="دوّر على مطعم أو أكلة"
@@ -440,9 +466,9 @@ export default function Home() {
           banners when there are any (an admin who paid for that space should
           not have it shared), but promoted above -- filling the gap, not
           leaving one -- the moment there are none. */}
-      {!picking && !hasBanners && quickAccessTiles}
-      {!picking && <BannerRail onBanners={setHasBanners} />}
-      {!picking && hasBanners && quickAccessTiles}
+      {!hasBanners && quickAccessTiles}
+      <BannerRail onBanners={setHasBanners} />
+      {hasBanners && quickAccessTiles}
 
       {/* The delivery-fee strip that used to sit here has moved onto each
           restaurant card. It still has to appear before the cart -- the reason
@@ -450,31 +476,43 @@ export default function Home() {
           checkout -- but as one number in the card's meta line rather than a
           boxed banner competing with the list. */}
 
-      {!picking && loading && <p className="text-mist">جاري التحميل…</p>}
+      {loading && <p className="text-mist">جاري التحميل…</p>}
 
-      {/* Dismissing the picker after a failed compounds load used to leave a
-          page with a title, a button and nothing else: loading was already
-          false and the restaurants block is gated on compoundId, so neither
-          branch rendered and there was no error and no retry outside the modal
-          the customer had just closed. */}
-      {!picking && !loading && !compoundId && (
-        <div className="card p-6 text-center">
-          <p className="font-semibold">{compoundsFailed ? 'مش قادرين نحمّل الأماكن' : 'اختار مكانك الأول'}</p>
-          <p className="text-sm text-mist mt-1 mb-4">
-            {compoundsFailed
-              ? 'اتأكد إن النت شغال وجرب تاني.'
-              : 'محتاجين نعرف مكانك عشان نعرف المطاعم اللي بتوصله وسعر التوصيل.'}
-          </p>
-          <button className="btn-sea !py-2 !px-5 text-sm" onClick={() => setPicking(true)}>
-            {compoundsFailed ? 'جرب تاني' : 'اختار مكانك'}
-          </button>
+      {/* An invitation, not a wall.
+          This slot used to hold «اختار مكانك الأول» -- a card that replaced the
+          entire menu until a compound was chosen. It is now a single line above
+          a fully browsable catalogue, because the thing that persuades somebody
+          to tell you where they live is seeing the food first. */}
+      {!loading && !compoundId && !compoundsFailed && restaurants.length > 0 && (
+        <button
+          className="w-full card px-4 py-3 mb-3 flex items-center gap-2 text-right min-h-11"
+          onClick={() => setPicking(true)}>
+          <Icon name="locationDot" className="w-4 h-4 shrink-0 text-sea" />
+          <span className="text-sm flex-1 min-w-0">
+            <span className="font-semibold">اختار مكانك</span>
+            <span className="text-mist"> — عشان نعرفك سعر التوصيل والمطاعم اللي بتوصلك</span>
+          </span>
+          <span className="text-mist text-xs shrink-0">▾</span>
+        </button>
+      )}
+
+      {/* The compounds query itself failed -- a different problem from having no
+          compound chosen, and the only one that still needs its own card,
+          because without the list the picker cannot be used at all. The
+          catalogue below still renders unfiltered, so the customer can browse
+          while this is broken. */}
+      {!loading && !compoundId && compoundsFailed && (
+        <div className="card p-4 mb-3 text-center">
+          <p className="font-semibold text-sm">مش قادرين نحمّل الأماكن</p>
+          <p className="text-xs text-mist mt-1 mb-3">اتأكد إن النت شغال وجرب تاني — تقدر تتفرج على المطاعم دلوقتي.</p>
+          <button className="btn-sea !py-2 !px-5 text-sm" onClick={loadCompounds}>جرب تاني</button>
         </div>
       )}
 
       {/* The صيدلية / سوبر ماركت tiles that were here are gone at Wael's call,
           2026-08-05. They are reachable from the bottom nav. */}
 
-      {!picking && !loading && compoundId && (
+      {!loading && (
         <div id="restaurants">
           {kind && (
             <div className="flex justify-end mb-2">
@@ -578,9 +616,15 @@ export default function Home() {
                 </button>
               </div>
             )}
+            {/* «بتوصل لمكانك» — "delivers to your place" — is only true once a
+                place is known. With no compound chosen the list is the whole
+                catalogue, so an empty one means the filter matched nothing, not
+                that nowhere delivers to them. */}
             {!restaurantsFailed && shownRestaurants.length === 0 && (
               <p className="text-mist py-6">
-                {kind ? `مفيش مطاعم ${kind} بتوصل لمكانك حاليًا` : 'لا يوجد مطاعم بتوصل لمكانك حاليًا'}
+                {compoundId
+                  ? (kind ? `مفيش مطاعم ${kind} بتوصل لمكانك حاليًا` : 'لا يوجد مطاعم بتوصل لمكانك حاليًا')
+                  : (kind ? `مفيش مطاعم ${kind} متاحة حاليًا` : 'مفيش مطاعم متاحة حاليًا')}
               </p>
             )}
             {restaurantFeed}
@@ -624,17 +668,15 @@ export default function Home() {
 
       {picking && (
         <div ref={pickerRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true"
-          onClick={() => (selected || compoundsFailed) && setPicking(false)}>
+          aria-labelledby="place-picker-title"
+          onClick={() => setPicking(false)}>
           <div className="card w-full max-w-md p-4 max-h-[85vh] overflow-y-auto relative" onClick={e => e.stopPropagation()}>
-            {/* The only way to dismiss this was tapping the backdrop *while a
-                compound was already selected*. If the compound query failed the
-                list was empty, nothing could be selected, and the overlay became
-                permanent -- a search box that can never match anything. */}
-            {(selected || compoundsFailed) && (
-              <button className="absolute top-2 left-2 w-11 h-11 grid place-items-center text-mist hover:text-foam text-xl"
-                aria-label="إغلاق" onClick={() => setPicking(false)}>✕</button>
-            )}
-            <h3 className="font-bold text-lg mb-3">فين مكانك؟</h3>
+            {/* Unconditional. This close button, the backdrop and Escape used
+                to work only *while a compound was already selected*, so on a
+                first visit the dialog had no exit at all. */}
+            <button className="absolute top-2 left-2 w-11 h-11 grid place-items-center text-mist hover:text-foam text-xl"
+              aria-label="إغلاق" onClick={() => setPicking(false)}>✕</button>
+            <h3 id="place-picker-title" className="font-bold text-lg mb-3">فين مكانك؟</h3>
 
             {compoundsFailed && (
               <div className="bg-red-500/10 rounded-xl p-3 mb-3 text-center">
