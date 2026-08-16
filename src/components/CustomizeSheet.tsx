@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type MutableRefObject } from 'react'
 import { useDismissable } from '../lib/useDismissable'
 import { applyDiscount, effectiveDiscount } from '../lib/discounts'
 import type { Discount, MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemCombo, MenuItemSize } from '../lib/types'
 
 export default function CustomizeSheet({
-  item, sizes, combos, addonGroups, addons, discounts, onClose, onConfirm
+  item, sizes, combos, addonGroups, addons, discounts, onClose, onConfirm, blockedRef
 }: {
   item: MenuItem
   discounts: Discount[]
@@ -14,6 +14,17 @@ export default function CustomizeSheet({
   addons: MenuItemAddon[]
   onClose: () => void
   onConfirm: (sizeId: number | null, comboId: number | null, addonIds: number[], qty: number) => void
+  /**
+   * Kept pointed at whatever is currently stopping the add button, or null when
+   * nothing is. RestaurantDetail reads it when the sheet is dismissed, so the
+   * abandonment event can say WHY somebody left rather than only that they did.
+   *
+   * A ref rather than a callback prop on purpose: `onClose` is wired straight
+   * to the overlay's onClick and to useDismissable, so it receives a MouseEvent
+   * and cannot carry a reason without either changing every call site or
+   * risking an event object being logged as one.
+   */
+  blockedRef?: MutableRefObject<string | null>
 }) {
   const overlayRef = useDismissable(onClose)
   const defaultSize = sizes.find(s => s.is_default) ?? sizes[0] ?? null
@@ -86,7 +97,18 @@ export default function CustomizeSheet({
     const c = groupCounts[g.id] ?? 0
     return c >= g.min_select && (g.max_select == null || c <= g.max_select)
   })
-  const valid = (chosenCombo != null || sizes.length === 0 || sizeId != null) && groupsValid
+  const sizeMissing = chosenCombo == null && sizes.length > 0 && sizeId == null
+  const valid = !sizeMissing && groupsValid
+
+  // Names match the server-side error codes place_order would raise for the
+  // same state, so a blocked customisation and a blocked checkout describe
+  // themselves the same way in the funnel.
+  const blocking = sizeMissing ? 'size_required'
+    : !groupsValid ? 'addon_group_min_not_met'
+    : null
+  useEffect(() => {
+    if (blockedRef) blockedRef.current = blocking
+  }, [blocking, blockedRef])
 
   // ALWAYS a full-bleed bottom sheet, no sm: desktop-centered variant --
   // see the note in ProductDetailSheet.

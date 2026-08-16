@@ -328,18 +328,24 @@ export default function CheckoutPage() {
     const err = result.ok ? null : { message: result.code }
     if (!result.ok || !data?.token) {
       setSaving(false)
-      const reason =
-        err?.message.includes('slot_full') ? 'slot_full'
-        : err?.message.includes('invalid_combo') ? 'invalid_combo'
-        : err?.message.includes('restaurant_closed') ? 'restaurant_closed'
-        : err?.message.includes('vendor_not_covering_compound') ? 'coverage'
-        : err?.message.includes('item_not_available_now') ? 'timed_item_unavailable'
-        : err?.message.includes('item_unavailable') ? 'item_unavailable'
-        : err?.message.includes('size_required') || err?.message.includes('invalid_size') ? 'size'
-        : err?.message.includes('addon_group_min_not_met') ? 'addon_required'
-        : err?.message.includes('addon_group_max_exceeded') ? 'addon_limit'
-        : err?.message.includes('promo_') ? 'promo'
-        : 'unknown'
+      // Record the server's own error code, not a bucket.
+      //
+      // This used to map ten known codes to friendly labels and send 'unknown'
+      // for everything else. The edge function can return roughly forty --
+      // order_rate_limit, daily_order_limit, account_blocked, slot_unavailable,
+      // restaurant_not_found, order_creation_failed, 'network' -- so every
+      // block outside that list arrived as 'unknown'. It made the metric
+      // useless in exactly the cases worth knowing about: all 66 blocks
+      // recorded between 10 and 15 August, from 14 people averaging 4.7
+      // attempts each, said 'unknown'.
+      //
+      // The code is already an allowlisted server token (see ORDER_ERRORS in
+      // customer-order-creation) and carries no personal data, so it can be
+      // stored verbatim. The shape check is belt-and-braces: anything that is
+      // not a bare snake_case token is not a code we recognise, and must not
+      // be forwarded in case a raw driver message ever reaches this path.
+      const rawCode = (err?.message ?? '').trim()
+      const reason = /^[a-z0-9_]{1,64}$/.test(rawCode) ? rawCode : 'unknown'
       track('checkout_blocked', {
         restaurantId: restaurant.id,
         compoundId,
