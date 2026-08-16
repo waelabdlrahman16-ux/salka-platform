@@ -39,6 +39,9 @@ export default function RestaurantDetail() {
   const [discounts, setDiscounts] = useState<Discount[]>([])
   const [customizing, setCustomizing] = useState<MenuItem | null>(null)
   const customizationFinished = useRef(false)
+  // What is currently stopping CustomizeSheet's add button, kept up to date by
+  // the sheet itself and read when it is dismissed. See abandonCustomization.
+  const customizeBlocked = useRef<string | null>(null)
   const [detailItem, setDetailItem] = useState<MenuItem | null>(null)
   // أرابياتا has 85 items across 8 categories. Categories are a filing system,
   // not a way to find one specific dish, and there was nothing else.
@@ -199,6 +202,7 @@ export default function RestaurantDetail() {
 
   function openCustomization(item: MenuItem) {
     customizationFinished.current = false
+    customizeBlocked.current = null
     track('customization_opened', {
       restaurantId: restaurant?.id,
       props: { item_id: item.id },
@@ -210,11 +214,22 @@ export default function RestaurantDetail() {
     if (!customizing) return
     if (!customizationFinished.current) {
       customizationFinished.current = true
+      // Three quarters of the people who open this sheet leave without adding
+      // anything (40 of 52 devices, 9-15 August), and the event used to record
+      // only that it happened. `reason` separates the two cases that need
+      // completely different fixes: 'changed_mind' means the add button was
+      // live and they chose not to press it, which is pricing or appetite;
+      // anything else means the button was disabled and they could not have
+      // added the item even if they wanted to, which is a UI problem.
       track('customization_abandoned', {
         restaurantId: restaurant?.id,
-        props: { item_id: customizing.id },
+        props: {
+          item_id: customizing.id,
+          reason: customizeBlocked.current ?? 'changed_mind',
+        },
       })
     }
+    customizeBlocked.current = null
     setCustomizing(null)
   }
 
@@ -568,6 +583,7 @@ export default function RestaurantDetail() {
           addonGroups={addonGroups.filter(g => g.menu_item_id === customizing.id)}
           addons={addons.filter(a => addonGroups.some(g => g.menu_item_id === customizing.id && g.id === a.group_id))}
           onClose={abandonCustomization}
+          blockedRef={customizeBlocked}
           onConfirm={(sizeId, comboId, addonIds, qty) => {
             customizationFinished.current = true
             cart.addCustomLine(customizing.id, sizeId, comboId, addonIds, qty)
