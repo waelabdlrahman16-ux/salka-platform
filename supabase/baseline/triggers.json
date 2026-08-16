@@ -1,74 +1,202 @@
-{
-  "jsonb_agg": [
-    {
-      "name": "trg_notify_admin_new_complaint",
-      "table": "public.complaints",
-      "definition": "CREATE TRIGGER trg_notify_admin_new_complaint AFTER INSERT ON public.complaints FOR EACH ROW EXECUTE FUNCTION notify_admin_new_complaint()"
-    },
-    {
-      "name": "trg_compound_fee_default",
-      "table": "public.compounds",
-      "definition": "CREATE TRIGGER trg_compound_fee_default BEFORE INSERT ON public.compounds FOR EACH ROW EXECUTE FUNCTION compound_fee_default()"
-    },
-    {
-      "name": "trg_notify_customer_driver_arrived",
-      "table": "public.delivery_assignments",
-      "definition": "CREATE TRIGGER trg_notify_customer_driver_arrived AFTER UPDATE OF arrived_at_customer_at ON public.delivery_assignments FOR EACH ROW EXECUTE FUNCTION notify_customer_driver_arrived()"
-    },
-    {
-      "name": "trg_notify_driver_assignment",
-      "table": "public.delivery_assignments",
-      "definition": "CREATE TRIGGER trg_notify_driver_assignment AFTER INSERT OR UPDATE ON public.delivery_assignments FOR EACH ROW EXECUTE FUNCTION notify_driver_assignment_change()"
-    },
-    {
-      "name": "trg_ensure_menu_category",
-      "table": "public.menu_items",
-      "definition": "CREATE TRIGGER trg_ensure_menu_category BEFORE INSERT OR UPDATE OF category ON public.menu_items FOR EACH ROW EXECUTE FUNCTION ensure_menu_category()"
-    },
-    {
-      "name": "on_order_delivered_send_receipt",
-      "table": "public.orders",
-      "definition": "CREATE TRIGGER on_order_delivered_send_receipt AFTER UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION notify_order_delivered_receipt()"
-    },
-    {
-      "name": "trg_log_order_status",
-      "table": "public.orders",
-      "definition": "CREATE TRIGGER trg_log_order_status AFTER INSERT OR UPDATE OF status ON public.orders FOR EACH ROW EXECUTE FUNCTION log_order_status_change()"
-    },
-    {
-      "name": "trg_notify_admin_new_order",
-      "table": "public.orders",
-      "definition": "CREATE TRIGGER trg_notify_admin_new_order AFTER INSERT ON public.orders FOR EACH ROW EXECUTE FUNCTION notify_admin_new_order()"
-    },
-    {
-      "name": "trg_notify_admin_order_trouble",
-      "table": "public.orders",
-      "definition": "CREATE TRIGGER trg_notify_admin_order_trouble AFTER UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION notify_admin_order_trouble()"
-    },
-    {
-      "name": "trg_notify_driver_order_ready",
-      "table": "public.orders",
-      "definition": "CREATE TRIGGER trg_notify_driver_order_ready AFTER UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION notify_driver_order_ready()"
-    },
-    {
-      "name": "trg_notify_new_order",
-      "table": "public.orders",
-      "definition": "CREATE TRIGGER trg_notify_new_order AFTER INSERT ON public.orders FOR EACH ROW EXECUTE FUNCTION notify_new_order()"
-    },
-    {
-      "name": "trg_notify_order_status",
-      "table": "public.orders",
-      "definition": "CREATE TRIGGER trg_notify_order_status AFTER UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION notify_order_status_change()"
-    },
-    {
-      "name": "trg_notify_vendor_order_now_due",
-      "table": "public.orders",
-      "definition": "CREATE TRIGGER trg_notify_vendor_order_now_due AFTER UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION notify_vendor_order_now_due()"
-    },
-    {
-      "name": "trg_order_is_test",
-      "table": "public.orders",
-      "definition": "CREATE TRIGGER trg_order_is_test BEFORE INSERT ON public.orders FOR EACH ROW EXECUTE FUNCTION set_order_is_test()"
-    }
-  ]
-}
+[
+  {
+    "schema": "storage",
+    "table": "buckets",
+    "trigger": "enforce_bucket_name_length_trigger",
+    "function": "storage.enforce_bucket_name_length()",
+    "definition": "CREATE TRIGGER enforce_bucket_name_length_trigger BEFORE INSERT OR UPDATE OF name ON storage.buckets FOR EACH ROW EXECUTE FUNCTION storage.enforce_bucket_name_length()",
+    "enabled": true
+  },
+  {
+    "schema": "storage",
+    "table": "buckets",
+    "trigger": "protect_buckets_delete",
+    "function": "storage.protect_delete()",
+    "definition": "CREATE TRIGGER protect_buckets_delete BEFORE DELETE ON storage.buckets FOR EACH STATEMENT EXECUTE FUNCTION storage.protect_delete()",
+    "enabled": true
+  },
+  {
+    "schema": "public",
+    "table": "complaints",
+    "trigger": "trg_notify_admin_new_complaint",
+    "function": "notify_admin_new_complaint()",
+    "definition": "CREATE TRIGGER trg_notify_admin_new_complaint AFTER INSERT ON public.complaints FOR EACH ROW EXECUTE FUNCTION notify_admin_new_complaint()",
+    "enabled": true
+  },
+  {
+    "schema": "public",
+    "table": "compounds",
+    "trigger": "trg_compound_fee_default",
+    "function": "compound_fee_default()",
+    "definition": "CREATE TRIGGER trg_compound_fee_default BEFORE INSERT ON public.compounds FOR EACH ROW EXECUTE FUNCTION compound_fee_default()",
+    "enabled": true
+  },
+  {
+    "schema": "public",
+    "table": "delivery_assignments",
+    "trigger": "trg_notify_customer_driver_arrived",
+    "function": "notify_customer_driver_arrived()",
+    "definition": "CREATE TRIGGER trg_notify_customer_driver_arrived AFTER UPDATE OF arrived_at_customer_at ON public.delivery_assignments FOR EACH ROW EXECUTE FUNCTION notify_customer_driver_arrived()",
+    "enabled": true
+  },
+  {
+    "schema": "public",
+    "table": "delivery_assignments",
+    "trigger": "trg_notify_driver_assignment",
+    "function": "notify_driver_assignment_change()",
+    "definition": "CREATE TRIGGER trg_notify_driver_assignment AFTER INSERT OR UPDATE ON public.delivery_assignments FOR EACH ROW EXECUTE FUNCTION notify_driver_assignment_change()",
+    "enabled": true
+  },
+  {
+    "schema": "cron",
+    "table": "job",
+    "trigger": "cron_job_cache_invalidate",
+    "function": "cron.job_cache_invalidate()",
+    "definition": "CREATE TRIGGER cron_job_cache_invalidate AFTER INSERT OR DELETE OR UPDATE OR TRUNCATE ON cron.job FOR EACH STATEMENT EXECUTE FUNCTION cron.job_cache_invalidate()",
+    "enabled": true
+  },
+  {
+    "schema": "public",
+    "table": "menu_item_addons",
+    "trigger": "trg_menu_item_addons_base_price",
+    "function": "set_base_price_on_insert_addons()",
+    "definition": "CREATE TRIGGER trg_menu_item_addons_base_price BEFORE INSERT ON public.menu_item_addons FOR EACH ROW EXECUTE FUNCTION set_base_price_on_insert_addons()",
+    "enabled": true
+  },
+  {
+    "schema": "public",
+    "table": "menu_item_combos",
+    "trigger": "trg_menu_item_combos_base_price",
+    "function": "set_base_price_on_insert_combos()",
+    "definition": "CREATE TRIGGER trg_menu_item_combos_base_price BEFORE INSERT ON public.menu_item_combos FOR EACH ROW EXECUTE FUNCTION set_base_price_on_insert_combos()",
+    "enabled": true
+  },
+  {
+    "schema": "public",
+    "table": "menu_item_sizes",
+    "trigger": "trg_menu_item_sizes_base_price",
+    "function": "set_base_price_on_insert_sizes()",
+    "definition": "CREATE TRIGGER trg_menu_item_sizes_base_price BEFORE INSERT ON public.menu_item_sizes FOR EACH ROW EXECUTE FUNCTION set_base_price_on_insert_sizes()",
+    "enabled": true
+  },
+  {
+    "schema": "public",
+    "table": "menu_items",
+    "trigger": "trg_ensure_menu_category",
+    "function": "ensure_menu_category()",
+    "definition": "CREATE TRIGGER trg_ensure_menu_category BEFORE INSERT OR UPDATE OF category ON public.menu_items FOR EACH ROW EXECUTE FUNCTION ensure_menu_category()",
+    "enabled": true
+  },
+  {
+    "schema": "public",
+    "table": "menu_items",
+    "trigger": "trg_menu_items_base_price",
+    "function": "set_base_price_on_insert_menu_items()",
+    "definition": "CREATE TRIGGER trg_menu_items_base_price BEFORE INSERT ON public.menu_items FOR EACH ROW EXECUTE FUNCTION set_base_price_on_insert_menu_items()",
+    "enabled": true
+  },
+  {
+    "schema": "storage",
+    "table": "objects",
+    "trigger": "protect_objects_delete",
+    "function": "storage.protect_delete()",
+    "definition": "CREATE TRIGGER protect_objects_delete BEFORE DELETE ON storage.objects FOR EACH STATEMENT EXECUTE FUNCTION storage.protect_delete()",
+    "enabled": true
+  },
+  {
+    "schema": "storage",
+    "table": "objects",
+    "trigger": "update_objects_updated_at",
+    "function": "storage.update_updated_at_column()",
+    "definition": "CREATE TRIGGER update_objects_updated_at BEFORE UPDATE ON storage.objects FOR EACH ROW EXECUTE FUNCTION storage.update_updated_at_column()",
+    "enabled": true
+  },
+  {
+    "schema": "public",
+    "table": "orders",
+    "trigger": "on_order_delivered_send_receipt",
+    "function": "notify_order_delivered_receipt()",
+    "definition": "CREATE TRIGGER on_order_delivered_send_receipt AFTER UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION notify_order_delivered_receipt()",
+    "enabled": true
+  },
+  {
+    "schema": "public",
+    "table": "orders",
+    "trigger": "trg_log_order_status",
+    "function": "log_order_status_change()",
+    "definition": "CREATE TRIGGER trg_log_order_status AFTER INSERT OR UPDATE OF status ON public.orders FOR EACH ROW EXECUTE FUNCTION log_order_status_change()",
+    "enabled": true
+  },
+  {
+    "schema": "public",
+    "table": "orders",
+    "trigger": "trg_notify_admin_new_order",
+    "function": "notify_admin_new_order()",
+    "definition": "CREATE TRIGGER trg_notify_admin_new_order AFTER INSERT ON public.orders FOR EACH ROW EXECUTE FUNCTION notify_admin_new_order()",
+    "enabled": true
+  },
+  {
+    "schema": "public",
+    "table": "orders",
+    "trigger": "trg_notify_admin_order_trouble",
+    "function": "notify_admin_order_trouble()",
+    "definition": "CREATE TRIGGER trg_notify_admin_order_trouble AFTER UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION notify_admin_order_trouble()",
+    "enabled": true
+  },
+  {
+    "schema": "public",
+    "table": "orders",
+    "trigger": "trg_notify_driver_order_ready",
+    "function": "notify_driver_order_ready()",
+    "definition": "CREATE TRIGGER trg_notify_driver_order_ready AFTER UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION notify_driver_order_ready()",
+    "enabled": true
+  },
+  {
+    "schema": "public",
+    "table": "orders",
+    "trigger": "trg_notify_new_order",
+    "function": "notify_new_order()",
+    "definition": "CREATE TRIGGER trg_notify_new_order AFTER INSERT ON public.orders FOR EACH ROW EXECUTE FUNCTION notify_new_order()",
+    "enabled": true
+  },
+  {
+    "schema": "public",
+    "table": "orders",
+    "trigger": "trg_notify_order_status",
+    "function": "notify_order_status_change()",
+    "definition": "CREATE TRIGGER trg_notify_order_status AFTER UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION notify_order_status_change()",
+    "enabled": true
+  },
+  {
+    "schema": "public",
+    "table": "orders",
+    "trigger": "trg_notify_vendor_order_now_due",
+    "function": "notify_vendor_order_now_due()",
+    "definition": "CREATE TRIGGER trg_notify_vendor_order_now_due AFTER UPDATE ON public.orders FOR EACH ROW EXECUTE FUNCTION notify_vendor_order_now_due()",
+    "enabled": true
+  },
+  {
+    "schema": "public",
+    "table": "orders",
+    "trigger": "trg_order_is_test",
+    "function": "set_order_is_test()",
+    "definition": "CREATE TRIGGER trg_order_is_test BEFORE INSERT ON public.orders FOR EACH ROW EXECUTE FUNCTION set_order_is_test()",
+    "enabled": true
+  },
+  {
+    "schema": "realtime",
+    "table": "subscription",
+    "trigger": "tr_check_filters",
+    "function": "realtime.subscription_check_filters()",
+    "definition": "CREATE TRIGGER tr_check_filters BEFORE INSERT OR UPDATE ON realtime.subscription FOR EACH ROW EXECUTE FUNCTION realtime.subscription_check_filters()",
+    "enabled": true
+  },
+  {
+    "schema": "auth",
+    "table": "users",
+    "trigger": "on_auth_user_created_customer",
+    "function": "handle_new_customer_auth()",
+    "definition": "CREATE TRIGGER on_auth_user_created_customer AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_customer_auth()",
+    "enabled": true
+  }
+]

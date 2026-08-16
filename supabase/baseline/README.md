@@ -1,8 +1,14 @@
 # Production database baseline
 
-Read-only snapshot of the production `public` **and `private`** schemas for project `pqpnwxyevrsipklzmwex`, refreshed 2026-08-12 (previous capture 2026-08-11). This reconciliation adds the six production migration records that were missing from GitHub, fully regenerates `policies.json`, and refreshes the six affected private routine definitions. The changes add no tables, columns, triggers, indexes, or grants, so `public-tables.json`, `grants.json`, `triggers.json`, `indexes.json`, and `database.types.ts` remain unchanged.
+Read-only snapshot of the production `public` **and `private`** schemas for project `pqpnwxyevrsipklzmwex`.
 
-`private` is in scope as of this refresh. Security batches 1–9 (the complete programme) moved 99 privileged cores into it, and a snapshot that records only `public` describes a permission model that no longer exists.
+> **STALE AS OF 2026-08-16.** The JSON files in this directory were last captured 2026-08-12 and production has moved on considerably since: **+57 migrations, +31 policies, +8 tables, +41 functions**. They describe a permission model that no longer exists and must not be treated as authoritative until `npm run baseline:capture` has been run (see Refresh procedure below). The capture could not be done from the audit session itself: it is ~520 KB of JSON and the only database access available there returned results into a chat transcript, where any truncation would have silently corrupted the snapshot. Running the script needs the database password, which is deliberately not something the audit tooling holds.
+>
+> Verified directly against production on 2026-08-16 in the meantime: all seven protected predicates still hold `authenticated` EXECUTE, and the only privilege changes since the last capture are the three made deliberately that day (migrations `20260816083838` and `20260816091833`).
+
+Last captured 2026-08-12 (previous capture 2026-08-11). That capture reconciled six production migration records missing from GitHub, regenerated `policies.json`, and refreshed six private routine definitions.
+
+`private` is in scope. Security batches 1–9 (the complete programme) moved 99 privileged cores into it, and a snapshot that records only `public` describes a permission model that no longer exists.
 
 Accepted advisor warnings, and the functions that must never lose `authenticated` EXECUTE, are documented in `ACCEPTED-WARNINGS.md`.
 
@@ -37,4 +43,28 @@ Recover from this directory and the snapshot files, not from a push. If a replay
 
 ## Refresh procedure
 
-Regenerate every file from the same production project using read-only Supabase catalog access. Review the diff for secrets and unexpected privilege changes before committing. A future canonical SQL dump should be produced with the official Supabase CLI after project linking and database credentials are available; keep that dump outside `supabase/migrations` unless it is intentionally converted into reviewed migrations.
+```bash
+export SUPABASE_DB_URL='postgresql://postgres.pqpnwxyevrsipklzmwex:<password>@<host>:6543/postgres'
+npm run baseline:capture
+supabase gen types typescript --project-id pqpnwxyevrsipklzmwex > supabase/baseline/database.types.ts
+git diff supabase/baseline/    # READ THIS — it is the entire point
+```
+
+The connection URL is in Supabase → Project Settings → Database → Connection string → URI. It contains the database password: set it for the one command, never commit it.
+
+`scripts/capture-baseline.mjs` is read-only — SELECTs against system catalogues only. It cannot modify the database and never reads table rows, so no customer records, order data or secrets reach these files.
+
+**It refuses to capture if any of the seven protected predicates has lost `authenticated` EXECUTE.** A snapshot that records a broken permission model as though it were intended turns the safety net into a rubber stamp, so the script asserts before it writes.
+
+### When to run it
+
+**Every migration that touches a policy or a grant re-captures the baseline in the same pull request.** Not weekly, not "when we remember" — in the same PR, as part of the change.
+
+This rule exists because the alternative was tried and failed. The capture used to be manual, so it was skipped, and by 2026-08-16 the baseline was 57 migrations, 31 policies and 8 tables behind the database it claimed to describe. During that window an unauthenticated order-creation hole (finding 02) went unnoticed for three days — precisely the kind of change this directory exists to catch. Automating the capture is the fix; remembering to do it by hand is not.
+
+### What to look for in the diff
+
+- Any change to `execute` in `routines.json` for `anon` or `authenticated` that you did not deliberately make
+- New rows in `grants.json` granting `anon` or `authenticated` anything on a table
+- Policies in `policies.json` whose `roles` now include `anon`
+- A new `SECURITY DEFINER` function reachable by `anon` — the exact shape of finding 02, where a new overload inherited Postgres' default `EXECUTE TO PUBLIC` because nobody revoked it

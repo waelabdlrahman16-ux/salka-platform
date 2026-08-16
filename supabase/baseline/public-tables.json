@@ -1,3532 +1,4464 @@
-{
-  "tables": [
-    {
-      "name": "public._mcd_menu_backup_20260806",
-      "rows": 76,
-      "grants": {
-        "anon_delete": false,
-        "anon_insert": false,
-        "anon_select": false,
-        "anon_update": false,
-        "authenticated_delete": false,
-        "authenticated_insert": false,
-        "authenticated_select": false,
-        "authenticated_update": false
+[
+  {
+    "table": "_mcd_menu_backup_20260806",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 0,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "restaurant_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "name",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "description",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "category",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "price",
-          "type": "numeric(10,2)",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "available",
-          "type": "boolean",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "requires_prescription",
-          "type": "boolean",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "image_url",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "available_from",
-          "type": "time without time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "available_until",
-          "type": "time without time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "combo_label",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "is_shelf_label",
-          "type": "boolean",
-          "default": null,
-          "notnull": false
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": null,
-      "policy_count": 0,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.app_events",
-      "rows": 3376,
-      "grants": {
-        "anon_delete": false,
-        "anon_insert": false,
-        "anon_select": false,
-        "anon_update": false,
-        "authenticated_delete": false,
-        "authenticated_insert": false,
-        "authenticated_select": true,
-        "authenticated_update": false
+      {
+        "name": "restaurant_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "bigint",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": true
-        },
-        {
-          "name": "event",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "device_id",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "session_id",
-          "type": "uuid",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "customer_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "compound_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "restaurant_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "order_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "props",
-          "type": "jsonb",
-          "default": "'{}'::jsonb",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (compound_id) REFERENCES compounds(id) ON DELETE SET NULL",
-        "FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL",
-        "FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL",
-        "FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE SET NULL"
-      ],
-      "policy_count": 1,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.banned_customers",
-      "rows": 0,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "name",
+        "type": "text",
+        "not_null": false,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "phone",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "reason",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "banned_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": true
-        },
-        {
-          "name": "banned_by",
-          "type": "uuid",
-          "default": null,
-          "notnull": false
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": null,
-      "policy_count": 1,
-      "primary_keys": [
-        "phone"
-      ]
-    },
-    {
-      "name": "public.banners",
-      "rows": 1,
-      "grants": {
-        "anon_delete": false,
-        "anon_insert": false,
-        "anon_select": true,
-        "anon_update": false,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "description",
+        "type": "text",
+        "not_null": false,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "bigint",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "title",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "subtitle",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "image_url",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "bg_color",
-          "type": "text",
-          "default": "'#0A5F5E'::text",
-          "notnull": true
-        },
-        {
-          "name": "link_url",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "active",
-          "type": "boolean",
-          "default": "true",
-          "notnull": true
-        },
-        {
-          "name": "sort",
-          "type": "integer",
-          "default": "0",
-          "notnull": true
-        },
-        {
-          "name": "starts_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "ends_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": null,
-      "policy_count": 3,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.complaints",
-      "rows": 2,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "category",
+        "type": "text",
+        "not_null": false,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('complaints_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "order_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "description",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "status",
-          "type": "text",
-          "default": "'open'::text",
-          "notnull": false
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": false
-        },
-        {
-          "name": "category",
-          "type": "text",
-          "default": "'other'::text",
-          "notnull": true
-        },
-        {
-          "name": "driver_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (driver_id) REFERENCES drivers(id) ON DELETE SET NULL",
-        "FOREIGN KEY (order_id) REFERENCES orders(id)"
-      ],
-      "policy_count": 1,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.compounds",
-      "rows": 63,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "price",
+        "type": "numeric(10,2)",
+        "not_null": false,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('compounds_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "region_id",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "name",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "distance_km",
-          "type": "numeric(5,1)",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "direction",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "est_travel_minutes",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "active",
-          "type": "boolean",
-          "default": "true",
-          "notnull": false
-        },
-        {
-          "name": "latitude",
-          "type": "numeric",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "longitude",
-          "type": "numeric",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "delivery_fee",
-          "type": "numeric",
-          "default": null,
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (region_id) REFERENCES regions(id)"
-      ],
-      "policy_count": 3,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.customer_addresses",
-      "rows": 9,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": false,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": false,
-        "authenticated_update": true
+      {
+        "name": "available",
+        "type": "boolean",
+        "not_null": false,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('customer_addresses_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "customer_id",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "label",
-          "type": "text",
-          "default": "'المنزل'::text",
-          "notnull": true
-        },
-        {
-          "name": "compound_id",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "unit_number",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "notes",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "is_default",
-          "type": "boolean",
-          "default": "false",
-          "notnull": true
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (compound_id) REFERENCES compounds(id)",
-        "FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE"
-      ],
-      "policy_count": 0,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.customer_otp_codes",
-      "rows": 8,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": false,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": false,
-        "authenticated_update": true
+      {
+        "name": "requires_prescription",
+        "type": "boolean",
+        "not_null": false,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('wallet_otp_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "phone",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "code",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "expires_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "used",
-          "type": "boolean",
-          "default": "false",
-          "notnull": false
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": null,
-      "policy_count": 0,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.customer_sessions",
-      "rows": 0,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": false,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": false,
-        "authenticated_update": true
+      {
+        "name": "image_url",
+        "type": "text",
+        "not_null": false,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "token",
-          "type": "uuid",
-          "default": "gen_random_uuid()",
-          "notnull": true
-        },
-        {
-          "name": "customer_id",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": true
-        },
-        {
-          "name": "last_used_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": true
-        },
-        {
-          "name": "expires_at",
-          "type": "timestamp with time zone",
-          "default": "(now() + '180 days'::interval)",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE"
-      ],
-      "policy_count": 0,
-      "primary_keys": [
-        "token"
-      ]
-    },
-    {
-      "name": "public.customer_wallets",
-      "rows": 1,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "available_from",
+        "type": "time without time zone",
+        "not_null": false,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('customer_wallets_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "phone",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "balance",
-          "type": "numeric(10,2)",
-          "default": "0",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": null,
-      "policy_count": 1,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.customers",
-      "rows": 102,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": false,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": false,
-        "authenticated_update": true
+      {
+        "name": "available_until",
+        "type": "time without time zone",
+        "not_null": false,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('customers_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "phone",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "name",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": true
-        },
-        {
-          "name": "email",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "auth_user_id",
-          "type": "uuid",
-          "default": null,
-          "notnull": false
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (auth_user_id) REFERENCES auth.users(id) ON DELETE SET NULL"
-      ],
-      "policy_count": 0,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.dead_push_tokens",
-      "rows": 29,
-      "grants": {
-        "anon_delete": false,
-        "anon_insert": false,
-        "anon_select": false,
-        "anon_update": false,
-        "authenticated_delete": false,
-        "authenticated_insert": false,
-        "authenticated_select": false,
-        "authenticated_update": false
+      {
+        "name": "combo_label",
+        "type": "text",
+        "not_null": false,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "token",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "err_code",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "died_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": null,
-      "policy_count": 0,
-      "primary_keys": [
-        "token"
-      ]
-    },
-    {
-      "name": "public.delivery_assignments",
-      "rows": 22,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "is_shelf_label",
+        "type": "boolean",
+        "not_null": false,
+        "default": null
+      }
+    ],
+    "constraints": [
+      {
+        "name": "_mcd_menu_backup_20260806_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      }
+    ]
+  },
+  {
+    "table": "account_recovery_requests",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 0,
+    "columns": [
+      {
+        "name": "id",
+        "type": "bigint",
+        "not_null": true,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('delivery_assignments_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "order_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "driver_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "attempt_number",
-          "type": "integer",
-          "default": "1",
-          "notnull": true
-        },
-        {
-          "name": "status",
-          "type": "text",
-          "default": "'Offered'::text",
-          "notnull": false
-        },
-        {
-          "name": "offered_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": false
-        },
-        {
-          "name": "responded_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "picked_up_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "delivered_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "rejection_reason",
-          "type": "text",
-          "default": "''::text",
-          "notnull": false
-        },
-        {
-          "name": "out_for_delivery_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "arrived_at_restaurant_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "called_customer_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "no_answer_reported_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "no_answer_admin_action",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "cash_confirmed_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "arrived_at_customer_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "delivery_problem_reason",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (driver_id) REFERENCES drivers(id)",
-        "FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE"
-      ],
-      "policy_count": 4,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.delivery_slots",
-      "rows": 12,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "auth_user_id",
+        "type": "uuid",
+        "not_null": true,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('delivery_slots_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "restaurant_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "start_time",
-          "type": "time without time zone",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "end_time",
-          "type": "time without time zone",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "capacity",
-          "type": "integer",
-          "default": "6",
-          "notnull": true
-        },
-        {
-          "name": "active",
-          "type": "boolean",
-          "default": "true",
-          "notnull": false
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE"
-      ],
-      "policy_count": 2,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.discounts",
-      "rows": 0,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "phone",
+        "type": "text",
+        "not_null": true,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('discounts_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "restaurant_id",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "scope",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "menu_item_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "category",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "discount_type",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "value",
-          "type": "numeric",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "active",
-          "type": "boolean",
-          "default": "true",
-          "notnull": true
-        },
-        {
-          "name": "starts_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "ends_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE CASCADE",
-        "FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE"
-      ],
-      "policy_count": 2,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.driver_device_log",
-      "rows": 35,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "status",
+        "type": "text",
+        "not_null": true,
+        "default": "'pending'::text"
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "bigint",
-          "default": "nextval('driver_device_log_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "driver_id",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "device_id",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "device_label",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "outcome",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "actor",
-          "type": "text",
-          "default": "'driver'::text",
-          "notnull": true
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (driver_id) REFERENCES drivers(id) ON DELETE CASCADE"
-      ],
-      "policy_count": 1,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.driver_earnings",
-      "rows": 16,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "reviewed_by",
+        "type": "uuid",
+        "not_null": false,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('driver_earnings_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "driver_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "order_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "assignment_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "delivery_fee",
-          "type": "numeric(10,2)",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "driver_earning",
-          "type": "numeric(10,2)",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "admin_amount",
-          "type": "numeric(10,2)",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": false
-        },
-        {
-          "name": "paid",
-          "type": "boolean",
-          "default": "false",
-          "notnull": false
-        },
-        {
-          "name": "paid_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "disputed",
-          "type": "boolean",
-          "default": "false",
-          "notnull": true
-        },
-        {
-          "name": "dispute_note",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (assignment_id) REFERENCES delivery_assignments(id)",
-        "FOREIGN KEY (driver_id) REFERENCES drivers(id)",
-        "FOREIGN KEY (order_id) REFERENCES orders(id)"
-      ],
-      "policy_count": 2,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.driver_settlements",
-      "rows": 7,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "reviewed_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('driver_settlements_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "driver_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "kind",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "amount",
-          "type": "numeric(10,2)",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": false
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (driver_id) REFERENCES drivers(id)"
-      ],
-      "policy_count": 2,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.driver_shift_bonuses",
-      "rows": 0,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": false,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": false,
-        "authenticated_update": true
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "account_recovery_requests_auth_user_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (auth_user_id) REFERENCES auth.users(id) ON DELETE CASCADE"
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('driver_shift_bonuses_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "driver_id",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "bonus_date",
-          "type": "date",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "tier_reached",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "orders_count",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "bonus_amount",
-          "type": "numeric",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "paid",
-          "type": "boolean",
-          "default": "false",
-          "notnull": true
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (driver_id) REFERENCES drivers(id)"
-      ],
-      "policy_count": 0,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.driver_tips",
-      "rows": 0,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "account_recovery_requests_auth_user_id_phone_status_key",
+        "type": "UNIQUE",
+        "definition": "UNIQUE (auth_user_id, phone, status)"
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('driver_tips_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "order_id",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "driver_id",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "amount",
-          "type": "numeric",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": true
-        },
-        {
-          "name": "status",
-          "type": "text",
-          "default": "'reported'::text",
-          "notnull": true
-        },
-        {
-          "name": "confirmed_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (driver_id) REFERENCES drivers(id)",
-        "FOREIGN KEY (order_id) REFERENCES orders(id)"
-      ],
-      "policy_count": 1,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.drivers",
-      "rows": 7,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "account_recovery_requests_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('drivers_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "name",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "phone",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "status",
-          "type": "text",
-          "default": "'Available'::text",
-          "notnull": false
-        },
-        {
-          "name": "available",
-          "type": "boolean",
-          "default": "true",
-          "notnull": false
-        },
-        {
-          "name": "active",
-          "type": "boolean",
-          "default": "true",
-          "notnull": false
-        },
-        {
-          "name": "vehicle_type",
-          "type": "text",
-          "default": "'motorcycle'::text",
-          "notnull": false
-        },
-        {
-          "name": "vehicle_plate",
-          "type": "text",
-          "default": "''::text",
-          "notnull": false
-        },
-        {
-          "name": "rating",
-          "type": "numeric(2,1)",
-          "default": "5.0",
-          "notnull": false
-        },
-        {
-          "name": "total_deliveries",
-          "type": "integer",
-          "default": "0",
-          "notnull": false
-        },
-        {
-          "name": "commission_value",
-          "type": "numeric(10,2)",
-          "default": "40",
-          "notnull": false
-        },
-        {
-          "name": "cash_held",
-          "type": "numeric(10,2)",
-          "default": "0",
-          "notnull": false
-        },
-        {
-          "name": "payout_schedule",
-          "type": "text",
-          "default": "'weekly'::text",
-          "notnull": false
-        },
-        {
-          "name": "current_lat",
-          "type": "numeric",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "current_lng",
-          "type": "numeric",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "location_updated_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "instapay_number",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "device_id",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "device_bound_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "device_label",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "is_test",
-          "type": "boolean",
-          "default": "false",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": null,
-      "policy_count": 4,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.menu_categories",
-      "rows": 95,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "account_recovery_requests_reviewed_by_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (reviewed_by) REFERENCES auth.users(id)"
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('menu_categories_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "restaurant_id",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "name",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "display_order",
-          "type": "integer",
-          "default": "0",
-          "notnull": true
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE"
-      ],
-      "policy_count": 3,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.menu_item_addon_groups",
-      "rows": 44,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "account_recovery_requests_status_check",
+        "type": "CHECK",
+        "definition": "CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text, 'cancelled'::text])))"
+      }
+    ]
+  },
+  {
+    "table": "app_events",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "columns": [
+      {
+        "name": "id",
+        "type": "bigint",
+        "not_null": true,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('menu_item_addon_groups_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "menu_item_id",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "name",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "min_select",
-          "type": "integer",
-          "default": "0",
-          "notnull": true
-        },
-        {
-          "name": "max_select",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "display_order",
-          "type": "integer",
-          "default": "0",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE CASCADE"
-      ],
-      "policy_count": 3,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.menu_item_addons",
-      "rows": 200,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('menu_item_addons_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "group_id",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "name",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "price",
-          "type": "numeric",
-          "default": "0",
-          "notnull": true
-        },
-        {
-          "name": "display_order",
-          "type": "integer",
-          "default": "0",
-          "notnull": true
-        },
-        {
-          "name": "available",
-          "type": "boolean",
-          "default": "true",
-          "notnull": true
-        },
-        {
-          "name": "image_url",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (group_id) REFERENCES menu_item_addon_groups(id) ON DELETE CASCADE"
-      ],
-      "policy_count": 3,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.menu_item_combos",
-      "rows": 78,
-      "grants": {
-        "anon_delete": false,
-        "anon_insert": false,
-        "anon_select": true,
-        "anon_update": false,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "event",
+        "type": "text",
+        "not_null": true,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "menu_item_id",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "name",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "price",
-          "type": "numeric",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "display_order",
-          "type": "integer",
-          "default": "0",
-          "notnull": true
-        },
-        {
-          "name": "available",
-          "type": "boolean",
-          "default": "true",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE CASCADE"
-      ],
-      "policy_count": 3,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.menu_item_sizes",
-      "rows": 135,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "device_id",
+        "type": "text",
+        "not_null": false,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('menu_item_sizes_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "menu_item_id",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "name",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "price",
-          "type": "numeric",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "is_default",
-          "type": "boolean",
-          "default": "false",
-          "notnull": true
-        },
-        {
-          "name": "display_order",
-          "type": "integer",
-          "default": "0",
-          "notnull": true
-        },
-        {
-          "name": "available",
-          "type": "boolean",
-          "default": "true",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE CASCADE"
-      ],
-      "policy_count": 3,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.menu_items",
-      "rows": 570,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "session_id",
+        "type": "uuid",
+        "not_null": false,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('menu_items_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "restaurant_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "name",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "description",
-          "type": "text",
-          "default": "''::text",
-          "notnull": false
-        },
-        {
-          "name": "category",
-          "type": "text",
-          "default": "''::text",
-          "notnull": false
-        },
-        {
-          "name": "price",
-          "type": "numeric(10,2)",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "available",
-          "type": "boolean",
-          "default": "true",
-          "notnull": false
-        },
-        {
-          "name": "requires_prescription",
-          "type": "boolean",
-          "default": "false",
-          "notnull": false
-        },
-        {
-          "name": "image_url",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "available_from",
-          "type": "time without time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "available_until",
-          "type": "time without time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "combo_label",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "is_shelf_label",
-          "type": "boolean",
-          "default": "false",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE"
-      ],
-      "policy_count": 3,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.order_items",
-      "rows": 69,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "customer_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('order_items_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "order_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "menu_item_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "name",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "qty",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "unit_price",
-          "type": "numeric(10,2)",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "total",
-          "type": "numeric(10,2)",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "requires_prescription",
-          "type": "boolean",
-          "default": "false",
-          "notnull": false
-        },
-        {
-          "name": "size_name",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "addon_names",
-          "type": "text[]",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "original_unit_price",
-          "type": "numeric",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "combo_name",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "is_adjustment",
-          "type": "boolean",
-          "default": "false",
-          "notnull": true
-        },
-        {
-          "name": "created_by",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "service_fee_waived",
-          "type": "numeric",
-          "default": null,
-          "notnull": false
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (menu_item_id) REFERENCES menu_items(id)",
-        "FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE"
-      ],
-      "policy_count": 3,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.order_ratings",
-      "rows": 2,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "compound_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('order_ratings_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "order_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "driver_rating",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "restaurant_rating",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "comment",
-          "type": "text",
-          "default": "''::text",
-          "notnull": false
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": false
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (order_id) REFERENCES orders(id)"
-      ],
-      "policy_count": 1,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.order_status_events",
-      "rows": 154,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": false,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": false,
-        "authenticated_update": true
+      {
+        "name": "restaurant_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "bigint",
-          "default": "nextval('order_status_events_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "order_id",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "from_status",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "to_status",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "actor",
-          "type": "text",
-          "default": "'system'::text",
-          "notnull": true
-        },
-        {
-          "name": "actor_uid",
-          "type": "uuid",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE"
-      ],
-      "policy_count": 0,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.orders",
-      "rows": 35,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "order_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('orders_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "restaurant_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "customer_name",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "customer_phone",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "zone",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "unit_number",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "address_notes",
-          "type": "text",
-          "default": "''::text",
-          "notnull": false
-        },
-        {
-          "name": "status",
-          "type": "text",
-          "default": "'pending'::text",
-          "notnull": false
-        },
-        {
-          "name": "subtotal",
-          "type": "numeric(10,2)",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "delivery_fee",
-          "type": "numeric(10,2)",
-          "default": "50",
-          "notnull": true
-        },
-        {
-          "name": "total",
-          "type": "numeric(10,2)",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "payment_method",
-          "type": "text",
-          "default": "'cod'::text",
-          "notnull": false
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": false
-        },
-        {
-          "name": "public_token",
-          "type": "uuid",
-          "default": "gen_random_uuid()",
-          "notnull": false
-        },
-        {
-          "name": "kitchen_status",
-          "type": "text",
-          "default": "'new'::text",
-          "notnull": false
-        },
-        {
-          "name": "dispatch_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "slot_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "scheduled_date",
-          "type": "date",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "ready_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "compound_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "vendor_accepted_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "order_type",
-          "type": "text",
-          "default": "'catalog'::text",
-          "notnull": true
-        },
-        {
-          "name": "request_items",
-          "type": "jsonb",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "request_notes",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "pricing_status",
-          "type": "text",
-          "default": "'n/a'::text",
-          "notnull": true
-        },
-        {
-          "name": "payment_mode",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "collect_amount",
-          "type": "numeric",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "online_payment_status",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "fawaterak_invoice_id",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "fawaterak_invoice_key",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "push_token",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "instapay_claimed_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "sla_minutes",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "service_fee",
-          "type": "numeric",
-          "default": "0",
-          "notnull": true
-        },
-        {
-          "name": "wallet_used",
-          "type": "numeric",
-          "default": "0",
-          "notnull": true
-        },
-        {
-          "name": "refund_status",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "customer_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "customer_note",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "delay_count",
-          "type": "integer",
-          "default": "0",
-          "notnull": true
-        },
-        {
-          "name": "late_alert_sent_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "cod_deposit_amount",
-          "type": "numeric",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "cancel_reason",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "cancelled_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "prescription_path",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "is_test",
-          "type": "boolean",
-          "default": "false",
-          "notnull": true
-        },
-        {
-          "name": "push_platform",
-          "type": "text",
-          "default": "'web'::text",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (compound_id) REFERENCES compounds(id)",
-        "FOREIGN KEY (customer_id) REFERENCES customers(id)",
-        "FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)",
-        "FOREIGN KEY (slot_id) REFERENCES delivery_slots(id)"
-      ],
-      "policy_count": 4,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.profiles",
-      "rows": 24,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "props",
+        "type": "jsonb",
+        "not_null": true,
+        "default": "'{}'::jsonb"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "app_events_compound_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (compound_id) REFERENCES compounds(id) ON DELETE SET NULL"
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "uuid",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "role",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "driver_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "name",
-          "type": "text",
-          "default": "''::text",
-          "notnull": false
-        },
-        {
-          "name": "restaurant_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (driver_id) REFERENCES drivers(id)",
-        "FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE",
-        "FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)"
-      ],
-      "policy_count": 1,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.push_nudge",
-      "rows": 0,
-      "grants": {
-        "anon_delete": false,
-        "anon_insert": false,
-        "anon_select": false,
-        "anon_update": false,
-        "authenticated_delete": false,
-        "authenticated_insert": false,
-        "authenticated_select": false,
-        "authenticated_update": false
+      {
+        "name": "app_events_customer_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL"
       },
-      "columns": [
-        {
-          "name": "kind",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "ref_id",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "attempts",
-          "type": "integer",
-          "default": "0",
-          "notnull": true
-        },
-        {
-          "name": "last_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "escalated",
-          "type": "boolean",
-          "default": "false",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": null,
-      "policy_count": 0,
-      "primary_keys": [
-        "kind",
-        "ref_id"
-      ]
-    },
-    {
-      "name": "public.push_send_log",
-      "rows": 452,
-      "grants": {
-        "anon_delete": false,
-        "anon_insert": false,
-        "anon_select": false,
-        "anon_update": false,
-        "authenticated_delete": false,
-        "authenticated_insert": false,
-        "authenticated_select": false,
-        "authenticated_update": false
+      {
+        "name": "app_events_order_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE SET NULL"
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "bigint",
-          "default": "nextval('push_send_log_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "token_prefix",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "profile_id",
-          "type": "uuid",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "platform",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "ok",
-          "type": "boolean",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "status",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "err_code",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "title",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": null,
-      "policy_count": 0,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.push_tokens",
-      "rows": 9,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "app_events_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "bigint",
-          "default": "nextval('push_tokens_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "profile_id",
-          "type": "uuid",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "token",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": true
-        },
-        {
-          "name": "platform",
-          "type": "text",
-          "default": "'web'::text",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE"
-      ],
-      "policy_count": 1,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.rate_limit_log",
-      "rows": 270,
-      "grants": {
-        "anon_delete": false,
-        "anon_insert": false,
-        "anon_select": false,
-        "anon_update": false,
-        "authenticated_delete": false,
-        "authenticated_insert": false,
-        "authenticated_select": false,
-        "authenticated_update": false
+      {
+        "name": "app_events_restaurant_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE SET NULL"
+      }
+    ]
+  },
+  {
+    "table": "banned_customers",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "columns": [
+      {
+        "name": "phone",
+        "type": "text",
+        "not_null": true,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "bigint",
-          "default": "nextval('rate_limit_log_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "bucket",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "called_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": null,
-      "policy_count": 0,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.regions",
-      "rows": 3,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "reason",
+        "type": "text",
+        "not_null": false,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('regions_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "name",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": null,
-      "policy_count": 2,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.request_item_suppressions",
-      "rows": 1,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": false,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": false,
-        "authenticated_update": true
+      {
+        "name": "banned_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('request_item_suppressions_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "restaurant_id",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "name",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "reason",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": true
-        },
-        {
-          "name": "match_mode",
-          "type": "text",
-          "default": "'exact'::text",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE"
-      ],
-      "policy_count": 0,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.restaurants",
-      "rows": 17,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "banned_by",
+        "type": "uuid",
+        "not_null": false,
+        "default": null
+      }
+    ],
+    "constraints": [
+      {
+        "name": "banned_customers_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (phone)"
+      }
+    ]
+  },
+  {
+    "table": "banners",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 5,
+    "columns": [
+      {
+        "name": "id",
+        "type": "bigint",
+        "not_null": true,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('restaurants_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "name",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "description",
-          "type": "text",
-          "default": "''::text",
-          "notnull": false
-        },
-        {
-          "name": "category",
-          "type": "text",
-          "default": "'مطعم'::text",
-          "notnull": false
-        },
-        {
-          "name": "rating",
-          "type": "numeric(2,1)",
-          "default": "0",
-          "notnull": false
-        },
-        {
-          "name": "is_open",
-          "type": "boolean",
-          "default": "true",
-          "notnull": false
-        },
-        {
-          "name": "vendor_type",
-          "type": "text",
-          "default": "'restaurant'::text",
-          "notnull": false
-        },
-        {
-          "name": "prep_minutes",
-          "type": "integer",
-          "default": "20",
-          "notnull": false
-        },
-        {
-          "name": "order_mode",
-          "type": "text",
-          "default": "'catalog'::text",
-          "notnull": true
-        },
-        {
-          "name": "archived",
-          "type": "boolean",
-          "default": "false",
-          "notnull": true
-        },
-        {
-          "name": "logo_url",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "max_delivery_km",
-          "type": "numeric",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "cover_image_url",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "is_test",
-          "type": "boolean",
-          "default": "false",
-          "notnull": true
-        },
-        {
-          "name": "closed_until",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "display_order",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "featured",
-          "type": "boolean",
-          "default": "false",
-          "notnull": true
-        },
-        {
-          "name": "uses_delivery_slots",
-          "type": "boolean",
-          "default": "false",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": null,
-      "policy_count": 3,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.settings",
-      "rows": 32,
-      "grants": {
-        "anon_delete": false,
-        "anon_insert": false,
-        "anon_select": true,
-        "anon_update": false,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "title",
+        "type": "text",
+        "not_null": false,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "key",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "value",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "label",
-          "type": "text",
-          "default": "''::text",
-          "notnull": false
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": null,
-      "policy_count": 2,
-      "primary_keys": [
-        "key"
-      ]
-    },
-    {
-      "name": "public.settlement_requests",
-      "rows": 3,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "subtitle",
+        "type": "text",
+        "not_null": false,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('settlement_requests_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "driver_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "status",
-          "type": "text",
-          "default": "'pending'::text",
-          "notnull": false
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": false
-        },
-        {
-          "name": "resolved_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (driver_id) REFERENCES drivers(id)"
-      ],
-      "policy_count": 3,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.shift_swap_requests",
-      "rows": 1,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "image_url",
+        "type": "text",
+        "not_null": false,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('shift_swap_requests_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "shift_id",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "requested_by",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "reason",
-          "type": "text",
-          "default": "''::text",
-          "notnull": false
-        },
-        {
-          "name": "status",
-          "type": "text",
-          "default": "'open'::text",
-          "notnull": true
-        },
-        {
-          "name": "accepted_by",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "accepted_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "escalated_at",
-          "type": "timestamp with time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": false
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (accepted_by) REFERENCES drivers(id)",
-        "FOREIGN KEY (requested_by) REFERENCES drivers(id)",
-        "FOREIGN KEY (shift_id) REFERENCES shifts(id)"
-      ],
-      "policy_count": 2,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.shifts",
-      "rows": 1,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "bg_color",
+        "type": "text",
+        "not_null": true,
+        "default": "'#0A5F5E'::text"
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('shifts_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "driver_id",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "shift_date",
-          "type": "date",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "start_time",
-          "type": "time without time zone",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "end_time",
-          "type": "time without time zone",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "status",
-          "type": "text",
-          "default": "'scheduled'::text",
-          "notnull": true
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": false
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (driver_id) REFERENCES drivers(id)"
-      ],
-      "policy_count": 3,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.vendor_addon_library",
-      "rows": 0,
-      "grants": {
-        "anon_delete": false,
-        "anon_insert": false,
-        "anon_select": true,
-        "anon_update": false,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "link_url",
+        "type": "text",
+        "not_null": false,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "restaurant_id",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "name",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "price",
-          "type": "numeric",
-          "default": "0",
-          "notnull": true
-        },
-        {
-          "name": "image_url",
-          "type": "text",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE"
-      ],
-      "policy_count": 3,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.vendor_coverage",
-      "rows": 0,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "active",
+        "type": "boolean",
+        "not_null": true,
+        "default": "true"
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('vendor_coverage_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "restaurant_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "compound_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (compound_id) REFERENCES compounds(id) ON DELETE CASCADE",
-        "FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE"
-      ],
-      "policy_count": 2,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.vendor_hours",
-      "rows": 84,
-      "grants": {
-        "anon_delete": false,
-        "anon_insert": false,
-        "anon_select": true,
-        "anon_update": false,
-        "authenticated_delete": false,
-        "authenticated_insert": false,
-        "authenticated_select": true,
-        "authenticated_update": false
+      {
+        "name": "sort",
+        "type": "integer",
+        "not_null": true,
+        "default": "0"
       },
-      "columns": [
-        {
-          "name": "restaurant_id",
-          "type": "integer",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "day_of_week",
-          "type": "smallint",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "opens_at",
-          "type": "time without time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "closes_at",
-          "type": "time without time zone",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "closed",
-          "type": "boolean",
-          "default": "false",
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE"
-      ],
-      "policy_count": 1,
-      "primary_keys": [
-        "restaurant_id",
-        "day_of_week"
-      ]
-    },
-    {
-      "name": "public.wallet_transactions",
-      "rows": 2,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "starts_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('wallet_transactions_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "wallet_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "amount",
-          "type": "numeric(10,2)",
-          "default": null,
-          "notnull": true
-        },
-        {
-          "name": "reason",
-          "type": "text",
-          "default": "''::text",
-          "notnull": false
-        },
-        {
-          "name": "order_id",
-          "type": "integer",
-          "default": null,
-          "notnull": false
-        },
-        {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "default": "now()",
-          "notnull": false
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": [
-        "FOREIGN KEY (order_id) REFERENCES orders(id)",
-        "FOREIGN KEY (wallet_id) REFERENCES customer_wallets(id)"
-      ],
-      "policy_count": 1,
-      "primary_keys": [
-        "id"
-      ]
-    },
-    {
-      "name": "public.zones",
-      "rows": 6,
-      "grants": {
-        "anon_delete": true,
-        "anon_insert": true,
-        "anon_select": true,
-        "anon_update": true,
-        "authenticated_delete": true,
-        "authenticated_insert": true,
-        "authenticated_select": true,
-        "authenticated_update": true
+      {
+        "name": "ends_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": null
       },
-      "columns": [
-        {
-          "name": "id",
-          "type": "integer",
-          "default": "nextval('zones_id_seq'::regclass)",
-          "notnull": true
-        },
-        {
-          "name": "name",
-          "type": "text",
-          "default": null,
-          "notnull": true
-        }
-      ],
-      "rls_enabled": true,
-      "foreign_keys": null,
-      "policy_count": 1,
-      "primary_keys": [
-        "id"
-      ]
-    }
-  ]
-}
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "banners_color_hex",
+        "type": "CHECK",
+        "definition": "CHECK ((bg_color ~ '^#[0-9A-Fa-f]{6}$'::text))"
+      },
+      {
+        "name": "banners_link_shape",
+        "type": "CHECK",
+        "definition": "CHECK (((link_url IS NULL) OR (link_url ~ '^/[A-Za-z0-9/_?=&%.:-]*$'::text) OR (link_url ~ '^https?://[^\\s]+$'::text)))"
+      },
+      {
+        "name": "banners_link_url_check",
+        "type": "CHECK",
+        "definition": "CHECK (((link_url IS NULL) OR (link_url ~ '^/(?!/)[A-Za-z0-9/_?=&%.:-]*$'::text) OR (link_url ~ '^https?://[^\\s/]'::text)))"
+      },
+      {
+        "name": "banners_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "banners_sub_len",
+        "type": "CHECK",
+        "definition": "CHECK (((subtitle IS NULL) OR (length(subtitle) <= 90)))"
+      },
+      {
+        "name": "banners_title_len",
+        "type": "CHECK",
+        "definition": "CHECK (((title IS NULL) OR (length(btrim(title)) <= 60)))"
+      },
+      {
+        "name": "banners_window",
+        "type": "CHECK",
+        "definition": "CHECK (((ends_at IS NULL) OR (starts_at IS NULL) OR (ends_at > starts_at)))"
+      }
+    ]
+  },
+  {
+    "table": "complaints",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('complaints_id_seq'::regclass)"
+      },
+      {
+        "name": "order_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "description",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "status",
+        "type": "text",
+        "not_null": false,
+        "default": "'open'::text"
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": "now()"
+      },
+      {
+        "name": "category",
+        "type": "text",
+        "not_null": true,
+        "default": "'other'::text"
+      },
+      {
+        "name": "driver_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      }
+    ],
+    "constraints": [
+      {
+        "name": "complaints_category_check",
+        "type": "CHECK",
+        "definition": "CHECK ((category = ANY (ARRAY['missing_item'::text, 'wrong_item'::text, 'driver_conduct'::text, 'quality'::text, 'other'::text])))"
+      },
+      {
+        "name": "complaints_driver_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (driver_id) REFERENCES drivers(id) ON DELETE SET NULL"
+      },
+      {
+        "name": "complaints_order_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (order_id) REFERENCES orders(id)"
+      },
+      {
+        "name": "complaints_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "complaints_status_check",
+        "type": "CHECK",
+        "definition": "CHECK ((status = ANY (ARRAY['open'::text, 'reviewed'::text, 'resolved'::text])))"
+      }
+    ]
+  },
+  {
+    "table": "compounds",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 4,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('compounds_id_seq'::regclass)"
+      },
+      {
+        "name": "region_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "distance_km",
+        "type": "numeric(5,1)",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "direction",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "est_travel_minutes",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "active",
+        "type": "boolean",
+        "not_null": false,
+        "default": "true"
+      },
+      {
+        "name": "latitude",
+        "type": "numeric",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "longitude",
+        "type": "numeric",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "delivery_fee",
+        "type": "numeric",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "name_en",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "est_travel_minutes_min",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "est_travel_minutes_max",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      }
+    ],
+    "constraints": [
+      {
+        "name": "compounds_delivery_fee_nonneg",
+        "type": "CHECK",
+        "definition": "CHECK ((delivery_fee >= (0)::numeric))"
+      },
+      {
+        "name": "compounds_direction_check",
+        "type": "CHECK",
+        "definition": "CHECK ((direction = ANY (ARRAY['north'::text, 'south'::text])))"
+      },
+      {
+        "name": "compounds_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "compounds_region_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (region_id) REFERENCES regions(id)"
+      }
+    ]
+  },
+  {
+    "table": "customer_addresses",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 0,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('customer_addresses_id_seq'::regclass)"
+      },
+      {
+        "name": "customer_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "label",
+        "type": "text",
+        "not_null": true,
+        "default": "'المنزل'::text"
+      },
+      {
+        "name": "compound_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "unit_number",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "notes",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "is_default",
+        "type": "boolean",
+        "not_null": true,
+        "default": "false"
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "customer_addresses_compound_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (compound_id) REFERENCES compounds(id)"
+      },
+      {
+        "name": "customer_addresses_customer_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "customer_addresses_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      }
+    ]
+  },
+  {
+    "table": "customer_otp_codes",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 0,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('wallet_otp_id_seq'::regclass)"
+      },
+      {
+        "name": "phone",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "code",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "expires_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "used",
+        "type": "boolean",
+        "not_null": false,
+        "default": "false"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "wallet_otp_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      }
+    ]
+  },
+  {
+    "table": "customer_sessions",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 0,
+    "columns": [
+      {
+        "name": "token",
+        "type": "uuid",
+        "not_null": true,
+        "default": "gen_random_uuid()"
+      },
+      {
+        "name": "customer_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      },
+      {
+        "name": "last_used_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      },
+      {
+        "name": "expires_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "(now() + '180 days'::interval)"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "customer_sessions_customer_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "customer_sessions_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (token)"
+      }
+    ]
+  },
+  {
+    "table": "customer_wallets",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('customer_wallets_id_seq'::regclass)"
+      },
+      {
+        "name": "phone",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "balance",
+        "type": "numeric(10,2)",
+        "not_null": true,
+        "default": "0"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "customer_wallets_phone_key",
+        "type": "UNIQUE",
+        "definition": "UNIQUE (phone)"
+      },
+      {
+        "name": "customer_wallets_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      }
+    ]
+  },
+  {
+    "table": "customers",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 0,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('customers_id_seq'::regclass)"
+      },
+      {
+        "name": "phone",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      },
+      {
+        "name": "email",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "auth_user_id",
+        "type": "uuid",
+        "not_null": false,
+        "default": null
+      }
+    ],
+    "constraints": [
+      {
+        "name": "customers_auth_user_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (auth_user_id) REFERENCES auth.users(id) ON DELETE SET NULL"
+      },
+      {
+        "name": "customers_phone_key",
+        "type": "UNIQUE",
+        "definition": "UNIQUE (phone)"
+      },
+      {
+        "name": "customers_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      }
+    ]
+  },
+  {
+    "table": "dead_push_tokens",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 0,
+    "columns": [
+      {
+        "name": "token",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "err_code",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "died_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "dead_push_tokens_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (token)"
+      }
+    ]
+  },
+  {
+    "table": "delivery_assignments",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 3,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('delivery_assignments_id_seq'::regclass)"
+      },
+      {
+        "name": "order_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "driver_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "attempt_number",
+        "type": "integer",
+        "not_null": true,
+        "default": "1"
+      },
+      {
+        "name": "status",
+        "type": "text",
+        "not_null": false,
+        "default": "'Offered'::text"
+      },
+      {
+        "name": "offered_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": "now()"
+      },
+      {
+        "name": "responded_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "picked_up_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "delivered_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "rejection_reason",
+        "type": "text",
+        "not_null": false,
+        "default": "''::text"
+      },
+      {
+        "name": "out_for_delivery_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "arrived_at_restaurant_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "called_customer_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "no_answer_reported_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "no_answer_admin_action",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "cash_confirmed_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "arrived_at_customer_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "delivery_problem_reason",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      }
+    ],
+    "constraints": [
+      {
+        "name": "delivery_assignments_driver_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (driver_id) REFERENCES drivers(id)"
+      },
+      {
+        "name": "delivery_assignments_order_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "delivery_assignments_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      }
+    ]
+  },
+  {
+    "table": "delivery_slots",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 4,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('delivery_slots_id_seq'::regclass)"
+      },
+      {
+        "name": "restaurant_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "start_time",
+        "type": "time without time zone",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "end_time",
+        "type": "time without time zone",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "capacity",
+        "type": "integer",
+        "not_null": true,
+        "default": "6"
+      },
+      {
+        "name": "active",
+        "type": "boolean",
+        "not_null": false,
+        "default": "true"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "delivery_slots_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "delivery_slots_restaurant_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "delivery_slots_time_order_chk",
+        "type": "CHECK",
+        "definition": "CHECK ((end_time > start_time))"
+      }
+    ]
+  },
+  {
+    "table": "discounts",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 4,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('discounts_id_seq'::regclass)"
+      },
+      {
+        "name": "restaurant_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "scope",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "menu_item_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "category",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "discount_type",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "value",
+        "type": "numeric",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "active",
+        "type": "boolean",
+        "not_null": true,
+        "default": "true"
+      },
+      {
+        "name": "starts_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "ends_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "discounts_check",
+        "type": "CHECK",
+        "definition": "CHECK ((((scope = 'item'::text) AND (menu_item_id IS NOT NULL) AND (category IS NULL)) OR ((scope = 'category'::text) AND (category IS NOT NULL) AND (menu_item_id IS NULL))))"
+      },
+      {
+        "name": "discounts_discount_type_check",
+        "type": "CHECK",
+        "definition": "CHECK ((discount_type = ANY (ARRAY['percent'::text, 'fixed'::text])))"
+      },
+      {
+        "name": "discounts_menu_item_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "discounts_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "discounts_restaurant_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "discounts_scope_check",
+        "type": "CHECK",
+        "definition": "CHECK ((scope = ANY (ARRAY['item'::text, 'category'::text])))"
+      },
+      {
+        "name": "discounts_value_check",
+        "type": "CHECK",
+        "definition": "CHECK ((value > (0)::numeric))"
+      }
+    ]
+  },
+  {
+    "table": "driver_device_log",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "columns": [
+      {
+        "name": "id",
+        "type": "bigint",
+        "not_null": true,
+        "default": "nextval('driver_device_log_id_seq'::regclass)"
+      },
+      {
+        "name": "driver_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "device_id",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "device_label",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "outcome",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "actor",
+        "type": "text",
+        "not_null": true,
+        "default": "'driver'::text"
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "driver_device_log_driver_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (driver_id) REFERENCES drivers(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "driver_device_log_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      }
+    ]
+  },
+  {
+    "table": "driver_earnings",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 2,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('driver_earnings_id_seq'::regclass)"
+      },
+      {
+        "name": "driver_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "order_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "assignment_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "delivery_fee",
+        "type": "numeric(10,2)",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "driver_earning",
+        "type": "numeric(10,2)",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "admin_amount",
+        "type": "numeric(10,2)",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": "now()"
+      },
+      {
+        "name": "paid",
+        "type": "boolean",
+        "not_null": false,
+        "default": "false"
+      },
+      {
+        "name": "paid_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "disputed",
+        "type": "boolean",
+        "not_null": true,
+        "default": "false"
+      },
+      {
+        "name": "dispute_note",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      }
+    ],
+    "constraints": [
+      {
+        "name": "driver_earnings_assignment_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (assignment_id) REFERENCES delivery_assignments(id)"
+      },
+      {
+        "name": "driver_earnings_assignment_unique",
+        "type": "UNIQUE",
+        "definition": "UNIQUE (assignment_id)"
+      },
+      {
+        "name": "driver_earnings_driver_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (driver_id) REFERENCES drivers(id)"
+      },
+      {
+        "name": "driver_earnings_order_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (order_id) REFERENCES orders(id)"
+      },
+      {
+        "name": "driver_earnings_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      }
+    ]
+  },
+  {
+    "table": "driver_settlements",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 4,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('driver_settlements_id_seq'::regclass)"
+      },
+      {
+        "name": "driver_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "kind",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "amount",
+        "type": "numeric(10,2)",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": "now()"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "driver_settlements_driver_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (driver_id) REFERENCES drivers(id)"
+      },
+      {
+        "name": "driver_settlements_kind_check",
+        "type": "CHECK",
+        "definition": "CHECK ((kind = ANY (ARRAY['cash_remitted'::text, 'earnings_paid'::text])))"
+      },
+      {
+        "name": "driver_settlements_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      }
+    ]
+  },
+  {
+    "table": "driver_shift_bonuses",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 0,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('driver_shift_bonuses_id_seq'::regclass)"
+      },
+      {
+        "name": "driver_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "bonus_date",
+        "type": "date",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "tier_reached",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "orders_count",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "bonus_amount",
+        "type": "numeric",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "paid",
+        "type": "boolean",
+        "not_null": true,
+        "default": "false"
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "driver_shift_bonuses_driver_id_bonus_date_key",
+        "type": "UNIQUE",
+        "definition": "UNIQUE (driver_id, bonus_date)"
+      },
+      {
+        "name": "driver_shift_bonuses_driver_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (driver_id) REFERENCES drivers(id)"
+      },
+      {
+        "name": "driver_shift_bonuses_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      }
+    ]
+  },
+  {
+    "table": "driver_tips",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('driver_tips_id_seq'::regclass)"
+      },
+      {
+        "name": "order_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "driver_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "amount",
+        "type": "numeric",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      },
+      {
+        "name": "status",
+        "type": "text",
+        "not_null": true,
+        "default": "'reported'::text"
+      },
+      {
+        "name": "confirmed_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      }
+    ],
+    "constraints": [
+      {
+        "name": "driver_tips_amount_check",
+        "type": "CHECK",
+        "definition": "CHECK ((amount > (0)::numeric))"
+      },
+      {
+        "name": "driver_tips_driver_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (driver_id) REFERENCES drivers(id)"
+      },
+      {
+        "name": "driver_tips_order_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (order_id) REFERENCES orders(id)"
+      },
+      {
+        "name": "driver_tips_order_id_key",
+        "type": "UNIQUE",
+        "definition": "UNIQUE (order_id)"
+      },
+      {
+        "name": "driver_tips_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "driver_tips_status_check",
+        "type": "CHECK",
+        "definition": "CHECK ((status = ANY (ARRAY['reported'::text, 'confirmed'::text, 'rejected'::text])))"
+      }
+    ]
+  },
+  {
+    "table": "drivers",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 3,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('drivers_id_seq'::regclass)"
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "phone",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "status",
+        "type": "text",
+        "not_null": false,
+        "default": "'Available'::text"
+      },
+      {
+        "name": "available",
+        "type": "boolean",
+        "not_null": false,
+        "default": "true"
+      },
+      {
+        "name": "active",
+        "type": "boolean",
+        "not_null": false,
+        "default": "true"
+      },
+      {
+        "name": "vehicle_type",
+        "type": "text",
+        "not_null": false,
+        "default": "'motorcycle'::text"
+      },
+      {
+        "name": "vehicle_plate",
+        "type": "text",
+        "not_null": false,
+        "default": "''::text"
+      },
+      {
+        "name": "rating",
+        "type": "numeric(2,1)",
+        "not_null": false,
+        "default": "5.0"
+      },
+      {
+        "name": "total_deliveries",
+        "type": "integer",
+        "not_null": false,
+        "default": "0"
+      },
+      {
+        "name": "commission_value",
+        "type": "numeric(10,2)",
+        "not_null": false,
+        "default": "40"
+      },
+      {
+        "name": "cash_held",
+        "type": "numeric(10,2)",
+        "not_null": false,
+        "default": "0"
+      },
+      {
+        "name": "payout_schedule",
+        "type": "text",
+        "not_null": false,
+        "default": "'weekly'::text"
+      },
+      {
+        "name": "current_lat",
+        "type": "numeric",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "current_lng",
+        "type": "numeric",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "location_updated_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "instapay_number",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "device_id",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "device_bound_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "device_label",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "is_test",
+        "type": "boolean",
+        "not_null": true,
+        "default": "false"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "drivers_payout_schedule_check",
+        "type": "CHECK",
+        "definition": "CHECK ((payout_schedule = ANY (ARRAY['daily'::text, 'weekly'::text])))"
+      },
+      {
+        "name": "drivers_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "drivers_vehicle_type_check",
+        "type": "CHECK",
+        "definition": "CHECK ((vehicle_type = ANY (ARRAY['motorcycle'::text, 'van'::text])))"
+      }
+    ]
+  },
+  {
+    "table": "featured_products",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 5,
+    "columns": [
+      {
+        "name": "id",
+        "type": "bigint",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "menu_item_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "active",
+        "type": "boolean",
+        "not_null": true,
+        "default": "true"
+      },
+      {
+        "name": "sort",
+        "type": "integer",
+        "not_null": true,
+        "default": "0"
+      },
+      {
+        "name": "starts_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "ends_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "featured_products_menu_item_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "featured_products_menu_item_id_key",
+        "type": "UNIQUE",
+        "definition": "UNIQUE (menu_item_id)"
+      },
+      {
+        "name": "featured_products_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "featured_products_window",
+        "type": "CHECK",
+        "definition": "CHECK (((ends_at IS NULL) OR (starts_at IS NULL) OR (ends_at > starts_at)))"
+      }
+    ]
+  },
+  {
+    "table": "feed_ads",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 5,
+    "columns": [
+      {
+        "name": "id",
+        "type": "bigint",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "title",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "subtitle",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "image_url",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "bg_color",
+        "type": "text",
+        "not_null": true,
+        "default": "'#0A5F5E'::text"
+      },
+      {
+        "name": "link_url",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "active",
+        "type": "boolean",
+        "not_null": true,
+        "default": "true"
+      },
+      {
+        "name": "sort",
+        "type": "integer",
+        "not_null": true,
+        "default": "0"
+      },
+      {
+        "name": "starts_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "ends_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "feed_ads_color_hex",
+        "type": "CHECK",
+        "definition": "CHECK ((bg_color ~ '^#[0-9A-Fa-f]{6}$'::text))"
+      },
+      {
+        "name": "feed_ads_link_shape",
+        "type": "CHECK",
+        "definition": "CHECK (((link_url IS NULL) OR (link_url ~ '^/(?!/)[A-Za-z0-9/_?=&%.:-]*$'::text) OR (link_url ~ '^https?://[^\\s/]'::text)))"
+      },
+      {
+        "name": "feed_ads_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "feed_ads_sub_len",
+        "type": "CHECK",
+        "definition": "CHECK (((subtitle IS NULL) OR (length(subtitle) <= 90)))"
+      },
+      {
+        "name": "feed_ads_title_len",
+        "type": "CHECK",
+        "definition": "CHECK (((length(btrim(title)) >= 1) AND (length(btrim(title)) <= 60)))"
+      },
+      {
+        "name": "feed_ads_window",
+        "type": "CHECK",
+        "definition": "CHECK (((ends_at IS NULL) OR (starts_at IS NULL) OR (ends_at > starts_at)))"
+      }
+    ]
+  },
+  {
+    "table": "kitchen_compound_fees",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "columns": [
+      {
+        "name": "kitchen_id",
+        "type": "bigint",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "compound_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "delivery_fee",
+        "type": "numeric",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "updated_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "kitchen_compound_fees_compound_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (compound_id) REFERENCES compounds(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "kitchen_compound_fees_delivery_fee_check",
+        "type": "CHECK",
+        "definition": "CHECK (((delivery_fee IS NULL) OR (delivery_fee >= (0)::numeric)))"
+      },
+      {
+        "name": "kitchen_compound_fees_kitchen_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (kitchen_id) REFERENCES restaurant_kitchens(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "kitchen_compound_fees_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (kitchen_id, compound_id)"
+      }
+    ]
+  },
+  {
+    "table": "menu_categories",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 4,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('menu_categories_id_seq'::regclass)"
+      },
+      {
+        "name": "restaurant_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "display_order",
+        "type": "integer",
+        "not_null": true,
+        "default": "0"
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "menu_categories_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "menu_categories_restaurant_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE"
+      }
+    ]
+  },
+  {
+    "table": "menu_item_addon_groups",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 4,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('menu_item_addon_groups_id_seq'::regclass)"
+      },
+      {
+        "name": "menu_item_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "min_select",
+        "type": "integer",
+        "not_null": true,
+        "default": "0"
+      },
+      {
+        "name": "max_select",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "display_order",
+        "type": "integer",
+        "not_null": true,
+        "default": "0"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "menu_item_addon_groups_menu_item_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "menu_item_addon_groups_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      }
+    ]
+  },
+  {
+    "table": "menu_item_addons",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 4,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('menu_item_addons_id_seq'::regclass)"
+      },
+      {
+        "name": "group_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "price",
+        "type": "numeric",
+        "not_null": true,
+        "default": "0"
+      },
+      {
+        "name": "display_order",
+        "type": "integer",
+        "not_null": true,
+        "default": "0"
+      },
+      {
+        "name": "available",
+        "type": "boolean",
+        "not_null": true,
+        "default": "true"
+      },
+      {
+        "name": "image_url",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "base_price",
+        "type": "numeric",
+        "not_null": false,
+        "default": null
+      }
+    ],
+    "constraints": [
+      {
+        "name": "menu_item_addons_group_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (group_id) REFERENCES menu_item_addon_groups(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "menu_item_addons_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "menu_item_addons_price_check",
+        "type": "CHECK",
+        "definition": "CHECK ((price >= (0)::numeric))"
+      }
+    ]
+  },
+  {
+    "table": "menu_item_combos",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 4,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "menu_item_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "price",
+        "type": "numeric",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "display_order",
+        "type": "integer",
+        "not_null": true,
+        "default": "0"
+      },
+      {
+        "name": "available",
+        "type": "boolean",
+        "not_null": true,
+        "default": "true"
+      },
+      {
+        "name": "base_price",
+        "type": "numeric",
+        "not_null": false,
+        "default": null
+      }
+    ],
+    "constraints": [
+      {
+        "name": "menu_item_combos_menu_item_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "menu_item_combos_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "menu_item_combos_price_check",
+        "type": "CHECK",
+        "definition": "CHECK ((price >= (0)::numeric))"
+      }
+    ]
+  },
+  {
+    "table": "menu_item_sizes",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 4,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('menu_item_sizes_id_seq'::regclass)"
+      },
+      {
+        "name": "menu_item_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "price",
+        "type": "numeric",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "is_default",
+        "type": "boolean",
+        "not_null": true,
+        "default": "false"
+      },
+      {
+        "name": "display_order",
+        "type": "integer",
+        "not_null": true,
+        "default": "0"
+      },
+      {
+        "name": "available",
+        "type": "boolean",
+        "not_null": true,
+        "default": "true"
+      },
+      {
+        "name": "base_price",
+        "type": "numeric",
+        "not_null": false,
+        "default": null
+      }
+    ],
+    "constraints": [
+      {
+        "name": "menu_item_sizes_menu_item_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (menu_item_id) REFERENCES menu_items(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "menu_item_sizes_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "menu_item_sizes_price_check",
+        "type": "CHECK",
+        "definition": "CHECK ((price >= (0)::numeric))"
+      }
+    ]
+  },
+  {
+    "table": "menu_items",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 4,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('menu_items_id_seq'::regclass)"
+      },
+      {
+        "name": "restaurant_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "description",
+        "type": "text",
+        "not_null": false,
+        "default": "''::text"
+      },
+      {
+        "name": "category",
+        "type": "text",
+        "not_null": false,
+        "default": "''::text"
+      },
+      {
+        "name": "price",
+        "type": "numeric(10,2)",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "available",
+        "type": "boolean",
+        "not_null": false,
+        "default": "true"
+      },
+      {
+        "name": "requires_prescription",
+        "type": "boolean",
+        "not_null": false,
+        "default": "false"
+      },
+      {
+        "name": "image_url",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "available_from",
+        "type": "time without time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "available_until",
+        "type": "time without time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "combo_label",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "is_shelf_label",
+        "type": "boolean",
+        "not_null": true,
+        "default": "false"
+      },
+      {
+        "name": "base_price",
+        "type": "numeric",
+        "not_null": false,
+        "default": null
+      }
+    ],
+    "constraints": [
+      {
+        "name": "menu_items_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "menu_items_restaurant_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE"
+      }
+    ]
+  },
+  {
+    "table": "order_items",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('order_items_id_seq'::regclass)"
+      },
+      {
+        "name": "order_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "menu_item_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "qty",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "unit_price",
+        "type": "numeric(10,2)",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "total",
+        "type": "numeric(10,2)",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "requires_prescription",
+        "type": "boolean",
+        "not_null": false,
+        "default": "false"
+      },
+      {
+        "name": "size_name",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "addon_names",
+        "type": "text[]",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "original_unit_price",
+        "type": "numeric",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "combo_name",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "is_adjustment",
+        "type": "boolean",
+        "not_null": true,
+        "default": "false"
+      },
+      {
+        "name": "created_by",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "service_fee_waived",
+        "type": "numeric",
+        "not_null": false,
+        "default": null
+      }
+    ],
+    "constraints": [
+      {
+        "name": "order_items_menu_item_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (menu_item_id) REFERENCES menu_items(id)"
+      },
+      {
+        "name": "order_items_order_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "order_items_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      }
+    ]
+  },
+  {
+    "table": "order_ratings",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('order_ratings_id_seq'::regclass)"
+      },
+      {
+        "name": "order_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "driver_rating",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "restaurant_rating",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "comment",
+        "type": "text",
+        "not_null": false,
+        "default": "''::text"
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": "now()"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "order_ratings_driver_rating_check",
+        "type": "CHECK",
+        "definition": "CHECK (((driver_rating >= 1) AND (driver_rating <= 5)))"
+      },
+      {
+        "name": "order_ratings_order_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (order_id) REFERENCES orders(id)"
+      },
+      {
+        "name": "order_ratings_order_id_key",
+        "type": "UNIQUE",
+        "definition": "UNIQUE (order_id)"
+      },
+      {
+        "name": "order_ratings_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "order_ratings_restaurant_rating_check",
+        "type": "CHECK",
+        "definition": "CHECK (((restaurant_rating >= 1) AND (restaurant_rating <= 5)))"
+      }
+    ]
+  },
+  {
+    "table": "order_status_events",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 0,
+    "columns": [
+      {
+        "name": "id",
+        "type": "bigint",
+        "not_null": true,
+        "default": "nextval('order_status_events_id_seq'::regclass)"
+      },
+      {
+        "name": "order_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "from_status",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "to_status",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "actor",
+        "type": "text",
+        "not_null": true,
+        "default": "'system'::text"
+      },
+      {
+        "name": "actor_uid",
+        "type": "uuid",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "order_status_events_order_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "order_status_events_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      }
+    ]
+  },
+  {
+    "table": "order_test_audit_log",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 0,
+    "columns": [
+      {
+        "name": "id",
+        "type": "bigint",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "order_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "reason",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "marked_by",
+        "type": "uuid",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "order_test_audit_log_order_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE RESTRICT"
+      },
+      {
+        "name": "order_test_audit_log_order_id_key",
+        "type": "UNIQUE",
+        "definition": "UNIQUE (order_id)"
+      },
+      {
+        "name": "order_test_audit_log_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "order_test_audit_log_reason_check",
+        "type": "CHECK",
+        "definition": "CHECK (((length(btrim(reason)) >= 3) AND (length(btrim(reason)) <= 500)))"
+      }
+    ]
+  },
+  {
+    "table": "orders",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 2,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('orders_id_seq'::regclass)"
+      },
+      {
+        "name": "restaurant_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "customer_name",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "customer_phone",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "zone",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "unit_number",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "address_notes",
+        "type": "text",
+        "not_null": false,
+        "default": "''::text"
+      },
+      {
+        "name": "status",
+        "type": "text",
+        "not_null": false,
+        "default": "'pending'::text"
+      },
+      {
+        "name": "subtotal",
+        "type": "numeric(10,2)",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "delivery_fee",
+        "type": "numeric(10,2)",
+        "not_null": true,
+        "default": "50"
+      },
+      {
+        "name": "total",
+        "type": "numeric(10,2)",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "payment_method",
+        "type": "text",
+        "not_null": false,
+        "default": "'cod'::text"
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": "now()"
+      },
+      {
+        "name": "public_token",
+        "type": "uuid",
+        "not_null": false,
+        "default": "gen_random_uuid()"
+      },
+      {
+        "name": "kitchen_status",
+        "type": "text",
+        "not_null": false,
+        "default": "'new'::text"
+      },
+      {
+        "name": "dispatch_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "slot_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "scheduled_date",
+        "type": "date",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "ready_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "compound_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "vendor_accepted_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "order_type",
+        "type": "text",
+        "not_null": true,
+        "default": "'catalog'::text"
+      },
+      {
+        "name": "request_items",
+        "type": "jsonb",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "request_notes",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "pricing_status",
+        "type": "text",
+        "not_null": true,
+        "default": "'n/a'::text"
+      },
+      {
+        "name": "payment_mode",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "collect_amount",
+        "type": "numeric",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "online_payment_status",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "fawaterak_invoice_id",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "fawaterak_invoice_key",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "push_token",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "instapay_claimed_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "sla_minutes",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "service_fee",
+        "type": "numeric",
+        "not_null": true,
+        "default": "0"
+      },
+      {
+        "name": "wallet_used",
+        "type": "numeric",
+        "not_null": true,
+        "default": "0"
+      },
+      {
+        "name": "refund_status",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "customer_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "customer_note",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "delay_count",
+        "type": "integer",
+        "not_null": true,
+        "default": "0"
+      },
+      {
+        "name": "late_alert_sent_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "cod_deposit_amount",
+        "type": "numeric",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "cancel_reason",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "cancelled_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "prescription_path",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "is_test",
+        "type": "boolean",
+        "not_null": true,
+        "default": "false"
+      },
+      {
+        "name": "push_platform",
+        "type": "text",
+        "not_null": true,
+        "default": "'web'::text"
+      },
+      {
+        "name": "promo_code_id",
+        "type": "bigint",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "promo_discount",
+        "type": "numeric(12,2)",
+        "not_null": true,
+        "default": "0"
+      },
+      {
+        "name": "kitchen_id",
+        "type": "bigint",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "pickup_location_name",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "pickup_location_address",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "archived_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "archived_by",
+        "type": "uuid",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "promo_discount_service",
+        "type": "numeric(12,2)",
+        "not_null": true,
+        "default": "0"
+      },
+      {
+        "name": "promo_discount_delivery",
+        "type": "numeric(12,2)",
+        "not_null": true,
+        "default": "0"
+      },
+      {
+        "name": "promo_discount_vendor",
+        "type": "numeric(12,2)",
+        "not_null": true,
+        "default": "0"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "orders_archived_by_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (archived_by) REFERENCES auth.users(id) ON DELETE SET NULL"
+      },
+      {
+        "name": "orders_compound_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (compound_id) REFERENCES compounds(id)"
+      },
+      {
+        "name": "orders_customer_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (customer_id) REFERENCES customers(id)"
+      },
+      {
+        "name": "orders_kitchen_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (kitchen_id) REFERENCES restaurant_kitchens(id) ON DELETE SET NULL"
+      },
+      {
+        "name": "orders_online_payment_status_check",
+        "type": "CHECK",
+        "definition": "CHECK (((online_payment_status IS NULL) OR (online_payment_status = ANY (ARRAY['pending'::text, 'paid'::text, 'failed'::text]))))"
+      },
+      {
+        "name": "orders_order_type_check",
+        "type": "CHECK",
+        "definition": "CHECK ((order_type = ANY (ARRAY['catalog'::text, 'custom_request'::text, 'pickup_request'::text])))"
+      },
+      {
+        "name": "orders_payment_method_chk",
+        "type": "CHECK",
+        "definition": "CHECK ((payment_method = ANY (ARRAY['cod'::text, 'instapay'::text, 'online'::text])))"
+      },
+      {
+        "name": "orders_payment_mode_check",
+        "type": "CHECK",
+        "definition": "CHECK (((payment_mode IS NULL) OR (payment_mode = ANY (ARRAY['prepaid'::text, 'driver_pays'::text]))))"
+      },
+      {
+        "name": "orders_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "orders_pricing_status_check",
+        "type": "CHECK",
+        "definition": "CHECK ((pricing_status = ANY (ARRAY['n/a'::text, 'pending_quote'::text, 'confirmed'::text])))"
+      },
+      {
+        "name": "orders_promo_code_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (promo_code_id) REFERENCES promo_codes(id) ON DELETE SET NULL"
+      },
+      {
+        "name": "orders_promo_discount_check",
+        "type": "CHECK",
+        "definition": "CHECK ((promo_discount >= (0)::numeric))"
+      },
+      {
+        "name": "orders_promo_split_nonneg",
+        "type": "CHECK",
+        "definition": "CHECK (((promo_discount_service >= (0)::numeric) AND (promo_discount_delivery >= (0)::numeric) AND (promo_discount_vendor >= (0)::numeric)))"
+      },
+      {
+        "name": "orders_push_platform_check",
+        "type": "CHECK",
+        "definition": "CHECK ((push_platform = ANY (ARRAY['web'::text, 'android'::text, 'ios'::text])))"
+      },
+      {
+        "name": "orders_refund_status_check",
+        "type": "CHECK",
+        "definition": "CHECK ((refund_status = ANY (ARRAY['pending'::text, 'refunded'::text])))"
+      },
+      {
+        "name": "orders_restaurant_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)"
+      },
+      {
+        "name": "orders_slot_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (slot_id) REFERENCES delivery_slots(id)"
+      }
+    ]
+  },
+  {
+    "table": "profiles",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "columns": [
+      {
+        "name": "id",
+        "type": "uuid",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "role",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "driver_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "not_null": false,
+        "default": "''::text"
+      },
+      {
+        "name": "restaurant_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      }
+    ],
+    "constraints": [
+      {
+        "name": "profiles_driver_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (driver_id) REFERENCES drivers(id)"
+      },
+      {
+        "name": "profiles_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "profiles_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "profiles_restaurant_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)"
+      },
+      {
+        "name": "profiles_role_check",
+        "type": "CHECK",
+        "definition": "CHECK ((role = ANY (ARRAY['admin'::text, 'driver'::text, 'vendor'::text, 'catalog'::text, 'supervisor'::text, 'observer'::text])))"
+      }
+    ]
+  },
+  {
+    "table": "promo_codes",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 0,
+    "columns": [
+      {
+        "name": "id",
+        "type": "bigint",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "code",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "active",
+        "type": "boolean",
+        "not_null": true,
+        "default": "true"
+      },
+      {
+        "name": "discount_type",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "discount_value",
+        "type": "numeric(12,2)",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "max_discount_egp",
+        "type": "numeric(12,2)",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "minimum_subtotal_egp",
+        "type": "numeric(12,2)",
+        "not_null": true,
+        "default": "0"
+      },
+      {
+        "name": "restaurant_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "compound_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "starts_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "ends_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "max_redemptions",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "max_redemptions_per_customer",
+        "type": "integer",
+        "not_null": true,
+        "default": "1"
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      },
+      {
+        "name": "updated_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      },
+      {
+        "name": "created_by",
+        "type": "uuid",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "applies_to",
+        "type": "text",
+        "not_null": true,
+        "default": "'delivery'::text"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "promo_codes_applies_to_check",
+        "type": "CHECK",
+        "definition": "CHECK ((applies_to = ANY (ARRAY['delivery'::text, 'service'::text, 'vendor'::text, 'platform'::text, 'all'::text])))"
+      },
+      {
+        "name": "promo_codes_code_format",
+        "type": "CHECK",
+        "definition": "CHECK (((code = upper(TRIM(BOTH FROM code))) AND (code ~ '^[A-Z0-9][A-Z0-9_-]{2,31}$'::text)))"
+      },
+      {
+        "name": "promo_codes_compound_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (compound_id) REFERENCES compounds(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "promo_codes_created_by_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL"
+      },
+      {
+        "name": "promo_codes_dates",
+        "type": "CHECK",
+        "definition": "CHECK (((ends_at IS NULL) OR (starts_at IS NULL) OR (ends_at > starts_at)))"
+      },
+      {
+        "name": "promo_codes_discount_type_check",
+        "type": "CHECK",
+        "definition": "CHECK ((discount_type = ANY (ARRAY['percent'::text, 'fixed'::text])))"
+      },
+      {
+        "name": "promo_codes_discount_value_check",
+        "type": "CHECK",
+        "definition": "CHECK ((discount_value > (0)::numeric))"
+      },
+      {
+        "name": "promo_codes_max_discount",
+        "type": "CHECK",
+        "definition": "CHECK (((max_discount_egp IS NULL) OR (max_discount_egp > (0)::numeric)))"
+      },
+      {
+        "name": "promo_codes_max_redemptions",
+        "type": "CHECK",
+        "definition": "CHECK (((max_redemptions IS NULL) OR (max_redemptions > 0)))"
+      },
+      {
+        "name": "promo_codes_max_redemptions_per_customer_check",
+        "type": "CHECK",
+        "definition": "CHECK ((max_redemptions_per_customer > 0))"
+      },
+      {
+        "name": "promo_codes_minimum_subtotal_egp_check",
+        "type": "CHECK",
+        "definition": "CHECK ((minimum_subtotal_egp >= (0)::numeric))"
+      },
+      {
+        "name": "promo_codes_percent_range",
+        "type": "CHECK",
+        "definition": "CHECK (((discount_type <> 'percent'::text) OR (discount_value <= (100)::numeric)))"
+      },
+      {
+        "name": "promo_codes_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "promo_codes_restaurant_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE"
+      }
+    ]
+  },
+  {
+    "table": "promo_redemptions",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 0,
+    "columns": [
+      {
+        "name": "id",
+        "type": "bigint",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "promo_code_id",
+        "type": "bigint",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "order_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "customer_key",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "discount_amount",
+        "type": "numeric(12,2)",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "redeemed_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "promo_redemptions_discount_amount_check",
+        "type": "CHECK",
+        "definition": "CHECK ((discount_amount > (0)::numeric))"
+      },
+      {
+        "name": "promo_redemptions_order_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE RESTRICT"
+      },
+      {
+        "name": "promo_redemptions_order_id_key",
+        "type": "UNIQUE",
+        "definition": "UNIQUE (order_id)"
+      },
+      {
+        "name": "promo_redemptions_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "promo_redemptions_promo_code_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (promo_code_id) REFERENCES promo_codes(id) ON DELETE RESTRICT"
+      }
+    ]
+  },
+  {
+    "table": "push_nudge",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 0,
+    "columns": [
+      {
+        "name": "kind",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "ref_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "attempts",
+        "type": "integer",
+        "not_null": true,
+        "default": "0"
+      },
+      {
+        "name": "last_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "escalated",
+        "type": "boolean",
+        "not_null": true,
+        "default": "false"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "push_nudge_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (kind, ref_id)"
+      }
+    ]
+  },
+  {
+    "table": "push_send_log",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 0,
+    "columns": [
+      {
+        "name": "id",
+        "type": "bigint",
+        "not_null": true,
+        "default": "nextval('push_send_log_id_seq'::regclass)"
+      },
+      {
+        "name": "token_prefix",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "profile_id",
+        "type": "uuid",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "platform",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "ok",
+        "type": "boolean",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "status",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "err_code",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "title",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "push_send_log_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      }
+    ]
+  },
+  {
+    "table": "push_tokens",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "columns": [
+      {
+        "name": "id",
+        "type": "bigint",
+        "not_null": true,
+        "default": "nextval('push_tokens_id_seq'::regclass)"
+      },
+      {
+        "name": "profile_id",
+        "type": "uuid",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "token",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "updated_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      },
+      {
+        "name": "platform",
+        "type": "text",
+        "not_null": true,
+        "default": "'web'::text"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "push_tokens_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "push_tokens_platform_check",
+        "type": "CHECK",
+        "definition": "CHECK ((platform = ANY (ARRAY['web'::text, 'android'::text, 'ios'::text])))"
+      },
+      {
+        "name": "push_tokens_profile_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE"
+      }
+    ]
+  },
+  {
+    "table": "rate_limit_log",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 0,
+    "columns": [
+      {
+        "name": "id",
+        "type": "bigint",
+        "not_null": true,
+        "default": "nextval('rate_limit_log_id_seq'::regclass)"
+      },
+      {
+        "name": "bucket",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "called_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "rate_limit_log_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      }
+    ]
+  },
+  {
+    "table": "regions",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 4,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('regions_id_seq'::regclass)"
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      }
+    ],
+    "constraints": [
+      {
+        "name": "regions_name_key",
+        "type": "UNIQUE",
+        "definition": "UNIQUE (name)"
+      },
+      {
+        "name": "regions_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      }
+    ]
+  },
+  {
+    "table": "request_item_suppressions",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 0,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('request_item_suppressions_id_seq'::regclass)"
+      },
+      {
+        "name": "restaurant_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "reason",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      },
+      {
+        "name": "match_mode",
+        "type": "text",
+        "not_null": true,
+        "default": "'exact'::text"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "request_item_suppressions_match_mode_check",
+        "type": "CHECK",
+        "definition": "CHECK ((match_mode = ANY (ARRAY['exact'::text, 'contains'::text])))"
+      },
+      {
+        "name": "request_item_suppressions_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "request_item_suppressions_restaurant_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE"
+      }
+    ]
+  },
+  {
+    "table": "restaurant_kitchens",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "columns": [
+      {
+        "name": "id",
+        "type": "bigint",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "restaurant_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "address",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "latitude",
+        "type": "numeric",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "longitude",
+        "type": "numeric",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "active",
+        "type": "boolean",
+        "not_null": true,
+        "default": "true"
+      },
+      {
+        "name": "is_default",
+        "type": "boolean",
+        "not_null": true,
+        "default": "false"
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      },
+      {
+        "name": "updated_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "restaurant_kitchens_name_check",
+        "type": "CHECK",
+        "definition": "CHECK (((char_length(btrim(name)) >= 2) AND (char_length(btrim(name)) <= 120)))"
+      },
+      {
+        "name": "restaurant_kitchens_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "restaurant_kitchens_restaurant_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE"
+      }
+    ]
+  },
+  {
+    "table": "restaurants",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 4,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('restaurants_id_seq'::regclass)"
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "description",
+        "type": "text",
+        "not_null": false,
+        "default": "''::text"
+      },
+      {
+        "name": "category",
+        "type": "text",
+        "not_null": false,
+        "default": "'مطعم'::text"
+      },
+      {
+        "name": "rating",
+        "type": "numeric(2,1)",
+        "not_null": false,
+        "default": "0"
+      },
+      {
+        "name": "is_open",
+        "type": "boolean",
+        "not_null": false,
+        "default": "true"
+      },
+      {
+        "name": "vendor_type",
+        "type": "text",
+        "not_null": false,
+        "default": "'restaurant'::text"
+      },
+      {
+        "name": "prep_minutes",
+        "type": "integer",
+        "not_null": false,
+        "default": "20"
+      },
+      {
+        "name": "order_mode",
+        "type": "text",
+        "not_null": true,
+        "default": "'catalog'::text"
+      },
+      {
+        "name": "archived",
+        "type": "boolean",
+        "not_null": true,
+        "default": "false"
+      },
+      {
+        "name": "logo_url",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "max_delivery_km",
+        "type": "numeric",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "cover_image_url",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "is_test",
+        "type": "boolean",
+        "not_null": true,
+        "default": "false"
+      },
+      {
+        "name": "closed_until",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "display_order",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "featured",
+        "type": "boolean",
+        "not_null": true,
+        "default": "false"
+      },
+      {
+        "name": "uses_delivery_slots",
+        "type": "boolean",
+        "not_null": true,
+        "default": "false"
+      },
+      {
+        "name": "service_fee_pct",
+        "type": "numeric",
+        "not_null": true,
+        "default": "0"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "restaurants_order_mode_check",
+        "type": "CHECK",
+        "definition": "CHECK ((order_mode = ANY (ARRAY['catalog'::text, 'custom_request'::text, 'pickup_request'::text])))"
+      },
+      {
+        "name": "restaurants_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "restaurants_vendor_type_check",
+        "type": "CHECK",
+        "definition": "CHECK ((vendor_type = ANY (ARRAY['restaurant'::text, 'supermarket'::text, 'pharmacy'::text])))"
+      }
+    ]
+  },
+  {
+    "table": "settings",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 5,
+    "columns": [
+      {
+        "name": "key",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "value",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "label",
+        "type": "text",
+        "not_null": false,
+        "default": "''::text"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "settings_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (key)"
+      }
+    ]
+  },
+  {
+    "table": "settlement_requests",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 3,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('settlement_requests_id_seq'::regclass)"
+      },
+      {
+        "name": "driver_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "status",
+        "type": "text",
+        "not_null": false,
+        "default": "'pending'::text"
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": "now()"
+      },
+      {
+        "name": "resolved_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      }
+    ],
+    "constraints": [
+      {
+        "name": "settlement_requests_driver_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (driver_id) REFERENCES drivers(id)"
+      },
+      {
+        "name": "settlement_requests_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "settlement_requests_status_check",
+        "type": "CHECK",
+        "definition": "CHECK ((status = ANY (ARRAY['pending'::text, 'fulfilled'::text, 'declined'::text])))"
+      }
+    ]
+  },
+  {
+    "table": "shift_swap_requests",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 4,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('shift_swap_requests_id_seq'::regclass)"
+      },
+      {
+        "name": "shift_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "requested_by",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "reason",
+        "type": "text",
+        "not_null": false,
+        "default": "''::text"
+      },
+      {
+        "name": "status",
+        "type": "text",
+        "not_null": true,
+        "default": "'open'::text"
+      },
+      {
+        "name": "accepted_by",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "accepted_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "escalated_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": "now()"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "shift_swap_requests_accepted_by_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (accepted_by) REFERENCES drivers(id)"
+      },
+      {
+        "name": "shift_swap_requests_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "shift_swap_requests_requested_by_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (requested_by) REFERENCES drivers(id)"
+      },
+      {
+        "name": "shift_swap_requests_shift_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (shift_id) REFERENCES shifts(id)"
+      }
+    ]
+  },
+  {
+    "table": "shifts",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 4,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('shifts_id_seq'::regclass)"
+      },
+      {
+        "name": "driver_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "shift_date",
+        "type": "date",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "start_time",
+        "type": "time without time zone",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "end_time",
+        "type": "time without time zone",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "status",
+        "type": "text",
+        "not_null": true,
+        "default": "'scheduled'::text"
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": "now()"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "shifts_driver_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (driver_id) REFERENCES drivers(id)"
+      },
+      {
+        "name": "shifts_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      }
+    ]
+  },
+  {
+    "table": "vendor_addon_library",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 4,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "restaurant_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "price",
+        "type": "numeric",
+        "not_null": true,
+        "default": "0"
+      },
+      {
+        "name": "image_url",
+        "type": "text",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": true,
+        "default": "now()"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "vendor_addon_library_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "vendor_addon_library_price_check",
+        "type": "CHECK",
+        "definition": "CHECK ((price >= (0)::numeric))"
+      },
+      {
+        "name": "vendor_addon_library_restaurant_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "vendor_addon_library_restaurant_id_name_key",
+        "type": "UNIQUE",
+        "definition": "UNIQUE (restaurant_id, name)"
+      }
+    ]
+  },
+  {
+    "table": "vendor_coverage",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 4,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('vendor_coverage_id_seq'::regclass)"
+      },
+      {
+        "name": "restaurant_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "compound_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      }
+    ],
+    "constraints": [
+      {
+        "name": "vendor_coverage_compound_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (compound_id) REFERENCES compounds(id) ON DELETE CASCADE"
+      },
+      {
+        "name": "vendor_coverage_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "vendor_coverage_restaurant_id_compound_id_key",
+        "type": "UNIQUE",
+        "definition": "UNIQUE (restaurant_id, compound_id)"
+      },
+      {
+        "name": "vendor_coverage_restaurant_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE"
+      }
+    ]
+  },
+  {
+    "table": "vendor_hours",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "columns": [
+      {
+        "name": "restaurant_id",
+        "type": "integer",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "day_of_week",
+        "type": "smallint",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "opens_at",
+        "type": "time without time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "closes_at",
+        "type": "time without time zone",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "closed",
+        "type": "boolean",
+        "not_null": true,
+        "default": "false"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "vendor_hours_day_of_week_check",
+        "type": "CHECK",
+        "definition": "CHECK (((day_of_week >= 0) AND (day_of_week <= 6)))"
+      },
+      {
+        "name": "vendor_hours_pair",
+        "type": "CHECK",
+        "definition": "CHECK ((closed OR ((opens_at IS NULL) = (closes_at IS NULL))))"
+      },
+      {
+        "name": "vendor_hours_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (restaurant_id, day_of_week)"
+      },
+      {
+        "name": "vendor_hours_restaurant_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE"
+      }
+    ]
+  },
+  {
+    "table": "wallet_transactions",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('wallet_transactions_id_seq'::regclass)"
+      },
+      {
+        "name": "wallet_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "amount",
+        "type": "numeric(10,2)",
+        "not_null": true,
+        "default": null
+      },
+      {
+        "name": "reason",
+        "type": "text",
+        "not_null": false,
+        "default": "''::text"
+      },
+      {
+        "name": "order_id",
+        "type": "integer",
+        "not_null": false,
+        "default": null
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "not_null": false,
+        "default": "now()"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "wallet_transactions_order_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (order_id) REFERENCES orders(id)"
+      },
+      {
+        "name": "wallet_transactions_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "wallet_transactions_wallet_id_fkey",
+        "type": "FOREIGN KEY",
+        "definition": "FOREIGN KEY (wallet_id) REFERENCES customer_wallets(id)"
+      }
+    ]
+  },
+  {
+    "table": "zones",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "columns": [
+      {
+        "name": "id",
+        "type": "integer",
+        "not_null": true,
+        "default": "nextval('zones_id_seq'::regclass)"
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "not_null": true,
+        "default": null
+      }
+    ],
+    "constraints": [
+      {
+        "name": "zones_pkey",
+        "type": "PRIMARY KEY",
+        "definition": "PRIMARY KEY (id)"
+      }
+    ]
+  }
+]
