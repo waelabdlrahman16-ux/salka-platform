@@ -17,6 +17,7 @@ type CatalogDatabase = {
       open_slots: { Args: { p_restaurant_id: number }; Returns: unknown }
       popular_request_items: { Args: { p_restaurant_id: number }; Returns: unknown }
       restaurant_public: { Args: { p_id: number }; Returns: unknown }
+      restaurants_all_public: { Args: Record<string, never>; Returns: unknown }
       restaurants_for_compound: { Args: { p_compound_id: number }; Returns: unknown }
       search_menu_for_compound: {
         Args: { p_compound_id: number; p_q: string; p_limit: number }
@@ -136,6 +137,22 @@ const publicCatalog = withSupabase<CatalogDatabase>({ auth: "publishable" }, asy
       break
     }
     case "restaurants": {
+      // compoundId is now optional, and its absence is a real request rather
+      // than a malformed one: it means "someone is browsing before they have
+      // told us where they are".
+      //
+      // The home screen used to block on a location modal before rendering
+      // anything, which is why 4,770 Meta ad clicks produced zero orders while
+      // organic traffic -- people who already knew what was behind the gate --
+      // chose a compound 48% of the time.
+      //
+      // A malformed compoundId is still rejected. Only an ABSENT one falls
+      // through to the unfiltered list, so a typo in the client cannot silently
+      // widen the result set.
+      if (input.compoundId == null) {
+        result = await ctx.supabaseAdmin.rpc("restaurants_all_public")
+        break
+      }
       const compoundId = positiveId(input.compoundId)
       if (!compoundId) return json({ error: "invalid_catalog_input" }, 400)
       result = await ctx.supabaseAdmin.rpc("restaurants_for_compound", { p_compound_id: compoundId })
