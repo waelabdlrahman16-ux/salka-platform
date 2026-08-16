@@ -6,9 +6,9 @@ Read-only snapshot of the production `public` **and `private`** schemas for proj
 >
 > Verified directly against production on 2026-08-16 in the meantime: all seven protected predicates still hold `authenticated` EXECUTE, and the only privilege changes since the last capture are the three made deliberately that day (migrations `20260816083838` and `20260816091833`).
 
-Read-only snapshot of the production `public` **and `private`** schemas for project `pqpnwxyevrsipklzmwex`, refreshed 2026-08-12 (previous capture 2026-08-11). This reconciliation adds the six production migration records that were missing from GitHub, fully regenerates `policies.json`, and refreshes the six affected private routine definitions. The changes add no tables, columns, triggers, indexes, or grants, so `public-tables.json`, `grants.json`, `triggers.json`, `indexes.json`, and `database.types.ts` remain unchanged.
+Last captured 2026-08-12 (previous capture 2026-08-11). That capture reconciled six production migration records missing from GitHub, regenerated `policies.json`, and refreshed six private routine definitions.
 
-`private` is in scope as of this refresh. Security batches 1–9 (the complete programme) moved 99 privileged cores into it, and a snapshot that records only `public` describes a permission model that no longer exists.
+`private` is in scope. Security batches 1–9 (the complete programme) moved 99 privileged cores into it, and a snapshot that records only `public` describes a permission model that no longer exists.
 
 Accepted advisor warnings, and the functions that must never lose `authenticated` EXECUTE, are documented in `ACCEPTED-WARNINGS.md`.
 
