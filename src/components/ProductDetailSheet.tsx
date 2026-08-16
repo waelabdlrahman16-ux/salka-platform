@@ -5,6 +5,7 @@ import { isItemAvailableNow } from '../lib/itemAvailability'
 import { applyDiscount, effectiveDiscount } from '../lib/discounts'
 import Icon from './Icon'
 import type { Discount, MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemCombo, MenuItemSize } from '../lib/types'
+import { sized, IMG } from '../lib/imageUrl'
 
 export default function ProductDetailSheet({
   item, items, sizes, combos, addonGroups, addons, discounts, disabled, optionsLoaded, qtyFor, onAdd, onRemove, onCustomize, onClose
@@ -106,7 +107,7 @@ export default function ProductDetailSheet({
             // the sheet opens with no image at all" was this, not a random
             // glitch: the fallback only ever triggered on a MISSING url, never
             // a FAILED one.
-            ? <img src={active.image_url} alt={active.name} className="w-full h-full object-cover"
+            ? <img src={sized(active.image_url, IMG.photo)} alt={active.name} className="w-full h-full object-cover"
                 onError={() => setImgFailed(true)} />
             : art.emoji}
           <button className="absolute top-3 left-3 bg-white/80 rounded-full w-7 h-7 grid place-items-center text-mist text-sm" onClick={onClose}>✗</button>
@@ -177,7 +178,7 @@ export default function ProductDetailSheet({
                           grid tile elsewhere in the app. */}
                       <div className="rounded-xl aspect-square grid place-items-center text-2xl mb-1.5 overflow-hidden border border-line"
                         style={{ background: r.image_url ? '#fff' : rArt.tint }}>
-                        {r.image_url ? <img src={r.image_url} alt={r.name} className="w-full h-full object-cover" /> : rArt.emoji}
+                        {r.image_url ? <img src={sized(r.image_url, IMG.square)} alt={r.name} className="w-full h-full object-cover" /> : rArt.emoji}
                       </div>
                       <p className="text-xs font-semibold line-clamp-2 leading-snug">{r.name}</p>
                       <p className="text-xs mt-0.5">

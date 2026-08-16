@@ -3,6 +3,7 @@ import { artFor } from '../lib/categoryArt'
 import { openLabel } from '../lib/vendorHours'
 import Icon from './Icon'
 import type { Restaurant } from '../lib/types'
+import { sized, IMG } from '../lib/imageUrl'
 
 // PHOTO-LED, as of 2026-08-05 — and this reverses yesterday's decision on
 // purpose, because the fact it rested on changed.
@@ -99,7 +100,7 @@ export default function RestaurantCard({
         <div className="relative w-11 h-11 shrink-0 rounded-xl overflow-hidden grid place-items-center text-lg border border-line"
           style={{ background: art.tint }}>
           {r.logo_url
-            ? <img src={r.logo_url} alt="" loading="eager" className="w-full h-full object-cover" />
+            ? <img src={sized(r.logo_url, IMG.icon)} alt="" loading="eager" className="w-full h-full object-cover" />
             : art.emoji}
         </div>
         <div className="min-w-0 flex-1">
@@ -138,7 +139,7 @@ export default function RestaurantCard({
         {/* loading="lazy" here, unlike the ad banner: that one is a single
             image above the fold and lazy actively broke it, while this is a
             list that can run to nine cards. */}
-        <img src={cover} alt="" loading="lazy" decoding="async"
+        <img src={sized(cover, IMG.wide)} alt="" loading="lazy" decoding="async"
           className="absolute inset-0 w-full h-full object-cover"
           // A broken cover must not leave a grey rectangle where the food
           // should be. Hiding the <img> reveals the tinted background, which
@@ -163,7 +164,7 @@ export default function RestaurantCard({
         <span className="w-8 h-8 rounded-lg overflow-hidden grid place-items-center text-base shrink-0 border border-line"
           style={{ background: art.tint }}>
           {r.logo_url
-            ? <img src={r.logo_url} alt="" loading="eager" className="w-full h-full object-cover" />
+            ? <img src={sized(r.logo_url, IMG.icon)} alt="" loading="eager" className="w-full h-full object-cover" />
             : art.emoji}
         </span>
         <div className="min-w-0 flex-1">

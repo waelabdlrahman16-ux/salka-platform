@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { sized, IMG } from '../lib/imageUrl'
 
 export interface FeaturedProductCard {
   menu_item_id: number
@@ -28,7 +29,7 @@ export default function FeaturedProductsRail({ items }: { items: FeaturedProduct
           <Link key={it.menu_item_id} to={`/restaurant/${it.restaurant_id}?item=${it.menu_item_id}`}
             className="shrink-0 snap-start w-28 text-right">
             <div className="rounded-xl aspect-square grid place-items-center text-2xl mb-1.5 overflow-hidden bg-shellup">
-              {it.image_url ? <img src={it.image_url} alt="" className="w-full h-full object-cover" /> : '🍽️'}
+              {it.image_url ? <img src={sized(it.image_url, IMG.square)} alt="" className="w-full h-full object-cover" /> : '🍽️'}
             </div>
             <p className="text-xs font-semibold line-clamp-2 leading-snug">{it.name}</p>
             <p className="text-[11px] text-mist truncate mt-0.5">{it.restaurant_name}</p>

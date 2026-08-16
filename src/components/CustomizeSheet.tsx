@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type MutableRefObject } from 'react'
 import { useDismissable } from '../lib/useDismissable'
 import { applyDiscount, effectiveDiscount } from '../lib/discounts'
 import type { Discount, MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemCombo, MenuItemSize } from '../lib/types'
+import { sized, IMG } from '../lib/imageUrl'
 
 export default function CustomizeSheet({
   item, sizes, combos, addonGroups, addons, discounts, onClose, onConfirm, blockedRef
@@ -183,7 +184,7 @@ export default function CustomizeSheet({
                   {g.max_select === 1
                     ? <input type="radio" name={`group-${g.id}`} checked={addonIds.includes(a.id)} onChange={() => toggleAddon(a, g)} className="accent-sea w-4 h-4 shrink-0" />
                     : <input type="checkbox" checked={addonIds.includes(a.id)} onChange={() => toggleAddon(a, g)} className="accent-sea w-4 h-4 shrink-0" />}
-                  {a.image_url && <img src={a.image_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />}
+                  {a.image_url && <img src={sized(a.image_url, IMG.icon)} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />}
                   <span className="flex-1 text-sm font-medium">{a.name}</span>
                   {/* `+20 ج.م` rendered as «20+ ج.م»: the leading + is bidi-neutral,
                       so at the start of an RTL run it reflows to the other end.

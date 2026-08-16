@@ -12,6 +12,7 @@ import { applyDiscount, effectiveDiscount } from '../lib/discounts'
 import Icon from '../components/Icon'
 import type { Discount, MenuItem, MenuItemAddon, MenuItemCombo, MenuItemSize, Restaurant } from '../lib/types'
 import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
+import { sized, IMG } from '../lib/imageUrl'
 
 export default function CartPage() {
   const nav = useNavigate()
@@ -120,7 +121,7 @@ export default function CartPage() {
         <div className="flex items-center gap-2.5 mb-4">
           <div className="w-9 h-9 rounded-lg overflow-hidden shrink-0 border border-line bg-shellup grid place-items-center text-base">
             {restaurant.logo_url
-              ? <img src={restaurant.logo_url} alt="" className="w-full h-full object-cover" />
+              ? <img src={sized(restaurant.logo_url, IMG.icon)} alt="" className="w-full h-full object-cover" />
               : '🍽️'}
           </div>
           <p className="font-bold truncate">{restaurant.name}</p>
@@ -151,7 +152,7 @@ export default function CartPage() {
               <div className="w-12 h-12 rounded-xl grid place-items-center text-xl shrink-0 overflow-hidden"
                 style={{ background: art.tint }}>
                 {item.image_url
-                  ? <img src={item.image_url} alt="" className="w-full h-full object-cover" />
+                  ? <img src={sized(item.image_url, IMG.square)} alt="" className="w-full h-full object-cover" />
                   : art.emoji}
               </div>
               <div className="flex-1 min-w-0">

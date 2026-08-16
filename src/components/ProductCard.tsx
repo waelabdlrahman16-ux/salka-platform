@@ -1,6 +1,7 @@
 import { artFor } from '../lib/categoryArt'
 import Icon from './Icon'
 import type { MenuItem } from '../lib/types'
+import { sized, IMG } from '../lib/imageUrl'
 
 /**
  * A menu item card.
@@ -93,7 +94,7 @@ export default function ProductCard({
             // has: 85 أرابياتا items, 85 different images, several of them
             // brand tiles rather than food. A mild crop on a 4:3 box is a much
             // smaller price than a grid that never looks finished.
-            ? <img src={item.image_url} alt={item.name} loading="lazy" decoding="async"
+            ? <img src={sized(item.image_url, IMG.photo)} alt={item.name} loading="lazy" decoding="async"
                 className="w-full h-full object-cover" />
             : art.emoji}
           {item.requires_prescription && (

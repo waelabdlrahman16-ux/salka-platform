@@ -16,6 +16,7 @@ import Icon from '../components/Icon'
 import InAppLoginPrompt from '../components/InAppLoginPrompt'
 import { isCancelled, cancelReasonLabel } from '../lib/statusLabels'
 import { useDismissable } from '../lib/useDismissable'
+import { sized, IMG } from '../lib/imageUrl'
 
 // Found by driving it: a pharmacy order with no price, no vendor acceptance and
 // no driver rendered "قيد التجهيز" with "الوصول المتوقع 7:15 ص". Nothing was
@@ -920,7 +921,7 @@ export default function Track() {
             {data.items.map((it, i) => (
               <div key={i} className="flex items-center gap-3 text-sm">
                 {it.image_url ? (
-                  <img src={it.image_url} alt="" className="w-9 h-9 rounded-lg object-cover shrink-0 border border-line" />
+                  <img src={sized(it.image_url, IMG.icon)} alt="" className="w-9 h-9 rounded-lg object-cover shrink-0 border border-line" />
                 ) : (
                   <span className="w-6 h-6 rounded-full bg-shellup grid place-items-center text-xs font-bold shrink-0">{it.qty}</span>
                 )}
