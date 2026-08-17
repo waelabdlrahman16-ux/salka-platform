@@ -41,7 +41,43 @@ const url = process.env.SUPABASE_DB_URL
 if (!url) {
   console.error('SUPABASE_DB_URL is not set.')
   console.error('Get it from Supabase → Connect → Session pooler, and substitute the password.')
-  process.exit(1)
+  process.exit(2)
+}
+
+// Exit codes carry meaning, because the two failures mean opposite things:
+//
+//   1  ordering is broken       -> block the merge, wake somebody up
+//   2  this script cannot run   -> fix the setup; says NOTHING about ordering
+//
+// The first version conflated them, so a mistyped connection string printed
+// "SMOKE TEST FAILED — do not deploy". A check that cries wolf gets ignored,
+// and an ignored check is worse than no check at all.
+const SETUP_FAILURE = 2
+
+// Validate the shape before dialling, so a bad string produces "your connection
+// string is wrong" rather than a raw DNS error. A clipboard that had something
+// else on it yields e.g. `getaddrinfo ENOTFOUND base`, which reads like an
+// outage and is not one.
+{
+  let parsed
+  try { parsed = new URL(url) } catch {
+    console.error('SUPABASE_DB_URL is not a valid URL.')
+    console.error(`  got: ${url.slice(0, 40)}${url.length > 40 ? '…' : ''}  (${url.length} chars)`)
+    console.error('  expected: postgresql://postgres.<ref>:<password>@<host>.pooler.supabase.com:5432/postgres')
+    console.error('\n  Most likely the clipboard held something else when it was copied.')
+    process.exit(SETUP_FAILURE)
+  }
+  const problems = []
+  if (!/^postgres(ql)?:$/.test(parsed.protocol)) problems.push(`protocol is "${parsed.protocol}", expected postgresql:`)
+  if (!/supabase\.(com|co)$/.test(parsed.hostname)) problems.push(`host is "${parsed.hostname}", expected a *.supabase.com address`)
+  if (!parsed.password) problems.push('no password in the URL — the [YOUR-PASSWORD] placeholder may not have been replaced')
+  if (problems.length) {
+    console.error('SUPABASE_DB_URL does not look like a Supabase connection string:')
+    problems.forEach(p => console.error(`  - ${p}`))
+    console.error(`\n  masked: ${url.replace(/:[^:@/]*@/, ':***@')}`)
+    console.error('\n  Copy it fresh from Supabase → Connect → Session pooler.')
+    process.exit(SETUP_FAILURE)
+  }
 }
 
 const client = new pg.Client({ connectionString: url })
@@ -155,12 +191,25 @@ try {
     }
   }
 } catch (err) {
-  fail('place_order raised.', err.message)
+  // Could we even reach the database? If not, this says nothing about whether
+  // ordering works, and must not be reported as though it did.
+  const netCodes = ['ENOTFOUND','ECONNREFUSED','ETIMEDOUT','ECONNRESET','EAI_AGAIN','ENETUNREACH','EHOSTUNREACH','SELF_SIGNED_CERT_IN_CHAIN']
+  const isSetup = netCodes.includes(err.code)
+    || /password authentication failed|no pg_hba|does not exist|SASL|SSL|self.signed/i.test(err.message || '')
+    || err.message?.includes('Connection terminated')
+  if (isSetup && !started) {
+    console.error(`\n✗ Could not reach the database: ${err.message}`)
+    console.error('\n  This is a SETUP problem, not a broken checkout. Ordering is UNVERIFIED,')
+    console.error('  not proven broken. Check SUPABASE_DB_URL and network access, then rerun.')
+    process.exitCode = SETUP_FAILURE
+  } else {
+    fail('place_order raised.', err.message)
   // The shape of the 13 August outage, named so nobody has to rediscover it.
-  if (/column .* does not exist/i.test(err.message)) {
-    console.error('\n  A column referenced by the function does not exist. This is exactly the')
-    console.error('  2026-08-13 failure: a migration edited the function body and left an')
-    console.error('  invalid identifier behind. Ordering is broken in production right now.')
+    if (/column .* does not exist/i.test(err.message)) {
+      console.error('\n  A column referenced by the function does not exist. This is exactly the')
+      console.error('  2026-08-13 failure: a migration edited the function body and left an')
+      console.error('  invalid identifier behind. Ordering is broken in production right now.')
+    }
   }
 } finally {
   // Always. Even on success -- especially on success.
@@ -168,8 +217,10 @@ try {
   try { await client.end() } catch {}
 }
 
-if (process.exitCode) {
-  console.error('\nSMOKE TEST FAILED — do not deploy.')
+if (process.exitCode === SETUP_FAILURE) {
+  console.error('\nSMOKE TEST DID NOT RUN — setup problem. This says nothing about ordering.')
+} else if (process.exitCode) {
+  console.error('\nSMOKE TEST FAILED — ordering is broken. Do not deploy.')
 } else {
   console.log('SMOKE TEST PASSED — ordering works end to end.')
 }
