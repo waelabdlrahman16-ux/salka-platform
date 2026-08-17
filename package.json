@@ -15,7 +15,8 @@
     "cap:ios": "npm run cap:sync && npx cap open ios",
     "check:firebase-sw": "node scripts/check-firebase-sw-version.mjs",
     "baseline:capture": "node scripts/capture-baseline.mjs",
-    "smoke:order": "node scripts/smoke-place-order.mjs"
+    "smoke:order": "node scripts/smoke-place-order.mjs",
+    "smoke:setup": "node scripts/ensure-test-restaurant.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.2",
