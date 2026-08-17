@@ -122,9 +122,19 @@ export default function Supervisor() {
 
   useEffect(() => {
     load()
-    // Only while somebody is looking -- see lib/usePollWhenVisible. Returning
-    // to the tab refreshes immediately, so nobody acts on a paused board.
-    const tick = () => { if (document.visibilityState === 'visible') load() }
+    // SLOWED WHEN HIDDEN, NOT PAUSED. This screen pings on every new order that
+    // needs a call to the restaurant -- which is the supervisor's whole job, and
+    // they are usually on the phone with another tab in front. Pausing would
+    // have made those orders silent until they happened to look back.
+    //
+    // Hidden: 60s. Visible: 15s. Returning refreshes at once.
+    let hiddenSince: number | null = null
+    const tick = () => {
+      if (document.visibilityState === 'visible') { hiddenSince = null; load(); return }
+      const now = Date.now()
+      if (hiddenSince === null) hiddenSince = now
+      if (now - hiddenSince >= 60000) { hiddenSince = now; load() }
+    }
     const t = setInterval(tick, 15000)
     document.addEventListener('visibilitychange', tick)
     window.addEventListener('online', tick)

@@ -30,7 +30,21 @@ import { useEffect } from 'react'
  *                  already refreshes on visibilitychange; whether to pause it as
  *                  well is an operational call, not a performance one.
  *
- * The rule: pause screens people READ, never screens that NOTIFY.
+ *   Admin.tsx      -- alerts on stalled orders, late unassigned orders, new
+ *   Supervisor.tsx    complaints, settlement requests, escalated shifts, and
+ *                     (Supervisor) every new order needing a call to the
+ *                     restaurant. The first version of this change DID pause
+ *                     them, which would have silenced every one of those while
+ *                     the tab sat behind an inbox. They now slow to 60s when
+ *                     hidden instead -- alerts still arrive, a minute late at
+ *                     worst, and idle traffic still drops by three quarters.
+ *
+ * THE RULE: pause screens people READ. Never pause a screen that NOTIFIES --
+ * slow it down instead, or not at all if the alert is time-critical.
+ *
+ * So this hook is for the genuinely passive ones. Before reaching for it, grep
+ * the screen for ping(, pingIds(, startRinging and Notification. If any appear,
+ * it does not belong here.
  */
 export function usePollWhenVisible(
   load: () => void | Promise<unknown>,

@@ -559,8 +559,23 @@ export default function Admin() {
     //
     // Backgrounded tabs already throttle timers, but they do not stop them, and
     // a tab sitting on a second monitor is not backgrounded at all.
+    //
+    // SLOWED, NOT PAUSED, and the difference matters. This board ALERTS: ping()
+    // fires for a stalled order, a late unassigned order, a new complaint, a
+    // settlement request, an escalated shift, a customer who did not answer.
+    // Those are exactly the things someone needs to hear about while the tab is
+    // behind their inbox. Pausing would have silenced all of them -- the first
+    // version of this change did, which is the trap it was written to avoid.
+    //
+    // So a hidden board still polls, at 60s instead of 15s: alerts still arrive,
+    // a minute late at worst, and idle traffic drops by three quarters. Nothing
+    // here is sub-minute critical -- a stalled order is late by definition.
+    let hiddenSince: number | null = null
     const t = setInterval(() => {
-      if (document.visibilityState === 'visible') load()
+      if (document.visibilityState === 'visible') { hiddenSince = null; load(); return }
+      const now = Date.now()
+      if (hiddenSince === null) hiddenSince = now
+      if (now - hiddenSince >= 60000) { hiddenSince = now; load() }
     }, 15000)
 
     // Coming back refreshes IMMEDIATELY, not up to 15s later. This is a dispatch
