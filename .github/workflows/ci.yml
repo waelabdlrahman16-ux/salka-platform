@@ -80,12 +80,32 @@ jobs:
             echo "have=true" >> "$GITHUB_OUTPUT"
           fi
 
-      # Retried once. A dropped connection to Supabase is a CI flake, not a
-      # broken checkout, and "ordering is broken" must stay a signal worth
-      # believing -- a test that cries wolf gets ignored, which is worse than
-      # not having it.
+      # Retried once, then the exit code decides what the failure MEANS:
+      #
+      #   1  ordering is broken     -> the thing this job exists to catch
+      #   2  the check could not run -> bad secret, network, missing fixture
+      #
+      # Both fail the job, because an unverified checkout should not merge
+      # either. But they must not read the same: a mistyped secret announcing
+      # "ordering is broken" is how a check earns a reputation for lying, and a
+      # check nobody believes is worse than no check.
       - name: Place a test order and roll it back
         if: steps.creds.outputs.have == 'true'
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-        run: npm run smoke:order || (echo "::warning::First attempt failed, retrying once in 10s" && sleep 10 && npm run smoke:order)
+        run: |
+          set +e
+          npm run smoke:order; code=$?
+          if [ $code -ne 0 ]; then
+            echo "::notice::First attempt exited $code, retrying once in 10s"
+            sleep 10
+            npm run smoke:order; code=$?
+          fi
+          if [ $code -eq 0 ]; then
+            echo "::notice::Ordering verified end to end."
+          elif [ $code -eq 2 ]; then
+            echo "::error::The order smoke test COULD NOT RUN (setup problem — bad SUPABASE_DB_URL secret, network, or missing test restaurant). This does NOT mean ordering is broken; it means this change is unverified."
+          else
+            echo "::error::ORDERING IS BROKEN. A real order could not be placed against the test restaurant. Do not merge — this is the 2026-08-13 failure mode."
+          fi
+          exit $code
