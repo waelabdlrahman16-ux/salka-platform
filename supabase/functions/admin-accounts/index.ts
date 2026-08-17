@@ -16,6 +16,9 @@ import { securePassword, secureSlugFallback, isRateLimitError, CORS_HEADERS, jso
 const genPassword = () => securePassword(14)
 
 function slugify(name: string): string {
+  // Stripping non-ASCII to build a slug is exactly what this does; \x00 here is
+  // a range bound, not a literal control character being matched.
+  // eslint-disable-next-line no-control-regex
   const ascii = name.replace(/[^\x00-\x7F]/g, "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "")
   return ascii || secureSlugFallback()
 }

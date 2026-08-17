@@ -10,7 +10,7 @@ import { ping } from '../lib/notify'
 import { registerPush, persistPushToken } from '../lib/push'
 import { orderStatusLabel, assignmentStatusLabel } from '../lib/statusLabels'
 import { vendorNoun } from '../lib/vendorWords'
-import type { Assignment, Driver, LiveDelivery, Order, RequestItem } from '../lib/types'
+import type { Assignment, Driver, LiveDelivery, Order } from '../lib/types'
 import Icon from '../components/Icon'
 import EnablePushButton from '../components/EnablePushButton'
 import EnableSoundButton from '../components/EnableSoundButton'
@@ -144,7 +144,7 @@ export default function Supervisor() {
       document.removeEventListener('visibilitychange', tick)
       window.removeEventListener('online', tick)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [])
 
   async function run(key: string, fn: () => Promise<{ ok: boolean; error?: string }>) {

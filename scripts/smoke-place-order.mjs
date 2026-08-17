@@ -216,8 +216,8 @@ try {
   }
 } finally {
   // Always. Even on success -- especially on success.
-  if (started) { try { await client.query('ROLLBACK'); console.log('\n(rolled back — nothing persisted)') } catch {} }
-  try { await client.end() } catch {}
+  if (started) { try { await client.query('ROLLBACK'); console.log('\n(rolled back — nothing persisted)') } catch { /* connection already gone; nothing was committed either way */ } }
+  try { await client.end() } catch { /* nothing useful to do if closing fails */ }
 }
 
 if (process.exitCode === SETUP_FAILURE) {

@@ -1,6 +1,5 @@
 import { useEffect, useId, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { rpc } from '../lib/rpc'
 import { dispatchOperation } from '../lib/dispatchOperations'
 import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
 

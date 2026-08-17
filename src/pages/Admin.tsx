@@ -729,6 +729,16 @@ export default function Admin() {
   // driver who simply goes by another name was permanent. The RLS policy
   // "admin manages drivers" already allows an admin UPDATE on this table; only
   // the field was missing.
+  // NOT DEAD CODE, BUT NOT REACHABLE EITHER. This function works -- it renames a
+  // driver through promptSheet -- but nothing in the UI calls it, so the ability
+  // to edit a driver's name does not currently exist in the admin portal. Found
+  // by the linter (audit finding 15); it is the only genuine dead feature the
+  // first run turned up.
+  //
+  // Left in place deliberately rather than deleted: removing working code is a
+  // product decision, not a lint fix. Either wire it to a button on the driver
+  // row or delete it -- but decide, do not let it sit here another six months.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async function editDriverDetails(d: Driver) {
     const name = await promptSheet({ title: 'اسم المندوب', initial: d.name ?? '' })
     if (name === null) return

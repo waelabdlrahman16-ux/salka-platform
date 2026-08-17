@@ -137,9 +137,9 @@ try {
     console.log('\nTo apply:  node scripts/ensure-test-restaurant.mjs --confirm')
   }
 } catch (err) {
-  try { await client.query('ROLLBACK') } catch {}
+  try { await client.query('ROLLBACK') } catch { /* already closed or never opened */ }
   console.error('\n✗ Failed:', err.message)
   process.exitCode = 1
 } finally {
-  try { await client.end() } catch {}
+  try { await client.end() } catch { /* nothing useful to do if closing fails */ }
 }

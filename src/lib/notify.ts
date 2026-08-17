@@ -1,7 +1,7 @@
 // Free, no external service: browser notification + beep when new work arrives.
 import { getAudioContext } from './audioUnlock'
 
-let prev: Record<string, number> = {}
+const prev: Record<string, number> = {}
 const seenIds: Record<string, Set<number>> = {}
 
 export function ping(key: string, count: number, title: string, body: string) {
