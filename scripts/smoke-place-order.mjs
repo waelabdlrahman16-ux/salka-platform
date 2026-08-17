@@ -36,11 +36,14 @@
 // green tick then means nothing.
 
 import pg from 'pg'
+import { loadEnvLocal } from './loadEnvLocal.mjs'
+
+loadEnvLocal()
 
 const url = process.env.SUPABASE_DB_URL
 if (!url) {
-  console.error('SUPABASE_DB_URL is not set.')
-  console.error('Get it from Supabase → Connect → Session pooler, and substitute the password.')
+  console.error('SUPABASE_DB_URL is not set.\n')
+  console.error('  Put it in .env.local instead of the shell -- quoting and line wrapping have\n  bitten this three separate ways. One line, no quotes needed:\n\n      SUPABASE_DB_URL=postgresql://postgres.pqpnwxyevrsipklzmwex:PASSWORD@HOST.pooler.supabase.com:5432/postgres\n\n  Open it with:  open -e .env.local\n  It is gitignored, so the password cannot be committed.')
   process.exit(2)
 }
 
