@@ -14,7 +14,20 @@ export default function Observer() {
     if (error) { setError('مش قادرين نجيب لوحة المتابعة دلوقتي'); return }
     setError(''); setBoard(data as Board)
   }
-  useEffect(() => { load(); const timer = setInterval(load, 30_000); return () => clearInterval(timer) }, [])
+  // A read-only dashboard: poll only while it is on screen, and refresh the
+  // moment it comes back. See lib/usePollWhenVisible for why.
+  useEffect(() => {
+    load()
+    const tick = () => { if (document.visibilityState === 'visible') load() }
+    const timer = setInterval(tick, 30_000)
+    document.addEventListener('visibilitychange', tick)
+    window.addEventListener('online', tick)
+    return () => {
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', tick)
+      window.removeEventListener('online', tick)
+    }
+  }, [])
   const cards = board ? [
     ['طلبات اليوم', board.today], ['أمس', board.yesterday], ['وارد', board.incoming],
     ['جاهز لمندوب', board.ready], ['في الطريق', board.on_way], ['تم اليوم', board.delivered_today],

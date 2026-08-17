@@ -122,9 +122,18 @@ export default function Supervisor() {
 
   useEffect(() => {
     load()
-    const t = setInterval(load, 15000)
+    // Only while somebody is looking -- see lib/usePollWhenVisible. Returning
+    // to the tab refreshes immediately, so nobody acts on a paused board.
+    const tick = () => { if (document.visibilityState === 'visible') load() }
+    const t = setInterval(tick, 15000)
+    document.addEventListener('visibilitychange', tick)
+    window.addEventListener('online', tick)
     registerPush(persistPushToken)
-    return () => clearInterval(t)
+    return () => {
+      clearInterval(t)
+      document.removeEventListener('visibilitychange', tick)
+      window.removeEventListener('online', tick)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

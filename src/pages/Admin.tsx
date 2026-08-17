@@ -546,8 +546,38 @@ export default function Admin() {
   useEffect(() => {
     registerPush(persistPushToken)
     load().finally(() => setFirstLoad(false))
-    const t = setInterval(load, 15000)
-    return () => clearInterval(t)
+
+    // DO NOT POLL A BOARD NOBODY IS LOOKING AT.
+    //
+    // One cycle of this load moves about 407 kB -- 949 menu_items with no limit
+    // at all (229 kB), delivery_assignments carrying a nested orders(*) and
+    // drivers(*) (103 kB), orders (66 kB), plus eighteen smaller queries. At 15s
+    // that is roughly 1.6 MB a minute, 98 MB an hour, per open tab -- and it ran
+    // identically whether the tab was in front of someone or forgotten behind
+    // twenty others. Measured at 01:30 with no customers ordering: ~1,500 edge
+    // calls an hour from idle dashboards alone.
+    //
+    // Backgrounded tabs already throttle timers, but they do not stop them, and
+    // a tab sitting on a second monitor is not backgrounded at all.
+    const t = setInterval(() => {
+      if (document.visibilityState === 'visible') load()
+    }, 15000)
+
+    // Coming back refreshes IMMEDIATELY, not up to 15s later. This is a dispatch
+    // board: staff return to it and assign a driver, confirm an InstaPay
+    // payment, settle cash. Acting on a snapshot from before they switched away
+    // is worth far more than the bandwidth saved. The «آخر تحديث» line under the
+    // header covers the gap in between -- it shows the last SUCCESSFUL sync, so
+    // a paused board reads as paused rather than as current.
+    const onVisible = () => { if (document.visibilityState === 'visible') load() }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('online', onVisible)
+
+    return () => {
+      clearInterval(t)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('online', onVisible)
+    }
   }, [])
 
   // syncFailed and lastSyncAt were tracked but never shown anywhere -- the

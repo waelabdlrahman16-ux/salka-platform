@@ -246,8 +246,18 @@ export default function Track() {
 
   useEffect(() => {
     load()
-    const t = setInterval(() => load(), 10000)
-    return () => clearInterval(t)
+    // Paused while the screen is away. A customer watching a delivery locks the
+    // phone constantly; push covers status changes in the meantime, and coming
+    // back refreshes at once. See lib/usePollWhenVisible.
+    const tick = () => { if (document.visibilityState === 'visible') load() }
+    const t = setInterval(tick, 10000)
+    document.addEventListener('visibilitychange', tick)
+    window.addEventListener('online', tick)
+    return () => {
+      clearInterval(t)
+      document.removeEventListener('visibilitychange', tick)
+      window.removeEventListener('online', tick)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
