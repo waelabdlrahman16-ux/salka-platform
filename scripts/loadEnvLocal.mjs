@@ -43,8 +43,19 @@ export function loadEnvLocal() {
                              (value.startsWith('"') && value.endsWith('"')))) {
       value = value.slice(1, -1)
     }
-    // A real environment variable wins, so CI (which sets it from a secret)
-    // is never overridden by a stray local file.
+    // A real environment variable wins, so CI (which sets it from a secret) is
+    // never overridden by a stray local file.
+    //
+    // Locally that precedence is a trap, and it caught the first person to use
+    // this: a broken value left over from an earlier `export` in the same
+    // terminal silently beat the file they had just carefully filled in, and
+    // the script reported the stale value as though the file were wrong. So
+    // say so, loudly, rather than letting them fight an invisible winner.
+    if (process.env[key] !== undefined && process.env[key] !== value) {
+      console.error(`Note: ${key} is already set in this shell, so .env.local is being ignored for it.`)
+      console.error(`      shell value: ${String(process.env[key]).replace(/:[^:@/]*@/, ':***@').slice(0, 60)}`)
+      console.error(`      To use the file instead:  unset ${key}\n`)
+    }
     if (!process.env[key]) { process.env[key] = value; loaded = true }
   }
   return loaded
