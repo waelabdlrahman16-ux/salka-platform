@@ -206,6 +206,57 @@ export const ERROR_AR: Record<string, string> = {
   restaurant_required: 'اختار المطعم الأول',
   invalid_catalog_input: 'راجع البيانات وجرب تاني',
   catalog_check_failed: 'العملية متنفذتش — جرب تاني أو راجع السجل',
+
+  // ---------------------------------------------------------------------------
+  // Promo codes.
+  //
+  // THESE WERE MISSING, AND THAT WAS A LIVE BUG. extractCode() only recognises
+  // keys that appear in this object; anything else collapses to 'unknown'.
+  // CheckoutPage then tests `err.message.includes('promo_expired')` against that
+  // 'unknown' and never matches, so EVERY promo failure -- wrong code, expired,
+  // already used, below the minimum, campaign exhausted -- showed the customer
+  // «حصل خطأ، جرب تاني» instead of the reason.
+  //
+  // Found 2026-08-18 while SOKHNA30 was live and expiring the next day. The
+  // Arabic below is not new: it already existed in CheckoutPage's ladder, which
+  // was simply unreachable.
+  promo_invalid: 'كود الخصم غير صحيح',
+  promo_expired: 'كود الخصم انتهت صلاحيته',
+  promo_not_available: 'الكود ده مش متاح للمطعم أو المنطقة دي',
+  promo_minimum_not_met: 'الطلب أقل من الحد الأدنى لكود الخصم',
+  promo_limit_reached: 'كود الخصم خلص',
+  promo_already_used: 'استخدمت كود الخصم ده قبل كده',
+  promo_nothing_to_discount: 'كود الخصم مش بيخصم حاجة في الطلب ده',
+  promo_customer_missing: 'سجّل دخولك عشان تستخدم كود الخصم',
+
+  // ---------------------------------------------------------------------------
+  // Order-path validation the customer can act on. Same problem as the promo
+  // block: emitted by customer-order-creation, absent from here, so they all
+  // arrived as 'unknown' and the customer was told nothing useful.
+  invalid_customer_name: 'اكتب اسمك بشكل صحيح',
+  invalid_unit_number: 'اكتب رقم الوحدة بشكل صحيح',
+  invalid_zone: 'اختار منطقتك الأول',
+  notes_too_long: 'الملاحظات طويلة أوي — اختصرها شوية',
+  invalid_item_quantity: 'الكمية مش مظبوطة',
+  invalid_addon: 'في إضافة مابقتش متاحة، شيلها وجرب تاني',
+  collect_amount_required: 'اكتب المبلغ المطلوب تحصيله',
+  invalid_collect_amount: 'المبلغ المطلوب تحصيله مش مظبوط',
+  invalid_payment_mode: 'اختار طريقة الدفع',
+  invalid_prescription_path: 'صورة الروشتة فيها مشكلة — ارفعها تاني',
+  not_a_custom_order_vendor: 'المكان ده مش بيستقبل طلبات خاصة',
+  request_too_large: 'الطلب كبير أوي — قلل عدد الأصناف وجرب تاني',
+
+  // ---------------------------------------------------------------------------
+  // Our fault, not the customer's. Listed so extractCode RECOGNISES them and
+  // analytics records which one happened -- previously indistinguishable from
+  // every other 'unknown'. The wording says the problem is ours and does not
+  // tell anyone to retry something that will fail again the same way.
+  invalid_json: 'في مشكلة عندنا دلوقتي — جرب تاني بعد شوية',
+  invalid_request: 'في مشكلة عندنا دلوقتي — جرب تاني بعد شوية',
+  invalid_action: 'في مشكلة عندنا دلوقتي — جرب تاني بعد شوية',
+  method_not_allowed: 'في مشكلة عندنا دلوقتي — جرب تاني بعد شوية',
+  missing_rate_limit_pepper: 'في مشكلة عندنا دلوقتي — جرب تاني بعد شوية',
+  rate_limit_identity_failed: 'في مشكلة عندنا دلوقتي — جرب تاني بعد شوية',
 }
 
 export function isOffline(): boolean {
