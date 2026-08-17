@@ -46,7 +46,7 @@ export function OrderLines({ order }: { order: Order }) {
         setLines((data as any) ?? [])
       })
     return () => { live = false }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [order.id, fromRequest])
 
   const note = order.request_notes?.trim()

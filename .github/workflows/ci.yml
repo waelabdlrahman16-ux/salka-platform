@@ -39,6 +39,20 @@ jobs:
       - name: Typecheck and build
         run: npm run build
 
+      # Audit finding 15. Runs AFTER the build on purpose: a broken build is the
+      # more urgent signal, and seeing it first saves reading lint output for a
+      # branch that does not compile.
+      #
+      # This fails the job on ESLint ERRORS only. Warnings do not fail it, which
+      # is deliberate -- there are 21 react-hooks/exhaustive-deps warnings and
+      # every one needs reading individually before it is touched (several sit on
+      # the polling effects in Vendor and Admin, where adding a dependency can
+      # turn a poll into an infinite render loop). Blocking merges on those would
+      # get the whole lint step deleted within a week. Errors are at zero, and
+      # this job is what keeps them there.
+      - name: Lint
+        run: npm run lint
+
   # Places a real order against a test restaurant and rolls it back. See
   # scripts/smoke-place-order.mjs for why all three safety layers are needed.
   #

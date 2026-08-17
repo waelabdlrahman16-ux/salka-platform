@@ -8,7 +8,7 @@ import type { Discount, MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemCom
 import { sized, IMG } from '../lib/imageUrl'
 
 export default function ProductDetailSheet({
-  item, items, sizes, combos, addonGroups, addons, discounts, disabled, optionsLoaded, qtyFor, onAdd, onRemove, onCustomize, onClose
+  item, items, sizes, combos, addonGroups, discounts, disabled, optionsLoaded, qtyFor, onAdd, onRemove, onCustomize, onClose
 }: {
   item: MenuItem
   items: MenuItem[]

@@ -7,11 +7,9 @@ import { lineIsStale, priceLine } from '../lib/linePricing'
 import { artFor } from '../lib/categoryArt'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
-import { isItemAvailableNow } from '../lib/itemAvailability'
-import { applyDiscount, effectiveDiscount } from '../lib/discounts'
 import Icon from '../components/Icon'
 import type { Discount, MenuItem, MenuItemAddon, MenuItemCombo, MenuItemSize, Restaurant } from '../lib/types'
-import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
+import { getCompoundId } from '../lib/place'
 import { sized, IMG } from '../lib/imageUrl'
 
 export default function CartPage() {

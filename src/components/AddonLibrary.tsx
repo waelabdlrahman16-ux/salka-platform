@@ -45,7 +45,7 @@ export default function AddonLibrary({ restaurantId, items }: {
     if (err) { setError('مش قادرين نحمّل المكتبة'); return }
     setLib((data as VendorAddonLibraryItem[]) ?? [])
   }
-  useEffect(() => { load(); setApplying(null); setNotice('') /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [restaurantId])
+  useEffect(() => { load(); setApplying(null); setNotice('') }, [restaurantId])
 
   async function uploadImage(file: File) {
     setUploading(true)

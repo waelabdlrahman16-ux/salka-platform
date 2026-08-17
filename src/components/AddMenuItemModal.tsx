@@ -32,10 +32,6 @@ type DraftModifierGroup = {
   kind?: 'standard' | 'ingredient'
 }
 
-const emptyModifierGroup = (): DraftModifierGroup => ({
-  name: '', required: false, maxSelect: '1', choices: [{ name: '', price: '' }]
-})
-
 /**
  * Sizes and combos are held here as drafts and written after the item exists --
  * they need its menu_item_id, so there is no way to insert them first.

@@ -15,7 +15,6 @@ import type { Compound, Discount, Restaurant } from '../lib/types'
 import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
 import { publicCatalog } from '../lib/publicCatalog'
 
-const STORAGE_KEY = 'salka_compound_id'
 
 export default function Home() {
   const [compounds, setCompounds] = useState<Compound[]>([])
@@ -153,7 +152,7 @@ export default function Home() {
         //
         // This used to do two things to a stranger before they had seen a
         // single price: open the «فين مكانك؟» modal over an empty screen, and
-        // fire useMyLocation() -- which in turn asked for GPS permission on
+        // fire locateMe() -- which in turn asked for GPS permission on
         // page load and, when that was refused or unavailable, printed an error
         // telling them to go and change their browser settings.
         //
@@ -167,14 +166,14 @@ export default function Home() {
         // unfiltered (see the restaurants effect below) and the customer is
         // asked where they are when it starts to matter -- at checkout, which
         // still requires a compound, or whenever they tap the picker.
-        // useMyLocation() still exists and still works; it now runs only when
+        // locateMe() still exists and still works; it now runs only when
         // somebody presses the button that asks for it.
       })
   }
 
   useEffect(() => {
     loadCompounds()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [])
 
   // Debounced, because this fires per keystroke in Arabic where a word is
@@ -189,7 +188,7 @@ export default function Home() {
         .then(res => { setFoodHits(res.ok ? res.data : []); setFoodSearching(false) })
     }, 250)
     return () => clearTimeout(t)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [foodQ, compoundId])
 
   useEffect(() => {
@@ -225,7 +224,7 @@ export default function Home() {
         // Best offer per vendor, so a restaurant running 10% on one item and
         // 30% on another advertises the 30.
         const labels = new Map<number, string>()
-        let bestPct = new Map<number, number>()
+        const bestPct = new Map<number, number>()
         for (const d of (discounts ?? []).filter(inEffect)) {
           if (d.discount_type === 'percent') {
             const cur = bestPct.get(d.restaurant_id) ?? 0
@@ -245,7 +244,11 @@ export default function Home() {
     setPicking(false)
   }
 
-  function useMyLocation(compoundsList: Compound[] = compounds) {
+  // Named locateMe, not useMyLocation. It is an ordinary click handler that
+// calls no hooks -- but any name starting with `use` makes React's
+// rules-of-hooks lint treat it as one, and calling it from an onClick then
+// looks like a hook called inside a callback.
+  function locateMe(compoundsList: Compound[] = compounds) {
     if (!navigator.geolocation) { setLocationError('المتصفح ده مش بيدعم تحديد الموقع'); return }
 
     // WHY THERE IS A WATCHDOG HERE.
@@ -351,7 +354,7 @@ export default function Home() {
 
   const selected = compounds.find(c => c.id === compoundId)
   // Authoritative, same source as the cart and checkout -- never a local guess.
-  const { fee: deliveryFee, quote: deliveryQuote } = useDeliveryQuote(compoundId)
+  const { fee: deliveryFee } = useDeliveryQuote(compoundId)
   const eta = (r: Restaurant) => selected
     ? { min: r.prep_minutes + selected.est_travel_minutes_min, max: r.prep_minutes + selected.est_travel_minutes_max }
     : { min: r.prep_minutes, max: r.prep_minutes }
@@ -704,7 +707,7 @@ export default function Home() {
             placeholder="دوّر على اسم المكان…" />
               </div>
               <button className="w-12 h-12 rounded-xl border border-line bg-night grid place-items-center shrink-0 disabled:opacity-60"
-                disabled={locating} onClick={() => useMyLocation()}
+                disabled={locating} onClick={() => locateMe()}
                 title="استخدم موقعي الحالي" aria-label="استخدم موقعي الحالي">
                 {locating
                   ? <span className="inline-block w-4 h-4 rounded-full border-2 border-mist/40 border-t-sea animate-spin" />

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { artFor } from '../lib/categoryArt'
 import type { Discount, Restaurant } from '../lib/types'
-import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
+import { getCompoundId } from '../lib/place'
 import { publicCatalog } from '../lib/publicCatalog'
 
 interface RestaurantOffer {
