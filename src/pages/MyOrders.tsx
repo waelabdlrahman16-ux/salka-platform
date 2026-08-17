@@ -75,8 +75,17 @@ export default function MyOrders() {
     // here would see a stale "قيد التسعير" indefinitely. Poll like Track.tsx
     // does, but skip the busy flag so it doesn't flash the loading text over
     // an already-populated list every 10s.
-    const t = setInterval(() => loadOrders(true), 10000)
-    return () => clearInterval(t)
+    // ...and only while the customer is actually on this screen. A phone in a
+    // pocket does not need the list refreshed every 10s; coming back to it does.
+    const tick = () => { if (document.visibilityState === 'visible') loadOrders(true) }
+    const t = setInterval(tick, 10000)
+    document.addEventListener('visibilitychange', tick)
+    window.addEventListener('online', tick)
+    return () => {
+      clearInterval(t)
+      document.removeEventListener('visibilitychange', tick)
+      window.removeEventListener('online', tick)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, customer?.id, customer?.phone])
 
