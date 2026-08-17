@@ -20,6 +20,7 @@ import { publicCatalog } from '../lib/publicCatalog'
 import { customerSessionAccess } from '../lib/customerSessionAccess'
 import { customerAccount } from '../lib/customerAccounts'
 import { cairoToday } from '../lib/cairoTime'
+import { reportOrderFailure } from '../lib/reportOrderFailure'
 
 export default function CheckoutPage() {
   const fid = useId()
@@ -346,6 +347,16 @@ export default function CheckoutPage() {
       // be forwarded in case a raw driver message ever reaches this path.
       const rawCode = (err?.message ?? '').trim()
       const reason = /^[a-z0-9_]{1,64}$/.test(rawCode) ? rawCode : 'unknown'
+      // Analytics records every block, for funnel work. Sentry hears only the
+      // ones that mean something is wrong with us -- see reportOrderFailure for
+      // why an expired promo code must not page anybody. Until now nothing
+      // reported a failed checkout at all, which is why the 2026-08-13 outage
+      // ran for two hours in silence.
+      reportOrderFailure(reason, {
+        action: 'catalog',
+        restaurantId: restaurant.id,
+        compoundId,
+      })
       track('checkout_blocked', {
         restaurantId: restaurant.id,
         compoundId,
