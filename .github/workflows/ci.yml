@@ -1,8 +1,17 @@
 name: CI
 
-# There is no staging environment and no test suite, so every push goes straight
-# to production. This is the minimum guard: refuse to let a build that does not
-# typecheck or compile reach main.
+# There is no staging environment, so every merge to main goes straight to
+# production. Two gates stand in front of that:
+#
+#   build  -- refuses anything that does not typecheck or compile. Runs on every
+#             push to every branch.
+#   smoke  -- places a real order and rolls it back, so a change that breaks
+#             ordering cannot reach main. Runs on pull requests only.
+#
+# The build gate alone was not enough. On 2026-08-13 checkout, pickup and custom
+# orders were dead for two hours behind a change that typechecked and compiled
+# perfectly -- the break was inside a Postgres function body, where `tsc` cannot
+# look. See scripts/smoke-place-order.mjs.
 
 on:
   push:
@@ -29,3 +38,54 @@ jobs:
       # landing/ is hand-written static HTML with no build step, so nothing to do there.
       - name: Typecheck and build
         run: npm run build
+
+  # Places a real order against a test restaurant and rolls it back. See
+  # scripts/smoke-place-order.mjs for why all three safety layers are needed.
+  #
+  # PULL REQUESTS ONLY, not every branch push. It touches production, so it runs
+  # where it changes a decision -- at the gate before merge -- rather than on
+  # every intermediate commit.
+  smoke-order:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    # One at a time. Two concurrent runs would race on the same rate-limit
+    # bucket and on the test restaurant's state.
+    concurrency:
+      group: smoke-order-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22.23.2'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The secret is optional ON PURPOSE, so this workflow can merge before the
+      # secret exists. Without it the job reports skipped-and-why rather than
+      # failing every pull request, and without this guard the run would fail
+      # with an opaque connection error instead.
+      - name: Check for database credentials
+        id: creds
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$DB_URL" ]; then
+            echo "have=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::SUPABASE_DB_URL secret is not set — the order smoke test did NOT run. Ordering is unverified for this change. Add it under Settings → Secrets and variables → Actions."
+          else
+            echo "have=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Retried once. A dropped connection to Supabase is a CI flake, not a
+      # broken checkout, and "ordering is broken" must stay a signal worth
+      # believing -- a test that cries wolf gets ignored, which is worse than
+      # not having it.
+      - name: Place a test order and roll it back
+        if: steps.creds.outputs.have == 'true'
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: npm run smoke:order || (echo "::warning::First attempt failed, retrying once in 10s" && sleep 10 && npm run smoke:order)
