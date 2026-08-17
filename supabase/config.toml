@@ -163,3 +163,58 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/catalog-checks/deno.json"
 entrypoint = "./functions/catalog-checks/index.ts"
+
+# ---------------------------------------------------------------------------
+# Audit finding 16. The six functions below were deployed straight from the
+# dashboard and never recorded here. That is not cosmetic: `supabase functions
+# deploy` DEFAULTS verify_jwt TO TRUE for any function it cannot find in this
+# file. So the first CLI deploy would have silently put a JWT gate in front of
+# all six -- and none of them is called with a user JWT:
+#
+#   send-push, send-receipt-email, push-health
+#     Called by Postgres triggers through pg_net, which sends no user token at
+#     all. They authenticate the CALLER on the x-webhook-secret header, checked
+#     as the very first statement in each handler before any work is done.
+#     send-push gated this way would mean NO PUSH NOTIFICATIONS PLATFORM-WIDE,
+#     with a 401 visible only in the function logs.
+#
+#   admin-accounts, admin-promo-codes, customer-otp
+#     Verify the bearer token themselves via admin.auth.getUser(token), the same
+#     pattern as every customer-* function above. customer-otp additionally has
+#     to accept genuinely unauthenticated calls -- sending an OTP is how a
+#     customer signs in, so there is no session yet.
+#
+# Values below were read back from the live project on 2026-08-18 and match it
+# exactly. None of the six has a deno.json, so no import_map line -- confirmed
+# against the API, which reports import_map: false for all six.
+# ---------------------------------------------------------------------------
+
+[functions.admin-accounts]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/admin-accounts/index.ts"
+
+[functions.admin-promo-codes]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/admin-promo-codes/index.ts"
+
+[functions.customer-otp]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/customer-otp/index.ts"
+
+[functions.push-health]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/push-health/index.ts"
+
+[functions.send-push]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/send-push/index.ts"
+
+[functions.send-receipt-email]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/send-receipt-email/index.ts"
