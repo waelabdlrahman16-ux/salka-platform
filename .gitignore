@@ -1,4 +1,12 @@
 node_modules
 dist
-.env
 tsconfig.tsbuildinfo
+
+# Local secrets. .env.local holds SUPABASE_DB_URL for scripts/capture-baseline.mjs
+# and scripts/smoke-place-order.mjs -- that string contains the production
+# database password, so it must never be committed. The negation keeps the
+# committed placeholder file, which contains no real values.
+.env
+.env.local
+.env.*.local
+!.env.example

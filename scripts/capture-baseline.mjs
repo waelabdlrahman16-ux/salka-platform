@@ -14,12 +14,12 @@
 //
 // So: one command, no copying.
 //
-//   export SUPABASE_DB_URL='postgresql://postgres.<ref>:<password>@<host>:6543/postgres'
-//   node scripts/capture-baseline.mjs
+//   npm run baseline:capture
 //
-// Get the URL from Supabase → Project Settings → Database → Connection string →
-// URI (session pooler is fine). It contains the database password, so set it in
-// your shell for the one command and do not commit it anywhere.
+// The connection string lives in .env.local (gitignored), not in your shell --
+// see scripts/loadEnvLocal.mjs for why the shell route failed three different
+// ways. Get it from Supabase → Connect → Session pooler and substitute the
+// password.
 //
 // Everything here is read-only: SELECTs against system catalogues. It cannot
 // modify the database, and it never reads table rows -- no customer records, no
@@ -42,13 +42,17 @@ import { writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import pg from 'pg'
+import { loadEnvLocal } from './loadEnvLocal.mjs'
+
+loadEnvLocal()
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'supabase', 'baseline')
 const PROJECT_REF = 'pqpnwxyevrsipklzmwex'
 
 const url = process.env.SUPABASE_DB_URL
 if (!url) {
-  console.error('SUPABASE_DB_URL is not set. See the comment at the top of this file.')
+  console.error('SUPABASE_DB_URL is not set.\n')
+  console.error('  Put it in .env.local instead of the shell -- quoting and line wrapping have\n  bitten this three separate ways. One line, no quotes needed:\n\n      SUPABASE_DB_URL=postgresql://postgres.pqpnwxyevrsipklzmwex:PASSWORD@HOST.pooler.supabase.com:5432/postgres\n\n  Open it with:  open -e .env.local\n  It is gitignored, so the password cannot be committed.')
   process.exit(1)
 }
 
