@@ -22,6 +22,7 @@ import Icon from '../components/Icon'
 import Toggle from '../components/Toggle'
 import { useSheets } from '../components/ActionSheets'
 import { cairoToday, cairoLocalInputToISO } from '../lib/cairoTime'
+import { usePolledLoad } from '../lib/usePolledLoad'
 
 const KITCHEN = [
   { key: 'new', label: 'طلب جديد', next: 'preparing', action: 'قبول وبدء التحضير' },
@@ -214,7 +215,11 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
   // order is untrackable for its whole life.
   const [sent, setSent] = useState<{ id: number; token: string } | null>(null)
 
-  async function loadRecent() {
+  // Deduped so a 10s poll cannot overlap itself. Post-mutation callers pass
+  // force, because the in-flight read predates their write.
+  const loadRecent = usePolledLoad(runLoadRecent)
+
+  async function runLoadRecent() {
     const { data, error: err } = await supabase.from('orders').select('*')
       .eq('restaurant_id', restaurant.id).eq('order_type', 'pickup_request')
       .order('id', { ascending: false }).limit(10)
@@ -232,7 +237,7 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
       // them tapping a dropdown with nothing in it.
       .then(({ data, error: err }) => { if (err) { setError('مش قادرين نجيب المناطق — جرب تاني'); return } setCompounds(data ?? []) })
     loadRecent()
-    const t = setInterval(loadRecent, 10000)
+    const t = setInterval(() => loadRecent(), 10000)
     return () => clearInterval(t)
   }, [restaurant.id])
 
@@ -268,7 +273,7 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
     setCollectAmount(''); setOrderNotes(''); setPaymentMode('prepaid')
     const created = result.data
     setSent(created && created.token ? { id: created.id, token: created.token } : null)
-    loadRecent()
+    loadRecent(true)
   }
 
   return (
@@ -480,7 +485,12 @@ function KitchenVendor({ rid }: { rid: number }) {
   // banner. The rest keep the last known good value rather than blanking, which
   // is why the setters below are guarded on `!error` instead of writing `?? []`
   // unconditionally.
-  async function load() {
+  // Same as above: the 8s ticket-board poll must not race itself, and every
+  // accept/decline/toggle forces a fresh read rather than reusing one that
+  // was issued before the change landed.
+  const load = usePolledLoad(runLoad)
+
+  async function runLoad() {
     if (!rid) return
     // `restaurants.is_open` is a stale column: vendor_is_open_now() decides who
     // is open, never reads it, and nothing resets it to true after a temporary
@@ -565,14 +575,14 @@ function KitchenVendor({ rid }: { rid: number }) {
     if (error) { setSlotError(`إضافة الفترة فشلت — ${error.message}`); return }
     setSlotError('')
     setNewSlot({ start_time: '', end_time: '', capacity: '6' })
-    load()
+    load(true)
   }
 
   async function toggleSlot(slot: DeliverySlotRow) {
     const { error } = await supabase.from('delivery_slots').update({ active: !slot.active }).eq('id', slot.id)
     if (error) { setSlotError('مش قادرين نغيّر الفترة دلوقتي'); return }
     setSlotError('')
-    load()
+    load(true)
   }
 
   useEffect(() => {
@@ -580,7 +590,7 @@ function KitchenVendor({ rid }: { rid: number }) {
     document.addEventListener('touchstart', unlock, { once: true })
     document.addEventListener('click', unlock, { once: true })
     load()
-    const t = setInterval(load, 8000)
+    const t = setInterval(() => load(), 8000)
     return () => clearInterval(t)
   }, [rid])
 
@@ -630,7 +640,7 @@ function KitchenVendor({ rid }: { rid: number }) {
     setOrders(prev => prev.map(order => order.id === o.id
       ? { ...order, kitchen_status: next, ...(next === 'ready' ? { ready_at: new Date().toISOString() } : {}) }
       : order))
-    await load()
+    await load(true)
     setBusyOrder(null)
   }
 
@@ -650,7 +660,7 @@ function KitchenVendor({ rid }: { rid: number }) {
     const res = await vendorOperation('setOpen', { open: next })
     if (!res.ok) { setBoardError(res.error); return }
     setIsOpen(next)
-    load()
+    load(true)
   }
 
   async function delay(o: Order) {
@@ -667,7 +677,7 @@ function KitchenVendor({ rid }: { rid: number }) {
     })
     if (!res.ok) { setBoardError(res.error); return }
     setBoardError('')
-    load()
+    load(true)
   }
 
   // The error was discarded outright, so when cancel_order refused -- it raises
@@ -683,7 +693,7 @@ function KitchenVendor({ rid }: { rid: number }) {
     })
     setDeclineBusy(false)
     if (!res.ok) { setDeclineError(res.error); return }
-    setDeclining(null); setDeclineError(''); load()
+    setDeclining(null); setDeclineError(''); load(true)
   }
 
   function remaining(o: Order) {
@@ -997,7 +1007,7 @@ function KitchenVendor({ rid }: { rid: number }) {
                 ? 'مش قادرين نتأكد إذا كنت فاتح ولا مقفول — الحالة تحت ممكن تكون قديمة'
                 : 'مش قادرين نحمّل بيانات المطعم — اتأكد من النت')}
           </p>
-          <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0" onClick={load}>حدّث</button>
+          <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0" onClick={() => load(true)}>حدّث</button>
         </div>
       )}
 
