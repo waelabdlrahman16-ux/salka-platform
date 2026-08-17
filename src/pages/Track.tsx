@@ -17,6 +17,7 @@ import InAppLoginPrompt from '../components/InAppLoginPrompt'
 import { isCancelled, cancelReasonLabel } from '../lib/statusLabels'
 import { useDismissable } from '../lib/useDismissable'
 import { sized, IMG } from '../lib/imageUrl'
+import { usePolledLoad } from '../lib/usePolledLoad'
 
 // Found by driving it: a pharmacy order with no price, no vendor acceptance and
 // no driver rendered "قيد التجهيز" with "الوصول المتوقع 7:15 ص". Nothing was
@@ -210,7 +211,7 @@ export default function Track() {
   // any later failure. Mirror it in a ref.
   const dataRef = useRef<TrackData | null>(null)
 
-  async function load() {
+  async function runLoad() {
     const res = await customerOrderAccess<TrackData>('track', { token })
 
     // A transient poll failure used to set notFound permanently -- one lift ride
@@ -238,9 +239,14 @@ export default function Track() {
     setData(res.data)
   }
 
+  // Deduped: a poll slower than the 10s interval would otherwise have a second
+  // poll running beside it, and the slower reply could land last and put an
+  // older snapshot of the order back on screen. See lib/usePolledLoad.
+  const load = usePolledLoad(runLoad)
+
   useEffect(() => {
     load()
-    const t = setInterval(load, 10000)
+    const t = setInterval(() => load(), 10000)
     return () => clearInterval(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
@@ -377,7 +383,7 @@ export default function Track() {
       <div className="card p-6 text-center max-w-sm mx-auto">
         <p className="font-semibold">مش قادرين نجيب حالة الطلب دلوقتي</p>
         <p className="text-sm text-mist mt-1.5">اتأكد من الاتصال بالنت</p>
-        <button className="btn-sea mt-4" onClick={load}>جرب تاني</button>
+        <button className="btn-sea mt-4" onClick={() => load(true)}>جرب تاني</button>
         <Link className="text-sea text-sm mt-3 block" to="/">العودة للرئيسية</Link>
       </div>
     )
@@ -554,7 +560,7 @@ export default function Track() {
       {staleSince !== null && (
         <div className="bg-sand/15 border border-sand/40 rounded-xl p-3 mb-4 flex items-center justify-between gap-3">
           <p className="text-sm font-semibold text-foam">📡 مش قادرين نحدّث الحالة — ممكن تكون قديمة</p>
-          <button className="btn-ghost !py-2 text-sm shrink-0" onClick={load}>حدّث</button>
+          <button className="btn-ghost !py-2 text-sm shrink-0" onClick={() => load(true)}>حدّث</button>
         </div>
       )}
 
