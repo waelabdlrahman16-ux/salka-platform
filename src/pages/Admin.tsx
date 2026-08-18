@@ -322,6 +322,13 @@ export default function Admin() {
   // feedback at all while the modal stayed open -- the operator just kept tapping.
   const [modalError, setModalError] = useState('')
   const inFlightRef = useRef<Promise<void> | null>(null)
+  // The poll below is registered once, with an empty dependency array, so the
+  // load() it holds is the closure from the FIRST render. Reading `tab` out of
+  // that closure would read 'unassigned' forever, and the menu query would stay
+  // skipped even while someone sat on the menu tab. A ref is the only thing
+  // that reads current here.
+  const tabRef = useRef(tab)
+  tabRef.current = tab
   const [syncFailed, setSyncFailed] = useState(false)
   const [lastSyncAt, setLastSyncAt] = useState<number | null>(null)
   const [refreshing, setRefreshing] = useState(false)
@@ -384,9 +391,9 @@ export default function Admin() {
         withTimeout(supabase.from('orders').select('*, restaurants(name)')
           .is('archived_at', null)
           .order('id', { ascending: false }).limit(ORDERS_LIMIT)),
-        withTimeout(supabase.from('delivery_assignments').select('*, orders(*, restaurants(name)), drivers(*)')
+        withTimeout(supabase.from('delivery_assignments').select('*, orders(restaurants(name)), drivers(name)')
           .in('status', ACTIVE_ASSIGNMENT_STATUSES).order('id', { ascending: false })),
-        withTimeout(supabase.from('delivery_assignments').select('*, orders(*, restaurants(name)), drivers(*)')
+        withTimeout(supabase.from('delivery_assignments').select('*, orders(restaurants(name)), drivers(name)')
           .order('id', { ascending: false }).limit(400)),
         withTimeout(supabase.from('drivers').select('*').order('id')),
         withTimeout(supabase.from('driver_earnings').select('*, drivers(name)')
@@ -394,7 +401,15 @@ export default function Admin() {
         withTimeout(supabase.from('driver_earnings').select('*, drivers(name)')
           .order('id', { ascending: false }).limit(300)),
         withTimeout(supabase.from('restaurants').select('*').order('id')),
-        withTimeout(supabase.from('menu_items').select('*').order('id')),
+        // 949 rows, 229 kB, and the single largest thing this board moves -- more
+        // than half of one 407 kB cycle. `menu` has exactly ONE consumer, the
+        // {tab === 'menu'} block, and it feeds no badge and no ping(), so on the
+        // other nineteen tabs every byte of it was fetched and thrown away every
+        // fifteen seconds. Skipped unless that tab is open; the effect below
+        // loads it on arrival.
+        tabRef.current === 'menu'
+          ? withTimeout(supabase.from('menu_items').select('*').order('id'))
+          : Promise.resolve({ data: null, error: null }),
         withTimeout(supabase.from('settings').select('*').order('key')),
         withTimeout(supabase.from('shifts').select('*').order('shift_date', { ascending: false }).limit(40)),
         withTimeout(supabase.from('shift_swap_requests').select('*, shifts(*), requester:drivers!shift_swap_requests_requested_by_fkey(name)')
@@ -437,7 +452,10 @@ export default function Admin() {
         setEarnings(byId(unpaidE.data as Earning[], recentE.data as Earning[]))
       }
       if (!r.error) setRestaurants(r.data ?? [])
-      if (!m.error) setMenu(m.data ?? [])
+      // m.data === null means the query was SKIPPED, not that the menu is empty.
+      // Assigning [] here would blank the tab on the first poll after leaving
+      // it, and would look like the catalogue had been deleted.
+      if (!m.error && m.data) setMenu(m.data)
       if (!st.error) setSettings(st.data ?? [])
       if (!sh.error) setShifts(sh.data ?? [])
       if (!esc.error) setEscalations(esc.data ?? [])
@@ -548,9 +566,12 @@ export default function Admin() {
 
     // DO NOT POLL A BOARD NOBODY IS LOOKING AT.
     //
-    // One cycle of this load moves about 407 kB -- 949 menu_items with no limit
-    // at all (229 kB), delivery_assignments carrying a nested orders(*) and
-    // drivers(*) (103 kB), orders (66 kB), plus eighteen smaller queries. At 15s
+    // One cycle of this load USED TO move about 407 kB -- 949 menu_items with no
+    // limit at all (229 kB), delivery_assignments carrying a nested orders(*)
+    // and drivers(*) (103 kB), orders (66 kB), plus eighteen smaller queries.
+    // The menu is now fetched only on its own tab, and the assignment queries
+    // ask only for the two nested fields anything actually reads. The reasoning
+    // below is unchanged and still holds. At 15s
     // that is roughly 1.6 MB a minute, 98 MB an hour, per open tab -- and it ran
     // identically whether the tab was in front of someone or forgotten behind
     // twenty others. Measured at 01:30 with no customers ordering: ~1,500 edge
@@ -593,6 +614,19 @@ export default function Admin() {
       window.removeEventListener('online', onVisible)
     }
   }, [])
+
+  // The menu query above is skipped unless this tab is open, so opening it has
+  // to fetch. force=true because a poll is very likely already in flight and a
+  // plain load() would just join it -- and that in-flight one was started while
+  // the tab was still something else, so it carries no menu.
+  //
+  // Runs on arrival every time rather than only when `menu` is empty: catalogue
+  // edits happen on this tab, and coming back to a stale list is how the
+  // duplicate-write problem documented on load() above happens.
+  useEffect(() => {
+    if (tab === 'menu') load(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab])
 
   // syncFailed and lastSyncAt were tracked but never shown anywhere -- the
   // board kept displaying the last successful snapshot with no visual
