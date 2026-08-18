@@ -1,7 +1,47 @@
+# Cloudflare serves these on every response. Audit finding 19 added the CSP.
+#
+# IT IS REPORT-ONLY ON PURPOSE. A Content-Security-Policy that is wrong does not
+# degrade a site, it breaks it -- a missed origin means a blank page or a dead
+# checkout, on a site taking real orders. Report-Only enforces nothing and sends
+# every violation to Sentry instead, so the policy can be proved against real
+# traffic (real devices, the Facebook in-app browser, iOS Safari) before it is
+# allowed to block anything. Flip the header name to Content-Security-Policy
+# once Sentry has been quiet for a few days of normal ordering.
+#
+# WHY script-src NEEDS 'unsafe-inline'. Cloudflare injects a ~921-character
+# inline script into every response at the edge -- the bot-challenge and RUM
+# bootstrap. Its contents change per request, so it cannot be hashed, and
+# Cloudflare gives us no nonce to reuse. 'self' alone would block Cloudflare's
+# own bot protection. Verified by reading the live HTML, not assumed: our own
+# build emits no inline script at all.
+#
+# WHY style-src NEEDS 'unsafe-inline'. 20 components set style={{...}}, which
+# React renders as a style attribute. Removing them all is a real refactor and
+# buys little: a style attribute cannot execute script.
+#
+# EVERY ORIGIN BELOW WAS TRACED IN THE SOURCE, none guessed:
+#   www.gstatic.com          firebase-messaging-sw.js importScripts the FCM SDK
+#   fonts.googleapis.com     IBM Plex Sans Arabic stylesheet, index.html
+#   fonts.gstatic.com        the woff2 that stylesheet points at
+#   *.supabase.co            API, storage images, and wss for realtime --
+#                            useCatalogSync.ts opens a channel, so the socket
+#                            scheme is required and is easy to forget
+#   *.tile.openstreetmap.org leaflet map tiles on four map components
+#   fcmregistrations /       token registration and Firebase installations,
+#   firebaseinstallations    read from the installed SDKs
+#   ingest.de.sentry.io      error reports, and the CSP reports themselves
+#
+# Cloudflare's own scripts are served from /cdn-cgi/ on this origin, so 'self'
+# already covers them. wa.me, ipn.eg and google.com/maps are plain link targets;
+# navigation is not restricted by these directives and needs no entry.
+#
+# The sentry_key in report-uri is the public DSN key -- it already ships inside
+# the JavaScript bundle and is designed to be public.
+
 /*
   Strict-Transport-Security: max-age=31536000
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(self)
-
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://pqpnwxyevrsipklzmwex.supabase.co https://*.tile.openstreetmap.org; connect-src 'self' https://pqpnwxyevrsipklzmwex.supabase.co wss://pqpnwxyevrsipklzmwex.supabase.co https://fcmregistrations.googleapis.com https://firebaseinstallations.googleapis.com https://o4511834207682560.ingest.de.sentry.io; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; report-uri https://o4511834207682560.ingest.de.sentry.io/api/4511834268762192/security/?sentry_key=0db2410bf037e80bba50613f1685114a
