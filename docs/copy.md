@@ -58,6 +58,27 @@ The clearest example: when a request times out, the order may well have been
 created. Saying "the order was not registered" there is how a restaurant ends
 up cooking the same order twice. If the code does not know, the copy says so.
 
+## House conventions, discovered the hard way
+
+These are not style preferences, they are what the existing 2,553 strings already
+do. Both of the rules below exist because copy written during the audit broke
+them, and the break was only caught when Wael asked whether the words were real.
+
+**Negated passives are written ما + ت + verb + ش, with one alif.**
+The app already contains «ماتربطتش», «ماتحفظش», «ماتضيفش», «ماتسجلش». A checkout
+message written during this audit used «مااتبعتش» -- two alifs, the only word of
+that shape anywhere in the codebase -- and, worse, used both spellings of the
+same construction inside a single sentence. Match what is already there.
+
+**Quotation marks inside Arabic copy are guillemets: «...», never "...".**
+Used throughout for screen names and item names -- «طلباتي», «حفظ وكمّل
+الخيارات», «${it.name}». The same audit message used straight quotes around
+"طلباتي".
+
+Before adding a string, grep for a similar one already in the app and copy its
+shape. The vocabulary here was written by people who run this business in Egypt;
+matching it is more reliable than composing fresh.
+
 ## Enforcement
 
 None, deliberately. This is a written rule, not a CI check -- Arabic sentence

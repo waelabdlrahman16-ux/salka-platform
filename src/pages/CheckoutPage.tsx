@@ -369,7 +369,7 @@ export default function CheckoutPage() {
         // and have the reply disappear in a lift or a tunnel. Saying "it was not
         // registered" here is how you get two identical orders and one angry
         // restaurant, so this branch sends them to look before re-ordering.
-        err?.message === 'network' ? 'مش متأكدين إن الطلب وصل ولا لأ — النت قطع. افتح "طلباتي" وشوف الأول قبل ما تطلب تاني، عشان ماينزلش طلبين'
+        err?.message === 'network' ? 'مش متأكدين إن الطلب وصل ولا لأ — النت قطع. افتح «طلباتي» وشوف قبل ما تطلب تاني، عشان ماينزلش طلبين'
         : err?.message.includes('slot_full') ? 'الفترة دي اتملت، اختار فترة تانية'
         : err?.message.includes('invalid_combo') ? 'فيه كومبو في عربتك مابقاش متاح — امسح الصنف وضيفه تاني'
         : err?.message.includes('restaurant_closed') ? 'المكان ده قفل قبل ما تأكد الطلب، جرب تاني بعدين'
@@ -398,7 +398,7 @@ export default function CheckoutPage() {
       // was the only route offered -- so a customer hitting a real outage just
       // retried into the same wall. place_order runs in one transaction, so a
       // raised exception means nothing was written and we can say so plainly.
-      : `معلش، ماقدرناش نسجّل الطلب — الطلب مااتبعتش للمطعم وماتسجلش عندنا. جرب تاني، ولو فضلت المشكلة كلّمنا واتساب على ${SUPPORT_PHONE}`
+      : `معلش، الطلب ماتسجلش وماوصلش للمطعم. جرب تاني، ولو فضلت المشكلة كلّمنا واتساب على ${SUPPORT_PHONE}`
       )
       return
     }
