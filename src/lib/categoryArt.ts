@@ -65,7 +65,7 @@ const MAP: Record<string, Art> = {
   'وجبات الاطفال': { emoji: '🧒', tint: TINT.lilac },
   'أطفال': { emoji: '🧒', tint: TINT.lilac },
   'هابي ميل': { emoji: '🎁', tint: TINT.lilac },
-  'عروض': { emoji: '🏷️', tint: TINT.green },
+  'عروض': { icon: 'tag', tint: TINT.green },
 
   // breakfast & sides
   'فطار': { emoji: '🍳', tint: TINT.bake },

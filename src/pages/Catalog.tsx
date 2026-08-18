@@ -96,7 +96,7 @@ export default function Catalog() {
     <div className="max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-4">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold truncate">🗂️ إدارة القوايم</h1>
+          <h1 className="text-2xl font-bold truncate"><Icon name="folders" className="w-5 h-5 inline-block align-[-0.15em] me-1" />إدارة القوايم</h1>
           <p className="text-sm text-mist mt-0.5">{profile?.name}</p>
         </div>
         <button className="btn-ghost !py-1.5 !px-3 text-sm shrink-0" onClick={signOut}>خروج</button>

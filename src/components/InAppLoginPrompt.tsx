@@ -102,11 +102,13 @@ export default function InAppLoginPrompt({ className = '' }: { className?: strin
       />
 
       <button className="btn-sea w-full text-sm mb-2" disabled={sending || !email.trim()} onClick={send}>
-        {sending ? 'جاري الإرسال…' : '📧 ابعتلي رابط الدخول'}
+        {sending ? 'جاري الإرسال…' : <><Icon name="envelope" className="w-4 h-4 inline-block align-[-0.15em] me-1" />ابعتلي رابط الدخول</>}
       </button>
 
       <button className="btn-ghost w-full text-sm" onClick={copyLink}>
-        {copied ? '✓ اتنسخ' : '🔗 انسخ اللينك'}
+        {copied
+          ? <><Icon name="check" className="w-4 h-4 inline-block align-[-0.15em] me-1" />اتنسخ</>
+          : <><Icon name="link" className="w-4 h-4 inline-block align-[-0.15em] me-1" />انسخ اللينك</>}
       </button>
       <p className="text-[11px] text-mist mt-1.5 leading-relaxed">
         {copied

@@ -1024,7 +1024,7 @@ export default function Track() {
                 {[1,2,3,4,5].map(n => (
                   <button key={n} onClick={() => setDriverRating(n)} aria-label={`${n} من 5`}
                     className={`grid place-items-center min-w-[44px] min-h-[44px] ${n <= driverRating ? 'text-sand' : 'text-mist/40'}`}>
-                    <Icon name="star" className="w-4.5 h-4.5" />
+                    <Icon name="star" className="w-5 h-5" />
                   </button>
                 ))}
               </div>
@@ -1035,7 +1035,7 @@ export default function Track() {
                 {[1,2,3,4,5].map(n => (
                   <button key={n} onClick={() => setRestaurantRating(n)} aria-label={`${n} من 5`}
                     className={`grid place-items-center min-w-[44px] min-h-[44px] ${n <= restaurantRating ? 'text-sand' : 'text-mist/40'}`}>
-                    <Icon name="star" className="w-4.5 h-4.5" />
+                    <Icon name="star" className="w-5 h-5" />
                   </button>
                 ))}
               </div>

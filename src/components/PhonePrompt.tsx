@@ -1,4 +1,5 @@
 import { useCustomerAuth } from '../lib/customerAuth'
+import Icon from './Icon'
 import { useDismissable } from '../lib/useDismissable'
 import VerifiedPhoneEditor from './VerifiedPhoneEditor'
 
@@ -11,7 +12,7 @@ export default function PhonePrompt() {
   return (
     <div ref={overlayRef} className="fixed inset-0 z-50 bg-night grid place-items-center p-4" role="dialog" aria-labelledby="phone-prompt-title" aria-modal="true">
       <div className="card w-full max-w-sm p-6 text-center">
-        <div className="text-4xl mb-3">📱</div>
+        <Icon name="mobileScreen" className="w-10 h-10 mx-auto mb-3 text-mist" />
         <h1 id="phone-prompt-title" className="text-xl font-bold mb-1">رقم موبايلك؟</h1>
         <p className="text-mist text-sm mb-5">محتاجينه عشان المندوب يقدر يوصلك ويكلمك</p>
 

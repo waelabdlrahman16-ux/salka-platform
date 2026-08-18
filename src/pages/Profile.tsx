@@ -1,4 +1,5 @@
 import { useEffect, useState, useId } from 'react'
+import Icon from '../components/Icon'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
@@ -254,7 +255,7 @@ export default function Profile() {
 
       <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noreferrer"
         className="card p-4 flex items-center gap-3 hover:border-sea/50 transition-colors">
-        <span className="w-11 h-11 rounded-xl grid place-items-center text-xl shrink-0 bg-emerald-500/10">💬</span>
+        <span className="w-11 h-11 rounded-xl grid place-items-center text-xl shrink-0 bg-emerald-500/10"><Icon name="chatCircle" className="w-5 h-5 text-emerald-700" /></span>
         <div>
           <p className="font-bold">تحتاج مساعدة؟</p>
           <p className="text-xs text-mist mt-0.5">كلّمنا على واتساب</p>
@@ -273,7 +274,7 @@ export default function Profile() {
           except the address bar, which the installed app does not have. */}
       {staffProfile ? (
         <Link to={homeFor(staffProfile.role)} className="card p-4 flex items-center gap-3 hover:border-sea/50 transition-colors">
-          <span className="w-11 h-11 rounded-xl grid place-items-center text-xl shrink-0 bg-sea/10">🛵</span>
+          <span className="w-11 h-11 rounded-xl grid place-items-center text-xl shrink-0 bg-sea/10"><Icon name="moped" className="w-5 h-5 text-sea" /></span>
           <div>
             <p className="font-bold">شاشة الشغل</p>
             <p className="text-xs text-mist mt-0.5">ارجع لشاشة {staffProfile.role === 'vendor' ? 'المطعم' : 'المندوب'}</p>
