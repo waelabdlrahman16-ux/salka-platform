@@ -230,6 +230,11 @@ export default function Admin() {
   const [walletAmount, setWalletAmount] = useState('')
   const [walletReason, setWalletReason] = useState('')
   const [walletResult, setWalletResult] = useState<string | null>(null)
+  // A wallet credit ADDS, unlike a settlement which drains to zero, so a second
+  // tap is not harmless. The database refuses an identical repeat inside two
+  // minutes; this stops the operator sending one in the first place, which is
+  // the difference between a clear result and a confusing error.
+  const [walletSending, setWalletSending] = useState(false)
   const [walletOrderId, setWalletOrderId] = useState<number | null>(null)
   const [compensatedOrderIds, setCompensatedOrderIds] = useState<Set<number>>(new Set())
   const [showResolvedComplaints, setShowResolvedComplaints] = useState(false)
@@ -1527,10 +1532,25 @@ export default function Admin() {
       body: 'اتأكد من الرقم، مفيش طريقة تتراجع.',
       danger: true,
     })) return
-    const result = await adminFinancialAction('creditWallet', {
-      phone: walletPhone.trim(), amount: Number(walletAmount), reason: walletReason.trim() || 'admin credit',
-      orderId: walletOrderId
-    })
+    if (walletSending) return
+    setWalletSending(true)
+    // edgeAction wraps its own body and returns a result rather than throwing,
+    // so the catch below is unreachable today. It is here anyway because this
+    // path moves money: if that ever changes, the alternative is `result` being
+    // undefined on the next line and the whole board going down on a dropped
+    // request. The finally is what guarantees the button comes back -- without
+    // it one failure disables wallet credits until someone reloads.
+    let result: RpcResult<unknown>
+    try {
+      result = await adminFinancialAction('creditWallet', {
+        phone: walletPhone.trim(), amount: Number(walletAmount), reason: walletReason.trim() || 'admin credit',
+        orderId: walletOrderId
+      })
+    } catch {
+      result = { ok: false, code: 'unknown', error: 'مش قادرين نضيف الرصيد دلوقتي، جرب تاني', offline: false }
+    } finally {
+      setWalletSending(false)
+    }
     setWalletResult(!result.ok ? result.error : `تمت إضافة ${walletAmount} ج.م لمحفظة ${walletPhone}`)
     if (result.ok) {
       setWalletPhone(''); setWalletAmount(''); setWalletReason('')
@@ -3024,7 +3044,8 @@ export default function Admin() {
               <input className="field !w-28" type="number" placeholder="المبلغ" aria-label="المبلغ" value={walletAmount} onChange={e => setWalletAmount(e.target.value)} />
               <input className="field" placeholder="السبب (اختياري)" aria-label="السبب" value={walletReason} onChange={e => setWalletReason(e.target.value)} />
             </div>
-            <button className="btn-sea w-full" disabled={!walletPhone.trim() || !walletAmount} onClick={sendWalletCredit}>إضافة الرصيد</button>
+            <button className="btn-sea w-full" disabled={walletSending || !walletPhone.trim() || !walletAmount}
+              onClick={sendWalletCredit}>{walletSending ? 'جاري الإضافة…' : 'إضافة الرصيد'}</button>
             {walletResult && <p className="text-sm text-mist">{walletResult}</p>}
           </div>
         </div>

@@ -187,6 +187,14 @@ export const ERROR_AR: Record<string, string> = {
   not_your_pool: 'الطلب ده مش من نوع الطلبات اللي بتاخدها',
   kitchen_not_accepted_yet: 'المطعم لسه ما قبلش الطلب',
   reason_required: 'اكتب سبب المشكلة',
+  // Wallet credits. duplicate_credit is raised by credit_wallet when the same
+  // wallet, amount and reason arrive inside two minutes -- a repeat, not a
+  // decision. Without an entry here extractCode() returns 'unknown' and the
+  // operator gets the generic message, which is what made every promo failure
+  // unreadable before PR #133.
+  duplicate_credit: 'الرصيد ده اتضاف للعميل ده من دقيقتين. لو ده مقصود، غيّر السبب أو استنى شوية',
+  invalid_credit_amount: 'اكتب مبلغ صحيح أكبر من صفر',
+  reason_too_long: 'السبب طويل أوي، اختصره',
   invalid_assignment_input: 'راجع بيانات الطلب أو المندوب وجرب تاني',
   assignment_action_failed: 'تحديث الطلب متنفذش. جرب تاني أو راجع السجل',
 
