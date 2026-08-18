@@ -1,4 +1,5 @@
 import { artFor } from '../lib/categoryArt'
+import CategoryArt from './CategoryArt'
 import Icon from './Icon'
 import type { MenuItem } from '../lib/types'
 import { sized, IMG } from '../lib/imageUrl'
@@ -96,7 +97,7 @@ export default function ProductCard({
             // smaller price than a grid that never looks finished.
             ? <img src={sized(item.image_url, IMG.photo)} alt={item.name} loading="lazy" decoding="async"
                 className="w-full h-full object-cover" />
-            : art.emoji}
+            : <CategoryArt art={art} className="w-8 h-8 text-mist" />}
           {item.requires_prescription && (
             <span className="absolute top-1.5 right-1.5 bg-white/90 rounded-full px-2 py-0.5 text-[10px] font-bold text-seadeep">
               <Icon name="pill" className="w-3 h-3 inline-block align-[-0.15em] me-0.5" />روشتة

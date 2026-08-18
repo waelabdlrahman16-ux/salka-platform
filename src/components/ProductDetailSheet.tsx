@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import CategoryArt from './CategoryArt'
 import { artFor } from '../lib/categoryArt'
 import { useDismissable } from '../lib/useDismissable'
 import { isItemAvailableNow } from '../lib/itemAvailability'
@@ -109,7 +110,7 @@ export default function ProductDetailSheet({
             // a FAILED one.
             ? <img src={sized(active.image_url, IMG.photo)} alt={active.name} className="w-full h-full object-cover"
                 onError={() => setImgFailed(true)} />
-            : art.emoji}
+            : <CategoryArt art={art} className="w-10 h-10 text-mist" />}
           <button aria-label="إغلاق" className="absolute top-3 left-3 bg-white/80 rounded-full w-7 h-7 grid place-items-center text-mist text-sm" onClick={onClose}><Icon name="x" className="w-4 h-4" /></button>
           {active.requires_prescription && (
             <span className="absolute top-3 right-3 bg-white/90 rounded-full px-2.5 py-1 text-xs font-bold text-seadeep">
@@ -178,7 +179,7 @@ export default function ProductDetailSheet({
                           grid tile elsewhere in the app. */}
                       <div className="rounded-xl aspect-square grid place-items-center text-2xl mb-1.5 overflow-hidden border border-line"
                         style={{ background: r.image_url ? '#fff' : rArt.tint }}>
-                        {r.image_url ? <img src={sized(r.image_url, IMG.square)} alt={r.name} className="w-full h-full object-cover" /> : rArt.emoji}
+                        {r.image_url ? <img src={sized(r.image_url, IMG.square)} alt={r.name} className="w-full h-full object-cover" /> : <CategoryArt art={rArt} className="w-6 h-6 text-mist" />}
                       </div>
                       <p className="text-xs font-semibold line-clamp-2 leading-snug">{r.name}</p>
                       <p className="text-xs mt-0.5">

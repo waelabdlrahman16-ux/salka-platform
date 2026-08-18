@@ -48,6 +48,9 @@ const MAP = [
   ['mobileSlash', 'device-mobile-slash'], ['handPointing', 'hand-pointing'], ['car', 'car'],
   ['trafficSignal', 'traffic-signal'], ['users', 'users'], ['chartBar', 'chart-bar'],
   ['thumbsUp', 'thumbs-up'], ['prohibit', 'prohibit'], ['note', 'note'],
+  ['stethoscope', 'stethoscope'], ['handSoap', 'hand-soap'], ['basket', 'basket'],
+  ['sprayBottle', 'spray-bottle'], ['umbrella', 'umbrella-simple'],
+  ['baby', 'baby'], ['carrot', 'carrot'], ['cheese', 'cheese'],
 ]
 
 if (!existsSync(A)) {
