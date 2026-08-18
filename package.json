@@ -17,7 +17,8 @@
     "check:firebase-sw": "node scripts/check-firebase-sw-version.mjs",
     "baseline:capture": "node scripts/capture-baseline.mjs",
     "smoke:order": "node scripts/smoke-place-order.mjs",
-    "smoke:setup": "node scripts/ensure-test-restaurant.mjs"
+    "smoke:setup": "node scripts/ensure-test-restaurant.mjs",
+    "test:money": "node scripts/test-money.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.2",

@@ -107,6 +107,22 @@ jobs:
       # either. But they must not read the same: a mistyped secret announcing
       # "ordering is broken" is how a check earns a reputation for lying, and a
       # check nobody believes is worse than no check.
+      - name: Exercise the money functions and roll them back
+        # Same shape and same safety as the order smoke test below: one
+        # transaction, always rolled back, fixtures created inside it. 24
+        # assertions across settle_driver_earnings, settle_driver_cash,
+        # credit_wallet and mark_refunded -- the amounts, the idempotency, the
+        # recorded actor, the rejections, and that each refuses a non-admin.
+        #
+        # Three of those four are safe today only because of HOW they are
+        # written: settlements drain to zero, so a second call finds nothing.
+        # That is a property of the current bodies, not a guarantee, and it is
+        # what a rewrite removes silently. credit_wallet already lacked it and
+        # could be paid twice until #147.
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: npm run test:money
+
       - name: Place a test order and roll it back
         if: steps.creds.outputs.have == 'true'
         env:
