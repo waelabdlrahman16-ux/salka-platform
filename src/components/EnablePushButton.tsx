@@ -123,7 +123,7 @@ export default function EnablePushButton({
   // iOS SAYS SOMETHING NOW INSTEAD OF NOTHING.
   //
   // This used to `return null` for every browser without the Push API, which on
-  // an iPhone is most of them — so the answer to "why don't notifications work
+  // an iPhone is most of them -- so the answer to "why don't notifications work
   // on my iPhone?" was a blank space. iOS 16.4+ can do web push, but ONLY for a
   // site added to the Home Screen, and only in Safari: Chrome/Firefox/Edge on
   // iOS are WebKit underneath and the Push API is simply not exposed to them.

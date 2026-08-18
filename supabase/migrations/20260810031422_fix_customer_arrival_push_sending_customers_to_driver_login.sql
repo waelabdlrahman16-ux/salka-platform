@@ -47,7 +47,7 @@ begin
     body := jsonb_build_object(
       'tokens', jsonb_build_array(jsonb_build_object('token', v_token, 'platform', v_platform)),
       'title', 'سالكة',
-      'body',  'المندوب وصل عندك 🛵 — انزل أو كلّمه',
+      'body',  'المندوب وصل عندك 🛵 -- انزل أو كلّمه',
       -- The tap target. Without it the service worker falls through to the
       -- driver board.
       'data',  jsonb_build_object(

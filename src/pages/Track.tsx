@@ -86,7 +86,7 @@ interface TrackData {
     driver_instapay: string | null
     driver_lat: number | null; driver_lng: number | null; driver_location_updated_at: string | null
     /** Set the moment the rider marks himself at the door. Added to track_order
-     *  on 2026-08-07 — the server always knew, and never said. */
+     *  on 2026-08-07 -- the server always knew, and never said. */
     arrived_at_customer_at: string | null
   } | null
 }
@@ -564,7 +564,7 @@ export default function Track() {
           onConfirm={cancelOrder} />
       )}
       <div className="flex items-center justify-between mb-3">
-        {/* rotate-180: the page is RTL, so "back" points RIGHT — same mirror
+        {/* rotate-180: the page is RTL, so "back" points RIGHT -- same mirror
             fix as RestaurantDetail and Vendor. */}
         <Link to="/" className="text-sm text-mist hover:text-foam"><Icon name="chevronLeft" className="w-3 h-3 inline-block align-middle ml-1 rotate-180" />العودة</Link>
         <span className="text-sm font-semibold text-mist">طلب #{o.id}</span>
@@ -621,7 +621,7 @@ export default function Track() {
         </div>
       ) : (
         <div className="card p-4 mb-4">
-          {/* THE moment. The rider is downstairs — this is what the customer has
+          {/* THE moment. The rider is downstairs -- this is what the customer has
               been refreshing for, and until now it read exactly like every other
               status line. The cash figure is the SERVER's `total`, never
               recomputed here: five different client-side copies of that sum
@@ -838,7 +838,7 @@ export default function Track() {
              paid, the customer was told to have 1215 at the door while the
              driver's screen said 607.50. Two people, one doorway, 607.50 apart.
           2. An unquoted pharmacy basket has total = the delivery fee alone, so
-             a 400 ج.م order announced "65 ج.م — كاش عند الاستلام", directly
+             a 400 ج.م order announced "65 ج.م -- كاش عند الاستلام", directly
              contradicting the قيد التسعير line further down the same page. */}
       <div className="card p-4 mb-4">
         {o.pricing_status === 'pending_quote' && !isCancelled(o.status) && !cancelled ? (
@@ -882,7 +882,7 @@ export default function Track() {
           // Gating the quote panel on "not cancelled" pushed this case into the
           // else branch below, which prints an amount due -- and an unpriced
           // order's total is the delivery fee alone. A cancelled pharmacy
-          // basket announced "65 ج.م — كاش عند الاستلام" underneath its own
+          // basket announced "65 ج.م -- كاش عند الاستلام" underneath its own
           // cancellation banner. Nothing is owed on a cancelled unpriced order.
           <div>
             <p className="font-semibold text-sm">الطلب اتلغى</p>

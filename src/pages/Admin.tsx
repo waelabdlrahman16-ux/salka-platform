@@ -1807,7 +1807,7 @@ export default function Admin() {
               <div key={o.id} className="bg-night border border-line rounded-xl p-3 flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-semibold text-sm">
-                    #{o.id} — {o.restaurants?.name} —{' '}
+                    #{o.id} · {o.restaurants?.name} ·{' '}
                     {o.cod_deposit_amount != null ? `عربون ${o.cod_deposit_amount} ج.م (من ${o.total})` : `${o.total} ج.م`}
                   </p>
                   <p className="text-xs text-mist" dir="ltr">{o.customer_phone}</p>
@@ -1891,7 +1891,7 @@ export default function Admin() {
           {unassigned.map(o => (
             <div key={o.id} className={`card p-4 ${isLate(o) ? 'border-red-400/60' : ''}`}>
               <div className="flex items-start justify-between">
-                <h2 className="font-bold">#{o.id} — {o.restaurants?.name}</h2>
+                <h2 className="font-bold">#{o.id} · {o.restaurants?.name}</h2>
                 <span className="font-bold text-sea">
                   {o.pricing_status === 'pending_quote' ? 'قيد التسعير' : `${o.total} ج.م`}
                 </span>
@@ -1947,7 +1947,7 @@ export default function Admin() {
                     <div key={a.id} className="card p-4">
                       <div className="flex items-start justify-between">
                         <div>
-                          <h2 className="font-bold">#{a.order_id} — {a.orders?.restaurants?.name}</h2>
+                          <h2 className="font-bold">#{a.order_id} · {a.orders?.restaurants?.name}</h2>
                           <p className="text-sm text-mist mt-0.5">🛵 {a.drivers?.name} · محاولة {a.attempt_number}</p>
                         </div>
                         <span className="text-xs font-semibold bg-shellup rounded-full px-2.5 py-1">{assignmentStatusLabel(a.status)}</span>
@@ -2194,7 +2194,7 @@ export default function Admin() {
               : 'card p-4'}>
               <div className="flex items-start justify-between">
                 <h2 className="font-bold">
-                  #{o.id} — {o.restaurants?.name}
+                  #{o.id} · {o.restaurants?.name}
                   {o.is_test && (
                     <span className="mr-2 align-middle text-[10px] font-bold bg-sandink text-white rounded-full px-2 py-0.5">
                       🧪 تجربة
@@ -2204,8 +2204,8 @@ export default function Admin() {
                 <div className="text-left">
                   {/* «قيد التسعير» belongs only to an order still waiting for a
                       price. A cancelled one is not waiting for anything, and
-                      showing it in the biggest text on the card — with «ملغي»
-                      small underneath — buried the one fact that matters. */}
+                      showing it in the biggest text on the card -- with «ملغي»
+                      small underneath -- buried the one fact that matters. */}
                   <span className={`font-bold block ${
                     isCancelled(o.status) ? 'text-red-600'
                     : o.is_test ? 'text-sandink' : 'text-sea'}`}>
@@ -2245,7 +2245,7 @@ export default function Admin() {
 
               {/* `pricing_status` does NOT clear when an order is cancelled, so a
                   cancelled custom order still reads pending_quote forever. This
-                  block was therefore offering a live price box on a dead order —
+                  block was therefore offering a live price box on a dead order --
                   and confirm_custom_order_price had no status check either, so
                   typing a number would have rewritten the total of an order the
                   customer had already walked away from. Order #86 was exactly
@@ -2323,8 +2323,8 @@ export default function Admin() {
                     <span className="bg-night border border-line rounded-lg px-2 py-1">💵 {cash}</span>
                     {/* WHEN, not just why. The reason chip said
                         «customer_cancelled» and nothing else, so the one
-                        question you actually ask — how long did we sit on it
-                        before they gave up — had no answer on this card. */}
+                        question you actually ask -- how long did we sit on it
+                        before they gave up -- had no answer on this card. */}
                     {o.status === 'Cancelled' && (o.cancel_reason || o.cancelled_at) && (
                       <span className="bg-red-500/10 border border-red-500/30 text-red-700 rounded-lg px-2 py-1">
                         ✕ {cancelReasonLabel(o.cancel_reason)}
@@ -2357,7 +2357,7 @@ export default function Admin() {
                         <p key={i}>
                           <span className="font-semibold">{it.qty}×</span> {it.name}
                           {[it.size_name, it.combo_name, ...(it.addon_names ?? [])].filter(Boolean).length > 0 && (
-                            <span className="text-mist"> — {[it.size_name, it.combo_name, ...(it.addon_names ?? [])].filter(Boolean).join(' · ')}</span>
+                            <span className="text-mist"> · {[it.size_name, it.combo_name, ...(it.addon_names ?? [])].filter(Boolean).join(' · ')}</span>
                           )}
                           <span className="text-mist"> · {it.total} ج.م</span>
                         </p>
@@ -2491,7 +2491,7 @@ export default function Admin() {
                     </div>
                   </button>
                   {/* Two actions, not three. The red «إيقاف» pill used to sit
-                      here next to a red closed-status pill — two alarms side by
+                      here next to a red closed-status pill -- two alarms side by
                       side that meant different things. Archiving is destructive
                       and rare, so it moved inside the expanded card. */}
                   <div className="flex items-center gap-2 shrink-0">
@@ -2501,7 +2501,7 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {/* WHO APPEARS FIRST — deliberately the first thing in the
+                {/* WHO APPEARS FIRST -- deliberately the first thing in the
                     expanded card: it exists precisely because nobody could
                     find it when it sat under the hours and the logo.
 
@@ -2916,7 +2916,7 @@ export default function Admin() {
                 <div key={sh.id} className="card p-3.5 flex items-center justify-between text-sm">
                   <div>
                     <span className="font-semibold">{d?.name}</span>
-                    <span className="text-mist"> — {new Date(sh.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo' })} · {sh.start_time.slice(0,5)}–{sh.end_time.slice(0,5)}</span>
+                    <span className="text-mist"> · {new Date(sh.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo' })} · {sh.start_time.slice(0,5)}–{sh.end_time.slice(0,5)}</span>
                   </div>
                   {sh.status === 'swapped' && <span className="badge-closed">اتبدلت</span>}
                 </div>

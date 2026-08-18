@@ -18,7 +18,7 @@ export interface Banner {
 /**
  * Promotional banners across the top of the home screen.
  *
- * Renders nothing at all when there are none — no skeleton, no empty strip, no
+ * Renders nothing at all when there are none -- no skeleton, no empty strip, no
  * reserved space. An ad rail is the one piece of furniture that should never
  * push the actual product down the page to advertise its own absence.
  *

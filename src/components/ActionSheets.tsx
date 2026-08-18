@@ -6,7 +6,7 @@ import { useDismissable } from '../lib/useDismissable'
  * In-app replacements for window.confirm / window.prompt / window.alert.
  *
  * The audit of 2026-08-08 counted 40+ native dialog call sites across the
- * staff screens — passwords and ban reasons typed into browser chrome, every
+ * staff screens -- passwords and ban reasons typed into browser chrome, every
  * message rendered LTR with English OK/Cancel, and window.prompt() RETURNS
  * NULL SILENTLY inside the Android WebView the driver APK ships, so those
  * flows were simply dead on the app that needs them most.
@@ -23,7 +23,7 @@ import { useDismissable } from '../lib/useDismissable'
  * trap and focus-restore come from useDismissable like every other overlay.
  *
  * Judgment call preserved from the old code: errors that already have a
- * styled banner (setActionError / setBoardError) should keep using it —
+ * styled banner (setActionError / setBoardError) should keep using it --
  * alertSheet is for the places that had nothing but window.alert.
  */
 

@@ -65,7 +65,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   function setForRestaurant(restaurant: Restaurant) {
     // switching to a different restaurant's menu clears any in-progress cart
-    // from a different vendor — one order is tied to one vendor.
+    // from a different vendor -- one order is tied to one vendor.
     setState(s => s.restaurantId === restaurant.id ? s : { restaurantId: restaurant.id, lines: [] })
   }
 

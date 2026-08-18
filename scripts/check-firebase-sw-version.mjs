@@ -42,7 +42,7 @@ const wrong = [...new Set(found)].filter(v => v !== declared)
 
 if (wrong.length > 0) {
   console.error(
-    `\n[firebase-sw] VERSION MISMATCH — push would break silently.\n` +
+    `\n[firebase-sw] VERSION MISMATCH -- push would break silently.\n` +
     `  package.json firebase:            ${declared}\n` +
     `  firebase-messaging-sw.js imports: ${[...new Set(found)].join(', ')}\n\n` +
     `  Both halves share one IndexedDB on the origin. Different major versions\n` +
@@ -53,4 +53,4 @@ if (wrong.length > 0) {
   process.exit(1)
 }
 
-console.log(`[firebase-sw] ok — worker and bundle both on firebase ${declared}`)
+console.log(`[firebase-sw] ok -- worker and bundle both on firebase ${declared}`)

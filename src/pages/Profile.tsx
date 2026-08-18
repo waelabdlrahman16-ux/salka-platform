@@ -212,7 +212,7 @@ export default function Profile() {
                     {a.label}
                     {a.is_default && <span className="text-xs font-bold bg-sea/10 text-sea rounded-full px-2 py-0.5">افتراضي</span>}
                   </p>
-                  <p className="text-sm text-mist mt-0.5">{a.compound_name} — {a.unit_number}</p>
+                  <p className="text-sm text-mist mt-0.5">{a.compound_name}، {a.unit_number}</p>
                   {a.notes && <p className="text-xs text-mist mt-0.5">{a.notes}</p>}
                 </div>
               </div>
@@ -240,7 +240,7 @@ export default function Profile() {
             {orders.slice(0, 5).map(o => (
               <Link key={o.id} to={`/track/${o.public_token}`} className="card p-3.5 flex items-center justify-between hover:border-sea/50 transition-colors">
                 <div className="min-w-0">
-                  <p className="font-semibold text-sm truncate">#{o.id} — {o.restaurant_name}</p>
+                  <p className="font-semibold text-sm truncate">#{o.id} · {o.restaurant_name}</p>
                   <p className="text-xs text-mist mt-0.5">{orderStatusLabel(o.status)}</p>
                 </div>
                 <span className="text-sea font-bold text-sm shrink-0">

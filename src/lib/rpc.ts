@@ -80,7 +80,7 @@ export const ERROR_AR: Record<string, string> = {
   invalid_vehicle_type: 'النوع لازم يكون موتوسيكل أو فان',
   invalid_payout_schedule: 'ميعاد صرف الأرباح مش صحيح',
 
-  // admin panel — catalog / compound / reports
+  // admin panel -- catalog / compound / reports
   category_exists: 'في قسم بالاسم ده بالفعل',
   category_not_empty: 'فيه أصناف لسه في القسم ده. انقلهم أو احذفهم الأول',
   item_has_order_history: 'الصنف ده اتباع قبل كده، مينفعش يتمسح',

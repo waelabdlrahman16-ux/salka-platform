@@ -454,7 +454,7 @@ export default function CheckoutPage() {
               const today = sl.scheduled_date === cairoToday()
               return (
                 <button key={`${sl.id}-${sl.scheduled_date}`} className={`card p-3 text-right ${on ? 'border-sea' : ''}`} onClick={() => setSlot(sl)}>
-                  <p className="text-sm font-semibold">{sl.start_time.slice(0, 5)} — {sl.end_time.slice(0, 5)}</p>
+                  <p className="text-sm font-semibold">{sl.start_time.slice(0, 5)}–{sl.end_time.slice(0, 5)}</p>
                   <p className="text-xs text-mist mt-0.5">{today ? 'النهاردة' : 'بكرة'} · باقي {sl.remaining}</p>
                 </button>
               )
@@ -502,7 +502,7 @@ export default function CheckoutPage() {
                     <span className="block text-sm font-bold truncate">{a.label || a.compound_name}</span>
                     <span className="block text-xs text-mist truncate mt-0.5">{a.compound_name}</span>
                     <span className="block text-xs text-mist truncate">
-                      {a.unit_number}{a.notes?.trim() ? ` — ${a.notes.trim()}` : ''}
+                      {a.unit_number}{a.notes?.trim() ? `، ${a.notes.trim()}` : ''}
                     </span>
                   </span>
                   {on && <span className="text-sea text-sm font-bold shrink-0">✓</span>}
@@ -525,7 +525,7 @@ export default function CheckoutPage() {
           </div>
         ) : (
           <>
-            {/* «(مطلوب)» rather than a bare `*` — the asterisk is a Western
+            {/* «(مطلوب)» rather than a bare `*` -- the asterisk is a Western
                 form convention that announces as nothing and sits where an
                 Arabic reader does not look for it. */}
             <div><label className="label" htmlFor={`${fid}-1`}>الاسم <span className="text-mist font-normal">(مطلوب)</span></label>

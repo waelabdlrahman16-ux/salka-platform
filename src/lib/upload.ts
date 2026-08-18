@@ -43,7 +43,7 @@ export async function compressImage(file: File): Promise<File> {
 
 // Uploads an image to the public vendor-assets bucket and returns its public
 // URL. `path` should be a stable, unique key per subject (e.g.
-// `restaurants/12/logo`) — a fresh timestamp suffix busts CDN/browser caching
+// `restaurants/12/logo`) -- a fresh timestamp suffix busts CDN/browser caching
 // so the new image shows up immediately instead of showing the old one.
 export async function uploadVendorImage(file: File, path: string): Promise<{ url: string | null; error: string | null }> {
   if (!ALLOWED.includes(file.type)) {

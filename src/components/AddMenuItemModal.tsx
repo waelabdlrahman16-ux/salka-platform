@@ -169,9 +169,9 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
 
   /**
    * `after` is what to do once it is saved:
-   *   'another'  — clear the form, stay open (keeps the section)
-   *   'close'    — just close
-   *   'addons'   — hand the created row up so the options editor opens on it
+   *   'another'  -- clear the form, stay open (keeps the section)
+   *   'close'    -- just close
+   *   'addons'   -- hand the created row up so the options editor opens on it
    */
   async function save(after: 'another' | 'close' | 'addons') {
     if (!valid) return

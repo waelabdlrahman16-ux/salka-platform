@@ -14,8 +14,8 @@ export interface OptionRow {
  * They were written separately and drifted immediately: different empty states,
  * one showed its add-row before there was anything to add, one had a hint line
  * the other didn't, and the price inputs were built twice with two different
- * draft-state bugs waiting to happen. They are the same thing — a named list of
- * rows, each with a replacement price — so they are now the same component, and
+ * draft-state bugs waiting to happen. They are the same thing -- a named list of
+ * rows, each with a replacement price -- so they are now the same component, and
  * a change to one is a change to both by construction.
  *
  * What differs is passed in: the wording, the presets, the warning, and any

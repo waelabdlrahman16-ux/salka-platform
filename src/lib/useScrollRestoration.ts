@@ -12,7 +12,7 @@ const positions = new Map<string, number>()
  * on Back, React unmounts the page and remounts it with its content still
  * loading, so there is nothing to scroll to at the moment the browser tries.
  * The result was that a customer who scrolled the restaurant list, opened the
- * ninth one, and came back landed at the top and had to scroll again — a small
+ * ninth one, and came back landed at the top and had to scroll again -- a small
  * annoyance at 12 vendors and a real one as that grows.
  *
  * <ScrollRestoration> from react-router only works with a data router

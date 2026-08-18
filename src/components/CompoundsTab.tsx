@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { adminCompoundAction } from '../lib/adminCompoundActions'
 
 /**
- * Compounds — the places Salka delivers to, and what delivery costs to each.
+ * Compounds -- the places Salka delivers to, and what delivery costs to each.
  *
  * Kept apart from the restaurants on purpose. A compound is a place; a
  * restaurant is a business; they were both living under "المطاعم" because that

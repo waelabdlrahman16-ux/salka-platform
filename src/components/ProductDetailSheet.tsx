@@ -122,7 +122,7 @@ export default function ProductDetailSheet({
         {/* The image was taking 38vh and the item itself got whatever was left.
             Reversed: the picture is capped at 30vh and 4:3 rather than square,
             which hands roughly a fifth of the sheet back to the name, the price
-            and the button — the three things the customer opened it for. */}
+            and the button -- the three things the customer opened it for. */}
         <div className="p-5">
           <h2 id="product-detail-title" className="font-bold text-xl leading-snug">{active.name}</h2>
           {active.description && <p className="text-sm text-mist mt-2 leading-relaxed">{active.description}</p>}

@@ -1,4 +1,4 @@
-# Huawei Push Notification Support — Scoping Note (2026-08-10)
+# Huawei Push Notification Support -- Scoping Note (2026-08-10)
 
 ## Status: Deferred, not started
 
@@ -11,12 +11,12 @@ than the item silently going stale.
 Push notifications are Firebase Cloud Messaging (FCM) only, end to end:
 `src/lib/push.ts`, `public/firebase-messaging-sw.js`, and the
 `@capacitor/push-notifications` plugin. There is no Huawei/HMS handling
-anywhere in the repo — no HMS plugin installed, no AGConnect Gradle wiring,
+anywhere in the repo -- no HMS plugin installed, no AGConnect Gradle wiring,
 no `platform: 'huawei'` value in the push-token schema.
 
 ## Why this isn't a small addition
 Huawei phones sold since ~2019 (post US trade restrictions) ship without
-Google Play Services, so FCM cannot deliver to them at all — there is no
+Google Play Services, so FCM cannot deliver to them at all -- there is no
 config flag or fallback; it requires a genuinely parallel push stack:
 
 - A Huawei AppGallery Connect account and app registration, producing
@@ -26,7 +26,7 @@ config flag or fallback; it requires a genuinely parallel push stack:
 - A new `'huawei'` platform value, its own native token-registration path,
   and a parallel `send-push` Edge Function implementation calling HMS Push
   Kit's REST API (different auth and payload shape than FCM)
-- Physical Huawei hardware for testing — devices without Play Services
+- Physical Huawei hardware for testing -- devices without Play Services
   cannot be validated in the Android emulator or Firebase Test Lab, and the
   team has none today
 

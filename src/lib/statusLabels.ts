@@ -78,8 +78,8 @@ export const driverStatusLabel = (status: string) => DRIVER_STATUS_AR[status] ??
 export const isCancelled = (status: string) => status === 'Cancelled'
 
 /**
- * cancel_reason is stored as a raw code — `customer_cancelled`,
- * `supervisor_unassigned` — and was rendered straight onto the admin card, in
+ * cancel_reason is stored as a raw code -- `customer_cancelled`,
+ * `supervisor_unassigned` -- and was rendered straight onto the admin card, in
  * English, inside an Arabic RTL interface. Falls back to the raw value so a new
  * code shows something rather than nothing.
  */

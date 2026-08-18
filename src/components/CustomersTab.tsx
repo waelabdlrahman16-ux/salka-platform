@@ -514,7 +514,7 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
                   {o.rating && (o.rating.driver || o.rating.restaurant) && (
                     <p className="text-xs text-sandink mt-1">
                       قيّم المندوب {o.rating.driver ?? '—'}★ والمطعم {o.rating.restaurant ?? '—'}★
-                      {o.rating.comment ? ` — ${o.rating.comment}` : ''}
+                      {o.rating.comment ? `، ${o.rating.comment}` : ''}
                     </p>
                   )}
                 </div>

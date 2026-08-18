@@ -53,7 +53,7 @@ if (!url) {
 //   2  this script cannot run   -> fix the setup; says NOTHING about ordering
 //
 // The first version conflated them, so a mistyped connection string printed
-// "SMOKE TEST FAILED — do not deploy". A check that cries wolf gets ignored,
+// "SMOKE TEST FAILED -- do not deploy". A check that cries wolf gets ignored,
 // and an ignored check is worse than no check at all.
 const SETUP_FAILURE = 2
 
@@ -73,7 +73,7 @@ const SETUP_FAILURE = 2
   const problems = []
   if (!/^postgres(ql)?:$/.test(parsed.protocol)) problems.push(`protocol is "${parsed.protocol}", expected postgresql:`)
   if (!/supabase\.(com|co)$/.test(parsed.hostname)) problems.push(`host is "${parsed.hostname}", expected a *.supabase.com address`)
-  if (!parsed.password) problems.push('no password in the URL — the [YOUR-PASSWORD] placeholder may not have been replaced')
+  if (!parsed.password) problems.push('no password in the URL -- the [YOUR-PASSWORD] placeholder may not have been replaced')
   if (problems.length) {
     console.error('SUPABASE_DB_URL does not look like a Supabase connection string:')
     problems.forEach(p => console.error(`  - ${p}`))
@@ -163,7 +163,7 @@ try {
        p_payment_method => 'cod', p_use_wallet => false, p_rate_key => $9
      ) as result`,
     [target.restaurant_id, 'CI Smoke Test', '01000000000', 'CI', 'CI-1',
-     'automated smoke test — this transaction is rolled back',
+     'automated smoke test -- this transaction is rolled back',
      JSON.stringify([{ menu_item_id: target.menu_item_id, qty: 1 }]),
      target.compound_id, rateKey])
   const ms = Date.now() - t0
@@ -216,14 +216,14 @@ try {
   }
 } finally {
   // Always. Even on success -- especially on success.
-  if (started) { try { await client.query('ROLLBACK'); console.log('\n(rolled back — nothing persisted)') } catch { /* connection already gone; nothing was committed either way */ } }
+  if (started) { try { await client.query('ROLLBACK'); console.log('\n(rolled back -- nothing persisted)') } catch { /* connection already gone; nothing was committed either way */ } }
   try { await client.end() } catch { /* nothing useful to do if closing fails */ }
 }
 
 if (process.exitCode === SETUP_FAILURE) {
-  console.error('\nSMOKE TEST DID NOT RUN — setup problem. This says nothing about ordering.')
+  console.error('\nSMOKE TEST DID NOT RUN -- setup problem. This says nothing about ordering.')
 } else if (process.exitCode) {
-  console.error('\nSMOKE TEST FAILED — ordering is broken. Do not deploy.')
+  console.error('\nSMOKE TEST FAILED -- ordering is broken. Do not deploy.')
 } else {
-  console.log('SMOKE TEST PASSED — ordering works end to end.')
+  console.log('SMOKE TEST PASSED -- ordering works end to end.')
 }

@@ -20,13 +20,13 @@ export function isIOS(): boolean {
 }
 
 /**
- * Chrome (and Firefox, and Edge) on iOS are all Safari underneath — Apple
+ * Chrome (and Firefox, and Edge) on iOS are all Safari underneath -- Apple
  * requires WebKit. None of them can receive web push at all, at any iOS
  * version, because the Push API is only exposed to an installed Home Screen
  * app in Safari's own engine.
  *
  * This matters because "notifications don't work in Chrome on my iPhone" has a
- * definite answer — they cannot — and the app was showing nothing at all rather
+ * definite answer -- they cannot -- and the app was showing nothing at all rather
  * than saying so.
  */
 export function isIOSNonSafari(): boolean {

@@ -6,7 +6,7 @@ import Toggle from './Toggle'
 /**
  * Add or edit one driver, with the fields that actually matter operationally.
  *
- * The only way to create a driver was a textarea parsing "الاسم, رقم, النوع" —
+ * The only way to create a driver was a textarea parsing "الاسم, رقم, النوع" --
  * so plate, InstaPay handle and payout schedule could never be set at creation,
  * and a typo in the paste was permanent until someone wrote an edit path. The
  * bulk paste is still there for onboarding five riders at once; this is for the
