@@ -89,7 +89,7 @@ jobs:
         run: |
           if [ -z "$DB_URL" ]; then
             echo "have=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::SUPABASE_DB_URL secret is not set — the order smoke test did NOT run. Ordering is unverified for this change. Add it under Settings → Secrets and variables → Actions."
+            echo "::warning::SUPABASE_DB_URL secret is not set -- the order smoke test did NOT run. Ordering is unverified for this change. Add it under Settings → Secrets and variables → Actions."
           else
             echo "have=true" >> "$GITHUB_OUTPUT"
           fi
@@ -118,8 +118,8 @@ jobs:
           if [ $code -eq 0 ]; then
             echo "::notice::Ordering verified end to end."
           elif [ $code -eq 2 ]; then
-            echo "::error::The order smoke test COULD NOT RUN (setup problem — bad SUPABASE_DB_URL secret, network, or missing test restaurant). This does NOT mean ordering is broken; it means this change is unverified."
+            echo "::error::The order smoke test COULD NOT RUN (setup problem -- bad SUPABASE_DB_URL secret, network, or missing test restaurant). This does NOT mean ordering is broken; it means this change is unverified."
           else
-            echo "::error::ORDERING IS BROKEN. A real order could not be placed against the test restaurant. Do not merge — this is the 2026-08-13 failure mode."
+            echo "::error::ORDERING IS BROKEN. A real order could not be placed against the test restaurant. Do not merge -- this is the 2026-08-13 failure mode."
           fi
           exit $code

@@ -83,7 +83,7 @@ function buildInvoiceHtml(order: any, items: any[]): string {
       <tr><td colspan="2" style="border-top:1px solid #ddd;padding-top:8px;"></td></tr>
       ${row("الإجمالي", order.total, true)}
     </table>
-    <p style="text-align:center;color:#aaa;font-size:11px;margin-top:24px;">تم التوصيل بنجاح — شكرًا لطلبك من سالكة</p>
+    <p style="text-align:center;color:#aaa;font-size:11px;margin-top:24px;">تم التوصيل بنجاح. شكرًا لطلبك من سالكة</p>
   </div>`
 }
 

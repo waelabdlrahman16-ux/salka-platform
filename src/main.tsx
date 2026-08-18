@@ -87,7 +87,7 @@ if (SENTRY_DSN) {
 }
 
 // Before React mounts. Chrome fires beforeinstallprompt once and early, and it
-// is not replayed for a listener that attaches later — which is why the offer
+// is not replayed for a listener that attaches later -- which is why the offer
 // itself lives on Track but the CATCH has to be here.
 listenForInstallPrompt()
 

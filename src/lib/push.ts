@@ -72,8 +72,8 @@ const inFlightPushSaves = new Map<string, Promise<boolean>>()
  *
  * saveWebTokenHealing() branches on `lastSaveWasStale` to decide whether to
  * destroy the cached registration and mint a new one. That flag was written
- * ONLY by persistPushToken, so Track's customer sink — which calls
- * save_customer_push_token instead — could never trigger the heal, and a
+ * ONLY by persistPushToken, so Track's customer sink -- which calls
+ * save_customer_push_token instead -- could never trigger the heal, and a
  * customer sitting on a dead cached token stayed unreachable forever. Worse,
  * the flag could still be carrying a value from an unrelated earlier call.
  */

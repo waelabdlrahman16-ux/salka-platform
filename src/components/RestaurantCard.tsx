@@ -5,7 +5,7 @@ import Icon from './Icon'
 import type { Restaurant } from '../lib/types'
 import { sized, IMG } from '../lib/imageUrl'
 
-// PHOTO-LED, as of 2026-08-05 — and this reverses yesterday's decision on
+// PHOTO-LED, as of 2026-08-05 -- and this reverses yesterday's decision on
 // purpose, because the fact it rested on changed.
 //
 // On 4 August this was built as a 44px logo and a line of text, with the
@@ -15,7 +15,7 @@ import { sized, IMG } from '../lib/imageUrl'
 //
 // Measured again today, counting only the vendors a customer can actually
 // order from: 203 of 216 items across the four OPEN restaurants carry a photo.
-// أرابياتا 85/85, سينابون 13/13, هارت أتاك 41/42, ماكدونالدز 64/76 — 94%.
+// أرابياتا 85/85, سينابون 13/13, هارت أتاك 41/42, ماكدونالدز 64/76 -- 94%.
 // The objection is gone, so the card leads with the food.
 //
 // The logo did not disappear, it moved next to the name -- Wael's call, and the

@@ -87,6 +87,12 @@ the app; they are gone. What replaces one depends on what follows it:
   «،»         before a continuing clause -- «الطلب اتحرك خلاص، مش هينفع نغيّر»
   «:»         before a value or an error -- «الحفظ فشل: ${error.message}»
 
+In code comments and docs the em dash becomes `--`, which the codebase already
+used 900 times against 197 em dashes; this just finishes the job. Separators
+between data fields in the UI (an order number and a restaurant name, a shift's
+start and end) are not prose either: they take «·», or an en dash «–» for a
+time range. `--` never belongs in text a customer reads.
+
 Two uses of «—» are NOT punctuation and stay: the placeholder for an empty cell
 («{value ?? '—'}»), and separators between data fields in staff tables. Twelve
 of those remain and are correct.

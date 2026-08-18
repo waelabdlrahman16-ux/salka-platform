@@ -34,7 +34,7 @@ export default function FeedAdCard({ ad }: { ad: FeedAdCardData }) {
   return (
     <Tag
       {...(clickable ? { onClick: open, type: 'button' as const } : {})}
-      aria-label={clickable ? `${ad.title ?? ''}${ad.subtitle ? ` — ${ad.subtitle}` : ''}` : undefined}
+      aria-label={clickable ? `${ad.title ?? ''}${ad.subtitle ? `، ${ad.subtitle}` : ''}` : undefined}
       className={`relative w-full h-[140px] rounded-2xl overflow-hidden text-right mb-3 ${clickable ? 'cursor-pointer' : ''}`}
       style={{ background: ad.bg_color }}>
       {ad.image_url && (

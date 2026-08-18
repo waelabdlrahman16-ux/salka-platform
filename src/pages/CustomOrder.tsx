@@ -401,7 +401,7 @@ export default function CustomOrder() {
     nav(`/track/${data.token}`)
   }
 
-  // Step 1 — pick the vendor
+  // Step 1 -- pick the vendor
   if (!vendor) {
     const shownVendors = typeFilter ? vendors.filter(v => v.vendor_type === typeFilter) : vendors
     const pharmacyOpen = vendors.some(v => v.vendor_type === 'pharmacy')
@@ -500,7 +500,7 @@ export default function CustomOrder() {
     )
   }
 
-  // Step 2 — one simple list, no fake matching
+  // Step 2 -- one simple list, no fake matching
   return (
     <div className="pb-6">
       {/* Only offer "back to the vendor list" when there IS a list to go back
@@ -642,7 +642,7 @@ export default function CustomOrder() {
                   aria-pressed={on}
                   className={`card p-3 text-right ${on ? 'border-sea' : ''}`}
                   onClick={() => setSlot(sl)}>
-                  <p className="text-sm font-semibold">{sl.start_time.slice(0, 5)} — {sl.end_time.slice(0, 5)}</p>
+                  <p className="text-sm font-semibold">{sl.start_time.slice(0, 5)}–{sl.end_time.slice(0, 5)}</p>
                   <p className="text-xs text-mist mt-0.5">{today ? 'النهاردة' : 'بكرة'} · باقي {sl.remaining}</p>
                 </button>
               )

@@ -26,13 +26,13 @@ begin
     v_title := 'سالكة';
     v_body := 'للأسف اتلغى طلبك' ||
               case when new.cancel_reason is not null and new.cancel_reason <> ''
-                   then ' — ' || new.cancel_reason else '' end;
+                   then ' -- ' || new.cancel_reason else '' end;
   elsif new.status = 'Out_for_Delivery' and old.status is distinct from 'Out_for_Delivery' then
     v_title := 'سالكة'; v_body := 'مندوبك في الطريق إليك 🛵';
   elsif new.status = 'Delivered' and old.status is distinct from 'Delivered' then
     v_title := 'سالكة'; v_body := 'تم توصيل طلبك، بالهنا والشفا 🎉';
   elsif new.pricing_status = 'confirmed' and old.pricing_status is distinct from 'confirmed' then
-    v_title := 'سالكة'; v_body := 'سعر طلبك جاهز — ادفع علشان نبدأ فيه';
+    v_title := 'سالكة'; v_body := 'سعر طلبك جاهز -- ادفع علشان نبدأ فيه';
   elsif new.kitchen_status = 'preparing' and old.kitchen_status is distinct from 'preparing' then
     v_title := 'سالكة'; v_body := 'المطعم بدأ يجهز طلبك';
   elsif new.kitchen_status = 'ready' and old.kitchen_status is distinct from 'ready' then

@@ -70,7 +70,7 @@ const TERMINAL_GRACE_MS = 30 * 60 * 1000
  * the one that was missing.
  *
  * Two distinctions that matter and were being collapsed into one red banner
- * saying "الطلب اتلغى — متكملش توصيله":
+ * saying "الطلب اتلغى -- متكملش توصيله":
  *
  *  - HELD: the driver arrived at the vendor or took the food. They are standing
  *    somewhere holding something. Always tell them, however old the row is.
@@ -928,7 +928,7 @@ export default function DriverPage() {
               <div key={a.id} className="card !rounded-2xl p-3.5 flex items-center gap-3">
                 <span className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 grid place-items-center shrink-0">✓</span>
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-sm truncate">#{o.id} — {o.restaurants?.name}</p>
+                  <p className="font-semibold text-sm truncate">#{o.id} · {o.restaurants?.name}</p>
                   <p className="text-xs text-mist mt-0.5 truncate">
                     {o.zone}{a.delivered_at ? ` · ${fmtWhen(a.delivered_at)}` : ''}
                   </p>
@@ -952,7 +952,7 @@ export default function DriverPage() {
               <div key={a.id} className="card !rounded-2xl p-3.5 flex items-center gap-3 border-line">
                 <span className="w-9 h-9 rounded-full bg-shellup text-mist grid place-items-center shrink-0">✕</span>
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-sm truncate">#{o.id} — {o.restaurants?.name}</p>
+                  <p className="font-semibold text-sm truncate">#{o.id} · {o.restaurants?.name}</p>
                   <p className="text-xs text-mist mt-0.5">
                     {dead.moved ? 'الطلب اتنقل لمندوب تاني'
                       : a.status === 'Failed' ? 'اتسجل كتوصيل فاشل'
@@ -1228,7 +1228,7 @@ export default function DriverPage() {
                         {a.no_answer_reported_at ? (
                           <p className="text-sandink text-xs text-center">
                             ⏳ اتبلّغت الإدارة، مستنيين قرارهم
-                            {a.delivery_problem_reason ? ` — "${a.delivery_problem_reason}"` : ''}
+                            {a.delivery_problem_reason ? `، "${a.delivery_problem_reason}"` : ''}
                           </p>
                         ) : !a.called_customer_at ? (
                           <button className="btn-ghost w-full !py-2 text-xs text-mist" disabled={isBusy(`called:${a.id}`)} onClick={() => markCalledCustomer(a)}>
@@ -1473,7 +1473,7 @@ export default function DriverPage() {
                       <p className="font-semibold">
                         {new Date(sh.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', weekday: 'long', day: 'numeric', month: 'numeric' })}
                       </p>
-                      <p className="text-sm text-mist mt-0.5">{sh.start_time.slice(0,5)} — {sh.end_time.slice(0,5)}</p>
+                      <p className="text-sm text-mist mt-0.5">{sh.start_time.slice(0,5)}–{sh.end_time.slice(0,5)}</p>
                     </div>
                     {sh.status === 'swapped' && <span className="bg-shellup text-mist text-xs font-semibold rounded-full px-2.5 py-1">اتبدلت</span>}
                   </div>

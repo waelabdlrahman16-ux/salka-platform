@@ -332,7 +332,7 @@ export default function Home() {
         // "denied" is not -- but EVERY branch now leads with the thing that
         // always works: type the name.
         //
-        // The denied branch used to read «فعّلها من إعدادات المتصفح» — enable it
+        // The denied branch used to read «فعّلها من إعدادات المتصفح» -- enable it
         // in your browser settings. Inside Facebook's in-app browser, where
         // 4,049 of 4,770 paid arrivals landed, there is no settings screen to
         // reach, so the only instruction on the customer's first screen was one
@@ -619,7 +619,7 @@ export default function Home() {
                 </button>
               </div>
             )}
-            {/* «بتوصل لمكانك» — "delivers to your place" — is only true once a
+            {/* «بتوصل لمكانك» -- "delivers to your place" -- is only true once a
                 place is known. With no compound chosen the list is the whole
                 catalogue, so an empty one means the filter matched nothing, not
                 that nowhere delivers to them. */}

@@ -29,8 +29,8 @@ export function applyDiscount(price: number, discount: Discount | null): number 
 }
 
 /**
- * Round to 2dp the way Postgres `round(numeric, 2)` does — half away from zero
- * — rather than the way binary floating point happens to.
+ * Round to 2dp the way Postgres `round(numeric, 2)` does -- half away from zero
+ * -- rather than the way binary floating point happens to.
  *
  * `Math.round(x * 100) / 100` disagrees with the server by a piaster whenever
  * the exact result lands on a half that float cannot represent. Base 115 at

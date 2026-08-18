@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (cancelled) return
         // A failed READ is not an answer about the account. Discarding the
         // error and setting profile to null made Protected render
-        // «الحساب غير مفعّل — تواصل مع الإدارة», so one dropped request at a
+        // «الحساب غير مفعّل -- تواصل مع الإدارة», so one dropped request at a
         // compound gate told a driver he had been deactivated. Retry once
         // before believing it, and never overwrite a profile we already hold.
         if (error) {

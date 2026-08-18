@@ -123,10 +123,10 @@ try {
       console.error('would send a real notification. Remove the vendor login before using it.')
       await client.query('ROLLBACK'); await client.end(); process.exit(2)
     }
-    plan.push('no vendor push tokens — nothing can be notified')
+    plan.push('no vendor push tokens -- nothing can be notified')
   }
 
-  console.log(APPLY ? '\nApplied:\n' : '\nPLAN (nothing changed — rerun with --confirm to apply):\n')
+  console.log(APPLY ? '\nApplied:\n' : '\nPLAN (nothing changed -- rerun with --confirm to apply):\n')
   plan.forEach(p => console.log('  · ' + p))
 
   if (APPLY) {

@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Profile } from './auth'
 
-// The publishable (anon) key is designed to be public — it ships in the browser
+// The publishable (anon) key is designed to be public -- it ships in the browser
 // bundle either way. Data is protected by row-level security policies, not by
 // hiding this key. See supabase/auth.sql.
 const url = import.meta.env.VITE_SUPABASE_URL || 'https://pqpnwxyevrsipklzmwex.supabase.co'

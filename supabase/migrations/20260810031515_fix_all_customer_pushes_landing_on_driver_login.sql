@@ -37,7 +37,7 @@ begin
     v_title := 'سالكة';
     v_body := 'للأسف اتلغى طلبك' ||
               case when new.cancel_reason is not null and new.cancel_reason <> ''
-                   then ' — ' || new.cancel_reason else '' end;
+                   then ' -- ' || new.cancel_reason else '' end;
   elsif new.status = 'Out_for_Delivery' and old.status is distinct from 'Out_for_Delivery' then
     v_title := 'سالكة'; v_body := 'مندوبك في الطريق إليك 🛵';
   elsif new.status = 'Delivered' and old.status is distinct from 'Delivered' then

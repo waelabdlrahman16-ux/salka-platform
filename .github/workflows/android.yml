@@ -118,7 +118,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           if [ -z "$KEYSTORE_B64" ]; then
-            echo "::warning::No ANDROID_KEYSTORE_BASE64 secret. Building UNSIGNED debug artifacts — FCM will not register, and Play Console will reject the AAB."
+            echo "::warning::No ANDROID_KEYSTORE_BASE64 secret. Building UNSIGNED debug artifacts -- FCM will not register, and Play Console will reject the AAB."
             echo "signed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi

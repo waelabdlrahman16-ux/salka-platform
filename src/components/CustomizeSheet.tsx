@@ -83,7 +83,7 @@ export default function CustomizeSheet({
       const outsideGroup = prev.filter(id => !groupAddonIds.includes(id))
 
       if (group.max_select === 1) {
-        // single-select "combo swap" group (e.g. choose your sandwich) —
+        // single-select "combo swap" group (e.g. choose your sandwich) --
         // picking one replaces whatever else was selected in this group
         return has ? outsideGroup : [...outsideGroup, a.id]
       }
@@ -176,7 +176,7 @@ export default function CustomizeSheet({
             <div className="space-y-2">
               {addons.filter(a => a.group_id === g.id && a.available).map(a => (
                 // The control comes FIRST in source order, so in RTL it sits on
-                // the right — the leading edge. It used to be last, which put it
+                // the right -- the leading edge. It used to be last, which put it
                 // at the far left while the label it belongs to was right
                 // aligned, making the eye cross the whole row to find the thing
                 // it has to tap.

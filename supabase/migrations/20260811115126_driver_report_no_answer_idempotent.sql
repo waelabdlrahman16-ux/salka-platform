@@ -23,6 +23,6 @@ begin
   if v_already is not null then return; end if;
 
   update delivery_assignments set no_answer_reported_at = now() where id = p_assignment_id;
-  perform notify_admin('العميل ما ردش ☎️', 'طلب #' || v_order_id || ' — المندوب اتصل والعميل ما ردش، محتاج قرار',
+  perform notify_admin('العميل ما ردش ☎️', 'طلب #' || v_order_id || ' -- المندوب اتصل والعميل ما ردش، محتاج قرار',
     jsonb_build_object('order_id', v_order_id, 'type', 'no_answer'));
 end; $function$;

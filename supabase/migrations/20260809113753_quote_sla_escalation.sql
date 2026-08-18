@@ -76,7 +76,7 @@ begin
 
   ------------------------------------------------------------------
   -- VENDOR: the kitchen has not accepted it. Nudging starts the moment the
-  -- ticket exists — not at dispatch_at, which is when the DRIVER is due.
+  -- ticket exists -- not at dispatch_at, which is when the DRIVER is due.
   ------------------------------------------------------------------
   for r in
     select o.id, o.restaurant_id, n.attempts
@@ -92,7 +92,7 @@ begin
      where p.role = 'vendor' and p.restaurant_id = r.restaurant_id;
     if jsonb_array_length(v_targets) > 0 then
       perform push_send(v_targets, 'طلب لسه مستني ⏰',
-        'طلب #' || r.id || ' لسه ما اتقبلش — افتح الشاشة وأكّده',
+        'طلب #' || r.id || ' لسه ما اتقبلش -- افتح الشاشة وأكّده',
         jsonb_build_object('order_id', r.id, 'kind', 'vendor_nudge'));
       v_vendor_sent := v_vendor_sent + 1;
     end if;
@@ -106,7 +106,7 @@ begin
        and not n.escalated and o.kitchen_status = 'new' and o.status = 'pending'
   loop
     perform notify_admin('المطعم مش رادّ ☎️',
-      'طلب #' || r.id || ' عدّى ' || v_vendor_max || ' تنبيه من غير قبول — كلّمهم',
+      'طلب #' || r.id || ' عدّى ' || v_vendor_max || ' تنبيه من غير قبول -- كلّمهم',
       jsonb_build_object('order_id', r.id, 'kind', 'vendor_unresponsive'));
     update push_nudge set escalated = true where kind = 'vendor_new_order' and ref_id = r.ref_id;
     v_escalated := v_escalated + 1;
@@ -129,7 +129,7 @@ begin
      where p.role = 'driver' and p.driver_id = r.driver_id;
     if jsonb_array_length(v_targets) > 0 then
       perform push_send(v_targets, 'طلب مستنيك 🛵',
-        'طلب #' || r.order_id || ' معروض عليك لسه — اقبله أو ارفضه',
+        'طلب #' || r.order_id || ' معروض عليك لسه -- اقبله أو ارفضه',
         jsonb_build_object('order_id', r.order_id, 'kind', 'driver_nudge'));
       v_driver_sent := v_driver_sent + 1;
     end if;
@@ -179,7 +179,7 @@ begin
   loop
     perform notify_admin('🚨 التسعير اتأخر',
       'طلب #' || r.id || ' من ' || coalesce(r.rname, '—')
-        || ' مستني السعر بقاله 5 دقايق — اتصل وسعّره دلوقتي',
+        || ' مستني السعر بقاله 5 دقايق -- اتصل وسعّره دلوقتي',
       jsonb_build_object('order_id', r.id, 'kind', 'pricing_escalation'));
     update push_nudge set escalated = true
      where kind = 'pricing_needed' and ref_id = r.id;
@@ -211,12 +211,12 @@ begin
       -- ball is theirs and someone has to ring them.
       if r.instapay_claimed_at is not null then
         perform push_send(v_staff, 'تحويل مستني تأكيد 🏦',
-          'طلب #' || r.id || ' — العميل قال إنه حوّل ' || round(r.amount) || ' ج.م، أكّد الاستلام',
+          'طلب #' || r.id || ' -- العميل قال إنه حوّل ' || round(r.amount) || ' ج.م، أكّد الاستلام',
           jsonb_build_object('order_id', r.id, 'kind', 'payment_confirm'));
       else
         perform push_send(v_staff, 'طلب مستني الدفع 💳',
-          'طلب #' || r.id || ' — ' || coalesce(r.customer_name, 'عميل') || ' لسه ما دفعش '
-            || round(r.amount) || ' ج.م — ' || coalesce(r.customer_phone, ''),
+          'طلب #' || r.id || ' -- ' || coalesce(r.customer_name, 'عميل') || ' لسه ما دفعش '
+            || round(r.amount) || ' ج.م -- ' || coalesce(r.customer_phone, ''),
           jsonb_build_object('order_id', r.id, 'kind', 'payment_nudge'));
       end if;
       v_pay_sent := v_pay_sent + 1;

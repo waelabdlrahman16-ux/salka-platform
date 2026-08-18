@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 /**
  * Opens a prescription photo attached to a custom order.
  *
- * The `prescriptions` bucket is private — deliberately, unlike the banners
+ * The `prescriptions` bucket is private -- deliberately, unlike the banners
  * one. These name a person and their medication, so there is no public URL to
  * link to and none is ever constructed. Instead a short-lived signed URL is
  * minted on demand, and only if the storage policy lets this caller read the

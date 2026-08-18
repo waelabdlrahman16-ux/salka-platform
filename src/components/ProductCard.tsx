@@ -80,7 +80,7 @@ export default function ProductCard({
         <div className="relative rounded-md aspect-[4/3] grid place-items-center text-3xl overflow-hidden"
           style={{ background: item.image_url ? '#F4EEE3' : art.tint }}>
           {item.image_url
-            // COVER, not contain — Wael's call on 2026-08-07 and the right one.
+            // COVER, not contain -- Wael's call on 2026-08-07 and the right one.
             //
             // The old note here argued for `contain` so a can shot upright
             // would not lose its lid. True in isolation, and wrong for a grid:

@@ -86,7 +86,7 @@ export default function Vendor() {
   ) : <p className="text-mist text-center py-10">جاري التحميل…</p>
 
   // "Own system" vendors (McDonald's/KFC/Pizza Hut style) have no menu ordering
-  // through Salka at all — requesting a driver IS their whole workflow, with
+  // through Salka at all -- requesting a driver IS their whole workflow, with
   // history as a secondary tab.
   if (restaurant.order_mode === 'pickup_request') {
     return (
@@ -177,7 +177,7 @@ function RideHistoryPanel({ restaurantId }: { restaurantId: number }) {
       {rides.map(o => (
         <div key={o.id} className="card p-3.5">
           <div className="flex items-center justify-between">
-            <p className="font-semibold text-sm">#{o.id} — {o.customer_name}</p>
+            <p className="font-semibold text-sm">#{o.id} · {o.customer_name}</p>
             <span className="text-xs font-semibold text-mist">{orderStatusLabel(o.status)}</span>
           </div>
           <p className="text-mist text-xs mt-0.5">{o.zone}، وحدة {o.unit_number}</p>
@@ -191,7 +191,7 @@ function RideHistoryPanel({ restaurantId }: { restaurantId: number }) {
   )
 }
 
-// ── Shared "request a driver" form — used as the whole screen for own-system
+// ── Shared "request a driver" form -- used as the whole screen for own-system
 //    vendors, and as a secondary panel for regular vendors with an off-platform order.
 function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: Restaurant; standalone?: boolean; onClose?: () => void }) {
   const fid = useId()
@@ -411,7 +411,7 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
             {recent.map(o => (
               <div key={o.id} className="card p-3.5 flex items-center justify-between text-sm">
                 <div>
-                  <p className="font-semibold">#{o.id} — {o.customer_name}</p>
+                  <p className="font-semibold">#{o.id} · {o.customer_name}</p>
                   <p className="text-mist text-xs mt-0.5">{o.zone}، وحدة {o.unit_number}</p>
                 </div>
                 <span className="text-xs font-semibold text-mist">{orderStatusLabel(o.status)}</span>
@@ -719,7 +719,7 @@ function KitchenVendor({ rid }: { rid: number }) {
           {ok ? '✓' : '✗'}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-sm truncate">#{o.id} — {o.customer_name}</p>
+          <p className="font-semibold text-sm truncate">#{o.id} · {o.customer_name}</p>
           <p className="text-xs text-mist mt-0.5 truncate">{label}</p>
         </div>
         <span className="text-xs text-mist shrink-0">{o.zone}</span>

@@ -2,11 +2,11 @@ import type { ReactNode } from 'react'
 
 /**
  * THE canonical on/off control. Wael's rule, 2026-08-08: «any open or close,
- * on or off use toggle» — one switch, everywhere, no exceptions.
+ * on or off use toggle» -- one switch, everywhere, no exceptions.
  *
  * Before this existed the same boolean wore fourteen different costumes across
  * the app: badge-open/badge-closed pills wired as buttons (~26px tall), buttons
- * that swapped btn-danger/btn-sea so red meant "active", raw checkboxes — one
+ * that swapped btn-danger/btn-sea so red meant "active", raw checkboxes -- one
  * of them INVERTED (checked = out of stock) two screens away from a toggle
  * where checked = in stock. This component replaces all of them.
  *

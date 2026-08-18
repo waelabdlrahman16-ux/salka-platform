@@ -21,7 +21,7 @@ export default function InstallPrompt() {
 
     // Subscribing, NOT listening. This component now mounts from Track's
     // delivered state, long after Chrome has already fired
-    // `beforeinstallprompt` — an own listener here would attach to an event
+    // `beforeinstallprompt` -- an own listener here would attach to an event
     // that has already gone, which is exactly what happened on 2026-08-07 and
     // made the Android install path unreachable. lib/installPrompt catches it
     // at app start and replays it to whoever is listening.
@@ -37,7 +37,7 @@ export default function InstallPrompt() {
     if (!deferredPrompt) return
     deferredPrompt.prompt()
     await deferredPrompt.userChoice
-    // Spent either way — Chrome will not honour the same event twice.
+    // Spent either way -- Chrome will not honour the same event twice.
     clearInstallPrompt()
     setDeferredPrompt(null)
   }
