@@ -144,7 +144,7 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
   return (
     <div
       className="fixed inset-0 z-50 bg-night/80 backdrop-blur-sm grid place-items-center p-4"
-      role="dialog" aria-modal="true"
+      role="dialog" aria-labelledby="customer-login-title" aria-modal="true"
       onClick={e => { if (e.target === e.currentTarget && onSkip && mode === 'main') onSkip() }}>
       <div className="card w-full max-w-sm p-6 text-center relative">
         {/* Only at the top level -- the sub-steps already have their own
@@ -160,7 +160,7 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
         {mode === 'main' && (
           <>
             <div className="text-4xl mb-3">👋</div>
-            <h1 className="text-xl font-bold mb-1">أهلاً بيك في سالكة</h1>
+            <h1 id="customer-login-title" className="text-xl font-bold mb-1">أهلاً بيك في سالكة</h1>
             <p className="text-mist text-sm mb-5">سجّل دخولك عشان تتابع طلباتك</p>
 
             {/* App.tsx no longer opens this card on arrival inside a Facebook or

@@ -1545,9 +1545,9 @@ export default function DriverPage() {
       )}
 
       {rejecting && (
-        <div ref={rejectingRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true" onClick={() => setRejecting(null)}>
+        <div ref={rejectingRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-labelledby="reject-reason-title" aria-modal="true" onClick={() => setRejecting(null)}>
           <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold mb-3">سبب الرفض</h3>
+            <h3 id="reject-reason-title" className="font-bold mb-3">سبب الرفض</h3>
             <input className="field" value={reason} onChange={e => setReason(e.target.value)} placeholder="مثال: بعيد عن منطقتي" />
             <div className="flex gap-3 mt-4">
               <button className="btn-ghost flex-1" disabled={isBusy(`reject:${rejecting.id}`)} onClick={() => setRejecting(null)}>إلغاء</button>

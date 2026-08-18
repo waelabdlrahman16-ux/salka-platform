@@ -60,7 +60,7 @@ function Overlay({ children, onClose }: { children: ReactNode; onClose: () => vo
   return (
     <div className="fixed inset-0 z-50 bg-black/40 grid place-items-center p-4"
       onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div ref={ref} role="dialog" aria-modal="true"
+      <div ref={ref} role="dialog" aria-labelledby="action-sheet-title" aria-modal="true"
         className="card !rounded-2xl p-5 w-full max-w-sm shadow-xl">
         {children}
       </div>
@@ -78,7 +78,7 @@ function PromptForm({ opts, done }: { opts: PromptOpts; done: (v: string | null)
   }
   return (
     <>
-      <h3 className="font-bold mb-1.5">{opts.title}</h3>
+      <h3 id="action-sheet-title" className="font-bold mb-1.5">{opts.title}</h3>
       {opts.body && <div className="text-sm text-mist mb-3 leading-relaxed">{opts.body}</div>}
       {opts.multiline ? (
         <textarea autoFocus rows={3} dir={opts.dir}

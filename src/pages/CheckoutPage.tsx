@@ -19,6 +19,7 @@ import { customerSessionAccess } from '../lib/customerSessionAccess'
 import { customerAccount } from '../lib/customerAccounts'
 import { cairoToday } from '../lib/cairoTime'
 import { reportOrderFailure } from '../lib/reportOrderFailure'
+import { SUPPORT_PHONE } from '../lib/support'
 
 export default function CheckoutPage() {
   const fid = useId()
@@ -361,7 +362,15 @@ export default function CheckoutPage() {
         props: { reason, payment: isInstapay ? 'instapay' : 'cod' },
       })
       setError(
-        err?.message.includes('slot_full') ? 'الفترة دي اتملت، اختار فترة تانية'
+        // FIRST, because it is the one case where we must NOT tell the customer
+        // the order failed. result.code is exactly 'network' when the request
+        // never got a response -- and as lib/rpc.ts spells out, a lost response
+        // does not mean a lost write: the edge function can process the order
+        // and have the reply disappear in a lift or a tunnel. Saying "it was not
+        // registered" here is how you get two identical orders and one angry
+        // restaurant, so this branch sends them to look before re-ordering.
+        err?.message === 'network' ? 'مش متأكدين إن الطلب وصل ولا لأ — النت قطع. افتح "طلباتي" وشوف الأول قبل ما تطلب تاني، عشان ماينزلش طلبين'
+        : err?.message.includes('slot_full') ? 'الفترة دي اتملت، اختار فترة تانية'
         : err?.message.includes('invalid_combo') ? 'فيه كومبو في عربتك مابقاش متاح — امسح الصنف وضيفه تاني'
         : err?.message.includes('restaurant_closed') ? 'المكان ده قفل قبل ما تأكد الطلب، جرب تاني بعدين'
         : err?.message.includes('vendor_not_covering_compound') ? 'المكان ده مش بيوصل لمنطقتك للأسف'
@@ -377,7 +386,19 @@ export default function CheckoutPage() {
         : err?.message.includes('promo_limit_reached') ? 'كود الخصم خلص'
         : err?.message.includes('promo_not_available') ? 'الكود ده مش متاح للمطعم أو المنطقة دي'
         : err?.message.includes('promo_invalid') ? 'كود الخصم غير صحيح'
-        : 'حصل خطأ، جرب تاني'
+        // LAST RESORT, and the only branch here that is not self-explanatory.
+      // Every code above tells the customer something they can act on. This one
+      // fires when the server raised something we do not recognise -- which in
+      // practice means a fault on our side, and it is already on its way to
+      // Sentry via reportOrderFailure above.
+      //
+      // The old text was 'حصل خطأ، جرب تاني'. Two problems with it on a money
+      // screen: it never said whether the order had gone through, which is the
+      // first thing anyone wants to know after a checkout fails, and 'try again'
+      // was the only route offered -- so a customer hitting a real outage just
+      // retried into the same wall. place_order runs in one transaction, so a
+      // raised exception means nothing was written and we can say so plainly.
+      : `معلش، ماقدرناش نسجّل الطلب — الطلب مااتبعتش للمطعم وماتسجلش عندنا. جرب تاني، ولو فضلت المشكلة كلّمنا واتساب على ${SUPPORT_PHONE}`
       )
       return
     }

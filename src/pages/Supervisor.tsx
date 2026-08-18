@@ -499,9 +499,9 @@ export default function Supervisor() {
       </div>
 
       {assigning && (
-        <div ref={assigningRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true" onClick={() => setAssigning(null)}>
+        <div ref={assigningRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-labelledby="sv-assign-driver-title" aria-modal="true" onClick={() => setAssigning(null)}>
           <div className="card !rounded-2xl w-full max-w-sm p-5 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold mb-1">تعيين مندوب لطلب #{assigning.id}</h3>
+            <h3 id="sv-assign-driver-title" className="font-bold mb-1">تعيين مندوب لطلب #{assigning.id}</h3>
             <p className="text-xs text-mist mb-3">{assigning.restaurants?.name} → {addr(assigning)}</p>
             {modalError && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3">{modalError}</p>}
             {availableDrivers.length === 0 && <p className="text-sm text-mist">مفيش مندوبين متاحين دلوقتي</p>}
