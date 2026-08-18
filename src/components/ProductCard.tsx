@@ -99,7 +99,7 @@ export default function ProductCard({
             : art.emoji}
           {item.requires_prescription && (
             <span className="absolute top-1.5 right-1.5 bg-white/90 rounded-full px-2 py-0.5 text-[10px] font-bold text-seadeep">
-              💊 روشتة
+              <Icon name="pill" className="w-3 h-3 inline-block align-[-0.15em] me-0.5" />روشتة
             </span>
           )}
           {discountPct != null && (
@@ -173,7 +173,7 @@ export default function ProductCard({
             className="h-8 px-3 rounded-full bg-sea text-white font-bold text-[12px] shrink-0 hover:bg-seadeep transition-colors disabled:opacity-40 disabled:pointer-events-none"
             disabled={disabled} onClick={onCustomize}
             aria-label={`اختيارات ${item.name}`}>
-            {qty > 0 ? `${qty} ✓` : 'اختار'}
+            {qty > 0 ? <>{qty}<Icon name="check" className="w-3 h-3 inline-block align-[-0.15em] ms-1" /></> : 'اختار'}
           </button>
         ) : qty === 0 ? (
           <button

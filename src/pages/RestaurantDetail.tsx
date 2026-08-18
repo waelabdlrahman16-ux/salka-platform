@@ -426,7 +426,7 @@ export default function RestaurantDetail() {
 
       {restaurant.order_mode === 'pickup_request' && (
         <p className="text-sm bg-shellup/60 rounded-xl p-3 mb-4">
-          📋 القايمة دي للعرض بس، اطلب من {restaurant.name} على طول (تطبيقهم أو التليفون)، وهما هيتصرفوا في التوصيل
+          <Icon name="clipboardText" className="w-4 h-4 inline-block align-[-0.15em] me-1" />القايمة دي للعرض بس، اطلب من {restaurant.name} على طول (تطبيقهم أو التليفون)، وهما هيتصرفوا في التوصيل
         </p>
       )}
 

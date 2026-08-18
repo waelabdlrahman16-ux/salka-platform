@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import Icon from '../Icon'
 import { uploadVendorImage } from '../../lib/upload'
 import type { MenuItemAddon, MenuItemAddonGroup, VendorAddonLibraryItem } from '../../lib/types'
 
@@ -66,7 +67,7 @@ export default function AddonsCard({
           </button>
           <button className="text-xs py-2.5 px-2 rounded-lg border-2 border-line hover:border-sea text-right disabled:opacity-40"
             disabled={disabled} onClick={() => onApplyPreset('required-one')}>
-            <span className="block font-bold">🔁 اختيار مطلوب</span>
+            <span className="block font-bold"><Icon name="repeat" className="w-3.5 h-3.5 inline-block align-[-0.15em] me-1" />اختيار مطلوب</span>
             <span className="block text-mist mt-0.5">واحد بس، ولازم يختار</span>
           </button>
       </div>
@@ -85,7 +86,9 @@ export default function AddonsCard({
                   onBlur={e => { if (e.target.value.trim() !== g.name) onRenameGroup(g.id, e.target.value) }}
                   onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }} />
                 <p className="text-xs text-mist mt-0.5">
-                  {isSwap ? '🔁 اختيار واحد بس' : '➕ إضافات، أكتر من واحدة'}
+                  {isSwap
+                    ? <><Icon name="repeat" className="w-3 h-3 inline-block align-[-0.15em] me-1" />اختيار واحد بس</>
+                    : <><Icon name="plus" className="w-3 h-3 inline-block align-[-0.15em] me-1" />إضافات، أكتر من واحدة</>}
                   {g.min_select > 0 && <span className="text-sandink"> · مطلوب</span>}
                   {!isSwap && g.max_select != null && <span> · حد أقصى {g.max_select}</span>}
                 </p>
@@ -178,7 +181,7 @@ export default function AddonsCard({
                       e.target.value = ''   // so the same photo can be picked again
                       if (f) uploadOptionImage(g.id, f)
                     }} />
-                  {draft.uploading ? 'جاري الرفع…' : (draft.imageUrl ? 'تغيير الصورة' : '🖼️ صورة (اختياري)')}
+                  {draft.uploading ? 'جاري الرفع…' : (draft.imageUrl ? 'تغيير الصورة' : <><Icon name="image" className="w-3.5 h-3.5 inline-block align-[-0.15em] me-1" />صورة (اختياري)</>)}
                 </label>
               </div>
               <div className="flex gap-2">
@@ -207,11 +210,11 @@ export default function AddonsCard({
         <div className="grid grid-cols-2 gap-2 mb-3">
           <button className={`text-xs py-2 rounded-lg border-2 ${newGroup.kind === 'multi' ? 'border-sea bg-sea/5' : 'border-line'}`}
             onClick={() => setNewGroup({ ...newGroup, kind: 'multi' })}>
-            ➕ إضافات (أكتر من واحدة)
+            <Icon name="plus" className="w-3.5 h-3.5 inline-block align-[-0.15em] me-1" />إضافات (أكتر من واحدة)
           </button>
           <button className={`text-xs py-2 rounded-lg border-2 ${newGroup.kind === 'swap' ? 'border-sea bg-sea/5' : 'border-line'}`}
             onClick={() => setNewGroup({ ...newGroup, kind: 'swap' })}>
-            🔁 تبديل (اختيار واحد بس)
+            <Icon name="repeat" className="w-3.5 h-3.5 inline-block align-[-0.15em] me-1" />تبديل (اختيار واحد بس)
           </button>
         </div>
 
