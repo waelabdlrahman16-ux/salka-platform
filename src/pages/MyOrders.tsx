@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Icon from '../components/Icon'
 import { Link } from 'react-router-dom'
 import CustomerLogin from '../components/CustomerLogin'
 import { getSessionToken, useCustomerAuth } from '../lib/customerAuth'
@@ -131,7 +132,7 @@ export default function MyOrders() {
             to="/profile"
             className="btn-ghost w-full mt-3 text-sm !flex items-center justify-center"
           >
-            📍 عناويني ومحفظتي
+            <Icon name="locationDot" className="w-4 h-4 inline-block align-[-0.15em] me-1" />عناويني ومحفظتي
           </Link>
         </div>
       ) : (

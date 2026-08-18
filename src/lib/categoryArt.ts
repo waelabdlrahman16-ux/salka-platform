@@ -1,3 +1,4 @@
+import type { IconName } from '../components/Icon'
 // Menu items don't have photography yet. Rather than faking product photos,
 // give each category a distinct emoji + soft tinted tile so the grid still
 // reads as a real, browsable catalog.
@@ -13,7 +14,15 @@
 // So: normalise before comparing, then fall back to substring matching.
 // Vendors keep typing whatever they like and the grid still looks intentional.
 
-type Art = { emoji: string; tint: string }
+// A category is drawn one of two ways, and which one is not a style choice.
+// FOOD keeps its emoji: artFor() renders full-size inside the image tile as the
+// stand-in when a vendor has no logo, so it is doing the job of product
+// photography, and appetite is the point.
+//
+// The non-food vendors below have no appetite to trade on -- a pill, a spray
+// bottle, a beach umbrella -- so they take an icon instead, which reads as
+// interface, takes brand colour, and looks the same on every device.
+type Art = { emoji?: string; icon?: IconName; tint: string }
 
 // Reused rather than extended -- every tint here already shipped in this file,
 // so adding a category can never introduce an unreviewed colour.
@@ -91,15 +100,15 @@ const MAP: Record<string, Art> = {
   'قهوة': { emoji: '☕', tint: TINT.drink },
 
   // non-food vendors
-  'أدوية': { emoji: '💊', tint: TINT.green },
-  'أجهزة طبية': { emoji: '🩺', tint: TINT.green },
-  'عناية شخصية': { emoji: '🧴', tint: TINT.lilac },
-  'مستلزمات الأطفال': { emoji: '🍼', tint: TINT.lilac },
-  'خضار وفاكهة': { emoji: '🥦', tint: TINT.veg },
-  'ألبان': { emoji: '🧀', tint: TINT.dairy },
-  'بقالة': { emoji: '🛒', tint: TINT.neutral },
-  'منظفات': { emoji: '🧼', tint: TINT.drink },
-  'مستلزمات الشاطئ': { emoji: '🏖️', tint: TINT.sea },
+  'أدوية': { icon: 'pill', tint: TINT.green },
+  'أجهزة طبية': { icon: 'stethoscope', tint: TINT.green },
+  'عناية شخصية': { icon: 'handSoap', tint: TINT.lilac },
+  'مستلزمات الأطفال': { icon: 'baby', tint: TINT.lilac },
+  'خضار وفاكهة': { icon: 'carrot', tint: TINT.veg },
+  'ألبان': { icon: 'cheese', tint: TINT.dairy },
+  'بقالة': { icon: 'basket', tint: TINT.neutral },
+  'منظفات': { icon: 'sprayBottle', tint: TINT.drink },
+  'مستلزمات الشاطئ': { icon: 'umbrella', tint: TINT.sea },
 }
 
 const DEFAULT: Art = { emoji: '🍽️', tint: TINT.neutral }

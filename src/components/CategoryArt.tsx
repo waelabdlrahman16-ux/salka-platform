@@ -1,0 +1,16 @@
+import Icon from './Icon'
+import type { artFor } from '../lib/categoryArt'
+
+type Art = ReturnType<typeof artFor>
+
+// One place decides how a category tile is drawn, because the two cases are not
+// interchangeable: food categories carry an emoji (it stands in for product
+// photography, so the colour is the point) and non-food ones carry an icon.
+// Spreading that choice across the seven call sites is how they drift apart --
+// a pharmacy tile showing a pill on one screen and 💊 on the next.
+export default function CategoryArt({ art, className = 'w-6 h-6' }: {
+  art: Art; className?: string
+}) {
+  if (art.icon) return <Icon name={art.icon} className={className} />
+  return <>{art.emoji}</>
+}

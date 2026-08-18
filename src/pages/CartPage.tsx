@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import CategoryArt from '../components/CategoryArt'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useCart } from '../lib/cart'
@@ -151,7 +152,7 @@ export default function CartPage() {
                 style={{ background: art.tint }}>
                 {item.image_url
                   ? <img src={sized(item.image_url, IMG.square)} alt="" className="w-full h-full object-cover" />
-                  : art.emoji}
+                  : <CategoryArt art={art} className="w-6 h-6 text-mist" />}
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm truncate">{item.name}</h3>

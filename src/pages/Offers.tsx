@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import CategoryArt from '../components/CategoryArt'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { artFor } from '../lib/categoryArt'
@@ -166,7 +167,7 @@ export default function Offers() {
             <Link key={restaurant.id} to={href} className="card p-4 flex items-center gap-3 hover:border-sea/50 transition-colors">
               {restaurant.logo_url
                 ? <img src={restaurant.logo_url} alt="" className="w-14 h-14 rounded-xl object-cover shrink-0 border border-line" />
-                : <div className="w-14 h-14 rounded-xl grid place-items-center text-2xl shrink-0" style={{ background: art.tint }}>{art.emoji}</div>}
+                : <div className="w-14 h-14 rounded-xl grid place-items-center text-2xl shrink-0" style={{ background: art.tint }}><CategoryArt art={art} className="w-7 h-7 text-mist" /></div>}
               <div className="min-w-0 flex-1">
                 <h2 className="font-bold truncate">{restaurant.name}</h2>
                 <div className="space-y-0.5 mt-1">

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import Icon from './Icon'
 import { supabase } from '../lib/supabase'
 import { adminCatalogAction } from '../lib/adminCatalogActions'
 import DiscountManager from './DiscountManager'
@@ -337,7 +338,7 @@ export default function MenuItemsPanel({
               of each other. This is where that stops. */}
           {dupWarning && (
             <p className="text-xs text-sandink bg-sandink/10 rounded-lg p-2">
-              ⚠ في قسم اسمه «{dupWarning}» عندك:{' '}
+              <Icon name="warning" className="w-4 h-4 inline-block align-[-0.15em] me-1" />في قسم اسمه «{dupWarning}» عندك:{' '}
               <button className="underline font-semibold" onClick={() => { setActive(dupWarning); setAdding(false); setNewCat('') }}>
                 استخدمه
               </button>
