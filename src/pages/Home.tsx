@@ -386,11 +386,11 @@ export default function Home() {
   const quickAccessTiles = compoundId ? (
     <div className="grid grid-cols-2 gap-2.5 mb-4">
       <Link to="/custom-order?type=supermarket" className="card p-2.5 flex items-center gap-2 hover:border-sea/50 transition-colors">
-        <span className="w-8 h-8 rounded-lg grid place-items-center text-base shrink-0" style={{ background: 'rgba(212,163,42,.12)' }}>🛒</span>
+        <span className="w-8 h-8 rounded-lg grid place-items-center text-base shrink-0" style={{ background: 'rgba(212,163,42,.12)' }}><Icon name="cartShopping" className="w-4 h-4 text-ink" /></span>
         <span className="font-bold text-sm truncate">سوبر ماركت</span>
       </Link>
       <Link to="/custom-order?type=pharmacy" className="card p-2.5 flex items-center gap-2 hover:border-sea/50 transition-colors">
-        <span className="w-8 h-8 rounded-lg grid place-items-center text-base shrink-0" style={{ background: 'rgba(200,60,60,.1)' }}>💊</span>
+        <span className="w-8 h-8 rounded-lg grid place-items-center text-base shrink-0" style={{ background: 'rgba(200,60,60,.1)' }}><Icon name="pill" className="w-4 h-4 text-ink" /></span>
         <span className="font-bold text-sm truncate">صيدلية</span>
       </Link>
     </div>

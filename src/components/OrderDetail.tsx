@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import Icon from './Icon'
 import { supabase } from '../lib/supabase'
 import type { Order, RequestItem } from '../lib/types'
 
@@ -58,9 +59,9 @@ export function OrderLines({ order }: { order: Order }) {
   const note = order.request_notes?.trim()
   const extras = (
     <>
-      {note && <p className="text-xs text-sandink mt-2 pt-2 border-t border-dashed border-line">📝 {note}</p>}
+      {note && <p className="text-xs text-sandink mt-2 pt-2 border-t border-dashed border-line"><Icon name="penToSquare" className="w-3.5 h-3.5 inline-block align-[-0.15em] me-1" />{note}</p>}
       {order.prescription_path && (
-        <p className="text-xs text-sandink mt-1">📎 العميل رفع صورة روشتة. شوفها من شاشة الإدارة</p>
+        <p className="text-xs text-sandink mt-1"><Icon name="paperclip" className="w-3.5 h-3.5 inline-block align-[-0.15em] me-1" />العميل رفع صورة روشتة. شوفها من شاشة الإدارة</p>
       )}
     </>
   )

@@ -32,6 +32,14 @@ const MAP = [
   ['creditCard', 'credit-card'], ['cartShopping', 'shopping-cart'], ['chevronLeft', 'caret-left'],
   ['truck', 'truck'], ['tag', 'tag'], ['circleUser', 'user-circle'],
   ['check', 'check'], ['x', 'x'], ['warning', 'warning'],
+  ['pill', 'pill'], ['moped', 'moped-front'], ['repeat', 'repeat'],
+  ['envelope', 'envelope'], ['chatCircle', 'chat-circle'], ['broadcast', 'broadcast'],
+  ['paperclip', 'paperclip'], ['arrowUp', 'arrow-up'], ['image', 'image'],
+  ['briefcase', 'briefcase'], ['wallet', 'wallet'], ['clipboardText', 'clipboard-text'],
+  ['bell', 'bell'], ['phone', 'phone'], ['thumbsDown', 'thumbs-down'],
+  ['question', 'question'], ['camera', 'camera'], ['coins', 'coins'],
+  ['arrowCounterClockwise', 'arrow-counter-clockwise'], ['pencilSimple', 'pencil-simple'],
+  ['arrowRight', 'arrow-right'], ['user', 'user'],
 ]
 
 if (!existsSync(A)) {
@@ -71,8 +79,7 @@ for (let i = 0; i < names.length; i += 4) {
   lines.push((i ? '  | ' : '  ') + names.slice(i, i + 4).map(n => `'${n}'`).join(' | '))
 }
 lines.push('')
-lines.push("type Variant = 'bold' | 'fill'")
-for (const [weight, konst, suffix] of [['bold', 'BOLD', '-bold'], ['fill', 'FILL', '-fill']]) {
+for (const [weight, konst, suffix] of [['bold', 'BOLD', '-bold']]) {
   lines.push('')
   lines.push(`const ${konst}: Record<IconName, string> = {`)
   for (const [our, ph] of MAP) {
@@ -89,10 +96,15 @@ lines.push(`
 // frame that is only sometimes applied is worse than none -- icons would sit
 // at two different optical sizes across screens. className sets the OUTER box;
 // box-border keeps w-4 h-4 meaning 16px total, glyph 12px inside it.
-export default function Icon({ name, variant = 'bold', className = '' }: {
-  name: IconName; variant?: Variant; className?: string
+// Only the bold weight is generated. Phosphor ships six, and an earlier pass
+// emitted 'fill' too -- but nothing ever set variant="fill", so it was ~7kB of
+// dead paths in every bundle. Adding a weight back is one entry in the loop in
+// scripts/build-icons.mjs, so this is cheap to undo the day a filled state is
+// actually wanted.
+export default function Icon({ name, className = '' }: {
+  name: IconName; className?: string
 }) {
-  const d = variant === 'fill' ? FILL[name] : BOLD[name]
+  const d = BOLD[name]
   return (
     <svg viewBox="0 0 256 256" aria-hidden="true"
       className={\`box-border p-[2px] \${className}\`}>
@@ -102,4 +114,4 @@ export default function Icon({ name, variant = 'bold', className = '' }: {
 }`)
 
 writeFileSync(OUT, lines.join('\n') + '\n')
-console.log(`${OUT}: ${MAP.length} icons x 2 weights (bold + fill), 2px inset`)
+console.log(`${OUT}: ${MAP.length} icons x bold only, 2px inset`)
