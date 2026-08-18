@@ -132,13 +132,13 @@ export default function Vendor() {
         <>
           <div className="flex flex-wrap items-center gap-2 mb-4">
             <button className="btn-ghost text-sm" onClick={() => setView('menu')}>
-              📋 إدارة المنيو
+              <Icon name="clipboardText" className="w-4 h-4 inline-block align-[-0.15em] me-1" />إدارة المنيو
             </button>
             <button className="btn-ghost text-sm" onClick={() => setView('request')}>
-              🛵 طلب مندوب
+              <Icon name="moped" className="w-4 h-4 inline-block align-[-0.15em] me-1" />طلب مندوب
             </button>
             <button className="btn-ghost text-sm" onClick={() => setView('history')}>
-              🧾 سجل طلبات المندوب
+              <Icon name="receipt" className="w-4 h-4 inline-block align-[-0.15em] me-1" />سجل طلبات المندوب
             </button>
           </div>
           <KitchenVendor rid={rid} />
@@ -801,7 +801,7 @@ function KitchenVendor({ rid }: { rid: number }) {
               <span className={`inline-flex items-center gap-1 text-sm font-bold rounded-xl px-3 py-1.5 border ${
                 late ? 'border-red-400/50 bg-red-500/10 text-red-600'
                      : 'border-line bg-shell text-foam'}`}>
-                ⏰ {waitedMin < 1 ? 'دلوقتي' : `${waitedMin} د`}
+                <Icon name="clock" className="w-4 h-4 inline-block align-[-0.15em] me-1" />{waitedMin < 1 ? 'دلوقتي' : `${waitedMin} د`}
               </span>
             ) : (
               <span className="text-xs text-mist">{completed ?? stage.label}</span>
@@ -826,7 +826,7 @@ function KitchenVendor({ rid }: { rid: number }) {
           <div className="mt-3 bg-night border border-line !rounded-2xl p-3.5 text-sm space-y-1.5">
             {o.pricing_status === 'pending_quote' && (
               <p className="text-sandink text-xs font-semibold pb-1.5 border-b border-line">
-                🧾 طلب لسه ما اتسعّرش، الإدارة هتتصل بالعميل وتحط السعر
+                <Icon name="receipt" className="w-4 h-4 inline-block align-[-0.15em] me-1" />طلب لسه ما اتسعّرش، الإدارة هتتصل بالعميل وتحط السعر
               </p>
             )}
             {(o.request_items ?? []).length === 0 && (
@@ -1008,7 +1008,7 @@ function KitchenVendor({ rid }: { rid: number }) {
       {(loadError || nameFailed || openStateFailed) && (
         <div className="card p-3 mb-3 border-sand/60 bg-sand/10 flex items-center justify-between gap-3">
           <p className="text-sm text-sandink font-semibold">
-            📡 {loadError
+            <Icon name="broadcast" className="w-4 h-4 inline-block align-[-0.15em] me-1" />{loadError
               || (openStateFailed
                 ? 'مش قادرين نتأكد إذا كنت فاتح ولا مقفول، الحالة تحت ممكن تكون قديمة'
                 : 'مش قادرين نحمّل بيانات المطعم. اتأكد من النت')}
@@ -1032,12 +1032,12 @@ function KitchenVendor({ rid }: { rid: number }) {
           <Toggle on={isOpen} onChange={toggleOpen} label="مفتوح" labelOff="مقفول" />
           {(usesSlots || vendorType === 'supermarket') && (
             <button className="btn-ghost !py-1.5 !px-2.5 text-xs" onClick={() => setSlotsOpen(v => !v)}>
-              ⏱️ فترات التوصيل
+              <Icon name="clock" className="w-4 h-4 inline-block align-[-0.15em] me-1" />فترات التوصيل
             </button>
           )}
           <div className="relative" ref={stockRef}>
             <button className="btn-ghost !py-1.5 !px-2.5 text-xs" onClick={() => setStockOpen(v => !v)}>
-              📋 الأصناف {menu.filter(m => !m.available).length > 0 && `(${menu.filter(m => !m.available).length} خلص)`}
+              <Icon name="clipboardText" className="w-4 h-4 inline-block align-[-0.15em] me-1" />الأصناف {menu.filter(m => !m.available).length > 0 && `(${menu.filter(m => !m.available).length} خلص)`}
             </button>
             {stockOpen && (
               <div className="absolute left-0 mt-1 z-20 bg-shell border border-line rounded-xl shadow-lg py-2 w-72 max-h-[60vh] overflow-y-auto">

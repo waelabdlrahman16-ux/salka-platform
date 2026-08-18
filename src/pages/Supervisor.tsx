@@ -294,7 +294,7 @@ export default function Supervisor() {
               <div key={a.id} className="bg-night border border-line rounded-xl p-3">
                 <p className="font-semibold text-sm">طلب #{a.order_id}: {a.orders?.restaurants?.name}</p>
                 <p className="text-xs text-mist mt-0.5">
-                  🛵 {a.drivers?.name} · 👤 {a.orders?.customer_name} ·{' '}
+                  <Icon name="moped" className="w-4 h-4 inline-block align-[-0.15em] me-1" />{a.drivers?.name} · 👤 {a.orders?.customer_name} ·{' '}
                   <a className="text-sea" dir="ltr" href={`tel:${a.orders?.customer_phone}`}>{a.orders?.customer_phone}</a>
                 </p>
                 <p className="text-xs text-sandink mt-1">
@@ -553,7 +553,7 @@ function PaymentSummary({ order }: { order: Order }) {
   if (collect == null && !deposit) return <p className="text-xs text-mist mt-2">💳 {method}</p>
   return (
     <div className="mt-2 rounded-xl bg-shellup px-3 py-2 text-xs text-mist flex flex-wrap gap-x-3 gap-y-1">
-      <span>💳 {method}</span>
+      <span><Icon name="creditCard" className="w-4 h-4 inline-block align-[-0.15em] me-1" />{method}</span>
       {collect != null && <span className="font-semibold text-ink">المندوب يجمّع {collect} ج.م</span>}
       {!!deposit && <span>تأمين كاش {deposit} ج.م</span>}
     </div>

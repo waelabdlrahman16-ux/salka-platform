@@ -426,7 +426,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
               type="button"
               className="btn-ghost !py-2.5 text-sm"
               onClick={() => addModifierTemplate('required')}
-            >✓ اختيار مطلوب</button>
+            ><Icon name="check" className="w-4 h-4 inline-block align-[-0.15em] me-1" />اختيار مطلوب</button>
             <button
               type="button"
               className="btn-ghost !py-2.5 text-sm"

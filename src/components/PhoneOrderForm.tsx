@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from 'react'
+import Icon from './Icon'
 import { supabase } from '../lib/supabase'
 import { dispatchOperation } from '../lib/dispatchOperations'
 import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
@@ -101,7 +102,7 @@ export default function PhoneOrderForm({ onCreated }: { onCreated: () => void })
   if (!open) {
     return (
       <button className="btn-ghost w-full text-sm mb-3" onClick={() => setOpen(true)}>
-        ☎️ طلب جه بالتليفون من مطعم
+        <Icon name="phone" className="w-4 h-4 inline-block align-[-0.15em] me-1" />طلب جه بالتليفون من مطعم
       </button>
     )
   }
@@ -118,7 +119,7 @@ export default function PhoneOrderForm({ onCreated }: { onCreated: () => void })
 
       {done && (
         <p className="text-sm bg-sea/10 text-sea rounded-xl p-3 mb-3">
-          ✓ اتعمل طلب #{done.id}، المندوب هيحصّل {done.total} ج.م. موجود دلوقتي في الطلبات غير المعيّنة.
+          <Icon name="check" className="w-4 h-4 inline-block align-[-0.15em] me-1" />اتعمل طلب #{done.id}، المندوب هيحصّل {done.total} ج.م. موجود دلوقتي في الطلبات غير المعيّنة.
         </p>
       )}
       {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3" role="alert">{error}</p>}
