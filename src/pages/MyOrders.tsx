@@ -137,22 +137,29 @@ export default function MyOrders() {
       ) : (
         <div className="card p-6 mt-4 text-center">
           <h1 className="text-xl font-bold">طلباتك خاصة</h1>
+          {/* Google and email are named here because phone/OTP login is
+              hidden while SMS Misr is not live, and a bare "sign in" reads as a
+              dead end to a guest whose tracking link is already gone. Carrying
+              the "how" in this sentence is also what lets the line below be one
+              line instead of three -- it no longer has to repeat it.
+
+              This block used to say the same thing four times: «سجّل دخولك»
+              appeared four times and «طلباتك» three, across a heading, a
+              subtitle, a button and a 203-character paragraph -- the longest
+              string in the customer app by 2.4x. docs/copy.md rule 1. */}
           <p className="text-sm text-mist mt-2">
-            سجّل دخولك عشان تشوف طلباتك السابقة وتتبعها بأمان.
+            سجّل دخولك بجوجل أو بالإيميل عشان تشوف طلباتك وتتبعها.
           </p>
           <button className="btn-sea w-full mt-4" onClick={() => setShowLogin(true)}>
             تسجيل الدخول
           </button>
-          {/* Phone/OTP login is currently hidden (SMS Misr not live yet), so
-              "سجّل دخولك" without more detail can read as a dead end if the
-              tracking tab/link is already gone -- Google or email are the
-              methods that actually work today, and are worth naming
-              explicitly rather than leaving the guest to discover that by
-              tapping through the login sheet themselves. */}
+          {/* "Save the tracking link" moved to Track.tsx, where the link
+              actually appears. Telling someone to keep a link on the screen
+              they reach AFTER losing it is advice they cannot act on --
+              docs/copy.md rule 2. What stays here is the part still actionable
+              from this screen. */}
           <p className="text-xs text-mist mt-3">
-            الطلب اللي لسه عامله تقدر تتابعه من رابط التتبع اللي ظهر بعد التأكيد —
-            يفضّل تحفظه أو تاخد له سكرين شوت. لو قفلت الرابط، سجّل دخولك بجوجل أو
-            بالإيميل عشان تربط طلباتك بحسابك وتقدر تلاقيها تاني في أي وقت.
+            عندك طلب شغّال دلوقتي؟ تابعه من رابط التتبع اللي ظهر بعد التأكيد.
           </p>
         </div>
       )}
