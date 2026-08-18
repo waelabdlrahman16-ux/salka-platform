@@ -18,7 +18,6 @@ import { catalogCheck } from '../lib/catalogChecks'
 import { staffOperation } from '../lib/staffOperations'
 import { dispatchOperation } from '../lib/dispatchOperations'
 import { vendorOperation } from '../lib/vendorOperations'
-import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import Icon from '../components/Icon'
 import BannersAdmin from '../components/BannersAdmin'
 import FeedAdsAdmin from '../components/FeedAdsAdmin'
@@ -729,38 +728,6 @@ export default function Admin() {
   // driver who simply goes by another name was permanent. The RLS policy
   // "admin manages drivers" already allows an admin UPDATE on this table; only
   // the field was missing.
-  // NOT DEAD CODE, BUT NOT REACHABLE EITHER. This function works -- it renames a
-  // driver through promptSheet -- but nothing in the UI calls it, so the ability
-  // to edit a driver's name does not currently exist in the admin portal. Found
-  // by the linter (audit finding 15); it is the only genuine dead feature the
-  // first run turned up.
-  //
-  // Left in place deliberately rather than deleted: removing working code is a
-  // product decision, not a lint fix. Either wire it to a button on the driver
-  // row or delete it -- but decide, do not let it sit here another six months.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async function editDriverDetails(d: Driver) {
-    const name = await promptSheet({ title: 'اسم المندوب', initial: d.name ?? '' })
-    if (name === null) return
-    if (!name.trim()) { setActionError('الاسم ماينفعش يكون فاضي'); return }
-
-    const phone = await promptSheet({ title: 'رقم موبايل المندوب', initial: d.phone ?? '', inputMode: 'tel', dir: 'ltr' })
-    if (phone === null) return
-    if (!isValidEgyptPhone(phone)) { setActionError(PHONE_HINT); return }
-
-    const patch: Record<string, unknown> = {}
-    if (name.trim() !== (d.name ?? '')) patch.name = name.trim()
-    if (phone.trim() !== (d.phone ?? '')) patch.phone = phone.trim()
-    if (Object.keys(patch).length === 0) { setActionError(''); return }
-
-    const { error } = await supabase.from('drivers').update(patch).eq('id', d.id)
-    if (error) { setActionError('مش قادرين نحفظ بيانات المندوب دلوقتي'); return }
-    // create_driver_login copies the driver's name onto their profile, so a
-    // rename here would otherwise leave the two disagreeing forever.
-    if (patch.name) await supabase.from('profiles').update({ name: patch.name }).eq('driver_id', d.id)
-    setActionError('')
-    load(true)
-  }
 
 
   // Driver accounts are bound to one phone (first phone wins). This is the ONLY
@@ -3349,9 +3316,9 @@ export default function Admin() {
       )}
 
       {newCreds && (
-        <div ref={credsRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true" onClick={() => setNewCreds(null)}>
+        <div ref={credsRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-labelledby="new-creds-title" aria-modal="true" onClick={() => setNewCreds(null)}>
           <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold mb-3">بيانات الدخول</h3>
+            <h3 id="new-creds-title" className="font-bold mb-3">بيانات الدخول</h3>
             <p className="text-sm text-mist mb-1">الإيميل</p>
             <p className="font-mono text-sm bg-night border border-line rounded-lg p-2.5 mb-3" dir="ltr">{newCreds.email}</p>
             <p className="text-sm text-mist mb-1">كلمة السر</p>
@@ -3370,9 +3337,9 @@ export default function Admin() {
       )}
 
       {assigning && (
-        <div ref={assigningRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true" onClick={closeAssign}>
+        <div ref={assigningRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-labelledby="assign-driver-title" aria-modal="true" onClick={closeAssign}>
           <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold mb-4">اختيار مندوب متاح — طلب #{assigning.id}</h3>
+            <h3 id="assign-driver-title" className="font-bold mb-4">اختيار مندوب متاح — طلب #{assigning.id}</h3>
             {assigningNeedsVan && (
               <p className="text-sandink text-sm mb-3">🚐 الطلب محتاج فان — لسه السعر متأكدش أو الطلب كبير</p>
             )}
@@ -3408,10 +3375,10 @@ export default function Admin() {
       )}
 
       {reassigning && (
-        <div ref={reassigningRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true"
+        <div ref={reassigningRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-labelledby="reassign-driver-title" aria-modal="true"
           onClick={() => setReassigning(null)}>
           <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold mb-1">تغيير المندوب — طلب #{reassigning.order_id}</h3>
+            <h3 id="reassign-driver-title" className="font-bold mb-1">تغيير المندوب — طلب #{reassigning.order_id}</h3>
             <p className="text-sm text-mist mb-4">
               دلوقتي مع {reassigning.drivers?.name ?? 'مندوب'} · {assignmentStatusLabel(reassigning.status)}
             </p>

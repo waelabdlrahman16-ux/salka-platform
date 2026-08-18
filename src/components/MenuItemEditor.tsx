@@ -396,7 +396,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
   // Direct inset positioning on the sheet itself -- see the note in
   // ProductDetailSheet.
   return (
-    <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60" onClick={onClose}>
+    <div ref={overlayRef} role="dialog" aria-labelledby="menu-item-editor-title" aria-modal="true" className="fixed inset-0 z-50 bg-black/60" onClick={onClose}>
       <div className="fixed inset-x-0 bottom-0 sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:w-full sm:max-w-lg max-h-[90vh] overflow-y-auto bg-shellup rounded-t-2xl sm:rounded-2xl p-4" onClick={e => e.stopPropagation()}>
         {sheetElement}
         {writeError && (
@@ -412,7 +412,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
         )}
         <div className="flex items-center justify-between mb-3 px-1">
           <div className="min-w-0">
-            <h2 className="font-bold text-lg text-foam">تعديل الصنف</h2>
+            <h2 id="menu-item-editor-title" className="font-bold text-lg text-foam">تعديل الصنف</h2>
             {restaurantName && <p className="text-xs text-mist truncate">🏪 {restaurantName}</p>}
           </div>
           <button className="text-mist text-sm bg-shell rounded-full px-3 py-1 shrink-0" onClick={onClose}>✗ إغلاق</button>

@@ -68,7 +68,7 @@ export default function ProductDetailSheet({
   // real desktop case to preserve here -- dropping the breakpoint entirely
   // removes the whole failure mode instead of chasing why it misfires.
   return (
-    <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60" onClick={onClose}>
+    <div ref={overlayRef} role="dialog" aria-labelledby="product-detail-title" aria-modal="true" className="fixed inset-0 z-50 bg-black/60" onClick={onClose}>
       <div className="fixed inset-x-0 bottom-0 w-full max-h-[90vh] overflow-y-auto bg-shell rounded-t-2xl" onClick={e => e.stopPropagation()}>
         {/* Drag handle: a purely visual affordance signalling "this sheet
             swipes down to close" -- it does not itself carry a gesture,
@@ -124,7 +124,7 @@ export default function ProductDetailSheet({
             which hands roughly a fifth of the sheet back to the name, the price
             and the button — the three things the customer opened it for. */}
         <div className="p-5">
-          <h2 className="font-bold text-xl leading-snug">{active.name}</h2>
+          <h2 id="product-detail-title" className="font-bold text-xl leading-snug">{active.name}</h2>
           {active.description && <p className="text-sm text-mist mt-2 leading-relaxed">{active.description}</p>}
           <p className="text-xl mt-3">
             {activeDiscount && <span className="text-mist text-sm line-through ml-2">{baseActivePrice}</span>}

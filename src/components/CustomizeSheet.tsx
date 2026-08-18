@@ -114,9 +114,9 @@ export default function CustomizeSheet({
   // ALWAYS a full-bleed bottom sheet, no sm: desktop-centered variant --
   // see the note in ProductDetailSheet.
   return (
-    <div ref={overlayRef} role="dialog" aria-modal="true" className="fixed inset-0 z-50 bg-black/60" onClick={onClose}>
+    <div ref={overlayRef} role="dialog" aria-labelledby="customize-sheet-title" aria-modal="true" className="fixed inset-0 z-50 bg-black/60" onClick={onClose}>
       <div className="card fixed inset-x-0 bottom-0 w-full p-5 rounded-b-none max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <h2 className="font-bold text-lg mb-1">{item.name}</h2>
+        <h2 id="customize-sheet-title" className="font-bold text-lg mb-1">{item.name}</h2>
         {item.description && <p className="text-sm text-mist mb-4">{item.description}</p>}
 
         {(sizes.length > 0 || availableCombos.length > 0) && (
