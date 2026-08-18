@@ -798,7 +798,7 @@ export default function CustomOrder() {
                   onClick={() => setQty(i, +1)}>+</button>
               </div>
               <button className="w-9 h-9 grid place-items-center text-mist shrink-0" aria-label="حذف"
-                onClick={() => setLines(ls => ls.filter((_, j) => j !== i))}>✕</button>
+                onClick={() => setLines(ls => ls.filter((_, j) => j !== i))}><Icon name="x" className="w-4 h-4" /></button>
             </div>
           )
         })}

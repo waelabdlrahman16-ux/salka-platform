@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import Icon from './Icon'
 import { supabase } from '../lib/supabase'
 import { uploadVendorImage } from '../lib/upload'
 import { useDismissable } from '../lib/useDismissable'
@@ -425,7 +426,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
               type="button"
               className="btn-ghost !py-2.5 text-sm"
               onClick={() => addModifierTemplate('required')}
-            >☑️ اختيار مطلوب</button>
+            >✓ اختيار مطلوب</button>
             <button
               type="button"
               className="btn-ghost !py-2.5 text-sm"
@@ -495,7 +496,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
                             ...current,
                             choices: current.choices.filter((_, j) => j !== choiceIndex)
                           } : current))}
-                        >✕</button>
+                        ><Icon name="x" className="w-4 h-4" /></button>
                       </div>
                     ))}
                   </div>

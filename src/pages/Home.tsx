@@ -465,7 +465,7 @@ export default function Home() {
           </span>
           {foodQ.trim() && (
             <button className="absolute left-3 top-1/2 -translate-y-1/2 text-mist text-sm"
-              aria-label="مسح" onClick={() => setFoodQ('')}>✕</button>
+              aria-label="مسح" onClick={() => setFoodQ('')}><Icon name="x" className="w-4 h-4" /></button>
           )}
         </div>
       )}
@@ -678,7 +678,7 @@ export default function Home() {
                 to work only *while a compound was already selected*, so on a
                 first visit the dialog had no exit at all. */}
             <button className="absolute top-2 left-2 w-11 h-11 grid place-items-center text-mist hover:text-foam text-xl"
-              aria-label="إغلاق" onClick={() => setPicking(false)}>✕</button>
+              aria-label="إغلاق" onClick={() => setPicking(false)}><Icon name="x" className="w-4 h-4" /></button>
             <h3 id="place-picker-title" className="font-bold text-lg mb-3">فين مكانك؟</h3>
 
             {compoundsFailed && (

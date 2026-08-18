@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import Icon from './Icon'
 import { adminFinancialAction } from '../lib/adminFinancialActions'
 
 // Adjust the money on a placed order: a price difference, a goodwill discount,
@@ -94,7 +95,7 @@ export default function OrderAdjust({ orderId, onDone }: {
     <div className="mt-2.5 bg-shellup/60 border border-line rounded-xl p-3">
       <div className="flex items-center justify-between mb-2">
         <p className="text-sm font-bold">تعديل مبلغ الطلب</p>
-        <button className="text-mist text-sm" onClick={() => setOpen(false)} aria-label="إغلاق">✕</button>
+        <button className="text-mist text-sm" onClick={() => setOpen(false)} aria-label="إغلاق"><Icon name="x" className="w-4 h-4" /></button>
       </div>
 
       {result && (

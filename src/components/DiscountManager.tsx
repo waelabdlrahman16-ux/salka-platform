@@ -131,7 +131,7 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
       {conflicts && conflicts.length > 0 && (
         <div className="bg-sand/15 rounded-lg p-2.5 text-xs">
           <p className="font-semibold mb-1.5">
-            ⚠️ في {scope === 'item' ? 'خصم على القسم ده' : 'أصناف ليها خصم خاص'} شغال دلوقتي وهيتعارض:
+            ⚠ في {scope === 'item' ? 'خصم على القسم ده' : 'أصناف ليها خصم خاص'} شغال دلوقتي وهيتعارض:
           </p>
           <ul className="list-disc pr-4 mb-2">
             {conflicts.map(c => (

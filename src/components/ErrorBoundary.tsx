@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from 'react'
+import Icon from './Icon'
 import * as Sentry from '@sentry/react'
 
 interface Props { children: ReactNode }
@@ -52,7 +53,7 @@ export default class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="min-h-screen grid place-items-center p-6 text-center">
           <div>
-            <p className="text-4xl mb-3">⚠️</p>
+            <p className="text-4xl mb-3"><Icon name="warning" className="w-10 h-10 mx-auto" /></p>
             <h1 className="font-bold text-lg mb-1">حصل خطأ غير متوقع</h1>
             <p className="text-mist text-sm mb-4">جرب تحدّث الصفحة، ولو استمرت المشكلة كلّم الدعم</p>
             <button className="btn-sea" onClick={() => window.location.reload()}>تحديث الصفحة</button>

@@ -97,7 +97,7 @@ export default function OptionRowsCard({
           </div>
 
           {warning && (
-            <p className="text-xs text-sandink bg-sandink/10 rounded-lg p-2 mb-3">⚠️ {warning}</p>
+            <p className="text-xs text-sandink bg-sandink/10 rounded-lg p-2 mb-3">⚠ {warning}</p>
           )}
 
           <div className="flex gap-2">

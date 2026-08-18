@@ -337,7 +337,7 @@ export default function MenuItemsPanel({
               of each other. This is where that stops. */}
           {dupWarning && (
             <p className="text-xs text-sandink bg-sandink/10 rounded-lg p-2">
-              ⚠️ في قسم اسمه «{dupWarning}» عندك:{' '}
+              ⚠ في قسم اسمه «{dupWarning}» عندك:{' '}
               <button className="underline font-semibold" onClick={() => { setActive(dupWarning); setAdding(false); setNewCat('') }}>
                 استخدمه
               </button>

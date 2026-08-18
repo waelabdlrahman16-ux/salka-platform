@@ -110,7 +110,7 @@ export default function ProductDetailSheet({
             ? <img src={sized(active.image_url, IMG.photo)} alt={active.name} className="w-full h-full object-cover"
                 onError={() => setImgFailed(true)} />
             : art.emoji}
-          <button className="absolute top-3 left-3 bg-white/80 rounded-full w-7 h-7 grid place-items-center text-mist text-sm" onClick={onClose}>✗</button>
+          <button aria-label="إغلاق" className="absolute top-3 left-3 bg-white/80 rounded-full w-7 h-7 grid place-items-center text-mist text-sm" onClick={onClose}><Icon name="x" className="w-4 h-4" /></button>
           {active.requires_prescription && (
             <span className="absolute top-3 right-3 bg-white/90 rounded-full px-2.5 py-1 text-xs font-bold text-seadeep">
               💊 يحتاج روشتة
