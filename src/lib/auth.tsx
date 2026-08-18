@@ -107,6 +107,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Re-fetch only when the logged-in user actually changes, not on every
     // TOKEN_REFRESHED event (which produces a new session object for the same
     // user) -- plus `attempt`, which the retry button bumps.
+  // session?.user.id on purpose: TOKEN_REFRESHED produces a new session object
+  // for the same user, so depending on the object would refetch the profile on
+  // every token refresh.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user.id, attempt])
 
   async function signIn(email: string, password: string) {

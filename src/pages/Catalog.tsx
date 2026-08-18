@@ -41,6 +41,9 @@ export default function Catalog() {
     setLoading(false)
   }, [])
 
+  // load is redefined on every render, so listing it would re-run this effect
+  // forever. The dependencies below are the values it actually reads.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load() }, [])
   useCatalogSync({ refresh: load })
 

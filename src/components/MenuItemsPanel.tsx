@@ -98,6 +98,9 @@ export default function MenuItemsPanel({
         }
         setSizes(m)
       })
+  // items.length, not items. The array is rebuilt on every parent render; only a
+  // change in HOW MANY items exist should refetch their sizes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurant.id, items.length])
 
   const counts = useMemo(() => {

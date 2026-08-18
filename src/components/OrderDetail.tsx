@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Order, RequestItem } from '../lib/types'
 
@@ -29,8 +29,14 @@ export function OrderLines({ order }: { order: Order }) {
   // Only a custom_request carries request_items. A pickup_request is an errand
   // -- collect a parcel, take the payment -- and legitimately has no item list
   // at all, so it must NOT be told "the customer typed nothing, ring them".
-  const fromRequest: RequestItem[] | null =
-    order.order_type === 'custom_request' ? (order.request_items ?? []) : null
+  // useMemo, not a bare expression: this is a dependency of the effect below, and
+  // a fresh array every render made that effect re-run on every render. It bailed
+  // out immediately each time via the `if (fromRequest) return` guard, so nothing
+  // broke -- but it was work done on every paint for nothing.
+  const fromRequest: RequestItem[] | null = useMemo(
+    () => (order.order_type === 'custom_request' ? (order.request_items ?? []) : null),
+    [order.order_type, order.request_items],
+  )
 
   useEffect(() => {
     if (fromRequest) return

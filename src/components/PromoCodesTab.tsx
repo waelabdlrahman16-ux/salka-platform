@@ -30,6 +30,9 @@ export default function PromoCodesTab({ restaurants, compounds }: { restaurants:
     catch { setError('مش قادرين نحمّل أكواد الخصم دلوقتي') }
     finally { setLoading(false) }
   }
+  // refresh is redefined on every render, so listing it would re-run this effect
+  // forever. The dependencies below are the values it actually reads.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { void refresh() }, [])
   function status(p: Promo) {
     const now = Date.now()

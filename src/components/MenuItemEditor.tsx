@@ -108,6 +108,9 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
     document.body.style.overflow = 'hidden'
     loadOptions()
     return () => { document.body.style.overflow = '' }
+  // loadOptions is redefined on every render, so listing it would re-run this effect
+  // forever. The dependencies below are the values it actually reads.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   /**

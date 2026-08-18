@@ -40,6 +40,9 @@ export default function VendorMenuManager({ restaurant, onClose }: {
     setLoading(false)
   }, [restaurant.id])
 
+  // load is redefined on every render, so listing it would re-run this effect
+  // forever. The dependencies below are the values it actually reads.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load() }, [restaurant.id])
   useCatalogSync({ restaurantId: restaurant.id, refresh: load })
 

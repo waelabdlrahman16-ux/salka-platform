@@ -99,6 +99,10 @@ export default function CustomOrder() {
     if (!customer) return
     setName(prev => prev.trim() ? prev : (customer.name ?? ''))
     setPhone(prev => prev.trim() ? prev : (displayEgyptPhone(customer.phone) || prev))
+  // Depends on the three customer FIELDS this reads, not the object. The object
+  // gets a new identity on every auth refresh, which would re-run this and
+  // re-fill a form the customer may already be typing into.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customer?.id, customer?.name, customer?.phone])
 
   useEffect(() => {

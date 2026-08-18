@@ -30,6 +30,9 @@ export default function RestaurantDeliverySettings({ restaurant, compounds }: { 
     setFees((fs ?? []) as FeeRow[])
   }
 
+  // load is redefined on every render, so listing it would re-run this effect
+  // forever. The dependencies below are the values it actually reads.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (open) void load() }, [open, restaurant.id])
 
   async function addKitchen() {
