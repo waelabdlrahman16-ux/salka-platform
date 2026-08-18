@@ -105,6 +105,23 @@ function AccountActionsMenu({ busy, onChangeEmail, onResetPassword, onCustomPass
   )
 }
 
+// Every order column the assignment views actually read. Kept as one constant
+// because it is read from four places: the customer block on توصيلات جارية
+// (name, phone, note, zone, unit_number, address_notes), cancelOrder (id and
+// status -- it guards on status and passes the id to cancel_order), and the
+// complaint/rating panels, which prefill the wallet-credit phone from it.
+//
+// Do NOT trim this back to orders(restaurants(name)). #145 did exactly that to
+// cut page weight, on the reasoning that these were "the two nested fields
+// anything actually reads". They were not. PostgREST happily returns a nested
+// object containing only the sub-embed, so nothing errored -- the customer
+// block just rendered blank, and the إلغاء button called cancel_order with
+// p_order_id: undefined while its dialog read "إلغاء الطلب #undefined؟".
+//
+// Nine columns instead of sixty still keeps most of that payload win.
+const ASSIGNMENT_SELECT =
+  '*, orders(id, status, customer_name, customer_phone, customer_note, zone, unit_number, address_notes, restaurants(name)), drivers(name)'
+
 type Tab = 'daily' | 'unassigned' | 'active' | 'drivers' | 'menu' | 'orders' | 'earnings' | 'settings' | 'shifts' | 'payouts' | 'complaints' | 'coverage' | 'accounts' | 'wallet' | 'banners' | 'feed_ads' | 'featured_products' | 'refunds' | 'customers' | 'compounds' | 'promos'
 
 // What is actually owed back, decided by the server. A COD order only ever took
@@ -406,9 +423,9 @@ export default function Admin() {
         withTimeout(supabase.from('orders').select('*, restaurants(name)')
           .is('archived_at', null)
           .order('id', { ascending: false }).limit(ORDERS_LIMIT)),
-        withTimeout(supabase.from('delivery_assignments').select('*, orders(restaurants(name)), drivers(name)')
+        withTimeout(supabase.from('delivery_assignments').select(ASSIGNMENT_SELECT)
           .in('status', ACTIVE_ASSIGNMENT_STATUSES).order('id', { ascending: false })),
-        withTimeout(supabase.from('delivery_assignments').select('*, orders(restaurants(name)), drivers(name)')
+        withTimeout(supabase.from('delivery_assignments').select(ASSIGNMENT_SELECT)
           .order('id', { ascending: false }).limit(400)),
         withTimeout(supabase.from('drivers').select('*').order('id')),
         withTimeout(supabase.from('driver_earnings').select('*, drivers(name)')
