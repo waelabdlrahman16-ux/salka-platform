@@ -166,7 +166,7 @@ export default function CompoundsTab() {
 
       {missingCoords > 0 && (
         <p className="text-xs text-sandink bg-sand/10 rounded-xl p-3">
-          ⚠️ {missingCoords} كومباوند شغّال من غير إحداثيات، خريطة تتبع المندوب مش هتشتغل فيهم.
+          ⚠ {missingCoords} كومباوند شغّال من غير إحداثيات، خريطة تتبع المندوب مش هتشتغل فيهم.
         </p>
       )}
 
@@ -184,7 +184,7 @@ export default function CompoundsTab() {
                 {regions.find(g => g.id === r.region_id)?.name ?? '—'}
                 {r.distance_km != null && ` · ${r.distance_km} كم`}
                 {r.direction && ` · ${r.direction === 'north' ? 'شمال' : 'جنوب'}`}
-                {(r.latitude == null || r.longitude == null) && ' · ⚠️ مفيش إحداثيات'}
+                {(r.latitude == null || r.longitude == null) && ' · ⚠ مفيش إحداثيات'}
               </p>
             </div>
             <span className="font-bold text-sea text-sm shrink-0">{r.delivery_fee} ج.م</span>

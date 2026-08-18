@@ -483,7 +483,7 @@ export default function RestaurantDetail() {
               </span>
               {menuQ.trim() && (
                 <button className="absolute left-3 top-1/2 -translate-y-1/2 text-mist text-sm"
-                  aria-label="مسح" onClick={() => setMenuQ('')}>✕</button>
+                  aria-label="مسح" onClick={() => setMenuQ('')}><Icon name="x" className="w-4 h-4" /></button>
               )}
             </div>
           )}

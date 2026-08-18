@@ -1680,7 +1680,7 @@ export default function Admin() {
     && o.instapay_claimed_at != null)
 
   const CATEGORY_LABEL: Record<string, string> = {
-    missing_item: '📦 نقص صنف', wrong_item: '❌ صنف غلط', driver_conduct: '🛵 مشكلة مع المندوب',
+    missing_item: '📦 نقص صنف', wrong_item: '✗ صنف غلط', driver_conduct: '🛵 مشكلة مع المندوب',
     quality: '👎 جودة الطلب', other: '❓ حاجة تانية'
   }
 
@@ -1776,7 +1776,7 @@ export default function Admin() {
         <div className="flex items-center gap-2 text-xs shrink-0">
           {lastSyncAt && (
             <span className={syncFailed ? 'text-red-600 font-semibold' : 'text-mist'}>
-              {syncFailed ? '⚠️ آخر تحديث ناجح' : 'آخر تحديث'}{' '}
+              {syncFailed ? '⚠ آخر تحديث ناجح' : 'آخر تحديث'}{' '}
               {new Date(lastSyncAt).toLocaleTimeString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </span>
           )}
@@ -1789,7 +1789,7 @@ export default function Admin() {
       {syncFailed && (
         <div className="card p-3 mb-4 border-red-400/50 bg-red-500/5">
           <p className="text-sm text-red-700 font-semibold">
-            ⚠️ آخر محاولة تحديث فشلت، اللي شايفه دلوقتي ممكن يكون مش أحدث حاجة. جرب "حدّث" فوق.
+            ⚠ آخر محاولة تحديث فشلت، اللي شايفه دلوقتي ممكن يكون مش أحدث حاجة. جرب "حدّث" فوق.
           </p>
         </div>
       )}
@@ -2066,12 +2066,12 @@ export default function Admin() {
               {isCooking(o) && (
                 <p className="text-mist text-sm mt-1.5">👨‍🍳 لسه بيتحضر، متاح للمندوبين خلال {minsUntilDispatch(o)} دقيقة</p>
               )}
-              {isLate(o) && <p className="text-red-600 text-sm mt-1.5">⚠️ محدش استلم الطلب</p>}
+              {isLate(o) && <p className="text-red-600 text-sm mt-1.5">⚠ محدش استلم الطلب</p>}
               {(() => {
                 const priorAttempts = assignments.filter(a => a.order_id === o.id && a.status !== 'Offered')
                 return priorAttempts.length > 0 ? (
                   <p className="text-xs text-sandink mt-1.5">
-                    ⚠️ اتعرض قبل كده على {priorAttempts.length} مندوب ({priorAttempts.map(a => a.drivers?.name).filter(Boolean).join('، ')})
+                    ⚠ اتعرض قبل كده على {priorAttempts.length} مندوب ({priorAttempts.map(a => a.drivers?.name).filter(Boolean).join('، ')})
                   </p>
                 ) : null
               })()}
@@ -2167,7 +2167,7 @@ export default function Admin() {
                     📱 {d.device_id ? `مربوط بـ ${d.device_label || 'جهاز'}` : 'مش مربوط بجهاز لسه'}
                   </p>
                   {disputeCount > 0 && (
-                    <p className="text-sm text-red-600 font-semibold mt-1">⚠️ {disputeCount} مشكلة مؤكدة في السجل</p>
+                    <p className="text-sm text-red-600 font-semibold mt-1">⚠ {disputeCount} مشكلة مؤكدة في السجل</p>
                   )}
                 </div>
                 <span className={d.active ? 'badge-open' : 'badge-closed'}>{driverStatusLabel(d.status)}</span>
@@ -3015,7 +3015,7 @@ export default function Admin() {
         <div>
           {escalations.length > 0 && (
             <div className="mb-5">
-              <h2 className="font-bold text-red-600 mb-3">⚠️ محتاجين تدخل الإدارة</h2>
+              <h2 className="font-bold text-red-600 mb-3">⚠ محتاجين تدخل الإدارة</h2>
               <div className="space-y-3">
                 {escalations.map((e: any) => (
                   <div key={e.id} className="card p-4 border-red-400/60">
@@ -3123,7 +3123,7 @@ export default function Admin() {
                     <div className="bg-night border border-line rounded-xl p-3">
                       <p className="text-xs text-mist">كاش معاه</p>
                       <p className="font-bold text-sandink mt-0.5">{d.cash_held ?? 0} ج.م</p>
-                      {(d.cash_held ?? 0) >= 3000 && <p className="text-xs text-red-600 mt-1">⚠️ تجاوز حد الأمان</p>}
+                      {(d.cash_held ?? 0) >= 3000 && <p className="text-xs text-red-600 mt-1">⚠ تجاوز حد الأمان</p>}
                     </div>
                     <div className="bg-night border border-line rounded-xl p-3">
                       <p className="text-xs text-mist">أرباح مستحقة</p>
@@ -3279,7 +3279,7 @@ export default function Admin() {
                   ? <span className="text-sm font-semibold text-emerald-700 flex-1 text-center py-2">✓ اتعوّض</span>
                   : <button className="btn-ghost flex-1 text-sm" onClick={() => compensateFromComplaint(c)}>💳 تعويض العميل</button>}
                 {c.category === 'driver_conduct' && c.driver_id && (
-                  <button className="btn-ghost flex-1 text-sm !text-red-600" onClick={() => flagDriverDispute(c)}>⚠️ علّم في سجل المندوب</button>
+                  <button className="btn-ghost flex-1 text-sm !text-red-600" onClick={() => flagDriverDispute(c)}>⚠ علّم في سجل المندوب</button>
                 )}
               </div>
             </div>
@@ -3464,7 +3464,7 @@ export default function Admin() {
                 {open && (
                   <div className="mt-3 pt-3 border-t border-line">
                     {explicit.length > 0 && (
-                      <p className="text-xs text-sandink mb-2">⚠️ المطعم ده حاليًا مقتصر بس على الأماكن المعلّمة تحت، لو عايزه يرجع يوصل بالمسافة القصوى بس، شيل كل التعليمات.</p>
+                      <p className="text-xs text-sandink mb-2">⚠ المطعم ده حاليًا مقتصر بس على الأماكن المعلّمة تحت، لو عايزه يرجع يوصل بالمسافة القصوى بس، شيل كل التعليمات.</p>
                     )}
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-64 overflow-y-auto">
                       {compounds.map(c => {
@@ -3494,7 +3494,7 @@ export default function Admin() {
             <p className="text-sm text-mist mb-1">كلمة السر</p>
             <p className="font-mono text-sm bg-night border border-line rounded-lg p-2.5 mb-4" dir="ltr">{newCreds.password}</p>
             <div className="flex items-center gap-2 mb-4">
-              <p className="text-xs text-sandink flex-1">⚠️ ده ظاهر مرة واحدة بس. انسخه وابعته دلوقتي</p>
+              <p className="text-xs text-sandink flex-1">⚠ ده ظاهر مرة واحدة بس. انسخه وابعته دلوقتي</p>
               <button className="btn-sea !py-2 text-xs shrink-0" onClick={() => {
                 navigator.clipboard.writeText(`${newCreds.email}\n${newCreds.password}`)
                 setCredsCopied(true)

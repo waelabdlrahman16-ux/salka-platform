@@ -859,7 +859,7 @@ export default function DriverPage() {
       {justDelivered && (
         <div className="fixed inset-0 z-50 bg-white grid place-items-center p-6">
           <div className="text-center">
-            <div className="w-16 h-16 rounded-full bg-shellup grid place-items-center text-3xl mx-auto mb-4">✓</div>
+            <div className="w-16 h-16 rounded-full bg-shellup grid place-items-center text-3xl mx-auto mb-4"><Icon name="check" className="w-8 h-8" /></div>
             <p className="text-lg font-bold text-foam">تم التسليم</p>
             <div className="bg-shellup rounded-2xl px-5 py-3 mt-5">
               <p className="text-xs text-mist">أرباح النهاردة</p>
@@ -905,10 +905,10 @@ export default function DriverPage() {
         </div>
       )}
 
-      {/* pool.length guard: this used to print "كل الطلبات اتسلمت ✅" directly
+      {/* pool.length guard: this used to print "كل الطلبات اتسلمت ✓" directly
           above a list of unclaimed orders waiting to be taken. */}
       {activeTab === 'active' && liveAssignments.length === 0 && pool.length === 0 && doneAssignments.length > 0 && (
-        <p className="card p-5 text-center text-mist text-sm mb-3">مفيش شغل دلوقتي، كل الطلبات اتسلمت ✅</p>
+        <p className="card p-5 text-center text-mist text-sm mb-3">مفيش شغل دلوقتي، كل الطلبات اتسلمت ✓</p>
       )}
 
       <div className="space-y-3" ref={orderListRef}>
@@ -926,7 +926,7 @@ export default function DriverPage() {
               : o.total
             return (
               <div key={a.id} className="card !rounded-2xl p-3.5 flex items-center gap-3">
-                <span className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 grid place-items-center shrink-0">✓</span>
+                <span className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 grid place-items-center shrink-0"><Icon name="check" className="w-5 h-5" /></span>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-sm truncate">#{o.id} · {o.restaurants?.name}</p>
                   <p className="text-xs text-mist mt-0.5 truncate">
@@ -950,7 +950,7 @@ export default function DriverPage() {
           if (dead) {
             return (
               <div key={a.id} className="card !rounded-2xl p-3.5 flex items-center gap-3 border-line">
-                <span className="w-9 h-9 rounded-full bg-shellup text-mist grid place-items-center shrink-0">✕</span>
+                <span className="w-9 h-9 rounded-full bg-shellup text-mist grid place-items-center shrink-0"><Icon name="x" className="w-5 h-5" /></span>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-sm truncate">#{o.id} · {o.restaurants?.name}</p>
                   <p className="text-xs text-mist mt-0.5">
@@ -1298,7 +1298,7 @@ export default function DriverPage() {
                       <p className="text-sm text-mist mt-0.5">📍 {o.zone}</p>
                       <p className="text-xs text-mist mt-1">
                         {notReadyYet ? `🕐 هيبقى جاهز خلال ${minsLeft} د`
-                          : o.kitchen_status === 'ready' ? '✅ جاهز للاستلام'
+                          : o.kitchen_status === 'ready' ? '✓ جاهز للاستلام'
                           : o.kitchen_status === 'preparing' ? '👨‍🍳 قيد التحضير' : `🕐 ${vendorNoun(o.vendor_type)} لسه ما بدأش`}
                       </p>
                     </div>
@@ -1444,7 +1444,7 @@ export default function DriverPage() {
           </div>
         </div>
         {settlementSent ? (
-          <p className="text-emerald-700 text-sm text-center mt-3">✅ طلب التسوية المبكرة وصل للإدارة</p>
+          <p className="text-emerald-700 text-sm text-center mt-3">✓ طلب التسوية المبكرة وصل للإدارة</p>
         ) : (
           <button className="btn-ghost w-full mt-3 text-sm" disabled={requestingSettlement || !haveStats || unpaidEarnings === 0} onClick={requestSettlement}>
             {/* disabled:pointer-events-none means a dead button does not even
@@ -1498,7 +1498,7 @@ export default function DriverPage() {
                     </div>
                   )}
                   {myEscalated.has(sh.id) && (
-                    <p className="text-emerald-700 text-sm mt-3">✅ تم إبلاغ الإدارة، في انتظار تعيين مندوب بديل</p>
+                    <p className="text-emerald-700 text-sm mt-3">✓ تم إبلاغ الإدارة، في انتظار تعيين مندوب بديل</p>
                   )}
                 </div>
               )

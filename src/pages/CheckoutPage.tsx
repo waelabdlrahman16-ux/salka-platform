@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useId } from 'react'
+import Icon from '../components/Icon'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { customerOrderCreation } from '../lib/customerOrderCreation'
@@ -513,7 +514,7 @@ export default function CheckoutPage() {
                       {a.unit_number}{a.notes?.trim() ? `، ${a.notes.trim()}` : ''}
                     </span>
                   </span>
-                  {on && <span className="text-sea text-sm font-bold shrink-0">✓</span>}
+                  {on && <span className="text-sea text-sm font-bold shrink-0"><Icon name="check" className="w-4 h-4" /></span>}
                 </button>
               )
             })}

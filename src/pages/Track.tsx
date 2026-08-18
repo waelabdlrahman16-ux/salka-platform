@@ -638,7 +638,7 @@ export default function Track() {
           )}
           <div className="flex items-start justify-between gap-2 mb-1">
             <h1 className="font-bold text-xl">
-              {current === 'Delivered' ? '✅ تم التوصيل'
+              {current === 'Delivered' ? '✓ تم التوصيل'
                 // The BAR is right to sit at stage 2 -- the order really did get
                 // that far -- but «في الطريق إليك» as the headline for a
                 // delivery that has already failed is simply false, and it was
@@ -813,7 +813,7 @@ export default function Track() {
         <p className="text-sm bg-shellup/60 rounded-xl p-3 mb-4">
           {o.payment_mode === 'driver_pays'
             ? `💵 المندوب هيدفع ${o.collect_amount} ج.م لـ${vendorNoun(o.vendor_type)}، ويحصلها منك كاش عند التوصيل`
-            : '✅ الأوردر متدفوع بالفعل، هتدفع رسوم التوصيل بس'}
+            : '✓ الأوردر متدفوع بالفعل، هتدفع رسوم التوصيل بس'}
         </p>
       )}
 
@@ -983,7 +983,7 @@ export default function Track() {
         <div className="flex items-center justify-between text-sm pb-2 border-b border-line">
           <span className="text-mist">رقم الطلب</span>
           <button className="font-semibold flex items-center gap-1.5" onClick={copyOrderNumber}>
-            #{o.id} <span className="text-xs text-mist">{copied ? '✅ اتنسخ' : <Icon name="clone" className="w-3.5 h-3.5" />}</span>
+            #{o.id} <span className="text-xs text-mist">{copied ? '✓ اتنسخ' : <Icon name="clone" className="w-3.5 h-3.5" />}</span>
           </button>
         </div>
         {o.pricing_status !== 'pending_quote' && (
@@ -1046,9 +1046,9 @@ export default function Track() {
         </div>
       )}
       {o.rating_submitted && !ratingSent && (
-        <p className="text-emerald-700 text-sm text-center mb-4">✅ شكرًا، تقييم الطلب مسجّل</p>
+        <p className="text-emerald-700 text-sm text-center mb-4">✓ شكرًا، تقييم الطلب مسجّل</p>
       )}
-      {ratingSent && !showTipPrompt && <p className="text-emerald-700 text-sm text-center mb-4">✅ شكرًا لتقييمك</p>}
+      {ratingSent && !showTipPrompt && <p className="text-emerald-700 text-sm text-center mb-4">✓ شكرًا لتقييمك</p>}
 
       {showTipPrompt && !tipSent && data.assignment?.driver_instapay && (
         <div className="card p-4 mb-4">
@@ -1076,7 +1076,7 @@ export default function Track() {
           </div>
         </div>
       )}
-      {tipSent && <p className="text-emerald-700 text-sm text-center mb-4">✅ تم إبلاغ المندوب، يراجع إنستاباي للتأكيد</p>}
+      {tipSent && <p className="text-emerald-700 text-sm text-center mb-4">✓ تم إبلاغ المندوب، يراجع إنستاباي للتأكيد</p>}
 
       {canCancel && (
         <>
@@ -1097,14 +1097,14 @@ export default function Track() {
       <InAppLoginPrompt className="mb-4" />
 
       {complaintSent ? (
-        <p className="text-sandink text-sm text-center mb-4">✅ تم إرسال الشكوى، هنراجعها قريب</p>
+        <p className="text-sandink text-sm text-center mb-4">✓ تم إرسال الشكوى، هنراجعها قريب</p>
       ) : complaining ? (
         <div className="card p-4 mb-4">
           <p className="text-sm font-semibold mb-2">إيه المشكلة؟</p>
           <div className="grid grid-cols-2 gap-2 mb-3">
             {([
               ['missing_item', '📦 نقص صنف'],
-              ['wrong_item', '❌ صنف غلط'],
+              ['wrong_item', '✗ صنف غلط'],
               ['driver_conduct', '🛵 مشكلة مع المندوب'],
               ['quality', '👎 جودة الطلب'],
               ['other', '❓ حاجة تانية'],

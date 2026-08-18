@@ -118,7 +118,7 @@ export default function PhoneOrderForm({ onCreated }: { onCreated: () => void })
 
       {done && (
         <p className="text-sm bg-sea/10 text-sea rounded-xl p-3 mb-3">
-          ✅ اتعمل طلب #{done.id}، المندوب هيحصّل {done.total} ج.م. موجود دلوقتي في الطلبات غير المعيّنة.
+          ✓ اتعمل طلب #{done.id}، المندوب هيحصّل {done.total} ج.م. موجود دلوقتي في الطلبات غير المعيّنة.
         </p>
       )}
       {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3" role="alert">{error}</p>}

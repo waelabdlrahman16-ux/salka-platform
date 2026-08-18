@@ -293,7 +293,7 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
 
       {sent && (
         <div className="bg-emerald-50 text-emerald-800 rounded-xl p-3.5 text-sm mb-4 space-y-2">
-          <p className="font-semibold text-center">✅ تم إرسال الطلب للمندوبين، طلب #{sent.id}</p>
+          <p className="font-semibold text-center">✓ تم إرسال الطلب للمندوبين، طلب #{sent.id}</p>
           <p className="text-xs">ابعت اللينك ده للعميل عشان يتابع المندوب:</p>
           <div className="flex gap-2">
             <input readOnly dir="ltr" className="field !py-1.5 text-xs flex-1"
@@ -759,7 +759,7 @@ function KitchenVendor({ rid }: { rid: number }) {
   }, [completedToday.length])
 
   const COMPLETED_LABEL: Record<string, string> = {
-    Delivered: '✅ تم التوصيل', Cancelled: '✗ ملغي', Failed_Delivery: '⚠️ فشل التوصيل'
+    Delivered: '✓ تم التوصيل', Cancelled: '✗ ملغي', Failed_Delivery: '⚠ فشل التوصيل'
   }
 
   const card = (o: Order, big = false) => {
@@ -958,7 +958,7 @@ function KitchenVendor({ rid }: { rid: number }) {
                 return (
                   <div className={`mt-3 rounded-2xl p-3.5 text-center ${stale ? 'bg-red-500/10' : 'bg-shellup'}`}>
                     <p className={`text-sm font-semibold ${stale ? 'text-red-700' : 'text-sea'}`}>
-                      {stale ? '⚠️ ' : '✅ '}في انتظار المندوب{waitMin !== null ? `، من ${waitMin} دقيقة` : ''}
+                      {stale ? '⚠ ' : '✓ '}في انتظار المندوب{waitMin !== null ? `، من ${waitMin} دقيقة` : ''}
                     </p>
                   </div>
                 )
@@ -968,8 +968,8 @@ function KitchenVendor({ rid }: { rid: number }) {
                 : d.status === 'Accepted' ? '🛵 في الطريق للمطعم'
                 : d.status === 'Picked_Up' ? '📦 استلم الطلب'
                 : d.status === 'Out_for_Delivery' ? `🚗 في الطريق للعميل${minsSince(d.out_for_delivery_at) !== null ? `، من ${minsSince(d.out_for_delivery_at)} دقيقة` : ''}`
-                : d.status === 'Delivered' ? '✅ تم التوصيل'
-                : '✅ في انتظار المندوب'
+                : d.status === 'Delivered' ? '✓ تم التوصيل'
+                : '✓ في انتظار المندوب'
               return (
                 <div className="mt-3 rounded-2xl bg-shellup p-3.5 flex items-center justify-between gap-3">
                   <div className="min-w-0">
@@ -1112,7 +1112,7 @@ function KitchenVendor({ rid }: { rid: number }) {
         <>
           {orders.length === 0 && (
             <div className="card p-6 text-center text-mist">
-              {completedToday.length > 0 ? 'مفيش طلبات مستنية، كله خلص ✅' : 'لا توجد طلبات حالياً'}
+              {completedToday.length > 0 ? 'مفيش طلبات مستنية، كله خلص ✓' : 'لا توجد طلبات حالياً'}
             </div>
           )}
 
@@ -1143,7 +1143,7 @@ function KitchenVendor({ rid }: { rid: number }) {
             <div className="flex items-center justify-between mb-3">
               <div className="flex gap-1.5">
                 <button className={`tab !text-sm ${completedView === 'delivered' ? 'tab-active' : 'bg-shellup/60'}`}
-                  onClick={() => setCompletedView('delivered')}>✅ تم التوصيل ({deliveredToday.length})</button>
+                  onClick={() => setCompletedView('delivered')}>✓ تم التوصيل ({deliveredToday.length})</button>
                 <button className={`tab !text-sm ${completedView === 'rejected' ? 'tab-active' : 'bg-shellup/60'}`}
                   onClick={() => setCompletedView('rejected')}>✗ ملغي/مرفوض ({rejectedToday.length})</button>
               </div>
