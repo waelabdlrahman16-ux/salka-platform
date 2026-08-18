@@ -259,7 +259,17 @@ export default function Admin() {
   const [driverAccounts, setDriverAccounts] = useState<{ profile_id: string; driver_id: number; email: string }[]>([])
   const [catalogAccounts, setCatalogAccounts] = useState<{ profile_id: string; name: string; email: string; role: 'catalog' | 'supervisor' | 'observer' }[]>([])
   const [newCatalogName, setNewCatalogName] = useState('')
+  // One slot, keyed by action-and-row: `instapay-41`, `cash-7`, `driver-3`.
+  // Per-row keys matter -- settling driver A must not disable driver B's button.
   const [accountBusy, setAccountBusy] = useState<string | null>(null)
+
+  // Release only if this key still owns the slot. There is a single slot, so a
+  // second action starting before the first finishes overwrites the key -- and a
+  // bare setAccountBusy(null) at the end of the first would then re-enable the
+  // second's button while its request is still in flight. Unlikely with staff
+  // working one at a time, but it is the same class of bug as everything else
+  // this audit found, and it costs one line to be correct.
+  const releaseBusy = (key: string) => setAccountBusy(prev => (prev === key ? null : prev))
   const [newCreds, setNewCreds] = useState<{ email: string; password: string } | null>(null)
   const credsRef = useDismissable(() => setNewCreds(null), !!newCreds)
   // «اتنسخ ✓» flash on the creds-modal copy button; the 1.5s timeout resets it.
@@ -1334,7 +1344,21 @@ export default function Admin() {
       danger: true,
     })) return
     setActionError('')
-    const res = await adminFinancialAction('settleCash', { driverId })
+    // WHY GUARD SOMETHING THE DATABASE ALREADY PROTECTS. settle_driver_cash
+    // zeroes cash_held, so a second call finds nothing and does nothing -- this
+    // is safe today by a property of that function, not of this button. The
+    // guard is here so the next money action added beside it inherits the habit;
+    // credit_wallet did not, and could be paid twice until it was fixed.
+    const key = `cash-${driverId}`
+    setAccountBusy(key)
+    let res
+    try {
+      res = await adminFinancialAction('settleCash', { driverId })
+    } finally {
+      // finally, so a failed request always gives the button back. Without it
+      // one dropped connection disables this driver's row until a reload.
+      releaseBusy(key)
+    }
     if (!res.ok) { setActionError(res.error); return }
     load(true)
   }
@@ -1357,7 +1381,14 @@ export default function Admin() {
       danger: true,
     })) return
     setActionError('')
-    const res = await adminFinancialAction('settleEarnings', { driverId })
+    const key = `earnings-${driverId}`
+    setAccountBusy(key)
+    let res
+    try {
+      res = await adminFinancialAction('settleEarnings', { driverId })
+    } finally {
+      releaseBusy(key)
+    }
     if (!res.ok) { setActionError(res.error); return }
     load(true)
   }
@@ -1501,7 +1532,14 @@ export default function Admin() {
   }
   async function markRefunded(orderId: number) {
     if (!await confirmSheet({ title: 'تأكيد إنك حوّلت المبلغ فعلاً للعميل؟' })) return
-    const result = await adminFinancialAction('markRefunded', { orderId })
+    const key = `refund-${orderId}`
+    setAccountBusy(key)
+    let result
+    try {
+      result = await adminFinancialAction('markRefunded', { orderId })
+    } finally {
+      releaseBusy(key)
+    }
     if (!result.ok) { await alertSheet(result.error); return }
     load(true)
   }
@@ -1622,12 +1660,17 @@ export default function Admin() {
   }
 
   async function confirmInstapayPayment(o: Order) {
-    setAccountBusy(`instapay-${o.id}`)
-    const result = await adminFinancialAction(
-      o.cod_deposit_amount != null ? 'confirmCodDeposit' : 'confirmInstapay',
-      { orderId: o.id },
-    )
-    setAccountBusy(null)
+    const key = `instapay-${o.id}`
+    setAccountBusy(key)
+    let result
+    try {
+      result = await adminFinancialAction(
+        o.cod_deposit_amount != null ? 'confirmCodDeposit' : 'confirmInstapay',
+        { orderId: o.id },
+      )
+    } finally {
+      releaseBusy(key)
+    }
     if (!result.ok) { await alertSheet(result.error); return }
     load(true)
   }
@@ -2322,18 +2365,28 @@ export default function Admin() {
                 </div>
               )}
               {CLOSED_ORDER_STATUSES.includes(o.status as OrderStatus) && showTestOrders && (
-                <button className="btn-danger !py-1.5 text-xs mt-3" onClick={async () => {
+                <button className="btn-danger !py-1.5 text-xs mt-3"
+                  disabled={accountBusy === `deltest-${o.id}`} onClick={async () => {
                   if (!await confirmSheet({ title: `حذف تجربة #${o.id} نهائياً؟`, body: 'هيتم حذف الطلب التجريبي المغلق وسجلّه المرتبط. الطلبات الحقيقية لا يمكن حذفها من هنا.', danger: true })) return
-                  const result = await adminFinancialAction('deleteTestOrder', { orderId: o.id })
+                  const key = `deltest-${o.id}`
+                  setAccountBusy(key)
+                  let result
+                  try { result = await adminFinancialAction('deleteTestOrder', { orderId: o.id }) }
+                  finally { releaseBusy(key) }
                   if (!result.ok) { await alertSheet(result.error); return }
                   await alertSheet('تم حذف الطلب التجريبي')
                   load(true)
                 }}>حذف التجربة نهائياً</button>
               )}
               {CLOSED_ORDER_STATUSES.includes(o.status as OrderStatus) && !showTestOrders && (
-                <button className="btn-ghost !py-1.5 text-xs mt-3" onClick={async () => {
+                <button className="btn-ghost !py-1.5 text-xs mt-3"
+                  disabled={accountBusy === `archive-${o.id}`} onClick={async () => {
                   if (!await confirmSheet({ title: `أرشفة الطلب #${o.id}؟`, body: 'هيختفي من القوائم اليومية، لكنه سيبقى محفوظاً بالكامل في قاعدة البيانات للمراجعة.', danger: false })) return
-                  const result = await adminFinancialAction('archiveOrder', { orderId: o.id })
+                  const key = `archive-${o.id}`
+                  setAccountBusy(key)
+                  let result
+                  try { result = await adminFinancialAction('archiveOrder', { orderId: o.id }) }
+                  finally { releaseBusy(key) }
                   if (!result.ok) { await alertSheet(result.error); return }
                   await alertSheet('تمت أرشفة الطلب')
                   load(true)
@@ -2989,7 +3042,9 @@ export default function Admin() {
                 {settlementRequests.map(sr => (
                   <div key={sr.id} className="card p-3.5 flex items-center justify-between text-sm">
                     <span className="font-semibold">{sr.drivers?.name}</span>
-                    <button className="btn-sea !py-1.5 text-sm" onClick={() => settleEarnings(sr.driver_id)}>ادفع دلوقتي</button>
+                    <button className="btn-sea !py-1.5 text-sm" disabled={accountBusy === `earnings-${sr.driver_id}`}
+                      onClick={() => settleEarnings(sr.driver_id)}>
+                      {accountBusy === `earnings-${sr.driver_id}` ? '...' : 'ادفع دلوقتي'}</button>
                   </div>
                 ))}
               </div>
@@ -3022,8 +3077,12 @@ export default function Admin() {
                     </div>
                   </div>
                   <div className="flex gap-2.5 mt-3">
-                    <button className="btn-ghost flex-1 text-sm" disabled={!(d.cash_held > 0)} onClick={() => settleCash(d.id)}>استلمت الكاش</button>
-                    <button className="btn-sea flex-1 text-sm" disabled={unpaid === 0} onClick={() => settleEarnings(d.id)}>ادفع الأرباح</button>
+                    <button className="btn-ghost flex-1 text-sm" disabled={!(d.cash_held > 0) || accountBusy === `cash-${d.id}`}
+                      onClick={() => settleCash(d.id)}>
+                      {accountBusy === `cash-${d.id}` ? '...' : 'استلمت الكاش'}</button>
+                    <button className="btn-sea flex-1 text-sm" disabled={unpaid === 0 || accountBusy === `earnings-${d.id}`}
+                      onClick={() => settleEarnings(d.id)}>
+                      {accountBusy === `earnings-${d.id}` ? '...' : 'ادفع الأرباح'}</button>
                   </div>
                 </div>
               )
@@ -3082,8 +3141,10 @@ export default function Admin() {
                       )}
                     </div>
                   </div>
-                  <button className="btn-sea w-full !py-2 text-sm mt-3" onClick={() => markRefunded(o.id)}>
-                    حوّلت المبلغ ✓
+                  <button className="btn-sea w-full !py-2 text-sm mt-3"
+                    disabled={accountBusy === `refund-${o.id}`}
+                    onClick={() => markRefunded(o.id)}>
+                    {accountBusy === `refund-${o.id}` ? '...' : 'حوّلت المبلغ ✓'}
                   </button>
                 </div>
               ))}
