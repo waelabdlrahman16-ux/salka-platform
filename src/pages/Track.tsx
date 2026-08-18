@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { describeError, edgeAction, isTransportFailure } from '../lib/rpc'
 import { customerOrderAccess } from '../lib/customerOrderAccess'
+import { useCustomerAuth } from '../lib/customerAuth'
 import InstallPrompt from '../components/InstallPrompt'
 import { markOrderDelivered } from '../lib/firstOrder'
 import { registerPush } from '../lib/push'
@@ -96,6 +97,10 @@ function fmtTime(iso: string) {
 
 export default function Track() {
   const { token } = useParams()
+  // Only to decide whether the "keep this link" hint below is worth showing.
+  // A signed-in customer already has this order in «طلباتي»; a guest's link is
+  // their only way back to it.
+  const { customer } = useCustomerAuth()
   const [data, setData] = useState<TrackData | null>(null)
   const [notFound, setNotFound] = useState(false)
   const [cancelling, setCancelling] = useState(false)
@@ -702,6 +707,20 @@ export default function Track() {
               </p>
             )
           })()}
+
+          {/* MOVED HERE from the logged-out «طلباتي» screen, which told people
+              to keep this link on the one page they only reach AFTER losing it
+              -- advice that arrives too late to act on. Here the link is in
+              their address bar while they read it. docs/copy.md rule 2.
+
+              Guests only, and only while the order is live: once delivered the
+              link stops mattering, and a signed-in customer already has the
+              order in «طلباتي». */}
+          {!customer && current !== 'Delivered' && (
+            <p className="text-xs text-mist mt-3">
+              احفظ الرابط ده — بيه تتابع طلبك في أي وقت.
+            </p>
+          )}
 
           {/* Four flat bars said "you are somewhere in three thirds". An icon
               per stage says which stage, and the icons are the ones the customer
