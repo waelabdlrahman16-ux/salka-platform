@@ -1001,18 +1001,28 @@ export default function Admin() {
   }
 
   async function createVendorLogin(restaurantId: number) {
-    setAccountBusy(`vendor-${restaurantId}`)
-    const result = await callAccountsFn({ action: 'create_vendor_login', restaurant_id: restaurantId })
-    setAccountBusy(null)
+    const busyKey = `vendor-${restaurantId}`
+    setAccountBusy(busyKey)
+    let result
+    try {
+      result = await callAccountsFn({ action: 'create_vendor_login', restaurant_id: restaurantId })
+    } finally {
+      releaseBusy(busyKey)
+    }
     if (result.error) { await alertSheet('حصل خطأ: ' + result.error); return }
     setNewCreds({ email: result.email, password: result.password })
     load(true)
   }
 
   async function createDriverLogin(driverId: number) {
-    setAccountBusy(`driver-${driverId}`)
-    const result = await callAccountsFn({ action: 'create_driver_login', driver_id: driverId })
-    setAccountBusy(null)
+    const busyKey = `driver-${driverId}`
+    setAccountBusy(busyKey)
+    let result
+    try {
+      result = await callAccountsFn({ action: 'create_driver_login', driver_id: driverId })
+    } finally {
+      releaseBusy(busyKey)
+    }
     if (result.error) { await alertSheet('حصل خطأ: ' + result.error); return }
     setNewCreds({ email: result.email, password: result.password })
     load(true)
@@ -1021,9 +1031,14 @@ export default function Admin() {
   async function createCatalogLogin() {
     const name = newCatalogName.trim()
     if (!name) return
-    setAccountBusy('catalog-new')
-    const result = await callAccountsFn({ action: 'create_catalog_login', name })
-    setAccountBusy(null)
+    const busyKey = 'catalog-new'
+    setAccountBusy(busyKey)
+    let result
+    try {
+      result = await callAccountsFn({ action: 'create_catalog_login', name })
+    } finally {
+      releaseBusy(busyKey)
+    }
     if (result.error) { await alertSheet('حصل خطأ: ' + result.error); return }
     setNewCatalogName('')
     setNewCreds({ email: result.email, password: result.password })
@@ -1037,9 +1052,14 @@ export default function Admin() {
   async function createObserverLogin() {
     const name = newCatalogName.trim()
     if (!name) return
-    setAccountBusy('observer-new')
-    const result = await callAccountsFn({ action: 'create_observer_login', name })
-    setAccountBusy(null)
+    const busyKey = 'observer-new'
+    setAccountBusy(busyKey)
+    let result
+    try {
+      result = await callAccountsFn({ action: 'create_observer_login', name })
+    } finally {
+      releaseBusy(busyKey)
+    }
     if (result.error) { await alertSheet('حصل خطأ: ' + result.error); return }
     setNewCatalogName('')
     setNewCreds({ email: result.email, password: result.password })
@@ -1059,15 +1079,20 @@ export default function Admin() {
       body: <>مش هيقدر يدخل تاني.<br /><br />سجل الطلبات والأرباح هيفضل زي ما هو.</>,
       danger: true,
     })) return
-    setAccountBusy(profileId)
-    const res = await adminAccountDriverAction('deleteStaff', { profileId }, {
-      cannot_delete_self: 'مينفعش تلغي حسابك انت',
-      cannot_delete_admin: 'مينفعش تلغي حساب إدارة من هنا',
-      driver_has_live_delivery: 'المندوب ده معاه طلب شغال دلوقتي. سيبه يخلّصه أو اسحب الطلب منه الأول',
-      profile_not_found: 'الحساب ده مش موجود. حدّث الصفحة',
-      admin_only: 'مش من صلاحياتك',
-    })
-    setAccountBusy(null)
+    const busyKey = profileId
+    setAccountBusy(busyKey)
+    let res
+    try {
+      res = await adminAccountDriverAction('deleteStaff', { profileId }, {
+        cannot_delete_self: 'مينفعش تلغي حسابك انت',
+        cannot_delete_admin: 'مينفعش تلغي حساب إدارة من هنا',
+        driver_has_live_delivery: 'المندوب ده معاه طلب شغال دلوقتي. سيبه يخلّصه أو اسحب الطلب منه الأول',
+        profile_not_found: 'الحساب ده مش موجود. حدّث الصفحة',
+        admin_only: 'مش من صلاحياتك',
+      })
+    } finally {
+      releaseBusy(busyKey)
+    }
     if (!res.ok) {
       // actionError renders at the very top of the page, above both tab rows,
       // while the accounts list is hundreds of pixels down -- so a refusal here
@@ -1079,9 +1104,14 @@ export default function Admin() {
           body: 'لو ألغيت الحساب مش هتقدر تسوّي الكاش من الشاشة دي بعد كده. متأكد؟',
           danger: true,
         })) return
-        setAccountBusy(profileId)
-        const forced = await adminAccountDriverAction('deleteStaff', { profileId, force: true })
-        setAccountBusy(null)
+        const busyKey = profileId
+        setAccountBusy(busyKey)
+        let forced
+        try {
+          forced = await adminAccountDriverAction('deleteStaff', { profileId, force: true })
+        } finally {
+          releaseBusy(busyKey)
+        }
         if (!forced.ok) { setActionError(forced.error); return }
         setActionError(''); load(true)
         return
@@ -1093,9 +1123,14 @@ export default function Admin() {
   }
 
   async function resetPassword(profileId: string) {
-    setAccountBusy(profileId)
-    const result = await callAccountsFn({ action: 'reset_password', profile_id: profileId })
-    setAccountBusy(null)
+    const busyKey = profileId
+    setAccountBusy(busyKey)
+    let result
+    try {
+      result = await callAccountsFn({ action: 'reset_password', profile_id: profileId })
+    } finally {
+      releaseBusy(busyKey)
+    }
     if (result.error) { await alertSheet('حصل خطأ: ' + result.error); return }
     setNewCreds({ email: '(نفس الإيميل)', password: result.password })
   }
@@ -1108,9 +1143,14 @@ export default function Admin() {
       validate: v => v.length >= 8 ? null : 'لازم ٨ حروف على الأقل',
     })
     if (!pw) return
-    setAccountBusy(profileId)
-    const result = await callAccountsFn({ action: 'reset_password', profile_id: profileId, custom_password: pw })
-    setAccountBusy(null)
+    const busyKey = profileId
+    setAccountBusy(busyKey)
+    let result
+    try {
+      result = await callAccountsFn({ action: 'reset_password', profile_id: profileId, custom_password: pw })
+    } finally {
+      releaseBusy(busyKey)
+    }
     if (result.error) { await alertSheet('حصل خطأ: ' + result.error); return }
     await alertSheet(<>تم تغيير كلمة السر، <bdi dir="ltr" className="font-mono">{pw}</bdi></>)
   }
@@ -1118,9 +1158,14 @@ export default function Admin() {
   async function changeEmail(profileId: string, currentEmail: string) {
     const newEmail = await promptSheet({ title: 'الإيميل الجديد', initial: currentEmail, dir: 'ltr', inputMode: 'text' })
     if (!newEmail || newEmail.trim() === currentEmail) return
-    setAccountBusy(profileId)
-    const result = await callAccountsFn({ action: 'update_email', profile_id: profileId, new_email: newEmail.trim() })
-    setAccountBusy(null)
+    const busyKey = profileId
+    setAccountBusy(busyKey)
+    let result
+    try {
+      result = await callAccountsFn({ action: 'update_email', profile_id: profileId, new_email: newEmail.trim() })
+    } finally {
+      releaseBusy(busyKey)
+    }
     if (result.error) { await alertSheet('حصل خطأ: ' + result.error); return }
     await alertSheet('تم تغيير الإيميل')
     load(true)
