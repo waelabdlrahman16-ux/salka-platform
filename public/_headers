@@ -19,7 +19,23 @@
 # React renders as a style attribute. Removing them all is a real refactor and
 # buys little: a style attribute cannot execute script.
 #
-# EVERY ORIGIN BELOW WAS TRACED IN THE SOURCE, none guessed:
+# TWO ORIGINS THAT GREPPING THE SOURCE COULD NEVER HAVE FOUND, and which
+# report-only caught on its first day live:
+#
+#   auth.gosalka.com  A Supabase custom domain. It is not in the code at all --
+#                     638 image_url/logo_url values in the DATABASE point at it
+#                     (626 menu items, 12 restaurant logos), against 242 rows
+#                     still on the *.supabase.co host. Enforcing the first
+#                     version of this policy would have blocked most of the food
+#                     photography on a food-delivery storefront. Content in a
+#                     database is part of the origin surface; the code is not the
+#                     whole picture.
+#
+#   static.cloudflareinsights.com  Cloudflare Web Analytics beacon, injected at
+#                     the edge like the challenge script but from a different
+#                     host, so 'self' did not cover it.
+#
+# EVERY OTHER ORIGIN WAS TRACED IN THE SOURCE, none guessed:
 #   www.gstatic.com          firebase-messaging-sw.js importScripts the FCM SDK
 #   fonts.googleapis.com     IBM Plex Sans Arabic stylesheet, index.html
 #   fonts.gstatic.com        the woff2 that stylesheet points at
@@ -44,4 +60,4 @@
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(self)
-  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://pqpnwxyevrsipklzmwex.supabase.co https://*.tile.openstreetmap.org; connect-src 'self' https://pqpnwxyevrsipklzmwex.supabase.co wss://pqpnwxyevrsipklzmwex.supabase.co https://fcmregistrations.googleapis.com https://firebaseinstallations.googleapis.com https://o4511834207682560.ingest.de.sentry.io; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; report-uri https://o4511834207682560.ingest.de.sentry.io/api/4511834268762192/security/?sentry_key=0db2410bf037e80bba50613f1685114a
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://pqpnwxyevrsipklzmwex.supabase.co https://auth.gosalka.com https://*.tile.openstreetmap.org; connect-src 'self' https://pqpnwxyevrsipklzmwex.supabase.co wss://pqpnwxyevrsipklzmwex.supabase.co https://auth.gosalka.com wss://auth.gosalka.com https://fcmregistrations.googleapis.com https://firebaseinstallations.googleapis.com https://o4511834207682560.ingest.de.sentry.io; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; report-uri https://o4511834207682560.ingest.de.sentry.io/api/4511834268762192/security/?sentry_key=0db2410bf037e80bba50613f1685114a
