@@ -70,7 +70,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
     setBusy(true)
     const { error } = await q
     setBusy(false)
-    if (error) { setWriteError(`${what} — ${error.message ?? 'الحفظ فشل'}`); return false }
+    if (error) { setWriteError(`${what}: ${error.message ?? 'الحفظ فشل'}`); return false }
     setWriteError('')
     return true
   }
@@ -152,7 +152,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
     const { data: sz, error: szErr } = await supabase.from('menu_item_sizes').select('*').eq('menu_item_id', item.id).order('display_order').order('id')
     const { data: cb, error: cbErr } = await supabase.from('menu_item_combos').select('*').eq('menu_item_id', item.id).order('display_order').order('id')
     const { data: gr, error: grErr } = await supabase.from('menu_item_addon_groups').select('*').eq('menu_item_id', item.id).order('display_order').order('id')
-    if (szErr || cbErr || grErr) { setLoadError('مش قادرين نجيب الأحجام والإضافات — ماتضيفش حاجة قبل ما تحدّث، عشان ما تتكررش'); return }
+    if (szErr || cbErr || grErr) { setLoadError('مش قادرين نجيب الأحجام والإضافات، ماتضيفش حاجة قبل ما تحدّث، عشان ما تتكررش'); return }
 
     setSizes(sz ?? [])
     setCombos((cb as MenuItemCombo[]) ?? [])
@@ -161,7 +161,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
     let addonRows: MenuItemAddon[] = []
     if (groupIds.length) {
       const { data: ad, error: adErr } = await supabase.from('menu_item_addons').select('*').in('group_id', groupIds).order('display_order').order('id')
-      if (adErr) { setLoadError('مش قادرين نجيب الإضافات — ماتضيفش حاجة قبل ما تحدّث، عشان ما تتكررش'); return }
+      if (adErr) { setLoadError('مش قادرين نجيب الإضافات، ماتضيفش حاجة قبل ما تحدّث، عشان ما تتكررش'); return }
       addonRows = ad ?? []
     }
     setAddons(addonRows)
@@ -213,7 +213,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
     if (!res.ok) {
       setDeleteBlockedReason(
         res.code === 'item_has_order_history'
-          ? 'الصنف ده اتطلب قبل كده فمينفعش يتمسح خالص — علّمه "غير متاح" بدل كده عشان محدش يقدر يطلبه تاني.'
+          ? 'الصنف ده اتطلب قبل كده فمينفعش يتمسح خالص. علّمه "غير متاح" بدل كده عشان محدش يقدر يطلبه تاني.'
           : 'حصل خطأ، جرب تاني'
       )
       return
@@ -339,7 +339,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
       display_order: groups.length
     }).select('id').single()
     setBusy(false)
-    if (groupErr) { setWriteError(`إضافة مجموعة — ${groupErr.message}`); return }
+    if (groupErr) { setWriteError(`إضافة مجموعة: ${groupErr.message}`); return }
     setWriteError('')
     await loadOptions()
     // Drop the cursor straight into the group that was just made, so the next
@@ -481,7 +481,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
           // the smallest and wrong for the rest. Guessing a multiple would be
           // silently wrong; identical prices are loudly wrong until fixed.
           warning={sizes.length > 1 && new Set(sizes.map(s => Number(s.price))).size < sizes.length
-            ? 'فيه حجمين بنفس السعر — عدّلهم.' : null}
+            ? 'فيه حجمين بنفس السعر، عدّلهم.' : null}
           addPlaceholder="حجم تاني" disabled={busy}
           onApplyPreset={applySizePreset} onAdd={addSizeNamed}
           onRemove={removeSize} onPriceChange={updateSizePrice} onNameChange={updateSizeName}
@@ -489,7 +489,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
 
         {openSection === 'combo' && <OptionRowsCard
           title="الكومبو"
-          hint="سعر الكومبو كامل (شامل البطاطس والمشروب). العميل يختار ساندوتش لوحده أو كومبو — مش الاتنين."
+          hint="سعر الكومبو كامل (شامل البطاطس والمشروب). العميل يختار ساندوتش لوحده أو كومبو، مش الاتنين."
           rows={combos.map(c => ({ id: c.id, name: c.name, price: Number(c.price) }))}
           // The name is the fries-and-cola size, not the sandwich's.
           presets={[{ label: 'ابدأ بـ وسط / كبير', names: ['وسط', 'كبير'] }]}
@@ -501,7 +501,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
           warning={(() => {
             const base = Number(effectivePrice) || 0
             const cheap = combos.filter(c => Number(c.price) <= base)
-            return cheap.length ? `${cheap.map(c => c.name).join('، ')} — السعر مش أعلى من ${base} ج.م، يعني الكومبو ببلاش. لازم تعدّل السعر قبل ما تحفظ.` : null
+            return cheap.length ? `${cheap.map(c => c.name).join('، ')}، السعر مش أعلى من ${base} ج.م، يعني الكومبو ببلاش. لازم تعدّل السعر قبل ما تحفظ.` : null
           })()}
           addPlaceholder="حجم تاني" disabled={busy}
           onApplyPreset={applyComboPreset} onAdd={addCombo}

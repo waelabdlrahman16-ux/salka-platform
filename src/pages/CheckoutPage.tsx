@@ -369,9 +369,9 @@ export default function CheckoutPage() {
         // and have the reply disappear in a lift or a tunnel. Saying "it was not
         // registered" here is how you get two identical orders and one angry
         // restaurant, so this branch sends them to look before re-ordering.
-        err?.message === 'network' ? 'مش متأكدين إن الطلب وصل ولا لأ — النت قطع. افتح «طلباتي» وشوف قبل ما تطلب تاني، عشان ماينزلش طلبين'
+        err?.message === 'network' ? 'النت قطع ومش متأكدين إن الطلب وصل. افتح «طلباتي» وشوف قبل ما تطلب تاني، عشان ماينزلش طلبين'
         : err?.message.includes('slot_full') ? 'الفترة دي اتملت، اختار فترة تانية'
-        : err?.message.includes('invalid_combo') ? 'فيه كومبو في عربتك مابقاش متاح — امسح الصنف وضيفه تاني'
+        : err?.message.includes('invalid_combo') ? 'فيه كومبو في عربتك مابقاش متاح. امسح الصنف وضيفه تاني'
         : err?.message.includes('restaurant_closed') ? 'المكان ده قفل قبل ما تأكد الطلب، جرب تاني بعدين'
         : err?.message.includes('vendor_not_covering_compound') ? 'المكان ده مش بيوصل لمنطقتك للأسف'
         : err?.message.includes('item_not_available_now') ? 'في صنف في عربتك مش متاح دلوقتي (وقت محدود)، شيله وجرب تاني'
@@ -440,7 +440,7 @@ export default function CheckoutPage() {
 
       {hasRx && (
         <p className="text-sandink text-sm mb-4 bg-sand/10 rounded-xl p-3">
-          💊 في صنف محتاج روشتة طبية — الصيدلية هتتواصل معاك تليفونيًا للتأكيد قبل التجهيز
+          💊 في صنف محتاج روشتة طبية، الصيدلية هتتواصل معاك تليفونيًا للتأكيد قبل التجهيز
         </p>
       )}
 
@@ -551,7 +551,7 @@ export default function CheckoutPage() {
               onClick={() => setAddressExpanded(true)}>
               <span className="text-2xl shrink-0">📍</span>
               <span className="flex-1 min-w-0">
-                <span className="block font-bold truncate">{selectedCompound.name}{unit.trim() ? ` — شاليه ${unit}` : ''}</span>
+                <span className="block font-bold truncate">{selectedCompound.name}{unit.trim() ? `، شاليه ${unit}` : ''}</span>
                 {notes.trim() && <span className="block text-xs text-mist truncate mt-0.5">{notes}</span>}
               </span>
               <span className="text-sea text-sm font-semibold shrink-0">تغيير</span>
@@ -587,7 +587,7 @@ export default function CheckoutPage() {
 
         {optionsFailed && (
           <div className="card p-3 border-red-400/50 bg-red-500/5 flex items-center justify-between gap-3">
-            <p className="text-sm text-red-700 font-semibold">مش قادرين نجيب تفاصيل الأصناف — مش هينفع نأكد الطلب دلوقتي</p>
+            <p className="text-sm text-red-700 font-semibold">مش قادرين نجيب تفاصيل الأصناف، مش هينفع نأكد الطلب دلوقتي</p>
             <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0"
               onClick={() => setOptionsAttempt(a => a + 1)}>جرب تاني</button>
           </div>
@@ -699,7 +699,7 @@ export default function CheckoutPage() {
               Says the whole amount, not half: InstaPay is prepaid in full. */}
           {paymentMethod === 'instapay' && serviceFee !== null && deliveryFee !== null && (
             <p className="text-xs text-sandink -mt-1 px-1">
-              هتحوّل {finalTotal} ج.م كاملة على InstaPay قبل ما المطعم يبدأ التحضير — هنوريك الـ QR والرقم بعد التأكيد، ولو غيّرت رأيك تقدر ترجع كاش من نفس الشاشة
+              هتحوّل {finalTotal} ج.م كاملة على InstaPay قبل ما المطعم يبدأ التحضير، هنوريك الـ QR والرقم بعد التأكيد، ولو غيّرت رأيك تقدر ترجع كاش من نفس الشاشة
             </p>
           )}
         </div>
@@ -758,7 +758,7 @@ export default function CheckoutPage() {
 
       {compoundsFailed && compounds.length === 0 && (
         <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">
-          مش قادرين نجيب قايمة الأماكن دلوقتي —{' '}
+          مش قادرين نجيب قايمة الأماكن دلوقتي:{' '}
           <button className="underline font-semibold" onClick={() => window.location.reload()}>حدّث الصفحة</button>
         </p>
       )}
@@ -767,7 +767,7 @@ export default function CheckoutPage() {
           credit -- see the lookup above. */}
       {walletFailed && (
         <p className="text-sm text-sandink bg-sand/10 rounded-xl p-3 mb-4">
-          مش قادرين نشوف رصيد محفظتك دلوقتي — رصيدك مش هيتخصم من الطلب ده
+          مش قادرين نشوف رصيد محفظتك دلوقتي، رصيدك مش هيتخصم من الطلب ده
         </p>
       )}
 
@@ -811,7 +811,7 @@ export default function CheckoutPage() {
           // with no hint that the list itself failed to load, while the
           // honest message + reload button sat in a separate banner far
           // below the fold, easy to miss.
-          : compoundsFailed ? { text: 'مش قادرين نجيب الأماكن دلوقتي — حدّث الصفحة' }
+          : compoundsFailed ? { text: 'مش قادرين نجيب الأماكن دلوقتي. حدّث الصفحة' }
           : !selectedCompound ? { text: 'اختار مكانك', field: `${fid}-3` }
           : !unit.trim() ? { text: 'اكتب رقم الشاليه / الفيلا', field: `${fid}-4`, touch: 'unit' }
           : !optionsLoaded ? { text: 'بنحمّل تفاصيل الأصناف…' }
@@ -821,10 +821,10 @@ export default function CheckoutPage() {
           // nothing to select, so telling the customer to select one is a
           // false instruction with no way forward.
           : (scheduled && !slot) ? (slots.length === 0
-              ? { text: 'مفيش فترات توصيل متاحة دلوقتي — جرب تاني بعد شوية' }
+              ? { text: 'مفيش فترات توصيل متاحة دلوقتي. جرب تاني بعد شوية' }
               : { text: 'اختار فترة التوصيل' })
           : (paymentMethod === 'cod' && codThresholdFailed)
-            ? { text: 'مش قادرين نتأكد من شروط الدفع كاش — جرب تاني أو اختار InstaPay' }
+            ? { text: 'مش قادرين نتأكد من شروط الدفع كاش. جرب تاني أو اختار InstaPay' }
           : null
         if (!m) return null
         const cls = 'w-full text-sm text-sandink bg-sand/10 rounded-xl p-3 mb-3 text-center'

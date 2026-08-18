@@ -221,7 +221,7 @@ export default function MenuItemsPanel({
     <div className="mt-4">
       {loadFailed && (
         <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-2.5 mb-2" role="alert">
-          مش قادرين نحمّل الأقسام — جرب تاني.
+          مش قادرين نحمّل الأقسام. جرب تاني.
         </p>
       )}
       {catError && (
@@ -334,7 +334,7 @@ export default function MenuItemsPanel({
               of each other. This is where that stops. */}
           {dupWarning && (
             <p className="text-xs text-sandink bg-sandink/10 rounded-lg p-2">
-              ⚠️ في قسم اسمه «{dupWarning}» عندك —{' '}
+              ⚠️ في قسم اسمه «{dupWarning}» عندك:{' '}
               <button className="underline font-semibold" onClick={() => { setActive(dupWarning); setAdding(false); setNewCat('') }}>
                 استخدمه
               </button>
@@ -366,7 +366,7 @@ export default function MenuItemsPanel({
         </div>
       )}
       {current === ALL && (
-        <p className="text-xs text-mist mb-2.5">افتح قسم بعينه عشان تضيف صنف فيه — «الكل» بس للعرض والتعديل</p>
+        <p className="text-xs text-mist mb-2.5">افتح قسم بعينه عشان تضيف صنف فيه، «الكل» بس للعرض والتعديل</p>
       )}
 
       {/* The category discount belongs beside its category, not in a separate
@@ -381,7 +381,7 @@ export default function MenuItemsPanel({
         <p className="text-mist text-center text-sm py-6">
           {q ? 'مفيش أصناف بالبحث ده'
              : current === ALL ? 'المطعم ده لسه من غير أصناف'
-             : current ? 'القسم ده لسه فاضي — ضيف أول صنف'
+             : current ? 'القسم ده لسه فاضي. ضيف أول صنف'
              : 'مفيش أصناف'}
         </p>
       ) : (

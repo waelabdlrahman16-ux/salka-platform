@@ -41,14 +41,14 @@ export default function BasicInfoCard({
           <label className="label !mb-0.5" htmlFor={`${fid}-4`}>السعر</label>
           {priceLocked ? (
             <input className="field !h-8 !py-1 text-xs text-center !border-dashed bg-shellup text-mist" readOnly
-              value={`من ${effectivePrice}`} aria-label="السعر — محسوب من الأحجام" />
+              value={`من ${effectivePrice}`} aria-label="السعر، محسوب من الأحجام" />
           ) : (
             <input id={`${fid}-4`} className="field !h-8 !py-1 text-sm text-center" type="number" value={price} onChange={e => setPrice(e.target.value)} />
           )}
         </div>
       </div>
       {priceLocked && (
-        <p className="text-[11px] text-mist -mt-1.5 mb-2.5">ⓘ السعر بيتحسب من أقل حجم دلوقتي — عدّل من الأحجام تحت.</p>
+        <p className="text-[11px] text-mist -mt-1.5 mb-2.5">ⓘ السعر بيتحسب من أقل حجم دلوقتي. عدّل من الأحجام تحت.</p>
       )}
 
       <label className="text-xs text-sea cursor-pointer block mb-2.5">

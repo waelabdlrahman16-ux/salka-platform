@@ -79,6 +79,18 @@ Before adding a string, grep for a similar one already in the app and copy its
 shape. The vocabulary here was written by people who run this business in Egypt;
 matching it is more reliable than composing fresh.
 
+**No em dashes in Arabic copy.**
+The em dash is an English punctuation mark. 303 of them had accumulated across
+the app; they are gone. What replaces one depends on what follows it:
+
+  full stop   before an imperative -- «المكان ده قفل. جرب تاني بعدين»
+  «،»         before a continuing clause -- «الطلب اتحرك خلاص، مش هينفع نغيّر»
+  «:»         before a value or an error -- «الحفظ فشل: ${error.message}»
+
+Two uses of «—» are NOT punctuation and stay: the placeholder for an empty cell
+(«{value ?? '—'}»), and separators between data fields in staff tables. Twelve
+of those remain and are correct.
+
 ## Enforcement
 
 None, deliberately. This is a written rule, not a CI check -- Arabic sentence

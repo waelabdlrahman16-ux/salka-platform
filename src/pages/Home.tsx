@@ -272,7 +272,7 @@ export default function Home() {
       if (msg) setLocationError(msg)
     }
     const watchdog = setTimeout(
-      () => finish('الموقع اتأخر — اكتب اسم مكانك تحت'),
+      () => finish('الموقع اتأخر. اكتب اسم مكانك تحت'),
       20000
     )
 
@@ -313,13 +313,13 @@ export default function Home() {
         const accKm = accuracy / 1000
         if (accuracy > 1000) {
           setNearby(null)
-          setLocationError(`تحديد الموقع مش دقيق (نطاق خطأ حوالي ${accKm >= 1 ? `${Math.round(accKm)} كم` : `${Math.round(accuracy)} متر`}) — دوّر على اسم مكانك تحت، هيبقى أدق.`)
+          setLocationError(`تحديد الموقع مش دقيق (نطاق خطأ حوالي ${accKm >= 1 ? `${Math.round(accKm)} كم` : `${Math.round(accuracy)} متر`}). دوّر على اسم مكانك تحت، هيبقى أدق.`)
           finish()
           return
         }
         if (nearestKm !== null && nearestKm > 15) {
           setNearby(null)
-          setLocationError(`الموقع اللي وصلنا بيه بعيد عن كل أماكننا (أقربها ${Math.round(nearestKm)} كم) — دوّر على اسم مكانك تحت.`)
+          setLocationError(`الموقع اللي وصلنا بيه بعيد عن كل أماكننا (أقربها ${Math.round(nearestKm)} كم). دوّر على اسم مكانك تحت.`)
           finish()
           return
         }
@@ -339,10 +339,10 @@ export default function Home() {
         // they could not carry out. Never send someone somewhere they cannot go.
         finish(
           err.code === err.PERMISSION_DENIED
-            ? 'مفيش مشكلة — اكتب اسم مكانك تحت وهتلاقيه'
+            ? 'مفيش مشكلة. اكتب اسم مكانك تحت وهتلاقيه'
             : err.code === err.TIMEOUT
-              ? 'الموقع اتأخر — اكتب اسم مكانك تحت، أو جرب تاني'
-              : 'مش قادرين نوصل لموقعك — اكتب اسم مكانك تحت'
+              ? 'الموقع اتأخر. اكتب اسم مكانك تحت، أو جرب تاني'
+              : 'مش قادرين نوصل لموقعك. اكتب اسم مكانك تحت'
         )
       },
       // 12s, not 15: it has to expire comfortably inside the 20s watchdog so
@@ -507,7 +507,7 @@ export default function Home() {
       {!loading && !compoundId && compoundsFailed && (
         <div className="card p-4 mb-3 text-center">
           <p className="font-semibold text-sm">مش قادرين نحمّل الأماكن</p>
-          <p className="text-xs text-mist mt-1 mb-3">اتأكد إن النت شغال وجرب تاني — تقدر تتفرج على المطاعم دلوقتي.</p>
+          <p className="text-xs text-mist mt-1 mb-3">اتأكد إن النت شغال وجرب تاني. تقدر تتفرج على المطاعم دلوقتي.</p>
           <button className="btn-sea !py-2 !px-5 text-sm" onClick={loadCompounds}>جرب تاني</button>
         </div>
       )}
@@ -553,7 +553,7 @@ export default function Home() {
               {foodSearching && <p className="text-mist text-sm py-4">بندوّر…</p>}
               {!foodSearching && foodHits.length === 0 && matchedVendors.length === 0 && (
                 <p className="text-mist text-sm py-6 text-center">
-                  مفيش نتائج لـ «{foodQ.trim()}» — جرب اسم تاني
+                  مفيش نتائج لـ «{foodQ.trim()}». جرب اسم تاني
                 </p>
               )}
 

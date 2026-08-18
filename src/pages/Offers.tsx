@@ -146,7 +146,7 @@ export default function Offers() {
       )}
 
       {!failed && offers?.length === 0 && (
-        <p className="text-mist text-center py-10">مفيش عروض شغالة دلوقتي — تابعنا هيكون في عروض قريب</p>
+        <p className="text-mist text-center py-10">مفيش عروض شغالة دلوقتي. تابعنا هيكون في عروض قريب</p>
       )}
 
       <div className="space-y-3">

@@ -91,7 +91,7 @@ export default function Supervisor() {
       adminReport<LiveDelivery[]>('liveDeliveries'),
     ])
     if (o.error || a.error || d.error) {
-      setError('مش قادرين نحمّل الطلبات دلوقتي — اتأكد من النت')
+      setError('مش قادرين نحمّل الطلبات دلوقتي. اتأكد من النت')
       setLoading(false)
       return
     }
@@ -275,7 +275,7 @@ export default function Supervisor() {
       {/* Said plainly rather than left to be discovered by pressing something
           that fails. The database refuses these; this is just honesty. */}
       <p className="text-xs text-mist bg-shellup rounded-xl p-3 mb-4 leading-relaxed">
-        الطلبات والتوصيل كلها عندك — المطاعم والصيدلية والماركت. الفلوس (تأكيد
+        الطلبات والتوصيل كلها عندك، المطاعم والصيدلية والماركت. الفلوس (تأكيد
         التحويلات، تسوية كاش المندوبين، الاستردادات) عند الإدارة.
       </p>
 
@@ -292,7 +292,7 @@ export default function Supervisor() {
           <div className="space-y-2.5">
             {escalations.map(a => (
               <div key={a.id} className="bg-night border border-line rounded-xl p-3">
-                <p className="font-semibold text-sm">طلب #{a.order_id} — {a.orders?.restaurants?.name}</p>
+                <p className="font-semibold text-sm">طلب #{a.order_id}: {a.orders?.restaurants?.name}</p>
                 <p className="text-xs text-mist mt-0.5">
                   🛵 {a.drivers?.name} · 👤 {a.orders?.customer_name} ·{' '}
                   <a className="text-sea" dir="ltr" href={`tel:${a.orders?.customer_phone}`}>{a.orders?.customer_phone}</a>
@@ -362,7 +362,7 @@ export default function Supervisor() {
                 </button>
                 <button className="w-full text-xs text-red-600 font-semibold mt-2.5 py-1"
                   onClick={() => cancelOrder(o)}>
-                  مش لاقي الطلب — الغِ الطلب
+                  مش لاقي الطلب. الغِ الطلب
                 </button>
               </div>
             ))}
@@ -422,7 +422,7 @@ export default function Supervisor() {
 
             <button className="w-full text-xs text-red-600 font-semibold mt-2.5 py-1"
               onClick={() => cancelOrder(o)}>
-              {vendorNoun(o.restaurants?.vendor_type)} رفض / مش هينفع — الغِ الطلب
+              {vendorNoun(o.restaurants?.vendor_type)} رفض / مش هينفع. الغِ الطلب
             </button>
           </div>
         ))}
@@ -596,7 +596,7 @@ function QuoteCard({ order, addr, busy, onConfirm, onCancel }: {
 
       {urgent && (
         <p className={`mt-2 text-xs font-bold ${late ? 'text-red-700' : 'text-sandink'}`}>
-          {late ? 'عدّى وعد الـ10 دقايق — سعّره فورًا' : 'اتصل وسعّر دلوقتي قبل ما يعدّي 10 دقايق'}
+          {late ? 'عدّى وعد الـ10 دقايق. سعّره فورًا' : 'اتصل وسعّر دلوقتي قبل ما يعدّي 10 دقايق'}
         </p>
       )}
 
@@ -624,12 +624,12 @@ function QuoteCard({ order, addr, busy, onConfirm, onCancel }: {
           </button>
         </div>
         <p className="text-[11px] text-mist mt-2 pt-2 border-t border-dashed border-linestrong">
-          بعد التأكيد هيظهر اللي العميل هيدفعه — محسوب من السيرفر.
+          بعد التأكيد هيظهر اللي العميل هيدفعه، محسوب من السيرفر.
         </p>
       </div>
 
       <button className="w-full text-xs text-red-600 font-semibold mt-2.5 py-1" onClick={onCancel}>
-        مش لاقي الطلب — الغِ الطلب
+        مش لاقي الطلب. الغِ الطلب
       </button>
     </div>
   )

@@ -141,7 +141,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
     set(names.map(n => ({ id: draftRowSeq--, name: n, price: Number(form.price) || 0 })))
 
   const sizeWarning = sizes.length > 1 && new Set(sizes.map(s => s.price)).size < sizes.length
-    ? 'في حجمين بنفس السعر — راجعهم قبل ما تحفظ'
+    ? 'في حجمين بنفس السعر. راجعهم قبل ما تحفظ'
     : null
   // A combo at or below the item's own price hands over its fries and drink
   // for free, on every order, forever -- place_order uses the combo price as
@@ -151,7 +151,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
   const comboBlocking = combos.length > 0 && Number(effectivePrice) > 0
     && combos.some(c => c.price <= Number(effectivePrice))
   const comboWarning = comboBlocking
-    ? 'في كومبو بسعر أقل من أو يساوي سعر الصنف — يبقى بتديه ببلاش. لازم تعدّل السعر قبل ما تحفظ.'
+    ? 'في كومبو بسعر أقل من أو يساوي سعر الصنف، يبقى بتديه ببلاش. لازم تعدّل السعر قبل ما تحفظ.'
     : null
 
   const valid = form.name.trim() && form.category.trim() && effectivePrice && Number(effectivePrice) > 0
@@ -196,7 +196,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
       available_from: form.hasWindow ? form.availFrom : null,
       available_until: form.hasWindow ? form.availUntil : null
     }).select('*').single()
-    if (error) { setSaving(false); setFormError(`الحفظ فشل — ${error.message}`); return }
+    if (error) { setSaving(false); setFormError(`الحفظ فشل: ${error.message}`); return }
 
     const itemId = (created as MenuItem).id
     // Sizes and combos can only be written now that the item has an id.
@@ -218,7 +218,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
         })))
       if (sizeErr) {
         setSaving(false)
-        setFormError(`الصنف اتحفظ بس الأحجام فشلت — افتحه وظبّطها. (${sizeErr.message})`)
+        setFormError(`الصنف اتحفظ بس الأحجام فشلت. افتحه وظبّطها. (${sizeErr.message})`)
         onSaved(); return
       }
     }
@@ -230,7 +230,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
         })))
       if (comboErr) {
         setSaving(false)
-        setFormError(`الصنف والأحجام اتحفظوا بس الكومبو فشل — افتحه وظبّطه. (${comboErr.message})`)
+        setFormError(`الصنف والأحجام اتحفظوا بس الكومبو فشل. افتحه وظبّطه. (${comboErr.message})`)
         onSaved(); return
       }
     }
@@ -261,7 +261,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
 
       if (groupErr || !savedGroup) {
         setSaving(false)
-        setFormError(`الصنف اتحفظ لكن مجموعة الاختيارات «${name}» ما اتحفظتش — افتحه وظبّطها. (${groupErr?.message || 'unknown error'})`)
+        setFormError(`الصنف اتحفظ لكن مجموعة الاختيارات «${name}» ما اتحفظتش. افتحه وظبّطها. (${groupErr?.message || 'unknown error'})`)
         onSaved()
         return
       }
@@ -277,7 +277,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
       )
       if (choicesErr) {
         setSaving(false)
-        setFormError(`الصنف ومجموعة «${name}» اتحفظوا لكن الاختيارات فشلت — افتحه وظبّطها. (${choicesErr.message})`)
+        setFormError(`الصنف ومجموعة «${name}» اتحفظوا لكن الاختيارات فشلت. افتحه وظبّطها. (${choicesErr.message})`)
         onSaved()
         return
       }
@@ -304,7 +304,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
       <div className="fixed inset-x-0 bottom-0 sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:w-full sm:max-w-md max-h-[90vh] overflow-y-auto bg-shellup rounded-t-2xl sm:rounded-2xl p-4" onClick={e => e.stopPropagation()}>
         {sheetElement}
         <div className="flex items-center justify-between mb-3 px-1">
-          <h2 id="add-menu-item-title" className="font-bold text-lg text-foam">إضافة صنف — {restaurant.name}</h2>
+          <h2 id="add-menu-item-title" className="font-bold text-lg text-foam">إضافة صنف: {restaurant.name}</h2>
           <button className="text-mist text-sm bg-shell rounded-full px-3 py-1" onClick={requestClose}>✗ إغلاق</button>
         </div>
 
@@ -312,7 +312,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
           <p className="text-sm text-red-600 bg-red-500/10 rounded-lg p-2.5 mb-3" role="alert">{formError}</p>
         )}
         {justSaved && (
-          <p className="text-xs text-emerald-700 bg-emerald-500/10 rounded-lg p-2 mb-3">✓ اتضاف "{justSaved}" — كمّل اللي بعده</p>
+          <p className="text-xs text-emerald-700 bg-emerald-500/10 rounded-lg p-2 mb-3">✓ اتضاف "{justSaved}"، كمّل اللي بعده</p>
         )}
 
         <div className="card p-3.5 space-y-2.5">
@@ -344,7 +344,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
               onChange={e => setForm({ ...form, category: e.target.value })} />
             {priceLocked ? (
               <input className={`${inputCls} !w-28 !border-dashed bg-shellup text-mist`} readOnly
-                value={`من ${effectivePrice}`} aria-label="السعر — محسوب من الأحجام" />
+                value={`من ${effectivePrice}`} aria-label="السعر، محسوب من الأحجام" />
             ) : (
               <input className={`${inputCls} !w-24`} type="number" placeholder="السعر" value={form.price}
                 onChange={e => setForm({ ...form, price: e.target.value })} />
@@ -352,12 +352,12 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
           </div>
           {sizes.length > 0 && !priceLocked && (
             <p className="text-[11px] text-sandink">
-              ⓘ الأحجام تحت لسه من غير سعر — اكتب سعر لأي حجم عشان سعر الصنف يتحسب منه.
+              ⓘ الأحجام تحت لسه من غير سعر. اكتب سعر لأي حجم عشان سعر الصنف يتحسب منه.
             </p>
           )}
           {priceLocked && (
             <p className="text-[11px] text-mist">
-              ⓘ السعر بقى بيتحسب من أقل حجم — العميل هيشوف «من {effectivePrice}».
+              ⓘ السعر بقى بيتحسب من أقل حجم، العميل هيشوف «من {effectivePrice}».
             </p>
           )}
 
@@ -401,7 +401,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
           />
           <OptionRowsCard
             title="اعمله كومبو"
-            hint="الكومبو منتج تاني بسعره الكامل — بيلغي السعر والحجم مع بعض."
+            hint="الكومبو منتج تاني بسعره الكامل، بيلغي السعر والحجم مع بعض."
             rows={combos}
             presets={COMBO_PRESETS}
             warning={comboWarning}

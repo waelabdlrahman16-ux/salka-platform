@@ -82,7 +82,7 @@ export default function PhoneOrderForm({ onCreated }: { onCreated: () => void })
     }, {
       not_authorized: 'الصيدلية والماركت مش من صلاحياتك',
       admin_only: 'مش من صلاحياتك تعمل طلب من هنا',
-      compound_missing_fee: 'الكومباوند ده مالوش سعر توصيل — ظبّطه من الإعدادات الأول',
+      compound_missing_fee: 'الكومباوند ده مالوش سعر توصيل. ظبّطه من الإعدادات الأول',
       restaurant_not_found: 'المكان ده مش موجود أو متخفي',
       missing_customer_details: 'اسم العميل ورقمه ورقم الشاليه لازم يتكتبوا',
     })
@@ -92,7 +92,7 @@ export default function PhoneOrderForm({ onCreated }: { onCreated: () => void })
     // so this is an object -- but a caller should never render #undefined
     // because a function signature changed under it.
     const row: any = Array.isArray(res.data) ? res.data[0] : res.data
-    if (!row?.id) { setError('اتعمل الطلب بس مارجعش رقمه — شوفه في الطلبات غير المعيّنة'); onCreated(); return }
+    if (!row?.id) { setError('اتعمل الطلب بس مارجعش رقمه. شوفه في الطلبات غير المعيّنة'); onCreated(); return }
     setDone({ id: row.id, total: row.total })
     setF({ restaurant_id: f.restaurant_id, compound_id: '', name: '', phone: '', unit: '', notes: '', collect: '' })
     onCreated()
@@ -118,7 +118,7 @@ export default function PhoneOrderForm({ onCreated }: { onCreated: () => void })
 
       {done && (
         <p className="text-sm bg-sea/10 text-sea rounded-xl p-3 mb-3">
-          ✅ اتعمل طلب #{done.id} — المندوب هيحصّل {done.total} ج.م. موجود دلوقتي في الطلبات غير المعيّنة.
+          ✅ اتعمل طلب #{done.id}، المندوب هيحصّل {done.total} ج.م. موجود دلوقتي في الطلبات غير المعيّنة.
         </p>
       )}
       {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3" role="alert">{error}</p>}
@@ -198,11 +198,11 @@ export default function PhoneOrderForm({ onCreated }: { onCreated: () => void })
         {needsDeposit && (
           <div className="bg-sand/15 border border-sand rounded-xl p-3 text-sm" role="alert">
             <p className="font-semibold text-sandink">
-              ده فوق {depositThreshold} ج.م — اطلب عربون قبل ما تبعت المندوب
+              ده فوق {depositThreshold} ج.م، اطلب عربون قبل ما تبعت المندوب
             </p>
             <p className="text-xs text-mist mt-1">
               المندوب هيشيل بضاعة بـ {collect} ج.م. لو الباب مافتحش، الخسارة عليك.
-              الطلب هيتعمل عادي — ده تنبيه بس.
+              الطلب هيتعمل عادي، ده تنبيه بس.
             </p>
           </div>
         )}

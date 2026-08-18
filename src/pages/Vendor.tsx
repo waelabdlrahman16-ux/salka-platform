@@ -180,7 +180,7 @@ function RideHistoryPanel({ restaurantId }: { restaurantId: number }) {
             <p className="font-semibold text-sm">#{o.id} — {o.customer_name}</p>
             <span className="text-xs font-semibold text-mist">{orderStatusLabel(o.status)}</span>
           </div>
-          <p className="text-mist text-xs mt-0.5">{o.zone} — وحدة {o.unit_number}</p>
+          <p className="text-mist text-xs mt-0.5">{o.zone}، وحدة {o.unit_number}</p>
           <p className="text-xs text-mist mt-1">
             {new Date(o.created_at).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'short' })}
             {o.payment_mode === 'driver_pays' ? ` · المندوب دفع ${o.collect_amount} ج.م` : ' · مدفوع مقدمًا'}
@@ -235,7 +235,7 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
       // A failed compound list renders an empty picker, and the vendor cannot
       // file the order at all. Keep it empty but say why rather than leaving
       // them tapping a dropdown with nothing in it.
-      .then(({ data, error: err }) => { if (err) { setError('مش قادرين نجيب المناطق — جرب تاني'); return } setCompounds(data ?? []) })
+      .then(({ data, error: err }) => { if (err) { setError('مش قادرين نجيب المناطق. جرب تاني'); return } setCompounds(data ?? []) })
     loadRecent()
     const t = setInterval(() => loadRecent(), 10000)
     return () => clearInterval(t)
@@ -279,7 +279,7 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
   return (
     <div className="max-w-lg mx-auto pb-6">
       <div className="flex items-center justify-between mb-1">
-        <h1 className="text-xl font-bold">🛵 {restaurant.name} — طلب مندوب</h1>
+        <h1 className="text-xl font-bold">🛵 {restaurant.name}، طلب مندوب</h1>
         {!standalone && <button className="text-sm text-mist hover:text-foam" onClick={onClose}>إغلاق ✕</button>}
       </div>
       <p className="text-mist text-sm mb-4">
@@ -290,7 +290,7 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
 
       {sent && (
         <div className="bg-emerald-50 text-emerald-800 rounded-xl p-3.5 text-sm mb-4 space-y-2">
-          <p className="font-semibold text-center">✅ تم إرسال الطلب للمندوبين — طلب #{sent.id}</p>
+          <p className="font-semibold text-center">✅ تم إرسال الطلب للمندوبين، طلب #{sent.id}</p>
           <p className="text-xs">ابعت اللينك ده للعميل عشان يتابع المندوب:</p>
           <div className="flex gap-2">
             <input readOnly dir="ltr" className="field !py-1.5 text-xs flex-1"
@@ -412,7 +412,7 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
               <div key={o.id} className="card p-3.5 flex items-center justify-between text-sm">
                 <div>
                   <p className="font-semibold">#{o.id} — {o.customer_name}</p>
-                  <p className="text-mist text-xs mt-0.5">{o.zone} — وحدة {o.unit_number}</p>
+                  <p className="text-mist text-xs mt-0.5">{o.zone}، وحدة {o.unit_number}</p>
                 </div>
                 <span className="text-xs font-semibold text-mist">{orderStatusLabel(o.status)}</span>
               </div>
@@ -528,7 +528,7 @@ function KitchenVendor({ rid }: { rid: number }) {
 
     // The whole point of the screen. If this failed we must NOT paint an empty
     // board -- say so, keep whatever was last on screen, and let the poll retry.
-    if (oErr) { setLoadError('مش قادرين نجيب الطلبات دلوقتي — الشاشة دي ممكن تكون ناقصة'); return }
+    if (oErr) { setLoadError('مش قادرين نجيب الطلبات دلوقتي، الشاشة دي ممكن تكون ناقصة'); return }
     setLoadError('')
     setOrders(o ?? [])
 
@@ -547,13 +547,13 @@ function KitchenVendor({ rid }: { rid: number }) {
         .in('order_id', allIds)
       // An order card with no lines looks like an EMPTY order, not a failed
       // fetch -- the vendor would cook nothing and mark it ready.
-      if (itsErr) { setLoadError('مش قادرين نجيب تفاصيل الأصناف — متأكدش من محتوى الطلبات'); return }
+      if (itsErr) { setLoadError('مش قادرين نجيب تفاصيل الأصناف، متأكدش من محتوى الطلبات'); return }
       const grouped: Record<number, OrderItem[]> = {}
       for (const it of its ?? []) (grouped[it.order_id] ??= []).push(it)
       setItems(grouped)
 
       const overview = await vendorOperation<any[]>('deliveryOverview', { orderIds: allIds })
-      if (!overview.ok) { setLoadError('مش قادرين نجيب بيانات المندوب دلوقتي — حالة التوصيل ممكن تكون قديمة'); return }
+      if (!overview.ok) { setLoadError('مش قادرين نجيب بيانات المندوب دلوقتي، حالة التوصيل ممكن تكون قديمة'); return }
       const das = overview.data
       const delivMap: typeof deliveryByOrder = {}
       for (const d of das ?? []) {
@@ -572,7 +572,7 @@ function KitchenVendor({ rid }: { rid: number }) {
       restaurant_id: rid, start_time: newSlot.start_time,
       end_time: newSlot.end_time, capacity: Number(newSlot.capacity)
     })
-    if (error) { setSlotError(`إضافة الفترة فشلت — ${error.message}`); return }
+    if (error) { setSlotError(`إضافة الفترة فشلت: ${error.message}`); return }
     setSlotError('')
     setNewSlot({ start_time: '', end_time: '', capacity: '6' })
     load(true)
@@ -627,7 +627,7 @@ function KitchenVendor({ rid }: { rid: number }) {
     const res = next === 'ready'
       ? await vendorOperation('ready', { orderId: o.id })
       : await vendorOperation('accept', { orderId: o.id, prepMinutes: prepMinutes ?? null }, {
-          order_not_priced: 'الطلب ده لسه محتاج تسعير من الإدارة — استنى مكالمتهم',
+          order_not_priced: 'الطلب ده لسه محتاج تسعير من الإدارة. استنى مكالمتهم',
         })
     if (!res.ok) { setBusyOrder(null); setBoardError(`طلب #${o.id}: ${res.error}`); return }
 
@@ -672,7 +672,7 @@ function KitchenVendor({ rid }: { rid: number }) {
     // is about to flip to متأخر.
     const res = await vendorOperation('delay', { orderId: o.id, minutes: 5 }, {
       delay_limit_reached: 'وصلت لأقصى عدد تأجيلات مسموح (3) للطلب ده',
-      wrong_stage: 'الطلب اتحرك خلاص — مش هينفع تأجله دلوقتي',
+      wrong_stage: 'الطلب اتحرك خلاص، مش هينفع تأجله دلوقتي',
       not_your_order: 'الطلب ده مش بتاع مطعمك',
     })
     if (!res.ok) { setBoardError(res.error); return }
@@ -689,7 +689,7 @@ function KitchenVendor({ rid }: { rid: number }) {
     if (!declining || declineBusy) return
     setDeclineBusy(true)
     const res = await rpc('cancel_order', { p_order_id: declining.id, p_reason: 'vendor_declined' }, {
-      too_late_to_cancel: 'الطلب اتقبل بالفعل ومعاه مندوب — كلّم الإدارة عشان تلغيه',
+      too_late_to_cancel: 'الطلب اتقبل بالفعل ومعاه مندوب. كلّم الإدارة عشان تلغيه',
     })
     setDeclineBusy(false)
     if (!res.ok) { setDeclineError(res.error); return }
@@ -785,7 +785,7 @@ function KitchenVendor({ rid }: { rid: number }) {
             </h2>
             <div className="flex items-center gap-2 flex-wrap mt-1.5">
             </div>
-            <p className="text-sm text-mist mt-1">{o.zone} — وحدة {o.unit_number}</p>
+            <p className="text-sm text-mist mt-1">{o.zone}، وحدة {o.unit_number}</p>
           </div>
           {/* No order total. The vendor prices what they cook, line by line --
               an order-level figure is a Salka number (it moved with delivery and
@@ -820,7 +820,7 @@ function KitchenVendor({ rid }: { rid: number }) {
           <div className="mt-3 bg-night border border-line !rounded-2xl p-3.5 text-sm space-y-1.5">
             {o.pricing_status === 'pending_quote' && (
               <p className="text-sandink text-xs font-semibold pb-1.5 border-b border-line">
-                🧾 طلب لسه ما اتسعّرش — الإدارة هتتصل بالعميل وتحط السعر
+                🧾 طلب لسه ما اتسعّرش، الإدارة هتتصل بالعميل وتحط السعر
               </p>
             )}
             {(o.request_items ?? []).length === 0 && (
@@ -869,7 +869,7 @@ function KitchenVendor({ rid }: { rid: number }) {
         </div>
 
         {(items[o.id] ?? []).some(it => it.requires_prescription) && (
-          <p className="text-sandink text-sm mt-2">💊 الطلب فيه صنف يحتاج روشتة — أكّد مع العميل قبل التجهيز</p>
+          <p className="text-sandink text-sm mt-2">💊 الطلب فيه صنف يحتاج روشتة. أكّد مع العميل قبل التجهيز</p>
         )}
 
         {/* No money on this ticket beyond the per-item prices.
@@ -952,7 +952,7 @@ function KitchenVendor({ rid }: { rid: number }) {
                 return (
                   <div className={`mt-3 rounded-2xl p-3.5 text-center ${stale ? 'bg-red-500/10' : 'bg-shellup'}`}>
                     <p className={`text-sm font-semibold ${stale ? 'text-red-700' : 'text-sea'}`}>
-                      {stale ? '⚠️ ' : '✅ '}في انتظار المندوب{waitMin !== null ? ` — من ${waitMin} دقيقة` : ''}
+                      {stale ? '⚠️ ' : '✅ '}في انتظار المندوب{waitMin !== null ? `، من ${waitMin} دقيقة` : ''}
                     </p>
                   </div>
                 )
@@ -961,7 +961,7 @@ function KitchenVendor({ rid }: { rid: number }) {
                 d.status === 'Accepted' && d.arrived_at_restaurant_at ? '📍 وصل المطعم'
                 : d.status === 'Accepted' ? '🛵 في الطريق للمطعم'
                 : d.status === 'Picked_Up' ? '📦 استلم الطلب'
-                : d.status === 'Out_for_Delivery' ? `🚗 في الطريق للعميل${minsSince(d.out_for_delivery_at) !== null ? ` — من ${minsSince(d.out_for_delivery_at)} دقيقة` : ''}`
+                : d.status === 'Out_for_Delivery' ? `🚗 في الطريق للعميل${minsSince(d.out_for_delivery_at) !== null ? `، من ${minsSince(d.out_for_delivery_at)} دقيقة` : ''}`
                 : d.status === 'Delivered' ? '✅ تم التوصيل'
                 : '✅ في انتظار المندوب'
               return (
@@ -1004,8 +1004,8 @@ function KitchenVendor({ rid }: { rid: number }) {
           <p className="text-sm text-sandink font-semibold">
             📡 {loadError
               || (openStateFailed
-                ? 'مش قادرين نتأكد إذا كنت فاتح ولا مقفول — الحالة تحت ممكن تكون قديمة'
-                : 'مش قادرين نحمّل بيانات المطعم — اتأكد من النت')}
+                ? 'مش قادرين نتأكد إذا كنت فاتح ولا مقفول، الحالة تحت ممكن تكون قديمة'
+                : 'مش قادرين نحمّل بيانات المطعم. اتأكد من النت')}
           </p>
           <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0" onClick={() => load(true)}>حدّث</button>
         </div>
@@ -1060,7 +1060,7 @@ function KitchenVendor({ rid }: { rid: number }) {
                 <Toggle on={!!sl.active} onChange={() => toggleSlot(sl)} label="فعّالة" labelOff="موقوفة" />
               </div>
             ))}
-            {slots.length === 0 && <p className="text-xs text-mist">لسه مفيش فترات — ضيف واحدة تحت</p>}
+            {slots.length === 0 && <p className="text-xs text-mist">لسه مفيش فترات. ضيف واحدة تحت</p>}
           </div>
           <div className="flex gap-2 mt-3">
             <input type="time" className="field !py-1.5 text-sm" aria-label="وقت البداية" value={newSlot.start_time}
@@ -1106,13 +1106,13 @@ function KitchenVendor({ rid }: { rid: number }) {
         <>
           {orders.length === 0 && (
             <div className="card p-6 text-center text-mist">
-              {completedToday.length > 0 ? 'مفيش طلبات مستنية — كله خلص ✅' : 'لا توجد طلبات حالياً'}
+              {completedToday.length > 0 ? 'مفيش طلبات مستنية، كله خلص ✅' : 'لا توجد طلبات حالياً'}
             </div>
           )}
 
           {newOrders.length > 0 && (
             <div className="mb-5 space-y-3">
-              <p className="text-sandink font-bold animate-pulse">🔔 محتاج ردّك — {newOrders.length}</p>
+              <p className="text-sandink font-bold animate-pulse">🔔 محتاج ردّك: {newOrders.length}</p>
               {newOrders.map(o => card(o, true))}
             </div>
           )}

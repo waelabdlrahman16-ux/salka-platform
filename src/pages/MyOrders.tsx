@@ -106,7 +106,7 @@ export default function MyOrders() {
         <div className="card p-5 mt-5 text-center">
           <p className="font-semibold">عندك طلبات قديمة؟</p>
           <p className="text-sm text-mist mt-1.5">اكتب رقمك القديم. هنراجع الطلب ونتصل بيك قبل ما نربط الحساب.</p>
-          {recoveryState === 'sent' ? <p className="text-sm text-sea mt-3">تم إرسال طلبك — هنراجع ونتصل بيك.</p> : <>
+          {recoveryState === 'sent' ? <p className="text-sm text-sea mt-3">تم إرسال طلبك، هنراجع ونتصل بيك.</p> : <>
             <input className="field text-center mt-4" dir="ltr" value={recoveryPhone} onChange={e => setRecoveryPhone(e.target.value)} placeholder="010xxxxxxxx" />
             <button className="btn-sea w-full mt-2" disabled={recoveryState==='sending'||!isValidEgyptPhone(recoveryPhone)} onClick={requestRecovery}>اربط طلباتي القديمة</button>
             {recoveryState === 'error' && <p className="text-xs text-red-700 mt-2">مش قادرين نسجل الطلب دلوقتي. جرّب تاني.</p>}

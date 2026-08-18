@@ -120,7 +120,7 @@ export default function BannerRail({ onBanners }: { onBanners?: (has: boolean) =
               // this on production, two instances, and it was the whole of the
               // accessibility drop from 96 to 93.
               aria-label={clickable
-                ? [b.title, b.subtitle].filter(Boolean).join(' — ') || 'إعلان — اضغط للتفاصيل'
+                ? [b.title, b.subtitle].filter(Boolean).join('، ') || 'إعلان. اضغط للتفاصيل'
                 : undefined}
               className={`relative shrink-0 snap-center w-[96%] sm:w-[358px] h-[140px] rounded-2xl overflow-hidden
                           text-right ${clickable ? 'cursor-pointer' : ''}`}

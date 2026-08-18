@@ -54,14 +54,14 @@ export function OrderLines({ order }: { order: Order }) {
     <>
       {note && <p className="text-xs text-sandink mt-2 pt-2 border-t border-dashed border-line">📝 {note}</p>}
       {order.prescription_path && (
-        <p className="text-xs text-sandink mt-1">📎 العميل رفع صورة روشتة — شوفها من شاشة الإدارة</p>
+        <p className="text-xs text-sandink mt-1">📎 العميل رفع صورة روشتة. شوفها من شاشة الإدارة</p>
       )}
     </>
   )
 
   if (fromRequest) {
     if (fromRequest.length === 0 && !note) {
-      return <p className="text-mist text-xs">العميل ما كتبش أصناف — كلّمه قبل ما تشتري</p>
+      return <p className="text-mist text-xs">العميل ما كتبش أصناف. كلّمه قبل ما تشتري</p>
     }
     return (
       <>
@@ -77,7 +77,7 @@ export function OrderLines({ order }: { order: Order }) {
   }
 
   if (failed) {
-    return <p className="text-red-600 text-xs">مش قادرين نحمّل أصناف الطلب — حدّث الصفحة قبل ما تتصرف فيه</p>
+    return <p className="text-red-600 text-xs">مش قادرين نحمّل أصناف الطلب. حدّث الصفحة قبل ما تتصرف فيه</p>
   }
   if (lines === null) return <p className="text-mist text-xs">…</p>
   // Still render the note on an item-less order: a pickup_request keeps the

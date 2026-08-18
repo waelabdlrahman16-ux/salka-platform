@@ -47,7 +47,7 @@ export default function OrderAdjust({ orderId, onDone }: {
     setSaving(false)
     if (!response.ok) {
       setError(
-        response.code === 'order_cancelled' ? 'الطلب ملغي — مش هينفع نعدّله'
+        response.code === 'order_cancelled' ? 'الطلب ملغي، مش هينفع نعدّله'
         : response.code === 'negative_total' ? 'الخصم أكبر من إجمالي الطلب'
         : response.code === 'admin_only' ? 'محتاج صلاحية أدمن'
         : response.error)
@@ -99,7 +99,7 @@ export default function OrderAdjust({ orderId, onDone }: {
 
       {result && (
         <div className="bg-emerald-500/10 text-emerald-800 rounded-lg p-2.5 mb-2.5 text-xs font-semibold">
-          ✓ اتعدّل — الإجمالي من {result.old_total} لـ {result.new_total} ج.م
+          ✓ اتعدّل، الإجمالي من {result.old_total} لـ {result.new_total} ج.م
           {result.service_fee_waived
             ? ` · معفي من ${result.service_fee_waived} ج.م رسوم` : ''}
         </div>
@@ -120,7 +120,7 @@ export default function OrderAdjust({ orderId, onDone }: {
           tracking page. That is deliberate: a charge they cannot identify is
           worse than one they can argue with. */}
       <input className="field !h-10 mb-2 text-sm" value={reason} maxLength={60}
-        placeholder="السبب — هيظهر للزبون في الطلب"
+        placeholder="السبب، هيظهر للزبون في الطلب"
         onChange={e => { setReason(e.target.value); setError('') }} />
 
       <div className="flex items-center gap-2 mb-2.5">
@@ -144,7 +144,7 @@ export default function OrderAdjust({ orderId, onDone }: {
           <input type="checkbox" className="w-4 h-4" checked={chargeFee}
             onChange={e => setChargeFee(e.target.checked)} />
           احسب رسوم الخدمة على الزيادة كمان
-          {!chargeFee && <span className="text-sandink font-semibold">— الرسوم هتفضل زي ما هي</span>}
+          {!chargeFee && <span className="text-sandink font-semibold"> · الرسوم هتفضل زي ما هي</span>}
         </label>
       )}
 

@@ -691,15 +691,15 @@ export default function Admin() {
     setModalError('')
     const res = await dispatchOperation('assign', { orderId: order.id, driverId: driver.id, force }, {
       dispatch_rule_blocked: 'المندوب ده وصل للحد الأقصى (٤ طلبات) أو شغال في اتجاه مختلف',
-      driver_already_declined: `${driver.name} رفض الطلب ده قبل كده — اختار مندوب تاني`,
-      too_many_attempts: 'الطلب ده اتعرض على مندوبين ٥ مرات. ده مشكلة توزيع مش مشكلة إعادة محاولة — كلّم مندوب بنفسك أو الغِ الطلب',
-      already_assigned: 'الطلب ده مع مندوب بالفعل — حدّث الصفحة',
+      driver_already_declined: `${driver.name} رفض الطلب ده قبل كده. اختار مندوب تاني`,
+      too_many_attempts: 'الطلب ده اتعرض على مندوبين ٥ مرات. ده مشكلة توزيع مش مشكلة إعادة محاولة. كلّم مندوب بنفسك أو الغِ الطلب',
+      already_assigned: 'الطلب ده مع مندوب بالفعل. حدّث الصفحة',
       order_closed: 'الطلب ده اتقفل خلاص (اتسلّم أو اتلغى)',
-      order_not_paid: 'الطلب لسه مادفعش — أكّد الدفع الأول',
-      order_not_priced: 'الطلب لسه مسعّرش — حط السعر الأول',
+      order_not_paid: 'الطلب لسه مادفعش. أكّد الدفع الأول',
+      order_not_priced: 'الطلب لسه مسعّرش. حط السعر الأول',
       driver_suspended: 'حساب المندوب ده موقوف',
-      driver_not_found: 'المندوب ده مش موجود — حدّث الصفحة',
-      order_not_found: 'الطلب ده مش موجود — حدّث الصفحة',
+      driver_not_found: 'المندوب ده مش موجود. حدّث الصفحة',
+      order_not_found: 'الطلب ده مش موجود. حدّث الصفحة',
       admin_only: 'مش من صلاحياتك تعيّن مندوب للطلب ده',
     })
     if (!res.ok) {
@@ -771,7 +771,7 @@ export default function Admin() {
   async function updatePrice(it: MenuItem, price: number) {
     if (!price || price === it.price) return
     const { error } = await supabase.from('menu_items').update({ price }).eq('id', it.id)
-    if (error) { setActionError('السعر ماتحفظش — جرب تاني'); return }
+    if (error) { setActionError('السعر ماتحفظش. جرب تاني'); return }
     setActionError('')
     load(true)
   }
@@ -837,7 +837,7 @@ export default function Admin() {
       // Write #1 already committed, so the screen MUST refresh -- leaving the
       // picker open over stale data invited a second reassignment to a
       // different driver.
-      setActionError('الوردية اتغيّرت بس طلب الاستبدال لسه مفتوح — راجعه')
+      setActionError('الوردية اتغيّرت بس طلب الاستبدال لسه مفتوح، راجعه')
       setReassignFor(null); load(true); return
     }
     setReassignFor(null)
@@ -851,7 +851,7 @@ export default function Admin() {
     })
     // Cleared the form and reloaded whether or not the row existed, so a failed
     // insert was indistinguishable from a stale list.
-    if (error) { setActionError(`إضافة الفترة فشلت — ${error.message}`); return }
+    if (error) { setActionError(`إضافة الفترة فشلت: ${error.message}`); return }
     setActionError('')
     setNewSlot({ start_time: '', end_time: '', capacity: '6' })
     load(true)
@@ -872,7 +872,7 @@ export default function Admin() {
       return { name, phone, vehicle_type }
     }).filter(r => r.name && r.phone)
 
-    if (rows.length === 0) { setBulkResult('مفيش سطور صحيحة — لازم اسم,رقم موبايل على الأقل'); return }
+    if (rows.length === 0) { setBulkResult('مفيش سطور صحيحة، لازم اسم,رقم موبايل على الأقل'); return }
 
     const { error } = await supabase.from('drivers').insert(rows)
     setBulkResult(error ? 'حصل خطأ، جرب تاني' : `تمت إضافة ${rows.length} مندوب`)
@@ -885,7 +885,7 @@ export default function Admin() {
       driver_id: Number(newShift.driver_id), shift_date: newShift.shift_date,
       start_time: newShift.start_time, end_time: newShift.end_time
     })
-    if (error) { setActionError(`إضافة الوردية فشلت — ${error.message}`); return }
+    if (error) { setActionError(`إضافة الوردية فشلت: ${error.message}`); return }
     setActionError('')
     setNewShift({ driver_id: '', shift_date: '', start_time: '', end_time: '' })
     load(true)
@@ -1014,8 +1014,8 @@ export default function Admin() {
     const res = await adminAccountDriverAction('deleteStaff', { profileId }, {
       cannot_delete_self: 'مينفعش تلغي حسابك انت',
       cannot_delete_admin: 'مينفعش تلغي حساب إدارة من هنا',
-      driver_has_live_delivery: 'المندوب ده معاه طلب شغال دلوقتي — سيبه يخلّصه أو اسحب الطلب منه الأول',
-      profile_not_found: 'الحساب ده مش موجود — حدّث الصفحة',
+      driver_has_live_delivery: 'المندوب ده معاه طلب شغال دلوقتي. سيبه يخلّصه أو اسحب الطلب منه الأول',
+      profile_not_found: 'الحساب ده مش موجود. حدّث الصفحة',
       admin_only: 'مش من صلاحياتك',
     })
     setAccountBusy(null)
@@ -1063,7 +1063,7 @@ export default function Admin() {
     const result = await callAccountsFn({ action: 'reset_password', profile_id: profileId, custom_password: pw })
     setAccountBusy(null)
     if (result.error) { await alertSheet('حصل خطأ: ' + result.error); return }
-    await alertSheet(<>تم تغيير كلمة السر — <bdi dir="ltr" className="font-mono">{pw}</bdi></>)
+    await alertSheet(<>تم تغيير كلمة السر، <bdi dir="ltr" className="font-mono">{pw}</bdi></>)
   }
 
   async function changeEmail(profileId: string, currentEmail: string) {
@@ -1083,7 +1083,7 @@ export default function Admin() {
     setUploadingImage(null)
     if (error) { setImageError(error); return }
     const { error: linkError } = await supabase.from('restaurants').update({ logo_url: url }).eq('id', r.id)
-    if (linkError) { setActionError('الصورة اترفعت بس ماتربطتش بالمطعم — جرب تاني'); return }
+    if (linkError) { setActionError('الصورة اترفعت بس ماتربطتش بالمطعم. جرب تاني'); return }
     setActionError('')
     load(true)
   }
@@ -1099,7 +1099,7 @@ export default function Admin() {
     setUploadingImage(null)
     if (error) { setImageError(error); return }
     const { error: linkError } = await supabase.from('restaurants').update({ cover_image_url: url }).eq('id', r.id)
-    if (linkError) { setActionError('الصورة اترفعت بس ماتربطتش بالمطعم — جرب تاني'); return }
+    if (linkError) { setActionError('الصورة اترفعت بس ماتربطتش بالمطعم. جرب تاني'); return }
     setActionError('')
     load(true)
   }
@@ -1196,7 +1196,7 @@ export default function Admin() {
     setUploadingImage(null)
     if (error) { setImageError(error); return }
     const { error: linkError } = await supabase.from('menu_items').update({ image_url: url }).eq('id', it.id)
-    if (linkError) { setActionError('الصورة اترفعت بس ماتربطتش بالصنف — جرب تاني'); return }
+    if (linkError) { setActionError('الصورة اترفعت بس ماتربطتش بالصنف. جرب تاني'); return }
     setActionError('')
     load(true)
   }
@@ -1211,7 +1211,7 @@ export default function Admin() {
       prep_minutes: Number(newRestaurant.prep_minutes) || 20,
       rating: 5, is_open: true, order_mode: 'catalog'
     })
-    if (error) { setActionError(`إضافة المطعم فشلت — ${error.message}`); return }
+    if (error) { setActionError(`إضافة المطعم فشلت: ${error.message}`); return }
     setActionError('')
     setNewRestaurant({ name: '', description: '', category: '', vendor_type: 'restaurant', prep_minutes: '20' })
     load(true)
@@ -1247,7 +1247,7 @@ export default function Admin() {
   async function updateSetting(st: Setting, value: string) {
     if (value === st.value) return
     const { error } = await supabase.from('settings').update({ value }).eq('key', st.key)
-    if (error) { setActionError('الإعداد ماتحفظش — جرب تاني'); return }
+    if (error) { setActionError('الإعداد ماتحفظش. جرب تاني'); return }
     setActionError('')
     load(true)
   }
@@ -1352,7 +1352,7 @@ export default function Admin() {
       title: `إلغاء الطلب #${o.id}؟`,
       body: o.status === 'pending'
         ? undefined
-        : <>الطلب #{o.id} حالته «{orderStatusLabel(o.status)}» — يعني اتقبل أو خرج للتوصيل بالفعل.<br /><br />الإلغاء هيسحبه من المندوب ويرجّع رصيد المحفظة لو استُخدم. لو العميل دفع، هيتسجل استرداد مطلوب.</>,
+        : <>الطلب #{o.id} حالته «{orderStatusLabel(o.status)}»، يعني اتقبل أو خرج للتوصيل بالفعل.<br /><br />الإلغاء هيسحبه من المندوب ويرجّع رصيد المحفظة لو استُخدم. لو العميل دفع، هيتسجل استرداد مطلوب.</>,
       placeholder: 'السبب (هيتسجل على الطلب)',
     })
     if (reason === null) return
@@ -1429,7 +1429,7 @@ export default function Admin() {
     }, {
       dispatch_rule_blocked: 'المندوب ده وصل للحد الأقصى (٤ طلبات) أو شغال في اتجاه مختلف',
       wrong_vehicle_type: 'الطلب ده محتاج فان',
-      no_active_assignment: 'الطلب ده مابقاش مع مندوب — حدّث الصفحة',
+      no_active_assignment: 'الطلب ده مابقاش مع مندوب. حدّث الصفحة',
     })
     setReassignBusy(false)
     if (!res.ok) { setModalError(res.error); return }
@@ -1490,7 +1490,7 @@ export default function Admin() {
     // A typo in this free-typed phone credits a stranger with no reversal path.
     if (!await confirmSheet({
       title: `إضافة ${walletAmount} ج.م لمحفظة ${walletPhone.trim()}؟`,
-      body: 'اتأكد من الرقم — مفيش طريقة تتراجع.',
+      body: 'اتأكد من الرقم، مفيش طريقة تتراجع.',
       danger: true,
     })) return
     const result = await adminFinancialAction('creditWallet', {
@@ -1581,7 +1581,7 @@ export default function Admin() {
   const totalDriver = earnings.reduce((s, e) => s + Number(e.driver_earning), 0)
   const totalAdmin = earnings.reduce((s, e) => s + Number(e.admin_amount), 0)
 
-  const addr = (o: Order) => `${o.zone} — وحدة ${o.unit_number}${o.address_notes ? ` — ${o.address_notes}` : ''}`
+  const addr = (o: Order) => `${o.zone}، وحدة ${o.unit_number}${o.address_notes ? `: ${o.address_notes}` : ''}`
   const customer = (o: Order) => (
     <div className="mt-2.5 bg-night border border-line rounded-xl p-3 text-sm space-y-1">
       <p>👤 {o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
@@ -1638,7 +1638,7 @@ export default function Admin() {
       {syncFailed && (
         <div className="card p-3 mb-4 border-red-400/50 bg-red-500/5">
           <p className="text-sm text-red-700 font-semibold">
-            ⚠️ آخر محاولة تحديث فشلت — اللي شايفه دلوقتي ممكن يكون مش أحدث حاجة. جرب "حدّث" فوق.
+            ⚠️ آخر محاولة تحديث فشلت، اللي شايفه دلوقتي ممكن يكون مش أحدث حاجة. جرب "حدّث" فوق.
           </p>
         </div>
       )}
@@ -1672,7 +1672,7 @@ export default function Admin() {
                 <div key={o.id} className="bg-night border border-line rounded-xl p-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="font-semibold text-sm">طلب #{o.id} — {o.vendor_name} — {o.total} ج.م</p>
+                      <p className="font-semibold text-sm">طلب #{o.id}: {o.vendor_name}: {o.total} ج.م</p>
                       <p className="text-xs text-mist mt-0.5">
                         👤 {o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a>
                       </p>
@@ -1684,7 +1684,7 @@ export default function Admin() {
                   </div>
                   {full?.pricing_status === 'pending_quote' && (
                     <p className="text-xs text-sandink font-semibold mt-1.5 bg-sand/10 rounded-lg px-2 py-1">
-                      🧾 واقف عليك إنت — الطلب ده محتاج تسعير قبل ما أي مندوب يقدر ياخده
+                      🧾 واقف عليك إنت، الطلب ده محتاج تسعير قبل ما أي مندوب يقدر ياخده
                     </p>
                   )}
                   {(full?.customer_note?.trim() || full?.request_notes?.trim()) && (
@@ -1777,7 +1777,7 @@ export default function Admin() {
               if (!o) return null
               return (
                 <div key={a.id} className="bg-night border border-line rounded-xl p-3">
-                  <p className="font-semibold text-sm">طلب #{o.id} — {o.restaurants?.name} — {o.total} ج.م</p>
+                  <p className="font-semibold text-sm">طلب #{o.id}: {o.restaurants?.name}: {o.total} ج.م</p>
                   <p className="text-xs text-mist mt-0.5">👤 {o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
                   <p className="text-xs text-mist mt-0.5">📍 {addr(o)}</p>
                   <p className="text-xs text-sandink mt-1">
@@ -1897,10 +1897,10 @@ export default function Admin() {
                 </span>
               </div>
               {o.order_type === 'custom_request' && (
-                <p className="text-sandink text-sm mt-1.5">🧾 طلب خاص{o.pricing_status === 'pending_quote' ? ' — لسه محتاج تسعير من تبويب الطلبات' : ''}</p>
+                <p className="text-sandink text-sm mt-1.5">🧾 طلب خاص{o.pricing_status === 'pending_quote' ? '، لسه محتاج تسعير من تبويب الطلبات' : ''}</p>
               )}
               {o.order_type === 'pickup_request' && (
-                <p className="text-sm mt-1.5">🛵 طلب مندوب بس{o.payment_mode === 'driver_pays' ? ` — المندوب يدفع ${o.collect_amount} ج.م` : ''}</p>
+                <p className="text-sm mt-1.5">🛵 طلب مندوب بس{o.payment_mode === 'driver_pays' ? `، المندوب يدفع ${o.collect_amount} ج.م` : ''}</p>
               )}
               {/* Was request_items-only, so a normal catalog order -- the
                   common case -- showed no items at all here: an admin
@@ -1913,7 +1913,7 @@ export default function Admin() {
               </div>
               <PriceBreakdown order={o} />
               {isCooking(o) && (
-                <p className="text-mist text-sm mt-1.5">👨‍🍳 لسه بيتحضر — متاح للمندوبين خلال {minsUntilDispatch(o)} دقيقة</p>
+                <p className="text-mist text-sm mt-1.5">👨‍🍳 لسه بيتحضر، متاح للمندوبين خلال {minsUntilDispatch(o)} دقيقة</p>
               )}
               {isLate(o) && <p className="text-red-600 text-sm mt-1.5">⚠️ محدش استلم الطلب</p>}
               {(() => {
@@ -2097,7 +2097,7 @@ export default function Admin() {
           )}
           {orderRangeFailed && (
             <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-2.5" role="alert">
-              مش قادرين نجيب طلبات الأيام دي — جرب تاني. (مابنعرضش اللي محمّل عندنا عشان
+              مش قادرين نجيب طلبات الأيام دي. جرب تاني. (مابنعرضش اللي محمّل عندنا عشان
               ما نقولش «مفيش طلبات» وإحنا مادوّرناش فعلاً.)
             </p>
           )}
@@ -2317,7 +2317,7 @@ export default function Admin() {
                     )}
                     {mins != null && (
                       <span className={`rounded-lg px-2 py-1 border ${late ? 'bg-red-500/10 border-red-500/30 text-red-700' : 'bg-night border-line'}`}>
-                        ⏱ {mins} دقيقة{o.sla_minutes ? ` / ${o.sla_minutes}` : ''}{late ? ' — متأخر' : ''}
+                        ⏱ {mins} دقيقة{o.sla_minutes ? ` / ${o.sla_minutes}` : ''}{late ? '، متأخر' : ''}
                       </span>
                     )}
                     <span className="bg-night border border-line rounded-lg px-2 py-1">💵 {cash}</span>
@@ -2379,7 +2379,7 @@ export default function Admin() {
                   <p>🕐 الطلب اتعمل: {fmtTime(o.created_at)}</p>
                   {assignments.filter(a => a.order_id === o.id).map(a => (
                     <div key={a.id} className="border-t border-line pt-1.5 mt-1.5 first:border-t-0 first:pt-0 first:mt-0">
-                      <p className="font-semibold">محاولة {a.attempt_number} — {a.drivers?.name} ({assignmentStatusLabel(a.status)})</p>
+                      <p className="font-semibold">محاولة {a.attempt_number}: {a.drivers?.name} ({assignmentStatusLabel(a.status)})</p>
                       {a.offered_at && <p>عُرض عليه: {fmtTime(a.offered_at)}</p>}
                       {a.responded_at && <p>رد: {fmtTime(a.responded_at)}</p>}
                       {a.picked_up_at && <p>استلم من المطعم: {fmtTime(a.picked_up_at)}</p>}
@@ -2422,7 +2422,7 @@ export default function Admin() {
           <div className="space-y-2.5">
             {earnings.map(e => (
               <div key={e.id} className="card p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-sm">
-                <span className="font-semibold">{e.drivers?.name} — طلب #{e.order_id}</span>
+                <span className="font-semibold">{e.drivers?.name}، طلب #{e.order_id}</span>
                 <span className="text-mist">رسوم: {e.delivery_fee} · <span className="text-sea">مندوب: {e.driver_earning}</span> · <span className="text-sandink">إدارة: {e.admin_amount}</span></span>
               </div>
             ))}
@@ -2553,7 +2553,7 @@ export default function Admin() {
                         : <div className="w-14 h-14 rounded-xl bg-shellup grid place-items-center text-mist text-[10px] group-hover:opacity-70">اضغط لإضافة</div>}
                     </label>
                     <div className="text-xs text-mist">
-                      <p>{uploadingImage === `r${r.id}` ? 'جاري رفع الشعار…' : 'الشعار — بيظهر جنب الاسم'}</p>
+                      <p>{uploadingImage === `r${r.id}` ? 'جاري رفع الشعار…' : 'الشعار، بيظهر جنب الاسم'}</p>
                       {r.logo_url && (
                         <button className="text-red-500 font-semibold mt-1" onClick={() => removeLogo(r)}>✗ إزالة الشعار</button>
                       )}
@@ -2583,7 +2583,7 @@ export default function Admin() {
                       {uploadingImage === `cover${r.id}`
                         ? 'جاري رفع صورة الواجهة…'
                         : r.cover_image_url
-                          ? 'صورة الواجهة — دي اللي بتظهر في الرئيسية'
+                          ? 'صورة الواجهة، دي اللي بتظهر في الرئيسية'
                           : 'من غير صورة واجهة بنختار أحسن صورة من القايمة تلقائيًا'}
                     </p>
                     {r.cover_image_url && (
@@ -2611,7 +2611,7 @@ export default function Admin() {
                           onChange={e => setServiceFeeDraft(d => ({ ...d, [r.id]: e.target.value }))}
                           onBlur={() => commitServiceFee(r)} />
                         <span className="text-mist">%</span>
-                        <span className="text-xs text-emerald-700 mr-auto">مضافة داخل السعر — العميل مش شايفها كبند منفصل</span>
+                        <span className="text-xs text-emerald-700 mr-auto">مضافة داخل السعر، العميل مش شايفها كبند منفصل</span>
                       </>
                     )}
                   </div>
@@ -2625,7 +2625,7 @@ export default function Admin() {
                     <button
                       className={`text-xs font-semibold ${r.archived ? 'text-emerald-700' : 'text-red-500'}`}
                       onClick={() => archiveRestaurant(r, !r.archived)}>
-                      {r.archived ? '↩ تفعيل المطعم تاني' : '⛔ إيقاف المطعم — يختفي من التطبيق خالص'}
+                      {r.archived ? '↩ تفعيل المطعم تاني' : '⛔ إيقاف المطعم، يختفي من التطبيق خالص'}
                     </button>
                   </div>
                 )}
@@ -2707,7 +2707,7 @@ export default function Admin() {
                         </div>
                       ))}
                       {slots.filter(sl => sl.restaurant_id === r.id).length === 0 && (
-                        <p className="text-xs text-mist">لسه مفيش فترات — ضيف واحدة تحت</p>
+                        <p className="text-xs text-mist">لسه مفيش فترات. ضيف واحدة تحت</p>
                       )}
                     </div>
                     <div className="flex gap-2 mt-3">
@@ -2814,7 +2814,7 @@ export default function Admin() {
           <div className="pt-6">
             <h3 className="font-bold mb-1">رسوم التوصيل لكل كمبوند</h3>
             <p className="text-xs text-mist mb-3 leading-relaxed">
-              السعر بقى لكل كمبوند لوحده — مش بالكيلومتر. غيّر الرقم واخرج من الخانة
+              السعر بقى لكل كمبوند لوحده، مش بالكيلومتر. غيّر الرقم واخرج من الخانة
               عشان يتحفظ. العميل بيشوف الرقم ده على طول قبل ما يبدأ يطلب.
             </p>
             {(() => {
@@ -3004,13 +3004,13 @@ export default function Admin() {
             <>
               <p className="text-sm text-mist leading-relaxed">
                 دي فلوس العميل دفعها فعلاً والطلب اتلغى. حوّلها بنفسك على إنستاباي،
-                وبعدين دوس "حوّلت المبلغ" — الزرار بيسجّل التحويل بس، مش بيحوّل.
+                وبعدين دوس "حوّلت المبلغ"، الزرار بيسجّل التحويل بس، مش بيحوّل.
               </p>
               {pendingRefunds.map(o => (
                 <div key={o.id} className="card p-4 border-sand/40">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="font-semibold text-sm truncate">طلب #{o.id} — {o.vendor_name ?? '—'}</p>
+                      <p className="font-semibold text-sm truncate">طلب #{o.id}: {o.vendor_name ?? '—'}</p>
                       <p className="text-xs text-mist mt-0.5">
                         👤 {o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a>
                       </p>
@@ -3050,7 +3050,7 @@ export default function Admin() {
               {lowRatings.map(rt => (
                 <div key={rt.id} className="card p-3.5 flex items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="font-semibold text-sm truncate">طلب #{rt.order_id} — {rt.orders?.restaurants?.name}</p>
+                    <p className="font-semibold text-sm truncate">طلب #{rt.order_id}: {rt.orders?.restaurants?.name}</p>
                     <p className="text-xs text-mist truncate flex items-center gap-1 flex-wrap">
                       <span>{rt.orders?.customer_name} · <bdi dir="ltr">{rt.orders?.customer_phone}</bdi></span>
                       {rt.driver_rating != null && <span className="flex items-center gap-1">· المندوب <StarRow n={rt.driver_rating} /></span>}
@@ -3083,13 +3083,13 @@ export default function Admin() {
             <div className="card p-6 text-center text-mist">
               {complaints.length === 0
                 ? 'لا توجد شكاوى'
-                : 'مفيش شكاوى مفتوحة — كل الشكاوى الموجودة اتحلّت'}
+                : 'مفيش شكاوى مفتوحة، كل الشكاوى الموجودة اتحلّت'}
             </div>
           )}
           {complaints.filter(c => showResolvedComplaints || c.status !== 'resolved').map(c => (
             <div key={c.id} className="card p-4">
               <div className="flex items-start justify-between gap-2">
-                <h2 className="font-bold">طلب #{c.order_id} — {c.orders?.restaurants?.name}</h2>
+                <h2 className="font-bold">طلب #{c.order_id}: {c.orders?.restaurants?.name}</h2>
                 <span className={`text-xs font-semibold rounded-full px-2.5 py-1 shrink-0 ${c.status === 'open' ? 'bg-red-500/15 text-red-600' : c.status === 'reviewed' ? 'bg-sand/15 text-sandink' : 'bg-emerald-500/15 text-emerald-700'}`}>
                   {c.status === 'open' ? 'جديدة' : c.status === 'reviewed' ? 'قيد المراجعة' : 'اتحلت'}
                 </span>
@@ -3122,13 +3122,13 @@ export default function Admin() {
           <div className="mb-6">
             <p className="font-semibold mb-1">موظفي القوايم</p>
             <p className="text-xs text-mist mb-3">
-              حساب بيقدر يضيف ويعدّل الأصناف والأسعار والأحجام والإضافات لكل المطاعم — ومش بيشوف الطلبات
+              حساب بيقدر يضيف ويعدّل الأصناف والأسعار والأحجام والإضافات لكل المطاعم، ومش بيشوف الطلبات
               ولا المندوبين ولا الأرباح ولا الإعدادات.
             </p>
             <p className="text-xs text-mist mb-3 leading-relaxed">
               <b>مشرف التشغيل</b> بيشتغل على طلبات المطاعم بس: بيكلّم المطعم ويسجّل
               القبول والجاهزية، بيعيّن المندوبين ويسحبهم، وبيحل مشاكل التوصيل.
-              مش بيشوف الصيدلية ولا الماركت، ومش بيلمس أي فلوس — تأكيد التحويلات
+              مش بيشوف الصيدلية ولا الماركت، ومش بيلمس أي فلوس، تأكيد التحويلات
               وتسوية الكاش والاستردادات كلها عندك إنت. لإنشاء واحد: اعمل حساب
               هنا وبعدين اضغط «خلّيه مشرف تشغيل».
             </p>
@@ -3268,7 +3268,7 @@ export default function Admin() {
       {tab === 'coverage' && (
         <div className="space-y-2.5">
           <p className="text-sm text-mist bg-shellup/60 rounded-xl p-3">
-            كل مطعم بيوصل لكل الأماكن افتراضيًا. تقدر تحدد له مسافة قصوى (كم)، أو لو عايز تحدد أماكن بعينها بالظبط دوس "أماكن محددة" — لو حددت أماكن، هتتجاهل المسافة القصوى وهيوصل بس للأماكن المختارة.
+            كل مطعم بيوصل لكل الأماكن افتراضيًا. تقدر تحدد له مسافة قصوى (كم)، أو لو عايز تحدد أماكن بعينها بالظبط دوس "أماكن محددة"، لو حددت أماكن، هتتجاهل المسافة القصوى وهيوصل بس للأماكن المختارة.
           </p>
           {restaurants.filter(r => !r.archived).map(r => {
             const explicit = coverage.filter(c => c.restaurant_id === r.id)
@@ -3294,14 +3294,14 @@ export default function Admin() {
                 {open && (
                   <div className="mt-3 pt-3 border-t border-line">
                     {explicit.length > 0 && (
-                      <p className="text-xs text-sandink mb-2">⚠️ المطعم ده حاليًا مقتصر بس على الأماكن المعلّمة تحت — لو عايزه يرجع يوصل بالمسافة القصوى بس، شيل كل التعليمات.</p>
+                      <p className="text-xs text-sandink mb-2">⚠️ المطعم ده حاليًا مقتصر بس على الأماكن المعلّمة تحت، لو عايزه يرجع يوصل بالمسافة القصوى بس، شيل كل التعليمات.</p>
                     )}
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-64 overflow-y-auto">
                       {compounds.map(c => {
                         const checked = explicit.some(e => e.compound_id === c.id)
                         return (
                           <label key={c.id} className={`flex items-center gap-1.5 text-xs rounded-lg px-2 py-1.5 cursor-pointer ${checked ? 'bg-sea/10 text-sea font-semibold' : 'bg-shellup/50'}`}>
-                            <Toggle on={checked} onChange={() => toggleCoverage(r.id, c.id)} ariaLabel={`تغطية ${c.name} — ${r.name}`} />
+                            <Toggle on={checked} onChange={() => toggleCoverage(r.id, c.id)} ariaLabel={`تغطية ${c.name}: ${r.name}`} />
                             <span className="truncate">{c.name}</span>
                           </label>
                         )
@@ -3324,7 +3324,7 @@ export default function Admin() {
             <p className="text-sm text-mist mb-1">كلمة السر</p>
             <p className="font-mono text-sm bg-night border border-line rounded-lg p-2.5 mb-4" dir="ltr">{newCreds.password}</p>
             <div className="flex items-center gap-2 mb-4">
-              <p className="text-xs text-sandink flex-1">⚠️ ده ظاهر مرة واحدة بس — انسخه وابعته دلوقتي</p>
+              <p className="text-xs text-sandink flex-1">⚠️ ده ظاهر مرة واحدة بس. انسخه وابعته دلوقتي</p>
               <button className="btn-sea !py-2 text-xs shrink-0" onClick={() => {
                 navigator.clipboard.writeText(`${newCreds.email}\n${newCreds.password}`)
                 setCredsCopied(true)
@@ -3339,9 +3339,9 @@ export default function Admin() {
       {assigning && (
         <div ref={assigningRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-labelledby="assign-driver-title" aria-modal="true" onClick={closeAssign}>
           <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
-            <h3 id="assign-driver-title" className="font-bold mb-4">اختيار مندوب متاح — طلب #{assigning.id}</h3>
+            <h3 id="assign-driver-title" className="font-bold mb-4">اختيار مندوب متاح، طلب #{assigning.id}</h3>
             {assigningNeedsVan && (
-              <p className="text-sandink text-sm mb-3">🚐 الطلب محتاج فان — لسه السعر متأكدش أو الطلب كبير</p>
+              <p className="text-sandink text-sm mb-3">🚐 الطلب محتاج فان، لسه السعر متأكدش أو الطلب كبير</p>
             )}
             {/* The refusal has to be readable HERE. The page-level banner sits
                 behind a fixed inset-0 overlay, so a failed assign produced no
@@ -3378,12 +3378,12 @@ export default function Admin() {
         <div ref={reassigningRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-labelledby="reassign-driver-title" aria-modal="true"
           onClick={() => setReassigning(null)}>
           <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
-            <h3 id="reassign-driver-title" className="font-bold mb-1">تغيير المندوب — طلب #{reassigning.order_id}</h3>
+            <h3 id="reassign-driver-title" className="font-bold mb-1">تغيير المندوب، طلب #{reassigning.order_id}</h3>
             <p className="text-sm text-mist mb-4">
               دلوقتي مع {reassigning.drivers?.name ?? 'مندوب'} · {assignmentStatusLabel(reassigning.status)}
             </p>
             {reassignNeedsVan && (
-              <p className="text-sandink text-sm mb-3">🚐 الطلب محتاج فان — لسه السعر متأكدش أو الطلب كبير</p>
+              <p className="text-sandink text-sm mb-3">🚐 الطلب محتاج فان، لسه السعر متأكدش أو الطلب كبير</p>
             )}
             {modalError && (
               <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3">{modalError}</p>
@@ -3539,7 +3539,7 @@ function DailyReportTab() {
             </p>
             {/* Said out loud, because nothing in the database actually pays this. */}
             <p className="text-[11px] text-mist mt-1">
-              الأجور مفترضة من إعداد «المرتب اليومي» ({n(r.rider_daily_salary)} ج.م) — النظام نفسه مش بيصرفها
+              الأجور مفترضة من إعداد «المرتب اليومي» ({n(r.rider_daily_salary)} ج.م)، النظام نفسه مش بيصرفها
             </p>
           </div>
 

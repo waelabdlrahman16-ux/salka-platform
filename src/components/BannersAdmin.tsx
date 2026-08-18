@@ -81,7 +81,7 @@ export default function BannersAdmin({ restaurants }: { restaurants: Restaurant[
   async function upload(file: File) {
     setError('')
     if (!OK_TYPES.includes(file.type)) { setError('لازم تكون صورة JPG أو PNG أو WebP'); return }
-    if (file.size > MAX_BYTES) { setError('الصورة أكبر من ٢ ميجا — صغّرها الأول'); return }
+    if (file.size > MAX_BYTES) { setError('الصورة أكبر من ٢ ميجا. صغّرها الأول'); return }
     setUploading(true)
     const uploadFile = await compressImage(file)
     const ext = uploadFile.name.split('.').pop()?.toLowerCase() || 'jpg'
@@ -258,7 +258,7 @@ export default function BannersAdmin({ restaurants }: { restaurants: Restaurant[
               <input id={`${fid}-to`} type="datetime-local" required className="field" value={form.ends_at}
                 onChange={e => setForm(f => ({ ...f, ends_at: e.target.value }))} /></div>
           </div>
-          <p className="text-xs text-mist -mt-1">الاتنين لازم يتحددوا — العنوان والصورة اختياريين.</p>
+          <p className="text-xs text-mist -mt-1">الاتنين لازم يتحددوا، العنوان والصورة اختياريين.</p>
 
           <label className="flex items-center gap-2.5 min-h-[44px] cursor-pointer">
             <input type="checkbox" className="w-5 h-5 accent-sea" checked={form.active}

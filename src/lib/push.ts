@@ -119,7 +119,7 @@ async function persistPushTokenOnce(token: string, platform: PushPlatform, key: 
   // kept the admin unreachable for a whole day.
   if (res.data && typeof res.data === 'object' && (res.data as any).stale) {
     lastSaveWasStale = true
-    lastPushError = 'التوكن ده اتلغى من فايربيز — بنجيب واحد جديد'
+    lastPushError = 'التوكن ده اتلغى من فايربيز، بنجيب واحد جديد'
     return false
   }
   recentPushSaves.set(key, Date.now())
@@ -497,7 +497,7 @@ async function saveWebTokenHealing(onToken: PushTokenSink): Promise<boolean> {
   // A brand new registration that produces the identical string means the
   // delete did not take effect -- retrying would just loop.
   if (!fresh || fresh === token) {
-    lastPushError = 'مش قادرين نجدد التوكن — امسح بيانات الموقع وجرب تاني'
+    lastPushError = 'مش قادرين نجدد التوكن. امسح بيانات الموقع وجرب تاني'
     return false
   }
   return (await onToken(fresh, 'web')) !== false

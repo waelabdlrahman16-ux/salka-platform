@@ -16,7 +16,7 @@ export type RpcResult<T> =
   | { ok: false; code: string; error: string; offline: boolean }
 
 const GENERIC_AR = 'حصل خطأ، جرب تاني'
-const OFFLINE_AR = 'مفيش اتصال بالنت — اتأكد من الشبكة وجرب تاني'
+const OFFLINE_AR = 'مفيش اتصال بالنت. اتأكد من الشبكة وجرب تاني'
 
 // Server-side codes are raised as bare identifiers by the SQL functions
 // (`raise exception 'slot_full'`), so we match on substring.
@@ -29,7 +29,7 @@ export const ERROR_AR: Record<string, string> = {
   menu_item_not_found: 'في صنف في عربتك مابقاش موجود، شيله وجرب تاني',
   size_required: 'اختار حجم الصنف قبل ما تكمل',
   invalid_size: 'اختار حجم الصنف قبل ما تكمل',
-  invalid_combo: 'فيه كومبو في عربتك مابقاش متاح — امسح الصنف وضيفه تاني',
+  invalid_combo: 'فيه كومبو في عربتك مابقاش متاح. امسح الصنف وضيفه تاني',
   addon_group_min_not_met: 'في اختيار مطلوب لصنف في عربتك لسه ما اتحددش',
   addon_group_max_exceeded: 'اخترت إضافات أكتر من المسموح لصنف في عربتك',
   empty_order: 'عربتك فاضية',
@@ -42,13 +42,13 @@ export const ERROR_AR: Record<string, string> = {
   compound_missing_fee: 'المكان ده لسه مش متسعّر عندنا، كلّمنا لو سمحت',
   slot_full: 'الفترة دي اتملت، اختار فترة تانية',
   slot_unavailable: 'الفترة دي مابقتش متاحة، اختار فترة تانية',
-  order_rate_limit: 'عملت طلبات كتير بسرعة — استنى شوية وجرب تاني',
-  daily_order_limit: 'وصلت للحد اليومي للطلبات — كلّمنا عشان نساعدك',
+  order_rate_limit: 'عملت طلبات كتير بسرعة. استنى شوية وجرب تاني',
+  daily_order_limit: 'وصلت للحد اليومي للطلبات. كلّمنا عشان نساعدك',
   not_your_restaurant: 'مش مسموح تعمل طلب مندوب للمطعم ده',
   invalid_customer_input: 'راجع بيانات الاسم والموبايل والعنوان وجرب تاني',
   invalid_order_input: 'راجع تفاصيل الطلب وجرب تاني',
-  order_creation_failed: 'مقدرناش نسجل الطلب — جرب تاني أو كلّمنا',
-  invalid_push_input: 'بيانات التنبيهات مش مظبوطة — حاول تفعّلها تاني',
+  order_creation_failed: 'مقدرناش نسجل الطلب. جرب تاني أو كلّمنا',
+  invalid_push_input: 'بيانات التنبيهات مش مظبوطة. حاول تفعّلها تاني',
   invalid_rating_input: 'راجع التقييم وجرب تاني',
   invalid_complaint_input: 'اكتب تفاصيل المشكلة من ٥ حروف على الأقل',
   complaint_limit_reached: 'وصلت للحد اليومي للشكاوى على الطلب ده',
@@ -59,19 +59,19 @@ export const ERROR_AR: Record<string, string> = {
   invalid_restaurant_rating: 'تقييم المكان لازم يكون من ١ إلى ٥',
   rating_already_submitted: 'تم إرسال تقييم للطلب ده بالفعل',
   rating_window_closed: 'فترة تقييم الطلب انتهت',
-  customer_order_access_failed: 'مقدرناش نحدّث الطلب — جرب تاني',
+  customer_order_access_failed: 'مقدرناش نحدّث الطلب. جرب تاني',
   invalid_financial_input: 'راجع المبلغ والبيانات وجرب تاني',
-  financial_action_failed: 'العملية المالية متنفذتش — جرب تاني أو راجع السجل',
+  financial_action_failed: 'العملية المالية متنفذتش. جرب تاني أو راجع السجل',
   invalid_account_input: 'راجع بيانات الحساب أو المندوب وجرب تاني',
-  account_action_failed: 'العملية متنفذتش — جرب تاني أو راجع السجل',
+  account_action_failed: 'العملية متنفذتش. جرب تاني أو راجع السجل',
   invalid_dispatch_input: 'راجع بيانات الطلب أو المندوب وجرب تاني',
-  dispatch_action_failed: 'تحديث التوصيل متنفذش — جرب تاني أو راجع السجل',
+  dispatch_action_failed: 'تحديث التوصيل متنفذش. جرب تاني أو راجع السجل',
   invalid_vendor_input: 'راجع بيانات الطلب أو المكان وجرب تاني',
-  vendor_action_failed: 'تحديث المكان متنفذش — جرب تاني أو راجع السجل',
+  vendor_action_failed: 'تحديث المكان متنفذش. جرب تاني أو راجع السجل',
   cannot_delete_self: 'مينفعش تلغي حسابك انت',
   cannot_delete_admin: 'مينفعش تلغي حساب إدارة من هنا',
   cannot_target_self: 'مينفعش تغيّر صلاحية حسابك انت',
-  profile_not_found: 'الحساب ده مش موجود — حدّث الصفحة',
+  profile_not_found: 'الحساب ده مش موجود. حدّث الصفحة',
   target_not_convertible: 'الحساب ده مينفعش يتحول للدور ده',
   invalid_role: 'نوع الحساب المطلوب مش صحيح',
   phone_already_used: 'الرقم ده مستخدم لمندوب تاني',
@@ -82,10 +82,10 @@ export const ERROR_AR: Record<string, string> = {
 
   // admin panel — catalog / compound / reports
   category_exists: 'في قسم بالاسم ده بالفعل',
-  category_not_empty: 'فيه أصناف لسه في القسم ده — انقلهم أو احذفهم الأول',
+  category_not_empty: 'فيه أصناف لسه في القسم ده. انقلهم أو احذفهم الأول',
   item_has_order_history: 'الصنف ده اتباع قبل كده، مينفعش يتمسح',
   library_item_exists: 'الإضافة دي موجودة بالفعل في المكتبة',
-  library_item_not_found: 'الإضافة دي مش موجودة — حدّث الصفحة',
+  library_item_not_found: 'الإضافة دي مش موجودة. حدّث الصفحة',
   invalid_price: 'السعر لازم يكون صفر أو أكبر',
   complaint_not_found: 'الشكوى دي مش موجودة',
   no_driver_on_this_complaint: 'مفيش مندوب متسجل على الشكوى دي',
@@ -104,65 +104,65 @@ export const ERROR_AR: Record<string, string> = {
   order_not_delivered: 'الطلب لسه ما اتسلّمش',
   order_closed: 'الطلب ده خلص أو اتلغى قبل كده',
   order_not_priced: 'الطلب لسه محتاج تسعير قبل ما يتعيّن لمندوب',
-  invalid_items: 'الأصناف المضافة مش مظبوطة — راجعها وجرب تاني',
+  invalid_items: 'الأصناف المضافة مش مظبوطة. راجعها وجرب تاني',
   invalid_item_count: 'ضيف من صنف واحد لحد 20 صنف في المرة',
   too_many_order_items: 'الطلب وصل للحد الأقصى من الأصناف',
   invalid_merged_item: 'في صنف بعد الإضافة كميته مش مظبوطة',
-  order_edit_rate_limit: 'حاولت تضيف أصناف كتير — استنى شوية وجرب تاني',
-  daily_order_edit_limit: 'وصلت للحد اليومي لإضافة الأصناف — كلّمنا عشان نساعدك',
-  order_edit_failed: 'مقدرناش نضيف الصنف — جرب تاني أو كلّمنا',
+  order_edit_rate_limit: 'حاولت تضيف أصناف كتير. استنى شوية وجرب تاني',
+  daily_order_edit_limit: 'وصلت للحد اليومي لإضافة الأصناف. كلّمنا عشان نساعدك',
+  order_edit_failed: 'مقدرناش نضيف الصنف. جرب تاني أو كلّمنا',
 
   // dispatch / driver
   already_taken: 'الطلب اتاخد من مندوب تاني',
   wrong_vehicle_type: 'الطلب ده محتاج فان',
   not_ready_yet: 'الطلب لسه بيتحضر، استنى شوية',
   dispatch_rule_blocked: 'وصلت للحد الأقصى (٤ طلبات) أو الطلب ده في اتجاه مختلف عن طلباتك الحالية',
-  order_not_ready: 'الطلب لسه بيتحضر — استنى لحد ما المطعم يخليه جاهز',
+  order_not_ready: 'الطلب لسه بيتحضر. استنى لحد ما المطعم يخليه جاهز',
   must_arrive_first: 'لازم تسجل إنك وصلت المطعم الأول',
   must_confirm_cash_first: 'أكد إنك استلمت الكاش الأول',
   must_call_customer_first: 'لازم تتصل بالعميل الأول',
   too_early: 'لسه بدري، استنى 5 دقايق من وقت خروجك للتوصيل',
   not_your_assignment: 'الطلب ده مش متعيّن ليك',
-  already_assigned: 'الطلب ده معروض على مندوب بالفعل — اسحبه الأول لو عايز تغيّره',
+  already_assigned: 'الطلب ده معروض على مندوب بالفعل. اسحبه الأول لو عايز تغيّره',
   // These two carry a value after a colon (driver_holds_cash:270.00). Registered
   // by their bare prefix so extractCode's substring match still resolves them --
   // without an entry here they fall through to 'unknown' and the call site's
   // override never fires, which is exactly how payment_already_claimed was
   // silently generic before.
-  driver_holds_cash: 'المندوب ده لسه ماسك كاش — سوّي الكاش الأول',
+  driver_holds_cash: 'المندوب ده لسه ماسك كاش. سوّي الكاش الأول',
   customer_has_wallet_balance: 'العميل ده لسه معاه رصيد في المحفظة',
   customer_has_live_order: 'العميل ده عنده طلب شغال دلوقتي',
-  no_account_for_phone: 'الرقم ده مالوش حساب مسجّل — ده سجل طلبات بس',
+  no_account_for_phone: 'الرقم ده مالوش حساب مسجّل، ده سجل طلبات بس',
   driver_already_declined: 'المندوب ده رفض الطلب ده قبل كده',
-  too_many_attempts: 'الطلب ده اتعرض 5 مرات — راجع السبب قبل ما تعرضه تاني',
+  too_many_attempts: 'الطلب ده اتعرض 5 مرات. راجع السبب قبل ما تعرضه تاني',
   no_active_assignment: 'الطلب ده مش مع مندوب دلوقتي',
   driver_not_found: 'المندوب ده مش موجود',
   driver_suspended: 'المندوب ده موقوف',
   not_your_order: 'الطلب ده مش بتاع مطعمك',
   wrong_stage: 'الخطوة دي مش دورها دلوقتي',
   not_a_driver: 'حسابك مش مربوط بمندوب',
-  device_locked: 'الحساب ده مربوط بموبايل تاني — كلّم الإدارة عشان يفكّوا الربط',
+  device_locked: 'الحساب ده مربوط بموبايل تاني. كلّم الإدارة عشان يفكّوا الربط',
   invalid_device: 'مش قادرين نتعرف على الجهاز ده',
   unavailable: 'حد تاني سبقك',
 
   // Admin audit and cleanup
   audit_mark_too_late: 'الطلب اتأثر بالفعل بتوصيل أو حسابات، ومينفعش يتحول لتجربة',
   test_order_required: 'الحذف النهائي متاح للطلبات المعلّمة كتجربة فقط',
-  test_order_has_financial_or_customer_history: 'الطلب ده له حركة مالية أو سجل عميل، فمينفعش يتحذف نهائياً — استخدم الأرشفة',
+  test_order_has_financial_or_customer_history: 'الطلب ده له حركة مالية أو سجل عميل، فمينفعش يتحذف نهائياً. استخدم الأرشفة',
   order_not_closed: 'الأرشفة متاحة بعد التسليم أو الإلغاء فقط',
 
   // tips / feedback
   invalid_amount: 'المبلغ مش مظبوط',
   invalid_fee: 'الرسوم لازم تكون رقم موجب',
-  fee_too_large: 'الرقم ده كبير أوي — أقصى رسوم توصيل 2000 ج.م',
+  fee_too_large: 'الرقم ده كبير أوي، أقصى رسوم توصيل 2000 ج.م',
   compound_not_found: 'المكان ده مش موجود',
   admin_only: 'العملية دي للإدارة بس',
   // A banned customer is told the account is blocked and given a way to argue,
   // not a generic failure they will retry ten times.
-  account_blocked: 'الحساب ده متوقف عن الطلب — كلّم الإدارة لو في مشكلة',
-  has_live_orders: 'العميل ده عنده طلب شغال دلوقتي — اقفله الأول قبل ما توقفه',
+  account_blocked: 'الحساب ده متوقف عن الطلب. كلّم الإدارة لو في مشكلة',
+  has_live_orders: 'العميل ده عنده طلب شغال دلوقتي. اقفله الأول قبل ما توقفه',
   no_driver_on_this_order: 'مفيش مندوب متسجل على الطلب ده',
-  driver_instapay_unavailable: 'المندوب مش مسجل رقم إنستاباي — كلّمه أو اختار طريقة تانية',
+  driver_instapay_unavailable: 'المندوب مش مسجل رقم إنستاباي. كلّمه أو اختار طريقة تانية',
 
   // Payment-method switching (switch_to_cash). These MUST live here, not only
   // in a call-site `overrides` map: describeError() resolves a code by matching
@@ -171,24 +171,24 @@ export const ERROR_AR: Record<string, string> = {
   // resolved code -- never fires. Caught in review: both of these were silently
   // falling through to "حصل خطأ، جرب تاني", including the one that fires when
   // someone has already told us they transferred the money.
-  payment_already_claimed: 'قلت لنا إنك حوّلت بالفعل — استنى المراجعة، ولو في مشكلة كلّمنا',
+  payment_already_claimed: 'قلت لنا إنك حوّلت بالفعل. استنى المراجعة، ولو في مشكلة كلّمنا',
   already_cash: 'الطلب ده أصلاً كاش عند الاستلام',
   order_not_awaiting_payment: 'الطلب مش مستني دفع دلوقتي',
-  rate_limit_check_failed: 'حصل عطل مؤقت — جرب تاني بعد شوية',
-  payment_action_failed: 'العملية متنفذتش — جرب تاني أو كلّمنا',
+  rate_limit_check_failed: 'حصل عطل مؤقت. جرب تاني بعد شوية',
+  payment_action_failed: 'العملية متنفذتش. جرب تاني أو كلّمنا',
 
   // account
   not_logged_in: 'لازم تسجل دخولك الأول',
   invalid_phone: 'رقم الموبايل مش مظبوط',
   phone_already_registered: 'الرقم ده مسجل على حساب تاني',
-  rate_limited: 'حاولت كتير — البحث بالرقم مسموح 5 مرات كل 10 دقايق. سجّل دخولك وهتشوف طلباتك من غير أي حد.',
+  rate_limited: 'حاولت كتير، البحث بالرقم مسموح 5 مرات كل 10 دقايق. سجّل دخولك وهتشوف طلباتك من غير أي حد.',
 
   // driver assignment lifecycle (batch 9)
   not_your_pool: 'الطلب ده مش من نوع الطلبات اللي بتاخدها',
   kitchen_not_accepted_yet: 'المطعم لسه ما قبلش الطلب',
   reason_required: 'اكتب سبب المشكلة',
   invalid_assignment_input: 'راجع بيانات الطلب أو المندوب وجرب تاني',
-  assignment_action_failed: 'تحديث الطلب متنفذش — جرب تاني أو راجع السجل',
+  assignment_action_failed: 'تحديث الطلب متنفذش. جرب تاني أو راجع السجل',
 
   // driver self-service (batch 9)
   invalid_state: 'الحالة المطلوبة مش صحيحة',
@@ -196,7 +196,7 @@ export const ERROR_AR: Record<string, string> = {
   bad_platform: 'نوع الجهاز مش معروف',
   empty_token: 'بيانات التنبيهات ناقصة',
   invalid_driver_input: 'راجع البيانات وجرب تاني',
-  driver_action_failed: 'العملية متنفذتش — جرب تاني أو راجع السجل',
+  driver_action_failed: 'العملية متنفذتش. جرب تاني أو راجع السجل',
 
   // catalog checks (batch 9)
   not_authorised: 'مش مسموح بالعملية دي',
@@ -205,7 +205,7 @@ export const ERROR_AR: Record<string, string> = {
   invalid_scope: 'نوع الخصم مش مظبوط',
   restaurant_required: 'اختار المطعم الأول',
   invalid_catalog_input: 'راجع البيانات وجرب تاني',
-  catalog_check_failed: 'العملية متنفذتش — جرب تاني أو راجع السجل',
+  catalog_check_failed: 'العملية متنفذتش. جرب تاني أو راجع السجل',
 
   // ---------------------------------------------------------------------------
   // Promo codes.
@@ -236,27 +236,27 @@ export const ERROR_AR: Record<string, string> = {
   invalid_customer_name: 'اكتب اسمك بشكل صحيح',
   invalid_unit_number: 'اكتب رقم الوحدة بشكل صحيح',
   invalid_zone: 'اختار منطقتك الأول',
-  notes_too_long: 'الملاحظات طويلة أوي — اختصرها شوية',
+  notes_too_long: 'الملاحظات طويلة أوي. اختصرها شوية',
   invalid_item_quantity: 'الكمية مش مظبوطة',
   invalid_addon: 'في إضافة مابقتش متاحة، شيلها وجرب تاني',
   collect_amount_required: 'اكتب المبلغ المطلوب تحصيله',
   invalid_collect_amount: 'المبلغ المطلوب تحصيله مش مظبوط',
   invalid_payment_mode: 'اختار طريقة الدفع',
-  invalid_prescription_path: 'صورة الروشتة فيها مشكلة — ارفعها تاني',
+  invalid_prescription_path: 'صورة الروشتة فيها مشكلة. ارفعها تاني',
   not_a_custom_order_vendor: 'المكان ده مش بيستقبل طلبات خاصة',
-  request_too_large: 'الطلب كبير أوي — قلل عدد الأصناف وجرب تاني',
+  request_too_large: 'الطلب كبير أوي. قلل عدد الأصناف وجرب تاني',
 
   // ---------------------------------------------------------------------------
   // Our fault, not the customer's. Listed so extractCode RECOGNISES them and
   // analytics records which one happened -- previously indistinguishable from
   // every other 'unknown'. The wording says the problem is ours and does not
   // tell anyone to retry something that will fail again the same way.
-  invalid_json: 'في مشكلة عندنا دلوقتي — جرب تاني بعد شوية',
-  invalid_request: 'في مشكلة عندنا دلوقتي — جرب تاني بعد شوية',
-  invalid_action: 'في مشكلة عندنا دلوقتي — جرب تاني بعد شوية',
-  method_not_allowed: 'في مشكلة عندنا دلوقتي — جرب تاني بعد شوية',
-  missing_rate_limit_pepper: 'في مشكلة عندنا دلوقتي — جرب تاني بعد شوية',
-  rate_limit_identity_failed: 'في مشكلة عندنا دلوقتي — جرب تاني بعد شوية',
+  invalid_json: 'في مشكلة عندنا دلوقتي. جرب تاني بعد شوية',
+  invalid_request: 'في مشكلة عندنا دلوقتي. جرب تاني بعد شوية',
+  invalid_action: 'في مشكلة عندنا دلوقتي. جرب تاني بعد شوية',
+  method_not_allowed: 'في مشكلة عندنا دلوقتي. جرب تاني بعد شوية',
+  missing_rate_limit_pepper: 'في مشكلة عندنا دلوقتي. جرب تاني بعد شوية',
+  rate_limit_identity_failed: 'في مشكلة عندنا دلوقتي. جرب تاني بعد شوية',
 }
 
 export function isOffline(): boolean {

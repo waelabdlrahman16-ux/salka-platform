@@ -91,9 +91,9 @@ type Recovery = { id: number; phone: string; email: string | null; created_at: s
 
 const SEGMENTS: { key: Segment; label: string; hint: string }[] = [
   { key: 'all', label: 'الكل', hint: 'كل اللي عندنا رقمه' },
-  { key: 'repeat', label: 'رجعوا تاني', hint: 'طلبوا واستلموا مرتين أو أكتر — دول الدليل إن الخدمة شغالة' },
-  { key: 'once', label: 'طلبوا مرة', hint: 'طلب واحد بس واستلمه — أقرب ناس ممكن ترجع لو كلمتهم' },
-  { key: 'never', label: 'سجّلوا وماطلبوش', hint: 'عملوا حساب ومكملوش — دول بيقولولك التطبيق ضيّعهم فين' },
+  { key: 'repeat', label: 'رجعوا تاني', hint: 'طلبوا واستلموا مرتين أو أكتر، دول الدليل إن الخدمة شغالة' },
+  { key: 'once', label: 'طلبوا مرة', hint: 'طلب واحد بس واستلمه، أقرب ناس ممكن ترجع لو كلمتهم' },
+  { key: 'never', label: 'سجّلوا وماطلبوش', hint: 'عملوا حساب ومكملوش، دول بيقولولك التطبيق ضيّعهم فين' },
   { key: 'attention', label: 'محتاجين متابعة', hint: 'إلغاء أكتر من استلام، أو شكوى، أو فلوس مستحقة ليهم' },
 ]
 
@@ -338,8 +338,8 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
     })) return
     setBanBusy(true); setBanError('')
     const res = await adminAccountDriverAction('deleteCustomerByPhone', { phone: c.phone }, {
-      no_account_for_phone: 'الرقم ده مالوش حساب دخول أصلًا — ده سجل طلبات بس، ومفيش حاجة تتمسح',
-      customer_has_live_order: 'عنده طلب شغال دلوقتي — استنى لما يخلص',
+      no_account_for_phone: 'الرقم ده مالوش حساب دخول أصلًا، ده سجل طلبات بس، ومفيش حاجة تتمسح',
+      customer_has_live_order: 'عنده طلب شغال دلوقتي. استنى لما يخلص',
       admin_only: 'مش من صلاحياتك',
     })
     if (!res.ok) {
@@ -487,7 +487,7 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
 
             {detail && detail.orders.length === 0 && (
               <p className="text-sm text-mist">
-                عمل حساب بس مطلبش ولا مرة. ده أهم سطر في الصفحة دي — يستاهل مكالمة.
+                عمل حساب بس مطلبش ولا مرة. ده أهم سطر في الصفحة دي، يستاهل مكالمة.
               </p>
             )}
 

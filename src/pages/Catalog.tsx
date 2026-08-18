@@ -52,20 +52,20 @@ export default function Catalog() {
   async function updatePrice(it: MenuItem, price: number) {
     if (!Number.isFinite(price) || price < 0) return
     const { error } = await supabase.from('menu_items').update({ price }).eq('id', it.id)
-    if (error) { setError(`تعديل سعر «${it.name}» فشل — ${error.message}`); return }
+    if (error) { setError(`تعديل سعر «${it.name}» فشل: ${error.message}`); return }
     setError('')
     load()
   }
   async function toggleItem(it: MenuItem) {
     const { error } = await supabase.from('menu_items').update({ available: !it.available }).eq('id', it.id)
-    if (error) { setError(`تغيير إتاحة «${it.name}» فشل — ${error.message}`); return }
+    if (error) { setError(`تغيير إتاحة «${it.name}» فشل: ${error.message}`); return }
     setError('')
     load()
   }
   async function toggleRx(it: MenuItem) {
     const { error } = await supabase.from('menu_items')
       .update({ requires_prescription: !it.requires_prescription }).eq('id', it.id)
-    if (error) { setError(`تغيير الروشتة فشل — ${error.message}`); return }
+    if (error) { setError(`تغيير الروشتة فشل: ${error.message}`); return }
     setError('')
     load()
   }
@@ -76,7 +76,7 @@ export default function Catalog() {
     if (error) { setError(error); return }
     if (!url) return
     const { error: upErr } = await supabase.from('menu_items').update({ image_url: url }).eq('id', it.id)
-    if (upErr) { setError(`حفظ الصورة فشل — ${upErr.message}`); return }
+    if (upErr) { setError(`حفظ الصورة فشل: ${upErr.message}`); return }
     load()
   }
 
