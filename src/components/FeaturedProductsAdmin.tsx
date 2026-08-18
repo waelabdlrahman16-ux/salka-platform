@@ -156,7 +156,7 @@ export default function FeaturedProductsAdmin({ restaurants }: { restaurants: Re
             <select id={`${fid}-i`} className="field" value={pickItemId} disabled={!pickRestaurant || itemsLoading}
               onChange={e => setPickItemId(e.target.value)}>
               <option value="">{itemsLoading ? 'جاري التحميل…' : 'اختار صنف'}</option>
-              {pickItems.map(it => <option key={it.id} value={it.id}>{it.name} — {it.price} ج.م</option>)}
+              {pickItems.map(it => <option key={it.id} value={it.id}>{it.name} · {it.price} ج.م</option>)}
             </select></div>
         </div>
         <button className="btn-sea !py-2 text-sm" onClick={add} disabled={!pickItemId || saving}>

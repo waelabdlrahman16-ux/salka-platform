@@ -53,11 +53,11 @@ export default function DriverForm({ initial, onDone, onCancel }: {
       payoutSchedule: f.payout_schedule,
       active: f.active,
     }, {
-      phone_already_used: 'الرقم ده مستخدم لمندوب تاني — رقمين على مندوب واحد معناه إن الدسباتش هيكلم الغلط',
+      phone_already_used: 'الرقم ده مستخدم لمندوب تاني، رقمين على مندوب واحد معناه إن الدسباتش هيكلم الغلط',
       name_required: 'اكتب اسم المندوب',
       phone_required: 'اكتب رقم الموبايل',
       invalid_vehicle_type: 'النوع لازم يكون موتوسيكل أو فان',
-      driver_not_found: 'المندوب ده مش موجود — حدّث الصفحة',
+      driver_not_found: 'المندوب ده مش موجود. حدّث الصفحة',
       admin_only: 'مش من صلاحياتك',
     })
     setBusy(false)
@@ -121,7 +121,7 @@ export default function DriverForm({ initial, onDone, onCancel }: {
 
       {/* Says what this form does NOT touch, so nobody goes looking for it here. */}
       <p className="text-xs text-mist mb-2">
-        الكاش اللي على عهدته وتقييمه وعدد توصيلاته والجهاز المربوط بحسابه — كل دي بتتحسب
+        الكاش اللي على عهدته وتقييمه وعدد توصيلاته والجهاز المربوط بحسابه، كل دي بتتحسب
         لوحدها ومش بتتعدل من هنا. حساب الدخول بيتعمل من «حسابات الدخول».
       </p>
 

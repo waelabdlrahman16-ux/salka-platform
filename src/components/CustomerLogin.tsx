@@ -96,7 +96,7 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
     if (!res.ok) {
       setError(
         res.error === 'sms_not_configured' ? 'خدمة الرسائل لسه مش متفعّلة، جرب تسجّل بالإيميل أو جوجل'
-          : res.error === 'rate_limited' ? 'حاولت كتير، استنى 10 دقايق وجرب تاني — أو ادخل بجوجل/الإيميل'
+          : res.error === 'rate_limited' ? 'حاولت كتير، استنى 10 دقايق وجرب تاني، أو ادخل بجوجل/الإيميل'
           : res.error === 'service_busy' ? 'الخدمة مزحومة دلوقتي، جرب كمان شوية أو ادخل بجوجل/الإيميل'
           : res.error === 'invalid_phone' ? 'رقم الموبايل مش مظبوط'
           : res.error === 'sms_send_failed' ? 'مش قادرين نبعت الكود دلوقتي، جرب تاني أو ادخل بجوجل/الإيميل'
@@ -186,7 +186,7 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
                 rather than appearing as unexplained advice. */}
             {googleSignInBlocked() && (
               <p className="text-[11px] text-mist -mt-2 mb-4 leading-relaxed">
-                الدخول بجوجل مش شغّال جوه فيسبوك — اضغط على ••• فوق واختار «فتح في المتصفح» لو عايزه
+                الدخول بجوجل مش شغّال جوه فيسبوك. اضغط على ••• فوق واختار «فتح في المتصفح» لو عايزه
               </p>
             )}
 
@@ -210,7 +210,7 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
 
             {emailLinkSent ? (
               <p className="text-sm bg-emerald-500/10 text-emerald-700 rounded-xl p-3 mb-4">
-                ✓ بعتنالك رابط على {email} — افتح الإيميل واضغط عليه عشان تدخل
+                ✓ بعتنالك رابط على {email}، افتح الإيميل واضغط عليه عشان تدخل
               </p>
             ) : (
               <>

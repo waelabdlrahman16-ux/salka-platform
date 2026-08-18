@@ -98,7 +98,7 @@ export default function AddonLibrary({ restaurantId, items }: {
     setBusy(false)
     setNotice(added === 0
       ? 'الإضافات المحددة موجودة بالفعل على كل الأصناف دي'
-      : `تمام — اتضاف ${chosen.length} إضافات لـ ${added} صنف`)
+      : `تمام، اتضاف ${chosen.length} إضافات لـ ${added} صنف`)
     setApplying(null)
     setSelectedIds([])
   }
@@ -161,7 +161,7 @@ export default function AddonLibrary({ restaurantId, items }: {
               تحت مجموعة "{groupName}" · غيّرها
             </button>
           )}
-          <p className="text-[11px] text-mist mb-2">السعر هنا بداية بس — تعدّله على كل صنف لوحده بعدين.</p>
+          <p className="text-[11px] text-mist mb-2">السعر هنا بداية بس. تعدّله على كل صنف لوحده بعدين.</p>
           <div className="flex gap-2">
             <button className="btn-sea !py-1.5 !px-4 text-sm" disabled={busy} onClick={applyToCategory}>
               {busy ? 'جاري الإضافة…' : 'ضيفه'}

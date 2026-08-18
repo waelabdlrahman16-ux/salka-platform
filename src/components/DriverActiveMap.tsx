@@ -71,7 +71,7 @@ export default function DriverActiveMap({ destLat, destLng, showRoute, heightPx 
       <div ref={containerRef} className="w-full h-full" />
       {!myPos && (
         <div className="absolute inset-0 bg-shellup grid place-items-center text-sm text-mist text-center px-4">
-          {locationDenied ? 'الموقع مقفول — فعّله من إعدادات الموبايل' : 'جاري تحديد موقعك…'}
+          {locationDenied ? 'الموقع مقفول. فعّله من إعدادات الموبايل' : 'جاري تحديد موقعك…'}
         </div>
       )}
       <button onClick={recenter} aria-label="رجّع للموقع" className="absolute bottom-2.5 left-2.5 bg-white rounded-full w-9 h-9 grid place-items-center shadow-sm">

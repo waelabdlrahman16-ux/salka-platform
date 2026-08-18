@@ -59,7 +59,7 @@ export default function LinkItemPicker({ restaurants, onPick }: {
       )}
 
       {itemsLoading && <p className="text-xs text-mist">جاري تحميل القايمة…</p>}
-      {itemsFailed && <p className="text-xs text-red-600">مش قادرين نجيب قايمة الأصناف — جرب تاني</p>}
+      {itemsFailed && <p className="text-xs text-red-600">مش قادرين نجيب قايمة الأصناف. جرب تاني</p>}
 
       {!itemsLoading && !itemsFailed && items.length > 0 && (
         <div className="max-h-72 overflow-y-auto border border-line rounded-lg p-2.5 space-y-3">

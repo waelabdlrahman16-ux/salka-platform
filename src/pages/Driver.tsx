@@ -173,7 +173,7 @@ export default function DriverPage() {
   const todayTips = stats?.today_tips ?? 0
   const todayReportedTips = stats?.today_reported_tips ?? 0
   const bonus = stats?.bonus ?? null
-  const money = (n: number) => (haveStats ? `${n} ج.م` : '— ج.م')
+  const money = (n: number) => (haveStats ? `${n} ج.م` : '، ج.م')
 
   useEffect(() => {
     return () => { if (justDeliveredTimeoutRef.current) clearTimeout(justDeliveredTimeoutRef.current) }
@@ -518,7 +518,7 @@ export default function DriverPage() {
       const res = await driverAssignmentAction('markPickedUp', { assignmentId: a.id })
       if (!res.ok) {
         await alertSheet(
-          res.code === 'order_not_ready' ? 'الطلب لسه بيتجهز — استنى لحد ما يبقى جاهز'
+          res.code === 'order_not_ready' ? 'الطلب لسه بيتجهز. استنى لحد ما يبقى جاهز'
           : res.code === 'must_arrive_first' ? 'لازم تسجل إنك وصلت المكان الأول'
           : 'حصل خطأ، جرب تاني'
         )
@@ -605,7 +605,7 @@ export default function DriverPage() {
     await runAction('availability', async () => {
       const res = await driverSelfService('setAvailable', { available: next }, {
         finish_your_orders_first: 'خلّص الطلبات اللي معاك الأول',
-        driver_suspended: 'حسابك موقوف — كلّم الإدارة',
+        driver_suspended: 'حسابك موقوف. كلّم الإدارة',
       })
       if (!res.ok) { await alertSheet(res.error); return }
       await load(true)
@@ -816,7 +816,7 @@ export default function DriverPage() {
             : 'bg-shellup text-seadeep'
         }`}>
           <span>💵 كاش معاك دلوقتي</span>
-          <span>{driver.cash_held} ج.م{(driver.cash_held ?? 0) >= 2500 ? ' — قرّب الحد' : ''}</span>
+          <span>{driver.cash_held} ج.م{(driver.cash_held ?? 0) >= 2500 ? '. قرّب الحد' : ''}</span>
         </div>
       )}
 
@@ -831,7 +831,7 @@ export default function DriverPage() {
       {(syncFailed || (lastSyncAt !== null && Date.now() - lastSyncAt > STALE_AFTER_MS)) && (
         <div className="bg-sand/15 border border-sand/40 rounded-xl p-3 mb-4 flex items-center justify-between gap-3">
           <p className="text-sm font-semibold text-foam">
-            📡 الاتصال ضعيف — اللي ظاهر قدامك ممكن يكون قديم
+            📡 الاتصال ضعيف، اللي ظاهر قدامك ممكن يكون قديم
           </p>
           <button className="btn-ghost !py-2 text-sm shrink-0" disabled={refreshing} onClick={manualRefresh}>
             {refreshing ? '…' : 'حدّث'}
@@ -842,7 +842,7 @@ export default function DriverPage() {
       {gpsDenied && (
         <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 mb-4">
           <p className="text-sm font-semibold text-red-700">
-            📍 الموقع مقفول — شغّل الـ GPS عشان الخريطة والوقت المتوقع يشتغلوا
+            📍 الموقع مقفول. شغّل الـ GPS عشان الخريطة والوقت المتوقع يشتغلوا
           </p>
           {/* The old copy said WHAT was broken but never HOW to fix it -- a
               driver who tapped "block" on the permission prompt once has no
@@ -908,7 +908,7 @@ export default function DriverPage() {
       {/* pool.length guard: this used to print "كل الطلبات اتسلمت ✅" directly
           above a list of unclaimed orders waiting to be taken. */}
       {activeTab === 'active' && liveAssignments.length === 0 && pool.length === 0 && doneAssignments.length > 0 && (
-        <p className="card p-5 text-center text-mist text-sm mb-3">مفيش شغل دلوقتي — كل الطلبات اتسلمت ✅</p>
+        <p className="card p-5 text-center text-mist text-sm mb-3">مفيش شغل دلوقتي، كل الطلبات اتسلمت ✅</p>
       )}
 
       <div className="space-y-3" ref={orderListRef}>
@@ -1005,10 +1005,10 @@ export default function DriverPage() {
             <div key={a.id} className="card !rounded-2xl p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <h2 className="font-bold truncate">طلب #{o.id} — {o.restaurants?.name}</h2>
+                  <h2 className="font-bold truncate">طلب #{o.id}: {o.restaurants?.name}</h2>
                   <p className="text-sm mt-0.5">
                     {o.payment_method === 'instapay' ? (
-                      <span className="inline-flex items-center gap-1 text-sea font-semibold">🔵 مدفوع أونلاين بالكامل — متحصلش فلوس</span>
+                      <span className="inline-flex items-center gap-1 text-sea font-semibold">🔵 مدفوع أونلاين بالكامل، متحصلش فلوس</span>
                     ) : o.cod_deposit_amount != null ? (
                       <span className="inline-flex items-center gap-2 flex-wrap">
                         <span className="text-sea font-semibold">🔵 عربون مدفوع: {o.cod_deposit_amount} ج.م</span>
@@ -1094,7 +1094,7 @@ export default function DriverPage() {
                 <p className="font-semibold">{o.customer_name}</p>
                 <p className="text-mist flex items-start gap-1.5">
                   <Icon name="locationDot" className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                  <span>{o.zone} — وحدة {o.unit_number}</span>
+                  <span>{o.zone}، وحدة {o.unit_number}</span>
                 </p>
                 {o.address_notes && (
                   <p className="text-sea bg-sea/10 rounded-lg p-2 font-semibold">📝 {o.address_notes}</p>
@@ -1207,7 +1207,7 @@ export default function DriverPage() {
                       ) : (
                         <button className="btn-ghost w-full text-sm" disabled={isBusy(`arrived:${a.id}`)}
                           onClick={() => markArrivedAtCustomer(a)}>
-                          {isBusy(`arrived:${a.id}`) ? 'لحظة…' : '📍 وصلت — بلّغ العميل'}
+                          {isBusy(`arrived:${a.id}`) ? 'لحظة…' : '📍 وصلت. بلّغ العميل'}
                         </button>
                       )}
                       <SwipeToConfirm
@@ -1235,9 +1235,9 @@ export default function DriverPage() {
                             {isBusy(`called:${a.id}`) ? 'لحظة…' : '📞 اتصلت بالعميل ومردش'}
                           </button>
                         ) : (a.out_for_delivery_at && (Date.now() - +new Date(a.out_for_delivery_at)) >= 5 * 60000) ? (
-                          <button className="btn-danger w-full text-sm" onClick={() => reportNoAnswer(a)}>العميل لسه ما ردش — بلّغ الإدارة</button>
+                          <button className="btn-danger w-full text-sm" onClick={() => reportNoAnswer(a)}>العميل لسه ما ردش. بلّغ الإدارة</button>
                         ) : (
-                          <p className="text-mist text-xs text-center">✓ اتصلت — لو ما ردش خلال 5 دقايق من خروجك، هيظهر لك زرار الإبلاغ</p>
+                          <p className="text-mist text-xs text-center">✓ اتصلت، لو ما ردش خلال 5 دقايق من خروجك، هيظهر لك زرار الإبلاغ</p>
                         )}
                         <button className="btn-ghost w-full !py-2 text-xs text-mist"
                           disabled={isBusy(`problem:${a.id}`)}
@@ -1271,7 +1271,7 @@ export default function DriverPage() {
           the driver, it hands the order to whoever scrolled less. */}
       {activeTab === 'active' && pool.length > 0 && (
         <div className="mb-5">
-          <h2 className="font-bold text-mist mb-3">طلبات متاحة — أول واحد يقبل ياخدها</h2>
+          <h2 className="font-bold text-mist mb-3">طلبات متاحة، أول واحد يقبل ياخدها</h2>
           {pool.some(o => o.dest_lat != null && o.dest_lng != null) && (
             <div className="mb-3">
               <DriverPoolMap
@@ -1315,7 +1315,7 @@ export default function DriverPage() {
                   <button className="btn-sea w-full mt-3" disabled={claiming !== null || notReadyYet}
                     onClick={e => { e.stopPropagation(); claim(o.id) }}>
                     {claiming === o.id ? 'جاري القبول…'
-                      : notReadyYet ? (minsLeft > 0 ? `لسه مش جاهز — بعد ${minsLeft} د` : 'لسه مش جاهز')
+                      : notReadyYet ? (minsLeft > 0 ? `لسه مش جاهز، بعد ${minsLeft} د` : 'لسه مش جاهز')
                       : 'خد الطلب ده'}
                   </button>
                 </div>
@@ -1356,7 +1356,7 @@ export default function DriverPage() {
           {todayTips > 0 && <p className="text-xs text-seadeep font-semibold mt-1">+ {todayTips} ج.م إكراميات</p>}
           {todayReportedTips > 0 ? (
             <p className="text-xs text-amber-700 font-semibold mt-1">
-              العميل أبلغ بتحويل {todayReportedTips} ج.م — راجع إنستاباي
+              العميل أبلغ بتحويل {todayReportedTips} ج.م. راجع إنستاباي
             </p>
           ) : null}
         </div>
@@ -1452,7 +1452,7 @@ export default function DriverPage() {
                 reads "— ج.م" and the button is dead, so a driver whose stats
                 call failed reads it as "the system lost my money". */}
             {requestingSettlement ? 'جاري الإرسال…'
-              : !haveStats ? 'مش قادرين نجيب أرباحك — حدّث الصفحة'
+              : !haveStats ? 'مش قادرين نجيب أرباحك. حدّث الصفحة'
               : unpaidEarnings === 0 ? 'مفيش أرباح مستحقة دلوقتي'
               : 'اطلب تسوية مبكرة'}
           </button>
@@ -1493,12 +1493,12 @@ export default function DriverPage() {
                       <p className="text-sandink text-sm">⏳ طلب الاستبدال معروض على باقي المندوبين</p>
                       <button className="btn-danger w-full mt-2 text-sm"
                         onClick={() => escalate(myRequestId)}>
-                        محدش وافق — بلّغ الإدارة
+                        محدش وافق. بلّغ الإدارة
                       </button>
                     </div>
                   )}
                   {myEscalated.has(sh.id) && (
-                    <p className="text-emerald-700 text-sm mt-3">✅ تم إبلاغ الإدارة — في انتظار تعيين مندوب بديل</p>
+                    <p className="text-emerald-700 text-sm mt-3">✅ تم إبلاغ الإدارة، في انتظار تعيين مندوب بديل</p>
                   )}
                 </div>
               )

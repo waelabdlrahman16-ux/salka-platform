@@ -416,7 +416,7 @@ export default function CustomOrder() {
         {loadFailed && (
           <div className="card p-4 mb-4 border-sand/60 bg-sand/10">
             <p className="text-sm text-sandink font-semibold">📡 مش قادرين نحمّل المحلات دلوقتي</p>
-            <p className="text-xs text-mist mt-1">اتأكد إن النت شغال — ده مش معناه إن كله مقفول.</p>
+            <p className="text-xs text-mist mt-1">اتأكد إن النت شغال، ده مش معناه إن كله مقفول.</p>
           </div>
         )}
 
@@ -479,7 +479,7 @@ export default function CustomOrder() {
               <p className="font-semibold">مقفول دلوقتي</p>
               <p className="text-sm text-mist mt-1 mb-4">
                 {typeFilter === 'supermarket' && pharmacyOpen
-                  ? 'الماركت بيفتح في مواعيد محددة — بس الصيدلية شغالة دلوقتي.'
+                  ? 'الماركت بيفتح في مواعيد محددة، بس الصيدلية شغالة دلوقتي.'
                   : 'الصيدلية والماركت بيفتحوا في مواعيد محددة. جرب تاني بعد شوية.'}
               </p>
               {/* An empty list used to be a screen with nothing on it and
@@ -540,7 +540,7 @@ export default function CustomOrder() {
         <ol className="card p-4 mb-4 text-sm space-y-2 bg-shellup/50">
           <li className="flex gap-2.5">
             <span className="shrink-0 w-5 h-5 rounded-full bg-sea text-white grid place-items-center text-[11px] font-bold">1</span>
-            <span>اكتب قايمة اللي محتاجه — مش لازم تكون دقيقة.</span>
+            <span>اكتب قايمة اللي محتاجه، مش لازم تكون دقيقة.</span>
           </li>
           {scheduled && (
             <li className="flex gap-2.5">
@@ -550,14 +550,14 @@ export default function CustomOrder() {
           )}
           <li className="flex gap-2.5">
             <span className="shrink-0 w-5 h-5 rounded-full bg-sea text-white grid place-items-center text-[11px] font-bold">{scheduled ? '3' : '2'}</span>
-            <span><b>نتصل بيك بسعر الأصناف قبل ما نجهّز حاجة</b> — تقدر توافق أو تلغي، ومفيش دفع دلوقتي.</span>
+            <span><b>نتصل بيك بسعر الأصناف قبل ما نجهّز حاجة</b>، تقدر توافق أو تلغي، ومفيش دفع دلوقتي.</span>
           </li>
           <li className="flex gap-2.5">
             <span className="shrink-0 w-5 h-5 rounded-full bg-sea text-white grid place-items-center text-[11px] font-bold">{scheduled ? '4' : '3'}</span>
             <span>
               التوصيل{' '}
-              {deliveryFee !== null ? <b className="text-foam">{deliveryFee} ج.م</b> : <span className="text-mist">…</span>}{' '}
-              — ده الرقم الوحيد المعروف من دلوقتي.
+              {deliveryFee !== null ? <b className="text-foam">{deliveryFee} ج.م</b> : <span className="text-mist">…</span>}
+              ، ده الرقم الوحيد المعروف من دلوقتي.
             </span>
           </li>
         </ol>
@@ -585,7 +585,7 @@ export default function CustomOrder() {
             <>
               <p className="font-bold text-sm">📷 عندك روشتة؟</p>
               <p className="text-xs text-mist mt-1 mb-3">
-                صوّرها وابعتها — مش محتاج تكتب أي حاجة تانية.
+                صوّرها وابعتها، مش محتاج تكتب أي حاجة تانية.
               </p>
               <input type="file" accept="image/jpeg,image/png,image/webp,image/avif"
                 capture="environment" disabled={rxUploading}
@@ -630,7 +630,7 @@ export default function CustomOrder() {
           </p>
           {slots.length === 0 && (
             <p className="text-sm text-sandink">
-              مفيش فترات متاحة دلوقتي — جرب بكرة الصبح.
+              مفيش فترات متاحة دلوقتي. جرب بكرة الصبح.
             </p>
           )}
           <div className="grid grid-cols-2 gap-2">
@@ -704,7 +704,7 @@ export default function CustomOrder() {
               <button className="w-full flex items-center gap-2 px-3 py-2.5 text-right"
                 onClick={() => { addNamed(search.trim()); setSearch('') }}>
                 <span className="flex-1 min-w-0 text-sm text-mist truncate">
-                  {matches.length === 0 ? 'مش في القايمة — ' : ''}ضيف «<b className="text-foam">{search.trim()}</b>» زي ما كتبته
+                  {matches.length === 0 ? 'مش في القايمة، ' : ''}ضيف «<b className="text-foam">{search.trim()}</b>» زي ما كتبته
                 </span>
                 <span className="w-7 h-7 rounded-lg grid place-items-center shrink-0 text-sm bg-shellup text-foam">+</span>
               </button>
@@ -765,8 +765,8 @@ export default function CustomOrder() {
         {lines.length === 0 && (
           <p className="text-xs text-mist mb-2">
             {rxPath
-              ? 'الروشتة لوحدها كفاية — تقدر تبعت كده، أو تضيف حاجات تانية فوق.'
-              : 'دوّر فوق أو اكتب اللي محتاجه — كل صنف لوحده عشان اللي بيجهّز يقدر يشطبه.'}
+              ? 'الروشتة لوحدها كفاية، تقدر تبعت كده، أو تضيف حاجات تانية فوق.'
+              : 'دوّر فوق أو اكتب اللي محتاجه، كل صنف لوحده عشان اللي بيجهّز يقدر يشطبه.'}
           </p>
         )}
 
@@ -863,7 +863,7 @@ export default function CustomOrder() {
               ? (vendor.vendor_type === 'pharmacy' ? 'ضيف صنف أو صوّر الروشتة' : 'ضيف اللي محتاجه الأول')
               : scheduled && slots.length === 0 ? 'مفيش فترات متاحة'
               : scheduled && !slot ? 'اختار فترة التوصيل'
-              : addressComplete ? 'كمّل الطلب' : 'كمّل — فين نوصّله؟'}
+              : addressComplete ? 'كمّل الطلب' : 'كمّل، فين نوصّله؟'}
           </button>
         </>
       ) : (
@@ -1008,9 +1008,9 @@ export default function CustomOrder() {
           // A scheduled order sent with a button that just says "ابعت الطلب"
           // reaches a customer who thinks it is coming now. Name the moment.
           : scheduled && slot
-            ? `ابعت الطلب — التسليم ${slot.scheduled_date === cairoToday() ? 'النهاردة' : 'بكرة'} ${slot.start_time.slice(0, 5)}–${slot.end_time.slice(0, 5)}`
-          : rxPath && lines.length === 0 ? 'ابعت الروشتة — هنتصل بيك بالسعر'
-          : 'ابعت الطلب — هنتصل بيك بالسعر'}
+            ? `ابعت الطلب، التسليم ${slot.scheduled_date === cairoToday() ? 'النهاردة' : 'بكرة'} ${slot.start_time.slice(0, 5)}–${slot.end_time.slice(0, 5)}`
+          : rxPath && lines.length === 0 ? 'ابعت الروشتة، هنتصل بيك بالسعر'
+          : 'ابعت الطلب، هنتصل بيك بالسعر'}
       </button>
         </>
       )}

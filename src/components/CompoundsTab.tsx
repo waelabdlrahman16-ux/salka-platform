@@ -71,11 +71,11 @@ export default function CompoundsTab() {
       longitude: f.longitude === '' ? null : Number(f.longitude),
       active: f.active,
     }, {
-      delivery_fee_required: 'لازم تحط سعر توصيل أكبر من صفر — من غيره العميل هيشوف المكان ومش هيقدر يطلب',
+      delivery_fee_required: 'لازم تحط سعر توصيل أكبر من صفر، من غيره العميل هيشوف المكان ومش هيقدر يطلب',
       name_required: 'اكتب اسم الكومباوند',
       region_not_found: 'اختار المنطقة',
       invalid_direction: 'الاتجاه لازم يكون شمال أو جنوب',
-      compound_not_found: 'الكومباوند ده مش موجود — حدّث الصفحة',
+      compound_not_found: 'الكومباوند ده مش موجود. حدّث الصفحة',
       admin_only: 'مش من صلاحياتك',
     })
     setBusy(false)
@@ -155,7 +155,7 @@ export default function CompoundsTab() {
           <label className="flex items-center gap-2 mt-3 min-h-[44px] cursor-pointer">
             <input type="checkbox" className="w-5 h-5 accent-sea" checked={f.active}
               onChange={e => setF({ ...f, active: e.target.checked })} />
-            <span className="text-sm">شغّال — بيظهر للعملاء</span>
+            <span className="text-sm">شغّال، بيظهر للعملاء</span>
           </label>
 
           <button className="btn-sea w-full text-sm mt-2" disabled={busy || !valid} onClick={save}>
@@ -166,7 +166,7 @@ export default function CompoundsTab() {
 
       {missingCoords > 0 && (
         <p className="text-xs text-sandink bg-sand/10 rounded-xl p-3">
-          ⚠️ {missingCoords} كومباوند شغّال من غير إحداثيات — خريطة تتبع المندوب مش هتشتغل فيهم.
+          ⚠️ {missingCoords} كومباوند شغّال من غير إحداثيات، خريطة تتبع المندوب مش هتشتغل فيهم.
         </p>
       )}
 

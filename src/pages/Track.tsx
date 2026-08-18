@@ -153,10 +153,10 @@ export default function Track() {
     setSwitchingToCash(true); setActionError(null)
     const res = await edgeAction<{ status: string; deposit_required: number | null }>(
       'customer-payment-actions', { action: 'switch_to_cash', token }, {
-        rate_limited: 'حاولت تغيّر طريقة الدفع كتير — استنى شوية وجرب تاني',
-        payment_already_claimed: 'قلت لنا إنك حوّلت بالفعل — استنى المراجعة، ولو في مشكلة كلّمنا',
-        wrong_stage: 'الطلب اتحرك خلاص — مش هينفع نغيّر طريقة الدفع دلوقتي',
-        already_assigned: 'المندوب استلم الطلب خلاص — ادفع كاش عند التوصيل عادي',
+        rate_limited: 'حاولت تغيّر طريقة الدفع كتير. استنى شوية وجرب تاني',
+        payment_already_claimed: 'قلت لنا إنك حوّلت بالفعل. استنى المراجعة، ولو في مشكلة كلّمنا',
+        wrong_stage: 'الطلب اتحرك خلاص، مش هينفع نغيّر طريقة الدفع دلوقتي',
+        already_assigned: 'المندوب استلم الطلب خلاص. ادفع كاش عند التوصيل عادي',
       })
     setSwitchingToCash(false)
     if (!res.ok) { setActionError({ scope: 'instapay', message: res.error }); return }
@@ -169,7 +169,7 @@ export default function Track() {
     if (res.data?.deposit_required) {
       setSwitchedNote(`الطلب أكبر من الحد المسموح كاش بالكامل، فمحتاجين عربون ${res.data.deposit_required} ج.م دلوقتي والباقي كاش عند الاستلام.`)
     } else {
-      setSwitchedNote('تمام — الطلب بقى كاش عند الاستلام.')
+      setSwitchedNote('تمام، الطلب بقى كاش عند الاستلام.')
     }
     load()
   }
@@ -184,11 +184,11 @@ export default function Track() {
     const res = await edgeAction('customer-order-editing', {
       token, items: [{ name: extraItem.trim(), qty: 1 }],
     }, {
-      order_not_priced: 'الطلب اتسعّر خلاص — كلّمنا عشان نضيفه',
-      wrong_stage: 'بدأنا نجهّز الطلب — كلّمنا عشان نضيفه',
-      already_assigned: 'المندوب في الطريق — كلّمنا عشان نضيفه',
-      order_edit_rate_limit: 'حاولت تضيف أصناف كتير — استنى شوية وجرب تاني',
-      daily_order_edit_limit: 'وصلت للحد اليومي لإضافة الأصناف — كلّمنا عشان نساعدك',
+      order_not_priced: 'الطلب اتسعّر خلاص. كلّمنا عشان نضيفه',
+      wrong_stage: 'بدأنا نجهّز الطلب. كلّمنا عشان نضيفه',
+      already_assigned: 'المندوب في الطريق. كلّمنا عشان نضيفه',
+      order_edit_rate_limit: 'حاولت تضيف أصناف كتير. استنى شوية وجرب تاني',
+      daily_order_edit_limit: 'وصلت للحد اليومي لإضافة الأصناف. كلّمنا عشان نساعدك',
     })
     setExtraSaving(false)
     if (!res.ok) { setActionError({ scope: 'extra', message: res.error }); return }
@@ -202,7 +202,7 @@ export default function Track() {
     const res = await edgeAction('customer-payment-actions', {
       action: 'claim_instapay', token,
     }, {
-      rate_limited: 'حاولت تأكد التحويل كتير — استنى شوية وجرب تاني',
+      rate_limited: 'حاولت تأكد التحويل كتير. استنى شوية وجرب تاني',
     })
     setClaimingPayment(false)
     // The customer's money is already gone at this point. A failure here used
@@ -327,7 +327,7 @@ export default function Track() {
     const res = await edgeAction('customer-payment-actions', {
       action: 'submit_tip', token, amount,
     }, {
-      rate_limited: 'حاولت تبعت الإكرامية كتير — استنى شوية وجرب تاني',
+      rate_limited: 'حاولت تبعت الإكرامية كتير. استنى شوية وجرب تاني',
     })
     if (!res.ok) { setActionError({ scope: 'tip', message: res.error }); return }
     setTipSent(true)
@@ -358,9 +358,9 @@ export default function Track() {
           if (typeof payload?.error === 'string') code = payload.error
         }
         const cancellationErrors: Record<string, string> = {
-          rate_limited: 'حاولت تلغي كتير في وقت قصير — استنى شوية وجرب تاني',
-          cancel_failed: 'الإلغاء متنفذش — جرب تاني أو كلّمنا',
-          rate_limit_check_failed: 'حصل عطل مؤقت — جرب تاني بعد شوية',
+          rate_limited: 'حاولت تلغي كتير في وقت قصير. استنى شوية وجرب تاني',
+          cancel_failed: 'الإلغاء متنفذش. جرب تاني أو كلّمنا',
+          rate_limit_check_failed: 'حصل عطل مؤقت. جرب تاني بعد شوية',
           invalid_cancel_reason: 'اختار سبب الإلغاء وجرب تاني',
         }
         const message = (code && cancellationErrors[code]) || describeError(code ?? error?.message)
@@ -372,7 +372,7 @@ export default function Track() {
       const message = error instanceof Error ? error.message : null
       setActionError({
         scope: 'cancel',
-        message: isTransportFailure(message) ? 'مفيش اتصال بالنت — اتأكد من الشبكة وجرب تاني' : 'الإلغاء متنفذش — جرب تاني أو كلّمنا'
+        message: isTransportFailure(message) ? 'مفيش اتصال بالنت. اتأكد من الشبكة وجرب تاني' : 'الإلغاء متنفذش. جرب تاني أو كلّمنا'
       })
     } finally {
       setCancelling(false)
@@ -502,7 +502,7 @@ export default function Track() {
                 <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mt-4">{errFor('cancel')}</p>
               )}
               <button className="text-sm text-mist underline mt-4" disabled={cancelling} onClick={() => setCancelPickerOpen(true)}>
-                {cancelling ? 'جاري الإلغاء…' : 'مش عايز أكمل — الغِ الطلب'}
+                {cancelling ? 'جاري الإلغاء…' : 'مش عايز أكمل. الغِ الطلب'}
               </button>
 
             </>
@@ -574,7 +574,7 @@ export default function Track() {
           rather than replacing it with a not-found card. */}
       {staleSince !== null && (
         <div className="bg-sand/15 border border-sand/40 rounded-xl p-3 mb-4 flex items-center justify-between gap-3">
-          <p className="text-sm font-semibold text-foam">📡 مش قادرين نحدّث الحالة — ممكن تكون قديمة</p>
+          <p className="text-sm font-semibold text-foam">📡 مش قادرين نحدّث الحالة، ممكن تكون قديمة</p>
           <button className="btn-ghost !py-2 text-sm shrink-0" onClick={() => load(true)}>حدّث</button>
         </div>
       )}
@@ -609,7 +609,7 @@ export default function Track() {
               -- while an admin was looking at the same row in a refunds queue. */}
           {o.refund_status === 'pending' && (
             <p className="text-sm text-sandink bg-sand/10 rounded-xl p-3 mt-3">
-              💰 فلوسك في طريقها ليك — هنحوّلها على نفس الرقم اللي حوّلت منه.
+              💰 فلوسك في طريقها ليك، هنحوّلها على نفس الرقم اللي حوّلت منه.
               لو اتأخرت، كلّمنا.
             </p>
           )}
@@ -667,7 +667,7 @@ export default function Track() {
             <p className="text-sm text-mist">بندوّر على مندوب قريب منك</p>
           )}
           {o.status === 'No_Driver_Found' && (
-            <p className="text-sm text-sandink">الزحمة عالية دلوقتي — الإدارة بتظبط لك مندوب</p>
+            <p className="text-sm text-sandink">الزحمة عالية دلوقتي، الإدارة بتظبط لك مندوب</p>
           )}
           {/* Failed_Delivery was a genuine dead end. It appears in no branch of
               this screen, so the stage bar pinned it at «في الطريق إليك» -- for
@@ -682,7 +682,7 @@ export default function Track() {
               implying it is over. */}
           {o.status === 'Failed_Delivery' && (
             <p className="text-sm text-sandink">
-              التوصيلة ما اكتملتش — الإدارة بتراجع الطلب وهنكلّمك حالًا
+              التوصيلة ما اكتملتش، الإدارة بتراجع الطلب وهنكلّمك حالًا
             </p>
           )}
           {/* This said «الوصول المتوقع» -- expected ARRIVAL -- while ready_at is
@@ -718,7 +718,7 @@ export default function Track() {
               order in «طلباتي». */}
           {!customer && current !== 'Delivered' && (
             <p className="text-xs text-mist mt-3">
-              احفظ الرابط ده — بيه تتابع طلبك في أي وقت.
+              احفظ الرابط ده، بيه تتابع طلبك في أي وقت.
             </p>
           )}
 
@@ -813,7 +813,7 @@ export default function Track() {
         <p className="text-sm bg-shellup/60 rounded-xl p-3 mb-4">
           {o.payment_mode === 'driver_pays'
             ? `💵 المندوب هيدفع ${o.collect_amount} ج.م لـ${vendorNoun(o.vendor_type)}، ويحصلها منك كاش عند التوصيل`
-            : '✅ الأوردر متدفوع بالفعل — هتدفع رسوم التوصيل بس'}
+            : '✅ الأوردر متدفوع بالفعل، هتدفع رسوم التوصيل بس'}
         </p>
       )}
 
@@ -822,7 +822,7 @@ export default function Track() {
         <span className="w-9 h-9 rounded-md bg-sea/10 text-sea grid place-items-center shrink-0"><Icon name="locationDot" className="w-4 h-4" /></span>
         <div>
           <p className="font-semibold text-sm">{o.zone}</p>
-          <p className="text-sm text-mist">وحدة {o.unit_number}{o.address_notes ? ` — ${o.address_notes}` : ''}</p>
+          <p className="text-sm text-mist">وحدة {o.unit_number}{o.address_notes ? `: ${o.address_notes}` : ''}</p>
           {o.customer_note?.trim() && (
             <p className="text-sm text-mist mt-1">📝 {o.customer_note}</p>
           )}
@@ -1076,7 +1076,7 @@ export default function Track() {
           </div>
         </div>
       )}
-      {tipSent && <p className="text-emerald-700 text-sm text-center mb-4">✅ تم إبلاغ المندوب — يراجع إنستاباي للتأكيد</p>}
+      {tipSent && <p className="text-emerald-700 text-sm text-center mb-4">✅ تم إبلاغ المندوب، يراجع إنستاباي للتأكيد</p>}
 
       {canCancel && (
         <>
@@ -1097,7 +1097,7 @@ export default function Track() {
       <InAppLoginPrompt className="mb-4" />
 
       {complaintSent ? (
-        <p className="text-sandink text-sm text-center mb-4">✅ تم إرسال الشكوى — هنراجعها قريب</p>
+        <p className="text-sandink text-sm text-center mb-4">✅ تم إرسال الشكوى، هنراجعها قريب</p>
       ) : complaining ? (
         <div className="card p-4 mb-4">
           <p className="text-sm font-semibold mb-2">إيه المشكلة؟</p>

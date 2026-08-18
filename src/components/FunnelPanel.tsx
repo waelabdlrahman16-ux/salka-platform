@@ -77,7 +77,7 @@ export default function FunnelPanel() {
     // Checked, not discarded. A funnel that silently renders zeroes on a failed
     // read is worse than one that says it could not load -- zeroes look like a
     // finding, and someone will act on them.
-    if (!res.ok) { setError(`مش قادرين نحمّل الأرقام — ${res.error}`); return }
+    if (!res.ok) { setError(`مش قادرين نحمّل الأرقام: ${res.error}`); return }
     setData(res.data)
   }
 
@@ -122,7 +122,7 @@ export default function FunnelPanel() {
 
       {!loading && !error && top === 0 && (
         <p className="text-mist text-sm text-center py-6">
-          لسه مفيش بيانات في الفترة دي — الأرقام هتبدأ تظهر بعد ما النسخة الجديدة تنزل
+          لسه مفيش بيانات في الفترة دي، الأرقام هتبدأ تظهر بعد ما النسخة الجديدة تنزل
         </p>
       )}
 
@@ -174,7 +174,7 @@ export default function FunnelPanel() {
 
           {(data?.closed_browsers ?? 0) > 0 && (
             <p className="text-xs text-mist mt-3 bg-shellup rounded-xl p-3">
-              <b className="text-foam">{data?.closed_browsers}</b> جهاز اتفرّج على قايمة مكان مقفول —
+              <b className="text-foam">{data?.closed_browsers}</b> جهاز اتفرّج على قايمة مكان مقفول،
               دول تصفّح، مش عملاء ضاعوا وقت الطلب.
             </p>
           )}

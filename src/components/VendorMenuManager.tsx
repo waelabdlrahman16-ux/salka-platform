@@ -32,7 +32,7 @@ export default function VendorMenuManager({ restaurant, onClose }: {
     const { data, error: loadError } = await supabase.from('menu_items').select('*')
       .eq('restaurant_id', restaurant.id).order('category').order('name')
     if (loadError) {
-      setError('مش قادرين نحمّل المنيو دلوقتي — جرب تاني')
+      setError('مش قادرين نحمّل المنيو دلوقتي. جرب تاني')
       setLoading(false)
       return
     }
@@ -52,7 +52,7 @@ export default function VendorMenuManager({ restaurant, onClose }: {
       .update({ price }).eq('id', item.id).eq('restaurant_id', restaurant.id)
       .select('id').single()
     if (updateError) {
-      setError(`تعديل سعر «${item.name}» فشل — ${updateError.message}`)
+      setError(`تعديل سعر «${item.name}» فشل: ${updateError.message}`)
       return false
     }
     setItems(current => current.map(row => row.id === item.id ? { ...row, price } : row))
@@ -66,7 +66,7 @@ export default function VendorMenuManager({ restaurant, onClose }: {
       available: !item.available,
     })
     if (!result.ok) {
-      setError(`تغيير إتاحة «${item.name}» فشل — ${result.error}`)
+      setError(`تغيير إتاحة «${item.name}» فشل: ${result.error}`)
       return
     }
     setItems(current => current.map(row => row.id === item.id
@@ -81,7 +81,7 @@ export default function VendorMenuManager({ restaurant, onClose }: {
       .eq('id', item.id).eq('restaurant_id', restaurant.id)
       .select('id').single()
     if (updateError) {
-      setError(`تغيير الروشتة لـ «${item.name}» فشل — ${updateError.message}`)
+      setError(`تغيير الروشتة لـ «${item.name}» فشل: ${updateError.message}`)
       return
     }
     setItems(current => current.map(row => row.id === item.id
@@ -104,7 +104,7 @@ export default function VendorMenuManager({ restaurant, onClose }: {
       .update({ image_url: url }).eq('id', item.id).eq('restaurant_id', restaurant.id)
       .select('id').single()
     if (updateError) {
-      setError(`حفظ صورة «${item.name}» فشل — ${updateError.message}`)
+      setError(`حفظ صورة «${item.name}» فشل: ${updateError.message}`)
       return
     }
     setItems(current => current.map(row => row.id === item.id ? { ...row, image_url: url } : row))

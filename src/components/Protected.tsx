@@ -17,7 +17,7 @@ export default function Protected({ role, children }: {
   if (profileError) return (
     <div className="card p-6 text-center max-w-sm mx-auto">
       <p className="font-semibold">مش قادرين نتأكد من حسابك</p>
-      <p className="text-sm text-mist mt-2">النت ضعيف على ما يبدو. حسابك زي ما هو — جرب تاني.</p>
+      <p className="text-sm text-mist mt-2">النت ضعيف على ما يبدو. حسابك زي ما هو. جرب تاني.</p>
       <button className="btn-sea w-full mt-4" onClick={retryProfile}>جرب تاني</button>
     </div>
   )

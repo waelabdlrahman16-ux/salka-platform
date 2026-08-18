@@ -40,7 +40,7 @@ export default function RestaurantDeliverySettings({ restaurant, compounds }: { 
       active: true, is_default: kitchens.length === 0,
     })
     setBusy(false)
-    if (error) { setError('مش قادرين نضيف الموقع — جرّب تاني'); return }
+    if (error) { setError('مش قادرين نضيف الموقع. جرّب تاني'); return }
     setName(''); setAddress(''); await load()
   }
 
@@ -84,7 +84,7 @@ export default function RestaurantDeliverySettings({ restaurant, compounds }: { 
           {!k.is_default && <button className="btn-ghost !py-1.5 !px-2 text-xs" disabled={busy} onClick={() => updateKitchen(k, { is_default: true })}>اجعله الأساسي</button>}
         </div>)}
         <div className="rounded-xl border border-dashed border-line p-3 space-y-2">
-          <input className="field !py-2 text-sm" placeholder="اسم موقع التحضير — مثال: مطبخ أوربت مول" value={name} onChange={e => setName(e.target.value)} />
+          <input className="field !py-2 text-sm" placeholder="اسم موقع التحضير، مثال: مطبخ أوربت مول" value={name} onChange={e => setName(e.target.value)} />
           <input className="field !py-2 text-sm" placeholder="العنوان الحقيقي للمندوب" value={address} onChange={e => setAddress(e.target.value)} />
           <button className="btn-sea w-full !py-2 text-sm" disabled={busy || !name.trim()} onClick={addKitchen}>+ إضافة موقع تحضير</button>
         </div>

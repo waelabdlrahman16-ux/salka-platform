@@ -60,7 +60,7 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
     setSaving(true)
     if (deactivateIds.length > 0) {
       const { error } = await supabase.from('discounts').update({ active: false }).in('id', deactivateIds)
-      if (error) { setSaving(false); setWriteError(`إيقاف الخصم القديم فشل — ${error.message}`); return }
+      if (error) { setSaving(false); setWriteError(`إيقاف الخصم القديم فشل: ${error.message}`); return }
     }
     const payload = {
       restaurant_id: restaurantId, scope,
@@ -74,7 +74,7 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
       ? await supabase.from('discounts').update(payload).eq('id', existing.id)
       : await supabase.from('discounts').insert(payload)
     setSaving(false)
-    if (error) { setWriteError(`حفظ الخصم فشل — ${error.message}`); return }
+    if (error) { setWriteError(`حفظ الخصم فشل: ${error.message}`); return }
     setWriteError('')
     setConflicts(null)
     setEditing(false)
@@ -88,7 +88,7 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
     // failed write showed the promotion gone while it kept applying to every
     // order. Margin is the one thing this file is careful about everywhere else.
     const { error } = await supabase.from('discounts').update({ active: false }).eq('id', existing.id)
-    if (error) { setWriteError(`إلغاء الخصم فشل — ${error.message}`); return }
+    if (error) { setWriteError(`إلغاء الخصم فشل: ${error.message}`); return }
     setWriteError('')
     setExisting(null)
     setEditing(false)
@@ -104,7 +104,7 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
       <div className="flex items-center justify-between bg-sand/10 rounded-lg px-3 py-2 text-sm">
         <span>
           🏷️ خصم {existing.discount_type === 'percent' ? `${existing.value}%` : `${existing.value} ج.م`}
-          {existing.ends_at && ` — لحد ${new Date(existing.ends_at).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo' })}`}
+          {existing.ends_at && `، لحد ${new Date(existing.ends_at).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo' })}`}
         </span>
         <div className="flex gap-2">
           <button className="text-sea text-xs font-semibold min-h-[44px] inline-flex items-center" onClick={() => setEditing(true)}>تعديل</button>

@@ -85,7 +85,7 @@ export default function AddonsCard({
                   onBlur={e => { if (e.target.value.trim() !== g.name) onRenameGroup(g.id, e.target.value) }}
                   onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }} />
                 <p className="text-xs text-mist mt-0.5">
-                  {isSwap ? '🔁 اختيار واحد بس' : '➕ إضافات — أكتر من واحدة'}
+                  {isSwap ? '🔁 اختيار واحد بس' : '➕ إضافات، أكتر من واحدة'}
                   {g.min_select > 0 && <span className="text-sandink"> · مطلوب</span>}
                   {!isSwap && g.max_select != null && <span> · حد أقصى {g.max_select}</span>}
                 </p>
@@ -109,7 +109,7 @@ export default function AddonsCard({
                 </div>
               ))}
               {addons.filter(a => a.group_id === g.id).length === 0 && (
-                <p className="text-xs text-mist">لسه مفيش خيارات — ضيف واحد تحت</p>
+                <p className="text-xs text-mist">لسه مفيش خيارات. ضيف واحد تحت</p>
               )}
             </div>
 

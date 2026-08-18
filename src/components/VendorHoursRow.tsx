@@ -34,7 +34,7 @@ export default function VendorHoursRow({ restaurant, onSaved }: {
     // Checked, not discarded: an empty editor after a failed read looks exactly
     // like a vendor with no hours, and saving from that state would wipe the
     // real ones.
-    if (err) { setError('مش قادرين نجيب المواعيد — ماتحفظش قبل ما تحدّث'); return }
+    if (err) { setError('مش قادرين نجيب المواعيد، ماتحفظش قبل ما تحدّث'); return }
     const next = Object.fromEntries(WEEK.map(d => [d.dow, { ...BLANK }])) as Record<number, Draft>
     for (const r of (data as DayHours[]) ?? []) {
       next[r.day_of_week] = {
@@ -87,7 +87,7 @@ export default function VendorHoursRow({ restaurant, onSaved }: {
     if (!res.ok) {
       setError(res.code === 'hours_incomplete'
         ? 'لازم تحدد الفتح والقفل مع بعض'
-        : 'الحفظ فشل — جرب تاني')
+        : 'الحفظ فشل. جرب تاني')
       return
     }
     setSaved(true); setTimeout(() => setSaved(false), 1600)
@@ -130,7 +130,7 @@ export default function VendorHoursRow({ restaurant, onSaved }: {
             <Toggle
               on={!v.closed}
               onChange={() => set(d.dow, { closed: !v.closed })}
-              ariaLabel={`${d.label} — ${v.closed ? 'مقفول' : 'مفتوح'}`}
+              ariaLabel={`${d.label}، ${v.closed ? 'مقفول' : 'مفتوح'}`}
             />
             {v.closed && <span className="text-[10.5px] text-mist shrink-0">مقفول اليوم ده</span>}
             {overnight && <span className="text-[10px] text-sandink shrink-0" title="بيعدّي نص الليل">🌙</span>}
@@ -140,7 +140,7 @@ export default function VendorHoursRow({ restaurant, onSaved }: {
 
       {!loading && !anySet && (
         <p className="text-[11px] text-mist mt-2">
-          مفيش مواعيد متحددة — المحل مفتوح على طول لحد ما تحدد مواعيد
+          مفيش مواعيد متحددة، المحل مفتوح على طول لحد ما تحدد مواعيد
         </p>
       )}
 
@@ -155,7 +155,7 @@ export default function VendorHoursRow({ restaurant, onSaved }: {
         </button>
       </div>
       <p className="text-[10px] text-mist mt-2">
-        🌙 يعني الميعاد بيعدّي نص الليل — المحل بيفضل مفتوح لبعد ١٢
+        🌙 يعني الميعاد بيعدّي نص الليل، المحل بيفضل مفتوح لبعد ١٢
       </p>
     </div>
   )

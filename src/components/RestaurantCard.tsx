@@ -94,7 +94,7 @@ export default function RestaurantCard({
     return (
       <Link
         to={`/restaurant/${r.id}`}
-        aria-label={`${r.name}${closed ? ' — مغلق' : ''}`}
+        aria-label={`${r.name}${closed ? '، مغلق' : ''}`}
         className={`flex gap-3 items-center py-3.5 transition-opacity ${closed ? 'opacity-60' : ''}`}
       >
         <div className="relative w-11 h-11 shrink-0 rounded-xl overflow-hidden grid place-items-center text-lg border border-line"
@@ -119,7 +119,7 @@ export default function RestaurantCard({
   return (
     <Link
       to={`/restaurant/${r.id}`}
-      aria-label={`${r.name}${closed ? ' — مغلق' : ''}`}
+      aria-label={`${r.name}${closed ? '، مغلق' : ''}`}
       // The scrim over the whole photo AND 60% opacity on the card was saying
       // "closed" twice, on a vendor that since 2026-08-07 already sinks to the
       // bottom of the list on its own. Greyscale plus the reopening time beside

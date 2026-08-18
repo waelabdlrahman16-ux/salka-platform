@@ -64,7 +64,7 @@ export default function InAppLoginPrompt({ className = '' }: { className?: strin
       document.body.removeChild(ta)
       setCopied(true)
     } catch {
-      setError('مش قادرين ننسخ اللينك — اضغط على ••• فوق واختار «فتح في المتصفح»')
+      setError('مش قادرين ننسخ اللينك. اضغط على ••• فوق واختار «فتح في المتصفح»')
     }
   }
 
@@ -77,7 +77,7 @@ export default function InAppLoginPrompt({ className = '' }: { className?: strin
     return (
       <div className={`card p-4 text-center ${className}`}>
         <p className="text-sm bg-emerald-500/10 text-emerald-700 rounded-xl p-3">
-          ✓ بعتنالك رابط على {email} — افتح الإيميل واضغط عليه عشان تدخل
+          ✓ بعتنالك رابط على {email}، افتح الإيميل واضغط عليه عشان تدخل
         </p>
       </div>
     )
@@ -109,7 +109,7 @@ export default function InAppLoginPrompt({ className = '' }: { className?: strin
       </button>
       <p className="text-[11px] text-mist mt-1.5 leading-relaxed">
         {copied
-          ? 'افتح المتصفح بتاعك والصق اللينك — هناك تقدر تدخل بجوجل كمان'
+          ? 'افتح المتصفح بتاعك والصق اللينك، هناك تقدر تدخل بجوجل كمان'
           : 'أو اضغط على ••• فوق واختار «فتح في المتصفح»'}
       </p>
 

@@ -96,7 +96,7 @@ export default function LiveDeliveryDetail({ live }: { live?: LiveDelivery }) {
           <div className="rounded-2xl border border-line bg-night text-center text-xs text-mist py-6 px-3">
             {live.dest_lat == null
               ? 'الكومباوند ده مالوش إحداثيات على الخريطة'
-              : 'المندوب لسه مابعتش موقعه — بيبدأ يبعت أول ما يستلم الطلب والتطبيق مفتوح عنده'}
+              : 'المندوب لسه مابعتش موقعه، بيبدأ يبعت أول ما يستلم الطلب والتطبيق مفتوح عنده'}
           </div>
         )}
       </div>

@@ -80,7 +80,7 @@ export default function FeedAdsAdmin({ restaurants }: { restaurants: Restaurant[
   async function upload(file: File) {
     setError('')
     if (!OK_TYPES.includes(file.type)) { setError('لازم تكون صورة JPG أو PNG أو WebP'); return }
-    if (file.size > MAX_BYTES) { setError('الصورة أكبر من ٢ ميجا — صغّرها الأول'); return }
+    if (file.size > MAX_BYTES) { setError('الصورة أكبر من ٢ ميجا. صغّرها الأول'); return }
     setUploading(true)
     const uploadFile = await compressImage(file)
     const ext = uploadFile.name.split('.').pop()?.toLowerCase() || 'jpg'
