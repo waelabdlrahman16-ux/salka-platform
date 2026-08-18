@@ -239,6 +239,9 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
     loadRecent()
     const t = setInterval(() => loadRecent(), 10000)
     return () => clearInterval(t)
+  // loadRecent is redefined on every render, so listing it would re-run this effect
+  // forever. The dependencies below are the values it actually reads.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurant.id])
 
   const selectedCompound = compounds.find(c => c.id === compoundId)
@@ -592,6 +595,9 @@ function KitchenVendor({ rid }: { rid: number }) {
     load()
     const t = setInterval(() => load(), 8000)
     return () => clearInterval(t)
+  // load is redefined on every render, so listing it would re-run this effect
+  // forever. The dependencies below are the values it actually reads.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rid])
 
   useEffect(() => {

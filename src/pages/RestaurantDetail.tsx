@@ -247,6 +247,9 @@ export default function RestaurantDetail() {
   // rootMargin pulls the detection line down to just under the sticky bar, so a
   // section counts as "current" when its heading reaches the bar rather than
   // when it enters the viewport at the bottom.
+  // A stable string key for the category list, so the dependency array holds
+  // something the linter can check rather than a call.
+  const categoryKey = categories.join('|')
   useEffect(() => {
     if (menuQuery) return
     const sections = Array.from(document.querySelectorAll<HTMLElement>('section[data-cat]'))
@@ -259,7 +262,7 @@ export default function RestaurantDetail() {
     }, { rootMargin: '-64px 0px -70% 0px', threshold: 0 })
     sections.forEach(el => io.observe(el))
     return () => io.disconnect()
-  }, [categories.join('|'), menuQuery])
+  }, [categoryKey, menuQuery])
 
   // Show the compact bar only once the real header has scrolled away, so the
   // two are never on screen saying the same thing.

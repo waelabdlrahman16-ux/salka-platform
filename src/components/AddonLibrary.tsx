@@ -45,6 +45,9 @@ export default function AddonLibrary({ restaurantId, items }: {
     if (err) { setError('مش قادرين نحمّل المكتبة'); return }
     setLib((data as VendorAddonLibraryItem[]) ?? [])
   }
+  // load is redefined on every render, so listing it would re-run this effect
+  // forever. The dependencies below are the values it actually reads.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); setApplying(null); setNotice('') }, [restaurantId])
 
   async function uploadImage(file: File) {

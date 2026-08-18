@@ -65,6 +65,10 @@ export default function CheckoutPage() {
     if (!customer) return
     setName(prev => prev.trim() ? prev : (customer.name ?? ''))
     setPhone(prev => prev.trim() ? prev : (displayEgyptPhone(customer.phone) || prev))
+  // Depends on the three customer FIELDS this reads, not the object. The object
+  // gets a new identity on every auth refresh, which would re-run this and
+  // re-fill a form the customer may already be typing into.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customer?.id, customer?.name, customer?.phone])
   const [unit, setUnit] = useState('')
   const [notes, setNotes] = useState('')
@@ -117,6 +121,10 @@ export default function CheckoutPage() {
       setUnit(prev => prev.trim() ? prev : preferred.unit_number)
       setNotes(prev => prev.trim() ? prev : (preferred.notes ?? ''))
     })
+  // Depends on the three customer FIELDS this reads, not the object. The object
+  // gets a new identity on every auth refresh, which would re-run this and
+  // re-fill a form the customer may already be typing into.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customer?.id])
 
   // Funnel step 5. Once per session, not per mount -- this screen remounts on

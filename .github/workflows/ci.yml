@@ -43,13 +43,17 @@ jobs:
       # more urgent signal, and seeing it first saves reading lint output for a
       # branch that does not compile.
       #
-      # This fails the job on ESLint ERRORS only. Warnings do not fail it, which
-      # is deliberate -- there are 21 react-hooks/exhaustive-deps warnings and
-      # every one needs reading individually before it is touched (several sit on
-      # the polling effects in Vendor and Admin, where adding a dependency can
-      # turn a poll into an infinite render loop). Blocking merges on those would
-      # get the whole lint step deleted within a week. Errors are at zero, and
-      # this job is what keeps them there.
+      # Now fails on WARNINGS too (--max-warnings 0), which it deliberately did
+      # not when the lint step was added. At that point there were 21
+      # exhaustive-deps warnings and blocking merges on them would have got the
+      # whole step deleted within a week. All 21 have since been read one at a
+      # time: four were real and fixed, seventeen were correct code the rule
+      # cannot verify statically and now carry a suppression that says why.
+      #
+      # At zero, the gate is worth having: the next warning is a NEW one, and it
+      # is visible instead of being lost among twenty-one standing ones. If it
+      # turns out to be another false positive, suppress it WITH A REASON like
+      # the others -- an undocumented disable is how the count creeps back.
       - name: Lint
         run: npm run lint
 

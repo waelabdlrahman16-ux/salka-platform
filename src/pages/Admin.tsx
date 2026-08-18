@@ -628,6 +628,9 @@ export default function Admin() {
       document.removeEventListener('visibilitychange', onVisible)
       window.removeEventListener('online', onVisible)
     }
+  // load is redefined on every render, so listing it would re-run this effect
+  // forever. The dependencies below are the values it actually reads.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // The menu query above is skipped unless this tab is open, so opening it has
@@ -725,8 +728,11 @@ export default function Admin() {
     shifts: escalations.length,
   }
 
-  useEffect(() => { ping('unassigned_late', unassigned.filter(isLate).length, 'طلب متأخر', 'في طلب محدش استلمه من زمان') },
-    [unassigned.filter(isLate).length])
+  // Extracted so the dependency is a plain number the linter can check, and so
+  // the filter runs once per render instead of twice. Same value, same alert.
+  const lateUnassignedCount = unassigned.filter(isLate).length
+  useEffect(() => { ping('unassigned_late', lateUnassignedCount, 'طلب متأخر', 'في طلب محدش استلمه من زمان') },
+    [lateUnassignedCount])
   useEffect(() => { ping('no_answer', noAnswerReports.length, 'عميل ما ردش', 'مندوب اتصل بعميل ومردش، محتاج قرارك') },
     [noAnswerReports.length])
 
@@ -847,6 +853,9 @@ export default function Admin() {
     for (const s of res.data ?? []) map[s.id] = s as never
     setOpenStates(map)
   }
+  // loadOpenStates is redefined on every render, so listing it would re-run this effect
+  // forever. The dependencies below are the values it actually reads.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadOpenStates() }, [])
 
   // Closing from here is a TEMPORARY close: it sets closed_until to the next
