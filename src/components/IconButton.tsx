@@ -35,7 +35,7 @@ export default function IconButton({
     variant === 'onPhoto' ? 'bg-white/90 text-slate-800 shadow-sm'
     : variant === 'filled' ? 'bg-sea text-white hover:bg-seadeep'
     : variant === 'danger' ? 'bg-dangerbg text-danger hover:bg-dangerline/30'
-    : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
   return (
     <button type="button" aria-label={label} title={label} onClick={onClick}
       className={`grid place-items-center shrink-0 min-w-[44px] min-h-[44px] ${className}`}>
