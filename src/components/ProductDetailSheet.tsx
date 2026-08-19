@@ -171,12 +171,14 @@ export default function ProductDetailSheet({
             )}
           </div>
 
+          {/* A warm band, bled to the sheet's edges, exactly like the featured
+              shelf on the home screen. A shelf of other people's dishes is a
+              different KIND of thing from the item you opened, and the surface
+              says so before the heading does. */}
           {related.length > 0 && (
-            <div>
-              {/* No rule here: the section already reads as separate, and the line
-                  landed immediately under the stepper as if it belonged to it. */}
-              <h3 className="font-semibold text-sm text-mist mb-3 pt-5">منتجات تانية ممكن تعجبك</h3>
-              <div className="flex gap-3 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none">
+            <div className="-mx-5 mt-6 px-5 py-6 bg-shellup border-t border-line">
+              <h3 className="font-semibold text-sm text-mist mb-3">منتجات تانية ممكن تعجبك</h3>
+              <div className="flex gap-3 overflow-x-auto pb-1 -mx-5 px-5 scrollbar-none">
                 {related.map(r => {
                   const rArt = artFor(r.category)
                   const rSizes = sizes.filter(s => s.menu_item_id === r.id)
