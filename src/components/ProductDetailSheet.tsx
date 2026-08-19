@@ -71,7 +71,7 @@ export default function ProductDetailSheet({
   // removes the whole failure mode instead of chasing why it misfires.
   return (
     <div ref={overlayRef} role="dialog" aria-labelledby="product-detail-title" aria-modal="true" className="fixed inset-0 z-50 bg-black/60" onClick={onClose}>
-      <div className="fixed inset-x-0 bottom-0 w-full max-h-[90vh] overflow-y-auto bg-shell rounded-t-2xl" onClick={e => e.stopPropagation()}>
+      <div className="fixed inset-x-0 bottom-0 w-full max-h-[90vh] overflow-y-auto bg-shell rounded-t-[28px]" onClick={e => e.stopPropagation()}>
         {/* Drag handle: a purely visual affordance signalling "this sheet
             swipes down to close" -- it does not itself carry a gesture,
             useDismissable's backdrop tap/Back-button handling already does
@@ -112,8 +112,8 @@ export default function ProductDetailSheet({
             ? <img src={sized(active.image_url, IMG.photo)} alt={active.name} className="w-full h-full object-cover"
                 onError={() => setImgFailed(true)} />
             : <CategoryArt art={art} size="xl" className="text-mist" />}
-          <span className="absolute top-1.5 left-1.5">
-            <IconButton icon="x" label="إغلاق" variant="onPhoto" onClick={onClose} />
+          <span className="absolute top-2 left-2">
+            <IconButton icon="x" label="إغلاق" onClick={onClose} />
           </span>
           {active.requires_prescription && (
             <span className="absolute top-3 right-3 bg-white/90 rounded-full px-2.5 py-1 text-xs font-bold text-seadeep">
@@ -140,18 +140,29 @@ export default function ProductDetailSheet({
               <button className="btn-sea w-full !py-3 !rounded-full" disabled={disabled} onClick={() => onCustomize(active)}>
                 اختيار
               </button>
-            ) : qty === 0 ? (
-              <button className="btn-sea w-full !py-3 !rounded-full" disabled={disabled} onClick={() => onAdd(active)}>
-                إضافة
-              </button>
             ) : (
-              <div className="w-full h-11 rounded-xl bg-shellup flex items-center justify-between px-1.5">
-                <button className="w-9 h-9 rounded-lg grid place-items-center hover:bg-white" onClick={() => onRemove(active)}>
-                  <Icon name="minus" size="xs" />
-                </button>
-                <span className="font-bold">{qty}</span>
-                <button className="w-9 h-9 rounded-lg grid place-items-center bg-sea text-white" onClick={() => onAdd(active)}>
-                  <Icon name="plus" size="xs" />
+              // Stepper BESIDE the action, the same shape as CustomizeSheet.
+              // Here the stepper used to replace the button once anything was
+              // in the cart, so the two sheets behaved differently for the
+              // same job -- and once it appeared there was no «إضافة» left to
+              // press, only a counter.
+              <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-1 bg-shellup rounded-full px-1.5 py-1.5 shrink-0">
+                  <button className="w-9 h-9 rounded-full grid place-items-center hover:bg-white disabled:opacity-40"
+                    aria-label="أقل" disabled={qty <= 0} onClick={() => onRemove(active)}>
+                    <Icon name="minus" size="sm" />
+                  </button>
+                  <span className="font-bold text-sm min-w-[1.4rem] text-center">{qty}</span>
+                  <button className="w-9 h-9 rounded-full grid place-items-center bg-sea text-white"
+                    aria-label="أكتر" onClick={() => onAdd(active)}>
+                    <Icon name="plus" size="sm" />
+                  </button>
+                </div>
+                {/* At zero the button IS the add; once something is in the
+                    cart it confirms and closes. */}
+                <button className="btn-sea flex-1" disabled={disabled}
+                  onClick={() => (qty === 0 ? onAdd(active) : onClose())}>
+                  {qty === 0 ? 'إضافة' : `تمام • ${activeDisplayPrice * qty} ج.م`}
                 </button>
               </div>
             )}
@@ -159,7 +170,9 @@ export default function ProductDetailSheet({
 
           {related.length > 0 && (
             <div>
-              <h3 className="font-semibold text-sm text-mist mb-3 pt-4 border-t border-line">منتجات تانية ممكن تعجبك</h3>
+              {/* No rule here: the section already reads as separate, and the line
+                  landed immediately under the stepper as if it belonged to it. */}
+              <h3 className="font-semibold text-sm text-mist mb-3 pt-5">منتجات تانية ممكن تعجبك</h3>
               <div className="flex gap-3 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none">
                 {related.map(r => {
                   const rArt = artFor(r.category)
