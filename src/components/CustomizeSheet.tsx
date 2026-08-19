@@ -117,7 +117,7 @@ export default function CustomizeSheet({
   // see the note in ProductDetailSheet.
   return (
     <div ref={overlayRef} role="dialog" aria-labelledby="customize-sheet-title" aria-modal="true" className="fixed inset-0 z-50 bg-black/60" onClick={onClose}>
-      <div className="card fixed inset-x-0 bottom-0 w-full p-5 !rounded-t-[4px] rounded-b-none max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="card fixed inset-x-0 bottom-0 w-full p-5 !rounded-t-3xl rounded-b-none max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         {/* The dish, before the radio buttons. This sheet opened straight onto
             «ساندوتش لوحده ولا كومبو؟» -- a form about a thing the customer
             could no longer see, even though the card they tapped was showing
@@ -126,7 +126,7 @@ export default function CustomizeSheet({
         {/* overflow-hidden + the same top radius, or the photo squares off the
             corners the sheet just rounded. */}
         {item.image_url && (
-          <div className="-mx-5 -mt-5 mb-4 relative overflow-hidden rounded-t-[4px]">
+          <div className="-mx-5 -mt-5 mb-4 relative overflow-hidden rounded-t-3xl">
             <img src={sized(item.image_url, IMG.wide)} alt="" loading="eager" decoding="async"
               className="w-full h-60 object-cover"
               onError={e => { (e.currentTarget.closest('div') as HTMLElement).style.display = 'none' }} />
@@ -152,10 +152,11 @@ export default function CustomizeSheet({
           <div className="mb-4">
             <p className="font-semibold text-sm mb-2 flex items-center gap-2">
               {sizes.length > 0 ? 'الحجم' : 'الساندوتش'}
+              <span className="text-mist font-normal text-xs">اختار واحد</span>
               {/* A badge, not «(مطلوب)» in parentheses. The parenthetical read
                   as an aside about the heading; the thing it describes is the
                   section, and a badge says that at a glance. */}
-              <span className="bg-coral-100 text-coral-700 text-[11px] font-bold rounded-md px-2 py-0.5">مطلوب</span>
+              <span className="ms-auto bg-coral-100 text-coral-700 text-[11px] font-bold rounded-md px-2 py-0.5">مطلوب</span>
             </p>
             <div className="space-y-2">
               {sizes.length > 0 ? sizes.map(s => (
@@ -199,14 +200,17 @@ export default function CustomizeSheet({
 
         {addonGroups.map(g => (
           <div key={g.id} className="mb-4">
+            {/* The rule sits next to the name it qualifies; «مطلوب» goes to the
+                far end, where a status belongs. They were the other way round,
+                so the badge interrupted the sentence. */}
             <p className="font-semibold text-sm mb-2 flex items-center gap-2">
               {g.name}
-              {g.min_select > 0 && (
-                <span className="bg-coral-100 text-coral-700 text-[11px] font-bold rounded-md px-2 py-0.5">مطلوب</span>
-              )}
               {g.max_select === 1
                 ? <span className="text-mist font-normal text-xs">اختار واحد</span>
                 : g.max_select != null && <span className="text-mist font-normal text-xs">حد أقصى {g.max_select}</span>}
+              {g.min_select > 0 && (
+                <span className="ms-auto bg-coral-100 text-coral-700 text-[11px] font-bold rounded-md px-2 py-0.5">مطلوب</span>
+              )}
             </p>
             <div className="space-y-2">
               {addons.filter(a => a.group_id === g.id && a.available).map(a => (

@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import { sized, IMG } from '../lib/imageUrl'
-import Icon from './Icon'
 
 export interface FeaturedProductCard {
   menu_item_id: number
@@ -44,11 +43,6 @@ export default function FeaturedProductsRail({ items }: { items: FeaturedProduct
       {/* The perforation a ticket tears along. Dashed, faint, and inset so it
           reads as part of the shape rather than a divider between two things. */}
       <div className="px-4 pt-7 pb-6">
-        <div className="flex items-center gap-2 mb-3">
-          <Icon name="tag" size="xs" className="text-coral-700" />
-          <span className="text-[11px] font-bold text-coral-700 tracking-wide">مختارين ليك</span>
-          <span className="flex-1 border-t border-dashed border-line" />
-        </div>
       <div className="flex gap-3 overflow-x-auto pb-1 snap-x snap-mandatory scrollbar-none">
         {items.map(it => (
           <Link key={it.menu_item_id} to={`/restaurant/${it.restaurant_id}?item=${it.menu_item_id}`}

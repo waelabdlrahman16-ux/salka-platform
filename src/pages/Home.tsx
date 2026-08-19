@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase'
 import { useDismissable } from '../lib/useDismissable'
 import { haversineKm } from '../lib/geo'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
-import { openLabel } from '../lib/vendorHours'
+
 import { BROWSE_KINDS, vendorKind, normaliseArabic, VENDOR_TYPE_ART, type VendorKind } from '../lib/categoryArt'
 import Icon from '../components/Icon'
 import BannerRail from '../components/BannerRail'
@@ -17,7 +17,6 @@ import FeaturedProductsRail, { type FeaturedProductCard } from '../components/Fe
 import type { Compound, Discount, Restaurant } from '../lib/types'
 import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
 import { publicCatalog } from '../lib/publicCatalog'
-
 
 // Off until the category art exists. The chips currently carry the food emoji,
 // which is fine as an appetite cue at 20px next to a word -- but with the label
@@ -707,42 +706,25 @@ export default function Home() {
             )}
             {restaurantFeed}
 
-            {/* Closed vendors, collected. Still reachable -- people browse a
-                menu before a place opens -- but no longer taking up half the
-                scroll between things that can actually be ordered. */}
+            {/* Closed vendors, as FULL CARDS -- the same card as everything
+                above, greyed, with the opening time beside the name. Agreed
+                with Wael, and then quietly not done: they were rendering as a
+                row of little pills under a «هيفتحوا بعدين» heading, which is a
+                second, smaller design for a thing we already have a design for.
+                A closed restaurant is still a restaurant; it is just shut. */}
             {closedRestaurants.length > 0 && (
-              <div className="pt-2">
-                <p className="text-xs text-mist mb-2 pt-3 border-t border-line">هيفتحوا بعدين</p>
-                <div className="flex flex-wrap gap-2">
-                  {closedRestaurants.map(r => (
-                    <Link key={r.id} to={`/restaurant/${r.id}`}
-                      className="flex items-center gap-2 rounded-full border border-line bg-shell px-3 py-1.5 min-h-[40px]">
-                      <span className="w-6 h-6 rounded-md overflow-hidden bg-shellup grid place-items-center text-[11px] shrink-0">
-                        {r.logo_url
-                          ? <img src={r.logo_url} alt="" loading="lazy" className="w-full h-full object-cover" />
-                          : '🍽️'}
-                      </span>
-                      <span className="min-w-0">
-                        <span className="text-xs font-semibold truncate max-w-[130px] block">{r.name}</span>
-                        {/* «هيفتحوا بعدين» says they open later; it does not say
-                            WHEN, and without that there is no reason to come
-                            back. The card variant has carried the opening time
-                            since vendorHours landed -- this chip is a second,
-                            older rendering of the same fact and was missed. */}
-                        {openLabel(r).text !== 'مقفول' && (
-                          <span className="text-[10px] text-coral-700 block">{openLabel(r).text}</span>
-                        )}
-                      </span>
-                    </Link>
-                  ))}
-                </div>
+              <div className="pt-2 space-y-3">
+                {closedRestaurants.map(r => (
+                  <RestaurantCard key={r.id} restaurant={r}
+                    etaMinutes={selected ? eta(r) : null}
+                    discountLabel={discountLabels.get(r.id)} />
+                ))}
               </div>
             )}
           </div>
           )}
         </div>
       )}
-
 
       {picking && (
         <div ref={pickerRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true"

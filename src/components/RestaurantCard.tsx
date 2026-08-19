@@ -167,8 +167,10 @@ export default function RestaurantCard({
           </span>
         )}
 
+        {/* right-2.5, not right-2: the card body is px-2.5, so the badge shares
+            a right edge with the logo tile directly beneath it. */}
         {rated && !closed && (
-          <span className="absolute bottom-2 right-2 bg-white/95 text-[12px] rounded-md px-2 py-0.5 shadow-sm">
+          <span className="absolute bottom-2 right-2.5 bg-white/95 text-[12px] rounded-md px-2 py-0.5 shadow-sm">
             {ratingChip}
           </span>
         )}
