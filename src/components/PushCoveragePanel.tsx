@@ -98,7 +98,7 @@ export default function PushCoveragePanel() {
   if (loading && !report) return <div className="card p-6 text-center text-mist">جاري فحص تسجيل التنبيهات…</div>
   if (error && !report) return (
     <div className="card p-6 text-center">
-      <p className="text-red-700 font-semibold">{error}</p>
+      <p className="text-danger font-semibold">{error}</p>
       <button className="btn-sea mt-3" onClick={load}>حاول تاني</button>
     </div>
   )
@@ -121,19 +121,19 @@ export default function PushCoveragePanel() {
       </div>
 
       {probe && (
-        <div className={`card p-3 text-sm font-semibold ${probe.results.some(r => !r.alive) ? 'border-red-400/50 text-red-700' : 'border-emerald-400/40 text-emerald-700'}`}>
+        <div className={`card p-3 text-sm font-semibold ${probe.results.some(r => !r.alive) ? 'border-dangerline text-danger' : 'border-successline/40 text-success'}`}>
           فحصنا {probe.checked} جهاز من غير ما نبعت أي تنبيه: {probe.results.filter(r => r.alive).length} سليم
           {probe.results.some(r => !r.alive) && ` · ${probe.results.filter(r => !r.alive).length} محتاج إعادة تسجيل`}
         </div>
       )}
-      {probeError && <div className="card p-3 text-sm text-red-700 font-semibold">{probeError}</div>}
+      {probeError && <div className="card p-3 text-sm text-danger font-semibold">{probeError}</div>}
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
         {(report?.coverage ?? []).map(c => (
-          <div key={c.role} className={`card p-3 ${c.missing + c.stale > 0 ? 'border-red-400/50' : 'border-emerald-400/40'}`}>
+          <div key={c.role} className={`card p-3 ${c.missing + c.stale > 0 ? 'border-warningline' : 'border-successline/40'}`}>
             <p className="text-xs text-mist">{ROLE_AR[c.role] ?? c.role}</p>
             <p className="text-xl font-bold mt-1">{c.registered}/{c.total}</p>
-            <p className={`text-xs mt-1 ${c.missing + c.stale > 0 ? 'text-red-700 font-semibold' : 'text-emerald-700'}`}>
+            <p className={`text-xs mt-1 ${c.missing + c.stale > 0 ? 'text-warning font-semibold' : 'text-success'}`}>
               {c.missing > 0 ? `${c.missing} بدون تنبيهات` : c.stale > 0 ? `${c.stale} تسجيل قديم` : <>كلهم مسجلين<Icon name="check" size="xs" className="inline-block align-[-0.15em] ms-1" /></>}
             </p>
           </div>
@@ -142,23 +142,23 @@ export default function PushCoveragePanel() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         <div className="card p-3"><p className="text-xs text-mist">محاولات 30 يوم</p><p className="text-lg font-bold">{stats?.attempts_30d ?? 0}</p></div>
-        <div className="card p-3"><p className="text-xs text-mist">قبلتها فايربيز</p><p className="text-lg font-bold text-emerald-700">{acceptance == null ? '—' : `${acceptance}%`}</p></div>
-        <div className="card p-3"><p className="text-xs text-mist">فشلت آخر 24 ساعة</p><p className="text-lg font-bold text-red-700">{stats?.failed_24h ?? 0}</p></div>
+        <div className="card p-3"><p className="text-xs text-mist">قبلتها فايربيز</p><p className="text-lg font-bold text-success">{acceptance == null ? '—' : `${acceptance}%`}</p></div>
+        <div className="card p-3"><p className="text-xs text-mist">فشلت آخر 24 ساعة</p><p className="text-lg font-bold text-danger">{stats?.failed_24h ?? 0}</p></div>
         <div className="card p-3"><p className="text-xs text-mist">توكنات منتهية 30 يوم</p><p className="text-lg font-bold">{report?.dead_tokens_30d ?? 0}</p></div>
       </div>
 
       <section>
         <h3 className="font-bold mb-2">محتاجين تفعيل ({missing.length})</h3>
-        {missing.length === 0 ? <div className="card p-4 text-emerald-700 font-semibold">كل حسابات التشغيل مسجلة للتنبيهات<Icon name="check" size="xs" className="inline-block align-[-0.15em] ms-1" /></div> : (
+        {missing.length === 0 ? <div className="card p-4 text-success font-semibold">كل حسابات التشغيل مسجلة للتنبيهات<Icon name="check" size="xs" className="inline-block align-[-0.15em] ms-1" /></div> : (
           <div className="space-y-2">
             {missing.map(p => (
-              <div key={p.profile_id} className="card p-3.5 border-red-400/40 flex items-center justify-between gap-3">
+              <div key={p.profile_id} className="card p-3.5 border-dangerline flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-semibold truncate">{p.restaurant_name || p.driver_name || p.name}</p>
                   <p className="text-xs text-mist">{ROLE_AR[p.role] ?? p.role}</p>
                 </div>
                 <div className="text-left shrink-0">
-                  <span className="text-xs font-semibold text-red-700 bg-red-500/10 rounded-full px-2.5 py-1">
+                  <span className="text-xs font-semibold text-danger bg-dangerbg rounded-full px-2.5 py-1">
                     {p.status === 'missing' ? 'غير مسجل' : 'التسجيل قديم'}
                   </span>
                   <p className="text-[10px] text-mist mt-1">{dateLabel(p.last_registered_at)}</p>

@@ -20,7 +20,7 @@ function seenLabel(seconds: number | null): { text: string; tone: string } {
   if (seconds < 90) return { text: 'موقعه دلوقتي', tone: 'text-sea' }
   if (seconds < 180) return { text: `آخر تحديث من ${Math.round(seconds / 60)} دقيقة`, tone: 'text-mist' }
   if (seconds < 3600) return { text: `آخر تحديث من ${Math.round(seconds / 60)} دقيقة`, tone: 'text-coral-700' }
-  return { text: `آخر تحديث من ${Math.round(seconds / 3600)} ساعة`, tone: 'text-red-500' }
+  return { text: `آخر تحديث من ${Math.round(seconds / 3600)} ساعة`, tone: 'text-danger' }
 }
 
 export default function LiveDeliveryDetail({ live }: { live?: LiveDelivery }) {

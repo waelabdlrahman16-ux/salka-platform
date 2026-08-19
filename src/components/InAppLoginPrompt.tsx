@@ -77,7 +77,7 @@ export default function InAppLoginPrompt({ className = '' }: { className?: strin
   if (sent) {
     return (
       <div className={`card p-4 text-center ${className}`}>
-        <p className="text-sm bg-emerald-500/10 text-emerald-700 rounded-xl p-3">
+        <p className="text-sm bg-successbg text-success rounded-xl p-3">
           <Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />بعتنالك رابط على {email}، افتح الإيميل واضغط عليه عشان تدخل
         </p>
       </div>
@@ -116,7 +116,7 @@ export default function InAppLoginPrompt({ className = '' }: { className?: strin
           : 'أو اضغط على ••• فوق واختار «فتح في المتصفح»'}
       </p>
 
-      {error && <p className="text-xs text-red-600 bg-red-500/10 rounded-xl p-2 mt-2.5">{error}</p>}
+      {error && <p className="text-xs text-danger bg-dangerbg rounded-xl p-2 mt-2.5">{error}</p>}
 
       <button className="text-xs text-mist hover:text-foam mt-3 min-h-[44px] px-4" onClick={dismiss}>
         مش دلوقتي

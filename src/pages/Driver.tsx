@@ -811,8 +811,8 @@ export default function DriverPage() {
           close until it's already been hit. */}
       {(driver.cash_held ?? 0) > 0 && (
         <div className={`flex items-center justify-between rounded-xl px-3 py-2 mb-3 text-sm font-bold ${
-          (driver.cash_held ?? 0) >= 3000 ? 'bg-red-600 text-white'
-            : (driver.cash_held ?? 0) >= 2500 ? 'bg-red-500/15 text-red-700'
+          (driver.cash_held ?? 0) >= 3000 ? 'bg-danger text-white'
+            : (driver.cash_held ?? 0) >= 2500 ? 'bg-dangerbg text-danger'
             : 'bg-shellup text-seadeep'
         }`}>
           <span><Icon name="moneyBill" size="sm" className="inline-block align-[-0.15em] me-1" />كاش معاك دلوقتي</span>
@@ -840,8 +840,8 @@ export default function DriverPage() {
       )}
 
       {gpsDenied && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 mb-4">
-          <p className="text-sm font-semibold text-red-700">
+        <div className="bg-dangerbg border border-dangerline rounded-xl p-3 mb-4">
+          <p className="text-sm font-semibold text-danger">
             <Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />الموقع مقفول. شغّل الـ GPS عشان الخريطة والوقت المتوقع يشتغلوا
           </p>
           {/* The old copy said WHAT was broken but never HOW to fix it -- a
@@ -850,7 +850,7 @@ export default function DriverPage() {
               again), and no reason to know where phone Settings even is for
               this. There is no web API to jump straight to a specific app's
               permission screen, so this is instructions, not a deep link. */}
-          <p className="text-xs text-red-700/80 mt-1.5">
+          <p className="text-xs text-danger/80 mt-1.5">
             من إعدادات الموبايل: التطبيقات ← سالكة ← الأذونات ← فعّل الموقع، بعدين ارجع هنا واعمل تحديث
           </p>
         </div>
@@ -926,14 +926,14 @@ export default function DriverPage() {
               : o.total
             return (
               <div key={a.id} className="card !rounded-2xl p-3.5 flex items-center gap-3">
-                <span className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 grid place-items-center shrink-0"><Icon name="check" size="md" /></span>
+                <span className="w-9 h-9 rounded-full bg-successbg text-success grid place-items-center shrink-0"><Icon name="check" size="md" /></span>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-sm truncate">#{o.id} · {o.restaurants?.name}</p>
                   <p className="text-xs text-mist mt-0.5 truncate">
                     {o.zone}{a.delivered_at ? ` · ${fmtWhen(a.delivered_at)}` : ''}
                   </p>
                 </div>
-                <span className="text-sm font-semibold text-emerald-700 shrink-0">
+                <span className="text-sm font-semibold text-success shrink-0">
                   {collected > 0 ? `${collected} ج.م` : 'مدفوع'}
                 </span>
               </div>
@@ -1012,10 +1012,10 @@ export default function DriverPage() {
                     ) : o.cod_deposit_amount != null ? (
                       <span className="inline-flex items-center gap-2 flex-wrap">
                         <span className="text-sea font-semibold"><span className="w-2 h-2 rounded-full shrink-0 inline-block me-1 bg-current align-[0.05em]" />عربون مدفوع: {o.cod_deposit_amount} ج.م</span>
-                        <span className="text-emerald-700 font-semibold"><span className="w-2 h-2 rounded-full shrink-0 inline-block me-1 bg-current align-[0.05em]" />حصّل: {Math.round((o.total - o.cod_deposit_amount) * 100) / 100} ج.م</span>
+                        <span className="text-success font-semibold"><span className="w-2 h-2 rounded-full shrink-0 inline-block me-1 bg-current align-[0.05em]" />حصّل: {Math.round((o.total - o.cod_deposit_amount) * 100) / 100} ج.م</span>
                       </span>
                     ) : (
-                      <span className="text-emerald-700 font-semibold"><span className="w-2 h-2 rounded-full shrink-0 inline-block me-1 bg-current align-[0.05em]" />حصّل: {o.total} ج.م كاش</span>
+                      <span className="text-success font-semibold"><span className="w-2 h-2 rounded-full shrink-0 inline-block me-1 bg-current align-[0.05em]" />حصّل: {o.total} ج.م كاش</span>
                     )}
                   </p>
                 </div>
@@ -1185,19 +1185,19 @@ export default function DriverPage() {
                     <div className="space-y-2">
                       {cashDue > 0 && !a.cash_confirmed_at && (
                         <button
-                          className="w-full flex items-center gap-2 text-sm bg-emerald-500/10 rounded-xl p-3 text-right disabled:opacity-60"
+                          className="w-full flex items-center gap-2 text-sm bg-successbg rounded-xl p-3 text-right disabled:opacity-60"
                           disabled={isBusy(`cash:${a.id}`) || cashConfirmed.has(a.id)}
                           onClick={() => confirmCash(a, cashDue)}>
-                          <span className={`w-5 h-5 rounded border-2 shrink-0 grid place-items-center ${cashConfirmed.has(a.id) ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-emerald-600'}`}>
+                          <span className={`w-5 h-5 rounded border-2 shrink-0 grid place-items-center ${cashConfirmed.has(a.id) ? 'bg-success border-successline text-white' : 'border-successline'}`}>
                             {cashConfirmed.has(a.id) && <Icon name="check" size="xs" />}
                           </span>
-                          <span className="text-emerald-800 font-semibold">
+                          <span className="text-success font-semibold">
                             {isBusy(`cash:${a.id}`) ? 'جاري التأكيد…' : `أكدت إني استلمت ${cashDue} ج.م كاش من العميل`}
                           </span>
                         </button>
                       )}
                       {cashDue > 0 && a.cash_confirmed_at && (
-                        <p className="text-emerald-800 bg-emerald-500/10 rounded-xl p-3 text-sm font-semibold text-center"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />استلمت الكاش</p>
+                        <p className="text-success bg-successbg rounded-xl p-3 text-sm font-semibold text-center"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />استلمت الكاش</p>
                       )}
                       {/* Above the delivery swipe, because it happens before it:
                           arriving is not the same event as handing the bag over,
@@ -1445,7 +1445,7 @@ export default function DriverPage() {
           </div>
         </div>
         {settlementSent ? (
-          <p className="text-emerald-700 text-sm text-center mt-3"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />طلب التسوية المبكرة وصل للإدارة</p>
+          <p className="text-success text-sm text-center mt-3"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />طلب التسوية المبكرة وصل للإدارة</p>
         ) : (
           <button className="btn-ghost w-full mt-3 text-sm" disabled={requestingSettlement || !haveStats || unpaidEarnings === 0} onClick={requestSettlement}>
             {/* disabled:pointer-events-none means a dead button does not even
@@ -1499,7 +1499,7 @@ export default function DriverPage() {
                     </div>
                   )}
                   {myEscalated.has(sh.id) && (
-                    <p className="text-emerald-700 text-sm mt-3"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />تم إبلاغ الإدارة، في انتظار تعيين مندوب بديل</p>
+                    <p className="text-success text-sm mt-3"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />تم إبلاغ الإدارة، في انتظار تعيين مندوب بديل</p>
                   )}
                 </div>
               )

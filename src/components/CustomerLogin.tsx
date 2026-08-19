@@ -210,14 +210,14 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
             <p className="text-mist text-sm mb-5">هنبعتلك رابط دخول على إيميلك</p>
 
             {emailLinkSent ? (
-              <p className="text-sm bg-emerald-500/10 text-emerald-700 rounded-xl p-3 mb-4">
+              <p className="text-sm bg-successbg text-success rounded-xl p-3 mb-4">
                 <Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />بعتنالك رابط على {email}، افتح الإيميل واضغط عليه عشان تدخل
               </p>
             ) : (
               <>
                 <input className="field text-center mb-4" dir="ltr" value={email} onChange={e => setEmail(e.target.value)}
                   placeholder="you@example.com" autoFocus />
-                {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">{error}</p>}
+                {error && <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-4">{error}</p>}
                 <button className="btn-sea w-full !py-3 mb-3"
                   disabled={!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || sending} onClick={sendEmailLink}>
                   {sending ? 'جاري الإرسال…' : 'ابعتلي رابط الدخول'}
@@ -241,13 +241,13 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
               </div>
               <div>
                 <label className="label" htmlFor={`${fid}-2`}>رقم الموبايل</label>
-                <input id={`${fid}-2`} className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-red-400' : ''}`}
+                <input id={`${fid}-2`} className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-dangerline' : ''}`}
                   dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} placeholder="01xxxxxxxxx" maxLength={13} />
-                {phone.trim() && !isValidEgyptPhone(phone) && <p className="text-xs text-red-600 mt-1">{PHONE_HINT}</p>}
+                {phone.trim() && !isValidEgyptPhone(phone) && <p className="text-xs text-danger mt-1">{PHONE_HINT}</p>}
               </div>
             </div>
 
-            {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">{error}</p>}
+            {error && <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-4">{error}</p>}
 
             <button className="btn-sea w-full !py-3 mb-2" disabled={!isValidEgyptPhone(phone) || sending || resendIn > 0} onClick={sendCode}>
               {sending ? 'جاري الإرسال…' : resendIn > 0 ? `استنى ${resendIn} ثانية` : 'ابعتلي الكود'}
@@ -265,7 +265,7 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
             <input className="field text-center text-2xl tracking-widest mb-4" dir="ltr" value={code}
               onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="------" maxLength={6} />
 
-            {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">{error}</p>}
+            {error && <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-4">{error}</p>}
 
             <button className="btn-sea w-full !py-3 mb-3" disabled={code.length !== 6 || sending} onClick={confirmCode}>
               {sending ? 'جاري التأكيد…' : 'تأكيد'}

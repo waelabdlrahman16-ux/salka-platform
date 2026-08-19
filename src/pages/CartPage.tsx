@@ -131,8 +131,8 @@ export default function CartPage() {
       {/* Without this the failure showed as «لحظة…» on a permanently disabled
           button, with no reason and no way forward. */}
       {optionsFailed && (
-        <div className="card p-3 mb-4 border-red-400/50 bg-red-500/5 flex items-center justify-between gap-3">
-          <p className="text-sm text-red-700 font-semibold">مش قادرين نجيب تفاصيل الأصناف، السعر ممكن يكون ناقص</p>
+        <div className="card p-3 mb-4 border-dangerline bg-dangerbg flex items-center justify-between gap-3">
+          <p className="text-sm text-danger font-semibold">مش قادرين نجيب تفاصيل الأصناف، السعر ممكن يكون ناقص</p>
           <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0"
             onClick={() => setOptionsAttempt(a => a + 1)}>جرب تاني</button>
         </div>

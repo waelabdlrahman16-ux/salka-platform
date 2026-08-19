@@ -92,7 +92,7 @@ export default function OptionRowsCard({
                   onBlur={e => { onPriceChange(r.id, e.target.value); setPriceDraft(d => { const n = { ...d }; delete n[r.id]; return n }) }}
                   onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }} />
                 <span className="text-xs text-mist shrink-0">ج.م</span>
-                <button className="text-red-500 text-xs shrink-0 disabled:opacity-40" disabled={disabled} onClick={() => onRemove(r.id)}>حذف</button>
+                <button className="text-danger text-xs shrink-0 disabled:opacity-40" disabled={disabled} onClick={() => onRemove(r.id)}>حذف</button>
               </div>
             ))}
           </div>

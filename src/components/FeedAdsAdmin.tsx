@@ -162,7 +162,7 @@ export default function FeedAdsAdmin({ restaurants }: { restaurants: Restaurant[
         <button className="btn-sea !py-2 text-sm shrink-0" onClick={() => startEdit('new')}>+ إعلان جديد</button>
       </div>
 
-      {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3">{error}</p>}
+      {error && <p className="text-sm text-danger bg-dangerbg rounded-xl p-3">{error}</p>}
 
       {editing && (
         <div className="card p-4 space-y-3">
@@ -217,7 +217,7 @@ export default function FeedAdsAdmin({ restaurants }: { restaurants: Restaurant[
                 {form.link_url && (
                   <div className="flex items-center gap-2 bg-shellup rounded-lg px-3 py-2.5 mt-2 text-sm">
                     <span className="flex-1 min-w-0 truncate"><Icon name="check" size="xs" className="inline-block align-[-0.15em] me-1" />هيروح لـ: <bdi dir="ltr">{form.link_url}</bdi></span>
-                    <button type="button" className="text-xs text-red-600 font-semibold shrink-0"
+                    <button type="button" className="text-xs text-danger font-semibold shrink-0"
                       onClick={() => setForm(f => ({ ...f, link_url: '' }))}>مسح</button>
                   </div>
                 )}
@@ -227,7 +227,7 @@ export default function FeedAdsAdmin({ restaurants }: { restaurants: Restaurant[
               </>
             ) : (
               <>
-                <input id={`${fid}-l`} className={`field ${!LINK_OK(form.link_url) ? '!border-red-400' : ''}`}
+                <input id={`${fid}-l`} className={`field ${!LINK_OK(form.link_url) ? '!border-dangerline' : ''}`}
                   dir="ltr" placeholder="/restaurant/9  أو  https://..." value={form.link_url}
                   onChange={e => setForm(f => ({ ...f, link_url: e.target.value }))} />
                 <button type="button" className="text-xs text-sea font-semibold mt-2" onClick={() => setManualLink(false)}>
@@ -236,7 +236,7 @@ export default function FeedAdsAdmin({ restaurants }: { restaurants: Restaurant[
               </>
             )}
             {!LINK_OK(form.link_url)
-              ? <p className="text-xs text-red-600 mt-1">لازم يبدأ بـ / (صفحة جوه التطبيق) أو https://</p>
+              ? <p className="text-xs text-danger mt-1">لازم يبدأ بـ / (صفحة جوه التطبيق) أو https://</p>
               : <p className="text-xs text-mist mt-1">سيبه فاضي لو الإعلان للعرض بس.</p>}</div>
 
           <div className="grid grid-cols-2 gap-2">
@@ -287,7 +287,7 @@ export default function FeedAdsAdmin({ restaurants }: { restaurants: Restaurant[
               <button className={`btn-ghost !py-1.5 !px-3 text-xs ${r.active ? '!text-sea' : '!text-mist'}`}
                 onClick={() => toggle(r)}>{r.active ? 'شغّال' : 'موقوف'}</button>
               <button className="btn-ghost !py-1.5 !px-3 text-xs" onClick={() => startEdit(r)}>تعديل</button>
-              <button className="btn-ghost !py-1.5 !px-2.5 text-xs !text-red-600" onClick={() => remove(r)}>حذف</button>
+              <button className="btn-ghost !py-1.5 !px-2.5 text-xs !text-danger" onClick={() => remove(r)}>حذف</button>
             </div>
           </div>
         )

@@ -80,7 +80,7 @@ export default function BasicInfoCard({
         </div>
       </div>
 
-      <button className={`w-full py-2 rounded-xl text-sm font-semibold border-2 ${available ? 'border-emerald-500/40 text-emerald-700 bg-emerald-500/5' : 'border-red-400/40 text-red-600 bg-red-500/5'}`}
+      <button className={`w-full py-2 rounded-xl text-sm font-semibold border-2 ${available ? 'border-successline/40 text-success bg-successbg' : 'border-dangerline text-danger bg-dangerbg'}`}
         onClick={() => setAvailable(!available)}>
         {available
             ? <><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />متاح للطلب</>

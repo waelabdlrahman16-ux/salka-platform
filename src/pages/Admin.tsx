@@ -98,7 +98,7 @@ function AccountActionsMenu({ busy, onChangeEmail, onResetPassword, onCustomPass
           <button className="w-full text-right text-xs px-3 py-2 hover:bg-night" onClick={() => pick(onChangeEmail)}>تغيير الإيميل</button>
           <button className="w-full text-right text-xs px-3 py-2 hover:bg-night" onClick={() => pick(onResetPassword)}>تغيير كلمة السر</button>
           <button className="w-full text-right text-xs px-3 py-2 hover:bg-night" onClick={() => pick(onCustomPassword)}>كلمة سر مخصصة</button>
-          <button className="w-full text-right text-xs px-3 py-2 hover:bg-night text-red-500" onClick={() => pick(onRemove)}>إلغاء الحساب</button>
+          <button className="w-full text-right text-xs px-3 py-2 hover:bg-night text-danger" onClick={() => pick(onRemove)}>إلغاء الحساب</button>
         </div>
       )}
     </div>
@@ -1798,7 +1798,7 @@ export default function Admin() {
             settling cash). */}
         <div className="flex items-center gap-2 text-xs shrink-0">
           {lastSyncAt && (
-            <span className={syncFailed ? 'text-red-600 font-semibold' : 'text-mist'}>
+            <span className={syncFailed ? 'text-warning font-semibold' : 'text-mist'}>
               {syncFailed ? <><Icon name="warning" size="xs" className="inline-block align-[-0.15em] me-1" />آخر تحديث ناجح</> : 'آخر تحديث'}{' '}
               {new Date(lastSyncAt).toLocaleTimeString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </span>
@@ -1810,16 +1810,16 @@ export default function Admin() {
       </div>
 
       {syncFailed && (
-        <div className="card p-3 mb-4 border-red-400/50 bg-red-500/5">
-          <p className="text-sm text-red-700 font-semibold">
+        <div className="card p-3 mb-4 border-warningline bg-warningbg">
+          <p className="text-sm text-warning font-semibold">
             <Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />آخر محاولة تحديث فشلت، اللي شايفه دلوقتي ممكن يكون مش أحدث حاجة. جرب "حدّث" فوق.
           </p>
         </div>
       )}
 
       {actionError && (
-        <div ref={actionErrorRef} className="card p-3 mb-4 border-red-400/50 bg-red-500/5 flex items-center justify-between gap-3">
-          <p className="text-sm text-red-700 font-semibold">{actionError}</p>
+        <div ref={actionErrorRef} className="card p-3 mb-4 border-dangerline bg-dangerbg flex items-center justify-between gap-3">
+          <p className="text-sm text-danger font-semibold">{actionError}</p>
           <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0" onClick={() => setActionError('')}>تمام</button>
         </div>
       )}
@@ -1830,7 +1830,7 @@ export default function Admin() {
           -- once an order had a driver, nothing ever flagged it again, so the
           60-minute Accepted and 90-minute Out_for_Delivery cases were invisible. */}
       {stalled.length > 0 && (
-        <div className="card p-4 mb-4 border-red-400/50 bg-red-500/5">
+        <div className="card p-4 mb-4 border-warningline bg-warningbg">
           <p className="font-bold mb-3"><Icon name="hourglass" size="sm" className="inline-block align-[-0.15em] me-1" />طلبات واقفة محتاجة تدخّل ({stalled.length})</p>
           <div className="space-y-2.5">
             {stalled.map(o => {
@@ -1852,7 +1852,7 @@ export default function Admin() {
                       </p>
                       <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{o.compound_name ?? '—'}</p>
                     </div>
-                    <span className="text-xs font-semibold bg-red-500/10 text-red-700 rounded-full px-2.5 py-1 shrink-0">
+                    <span className="text-xs font-semibold bg-dangerbg text-danger rounded-full px-2.5 py-1 shrink-0">
                       {orderStatusLabel(o.status)}
                     </span>
                   </div>
@@ -1867,7 +1867,7 @@ export default function Admin() {
                       {full.request_notes?.trim() && <p><Icon name="penToSquare" size="sm" className="inline-block align-[-0.15em] me-1" />تفاصيل الطلب: {full.request_notes}</p>}
                     </div>
                   )}
-                  <p className="text-xs text-red-700 font-semibold mt-1.5">
+                  <p className="text-xs text-warning font-semibold mt-1.5">
                     واقف من {since} (الحد {o.threshold_minutes} دقيقة)
                     {o.payment_method === 'cod' ? ' · كاش' : o.payment_method === 'instapay' ? ' · إنستاباي' : ''}
                   </p>
@@ -1943,7 +1943,7 @@ export default function Admin() {
       )}
 
       {noAnswerReports.length > 0 && (
-        <div className="card p-4 mb-4 border-red-400/50 bg-red-500/5">
+        <div className="card p-4 mb-4 border-warningline bg-warningbg">
           <p className="font-bold mb-3"><Icon name="phone" size="sm" className="inline-block align-[-0.15em] me-1" />عملاء ما ردوش على المندوب ({noAnswerReports.length})</p>
           <div className="space-y-2.5">
             {noAnswerReports.map(a => {
@@ -1963,7 +1963,7 @@ export default function Admin() {
                     <a className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem] text-center" href={`tel:${o.customer_phone}`}>اتصل بالعميل</a>
                     <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem]" onClick={() => resolveNoAnswer(a, 'wait')}>يستنى 5 دقايق</button>
                     <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem]" onClick={() => forceDelivered(a)}>سجّله كمُسلَّم</button>
-                    <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem] !text-red-600" onClick={() => resolveNoAnswer(a, 'fail')}>توصيل فاشل</button>
+                    <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem] !text-danger" onClick={() => resolveNoAnswer(a, 'fail')}>توصيل فاشل</button>
                     <button className="btn-danger !py-1.5 text-xs flex-1 min-w-[7rem]" onClick={() => resolveNoAnswer(a, 'refund')}>إلغاء واسترداد</button>
                   </div>
                 </div>
@@ -1989,7 +1989,7 @@ export default function Admin() {
                       "لسه ماقالش إنه حوّل" branch was unreachable. Show WHEN
                       they said it instead -- that is the number that decides
                       whether this is fresh or has been sitting. */}
-                  <p className="text-xs mt-0.5 text-emerald-700">
+                  <p className="text-xs mt-0.5 text-success">
                     <Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />قال إنه حوّل{o.instapay_claimed_at ? ` · ${new Date(o.instapay_claimed_at).toLocaleTimeString('ar-EG', { timeZone: 'Africa/Cairo', hour: 'numeric', minute: '2-digit' })}` : ''}
                   </p>
                 </div>
@@ -2037,7 +2037,7 @@ export default function Admin() {
               }}>
               <Icon name={g.icon} size="sm" className="inline-block align-[-0.15em] me-1" />{g.label}
               {n > 0 && (
-                <span className={`mr-1.5 rounded-full px-1.5 text-[11px] font-bold ${on ? 'bg-white text-sea' : 'bg-red-600 text-white'}`}>{n}</span>
+                <span className={`mr-1.5 rounded-full px-1.5 text-[11px] font-bold ${on ? 'bg-white text-sea' : 'bg-danger text-white'}`}>{n}</span>
               )}
             </button>
           )
@@ -2049,7 +2049,7 @@ export default function Admin() {
           <button key={t.key} className={`tab ${tab === t.key ? 'tab-active' : ''}`} onClick={() => { if (t.key !== 'wallet') setWalletOrderId(null); setTab(t.key) }}>
             {t.label}
             {(tabBadges[t.key] ?? 0) > 0 && (
-              <span className="mr-1.5 bg-red-600 text-white rounded-full px-1.5 text-[11px] font-bold">{tabBadges[t.key]}</span>
+              <span className="mr-1.5 bg-danger text-white rounded-full px-1.5 text-[11px] font-bold">{tabBadges[t.key]}</span>
             )}
           </button>
         ))}
@@ -2063,7 +2063,7 @@ export default function Admin() {
         <div className="space-y-3">
           {unassigned.length === 0 && <div className="card p-6 text-center text-mist">لا توجد طلبات غير معيّنة</div>}
           {unassigned.map(o => (
-            <div key={o.id} className={`card p-4 ${isLate(o) ? 'border-red-400/60' : ''}`}>
+            <div key={o.id} className={`card p-4 ${isLate(o) ? 'border-warningline' : ''}`}>
               <div className="flex items-start justify-between">
                 <h2 className="font-bold">#{o.id} · {o.restaurants?.name}</h2>
                 <span className="font-bold text-sea">
@@ -2089,7 +2089,7 @@ export default function Admin() {
               {isCooking(o) && (
                 <p className="text-mist text-sm mt-1.5"><Icon name="forkKnife" size="sm" className="inline-block align-[-0.15em] me-1" />لسه بيتحضر، متاح للمندوبين خلال {minsUntilDispatch(o)} دقيقة</p>
               )}
-              {isLate(o) && <p className="text-red-600 text-sm mt-1.5"><Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />محدش استلم الطلب</p>}
+              {isLate(o) && <p className="text-warning text-sm mt-1.5"><Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />محدش استلم الطلب</p>}
               {(() => {
                 const priorAttempts = assignments.filter(a => a.order_id === o.id && a.status !== 'Offered')
                 return priorAttempts.length > 0 ? (
@@ -2190,7 +2190,7 @@ export default function Admin() {
                     <Icon name="mobileScreen" size="sm" className="inline-block align-[-0.15em] me-1" />{d.device_id ? `مربوط بـ ${d.device_label || 'جهاز'}` : 'مش مربوط بجهاز لسه'}
                   </p>
                   {disputeCount > 0 && (
-                    <p className="text-sm text-red-600 font-semibold mt-1"><Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />{disputeCount} مشكلة مؤكدة في السجل</p>
+                    <p className="text-sm text-warning font-semibold mt-1"><Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />{disputeCount} مشكلة مؤكدة في السجل</p>
                   )}
                 </div>
                 <span className={d.active ? 'badge-open' : 'badge-closed'}>{driverStatusLabel(d.status)}</span>
@@ -2270,7 +2270,7 @@ export default function Admin() {
             </div>
           )}
           {orderRangeFailed && (
-            <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-2.5" role="alert">
+            <p className="text-sm text-danger bg-dangerbg rounded-xl p-2.5" role="alert">
               مش قادرين نجيب طلبات الأيام دي. جرب تاني. (مابنعرضش اللي محمّل عندنا عشان
               ما نقولش «مفيش طلبات» وإحنا مادوّرناش فعلاً.)
             </p>
@@ -2381,7 +2381,7 @@ export default function Admin() {
                       showing it in the biggest text on the card -- with «ملغي»
                       small underneath -- buried the one fact that matters. */}
                   <span className={`font-bold block ${
-                    isCancelled(o.status) ? 'text-red-600'
+                    isCancelled(o.status) ? 'text-danger'
                     : o.is_test ? 'text-coral-700' : 'text-sea'}`}>
                     {isCancelled(o.status) ? 'ملغي'
                       : o.pricing_status === 'pending_quote' ? 'قيد التسعير'
@@ -2500,7 +2500,7 @@ export default function Admin() {
                       </span>
                     )}
                     {mins != null && (
-                      <span className={`rounded-lg px-2 py-1 border ${late ? 'bg-red-500/10 border-red-500/30 text-red-700' : 'bg-night border-line'}`}>
+                      <span className={`rounded-lg px-2 py-1 border ${late ? 'bg-warningbg border-warningline text-warning' : 'bg-night border-line'}`}>
                         <Icon name="clock" size="sm" className="inline-block align-[-0.15em] me-1" />{mins} دقيقة{o.sla_minutes ? ` / ${o.sla_minutes}` : ''}{late ? '، متأخر' : ''}
                       </span>
                     )}
@@ -2510,7 +2510,7 @@ export default function Admin() {
                         question you actually ask -- how long did we sit on it
                         before they gave up -- had no answer on this card. */}
                     {o.status === 'Cancelled' && (o.cancel_reason || o.cancelled_at) && (
-                      <span className="bg-red-500/10 border border-red-500/30 text-red-700 rounded-lg px-2 py-1">
+                      <span className="bg-dangerbg border border-dangerline text-danger rounded-lg px-2 py-1">
                         <Icon name="x" size="sm" className="inline-block align-[-0.15em] me-1" />{cancelReasonLabel(o.cancel_reason)}
                         {o.cancelled_at && ` · اتلغى ${fmtTime(o.cancelled_at)}`}
                         {o.cancelled_at && o.created_at &&
@@ -2739,7 +2739,7 @@ export default function Admin() {
                     <div className="text-xs text-mist">
                       <p>{uploadingImage === `r${r.id}` ? 'جاري رفع الشعار…' : 'الشعار، بيظهر جنب الاسم'}</p>
                       {r.logo_url && (
-                        <button className="text-red-500 font-semibold mt-1" onClick={() => removeLogo(r)}><Icon name="x" size="sm" className="inline-block align-[-0.15em] me-1" />إزالة الشعار</button>
+                        <button className="text-danger font-semibold mt-1" onClick={() => removeLogo(r)}><Icon name="x" size="sm" className="inline-block align-[-0.15em] me-1" />إزالة الشعار</button>
                       )}
                     </div>
                   </div>
@@ -2771,7 +2771,7 @@ export default function Admin() {
                           : 'من غير صورة واجهة بنختار أحسن صورة من القايمة تلقائيًا'}
                     </p>
                     {r.cover_image_url && (
-                      <button className="text-red-500 text-xs font-semibold mt-1" onClick={() => removeCover(r)}>
+                      <button className="text-danger text-xs font-semibold mt-1" onClick={() => removeCover(r)}>
                         <Icon name="x" size="sm" className="inline-block align-[-0.15em] me-1" />إزالة صورة الواجهة
                       </button>
                     )}
@@ -2795,7 +2795,7 @@ export default function Admin() {
                           onChange={e => setServiceFeeDraft(d => ({ ...d, [r.id]: e.target.value }))}
                           onBlur={() => commitServiceFee(r)} />
                         <span className="text-mist">%</span>
-                        <span className="text-xs text-emerald-700 mr-auto">مضافة داخل السعر، العميل مش شايفها كبند منفصل</span>
+                        <span className="text-xs text-success mr-auto">مضافة داخل السعر، العميل مش شايفها كبند منفصل</span>
                       </>
                     )}
                   </div>
@@ -2807,7 +2807,7 @@ export default function Admin() {
                 {expanded && (
                   <div className="mt-3 pt-2.5 border-t border-line flex justify-end">
                     <button
-                      className={`text-xs font-semibold ${r.archived ? 'text-emerald-700' : 'text-red-500'}`}
+                      className={`text-xs font-semibold ${r.archived ? 'text-success' : 'text-danger'}`}
                       onClick={() => archiveRestaurant(r, !r.archived)}>
                       {r.archived
                       ? <><Icon name="arrowUturn" size="sm" className="inline-block align-[-0.15em] me-1" />تفعيل المطعم تاني</>
@@ -2819,7 +2819,7 @@ export default function Admin() {
                 {reliability[r.id] && reliability[r.id].total_orders > 0 && (
                   <p className="text-xs text-mist mt-2">
                     <Icon name="clock" size="sm" className="inline-block align-[-0.15em] me-1" />متوسط وقت القبول: <bdi dir="ltr">{reliability[r.id].avg_accept_minutes ?? '—'}</bdi> د ·
-                    {' '}<span className={reliability[r.id].slow_accepts > 2 ? 'text-red-600' : 'text-mist'}>
+                    {' '}<span className={reliability[r.id].slow_accepts > 2 ? 'text-warning' : 'text-mist'}>
                       <bdi dir="ltr">{reliability[r.id].slow_accepts}</bdi> طلب اتأخر قبوله (٣٠ يوم)
                     </span>
                   </p>
@@ -3040,17 +3040,17 @@ export default function Admin() {
         <div>
           {escalations.length > 0 && (
             <div className="mb-5">
-              <h2 className="font-bold text-red-600 mb-3"><Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />محتاجين تدخل الإدارة</h2>
+              <h2 className="font-bold text-warning mb-3"><Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />محتاجين تدخل الإدارة</h2>
               <div className="space-y-3">
                 {escalations.map((e: any) => (
-                  <div key={e.id} className="card p-4 border-red-400/60">
+                  <div key={e.id} className="card p-4 border-warningline">
                     <p className="font-semibold">{e.requester?.name}</p>
                     <p className="text-sm text-mist mt-0.5">
                       {e.shifts && new Date(e.shifts.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', weekday: 'long', day: 'numeric', month: 'numeric' })}
                       {' '}· {e.shifts?.start_time?.slice(0,5)}–{e.shifts?.end_time?.slice(0,5)}
                     </p>
                     {e.reason && <p className="text-sm text-mist mt-1">"{e.reason}"</p>}
-                    <p className="text-xs text-red-600 mt-2">محدش من المندوبين وافق يستلم الوردية</p>
+                    <p className="text-xs text-warning mt-2">محدش من المندوبين وافق يستلم الوردية</p>
 
                     {reassignFor === e.id ? (
                       <div className="mt-3 space-y-2">
@@ -3148,7 +3148,7 @@ export default function Admin() {
                     <div className="bg-night border border-line rounded-xl p-3">
                       <p className="text-xs text-mist">كاش معاه</p>
                       <p className="font-bold text-coral-700 mt-0.5">{d.cash_held ?? 0} ج.م</p>
-                      {(d.cash_held ?? 0) >= 3000 && <p className="text-xs text-red-600 mt-1"><Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />تجاوز حد الأمان</p>}
+                      {(d.cash_held ?? 0) >= 3000 && <p className="text-xs text-warning mt-1"><Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />تجاوز حد الأمان</p>}
                     </div>
                     <div className="bg-night border border-line rounded-xl p-3">
                       <p className="text-xs text-mist">أرباح مستحقة</p>
@@ -3253,7 +3253,7 @@ export default function Admin() {
                     </p>
                   </div>
                   {compensatedOrderIds.has(rt.order_id)
-                    ? <span className="text-xs font-semibold text-emerald-700 shrink-0 px-2.5 py-1.5"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />اتعوّض</span>
+                    ? <span className="text-xs font-semibold text-success shrink-0 px-2.5 py-1.5"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />اتعوّض</span>
                     : <button className="btn-ghost !py-1.5 !px-2.5 text-xs shrink-0" onClick={() => compensateFromRating(rt)}><Icon name="creditCard" size="sm" className="inline-block align-[-0.15em] me-1" />تعويض العميل</button>}
                 </div>
               ))}
@@ -3285,7 +3285,7 @@ export default function Admin() {
             <div key={c.id} className="card p-4">
               <div className="flex items-start justify-between gap-2">
                 <h2 className="font-bold">طلب #{c.order_id}: {c.orders?.restaurants?.name}</h2>
-                <span className={`text-xs font-semibold rounded-full px-2.5 py-1 shrink-0 ${c.status === 'open' ? 'bg-red-500/15 text-red-600' : c.status === 'reviewed' ? 'bg-coral-100 text-coral-700' : 'bg-emerald-500/15 text-emerald-700'}`}>
+                <span className={`text-xs font-semibold rounded-full px-2.5 py-1 shrink-0 ${c.status === 'open' ? 'bg-warningbg text-warning' : c.status === 'reviewed' ? 'bg-coral-100 text-coral-700' : 'bg-successbg text-success'}`}>
                   {c.status === 'open' ? 'جديدة' : c.status === 'reviewed' ? 'قيد المراجعة' : 'اتحلت'}
                 </span>
               </div>
@@ -3301,10 +3301,10 @@ export default function Admin() {
                 {c.status !== 'reviewed' && <button className="btn-ghost flex-1 text-sm" onClick={() => updateComplaintStatus(c, 'reviewed')}>قيد المراجعة</button>}
                 {c.status !== 'resolved' && <button className="btn-sea flex-1 text-sm" onClick={() => updateComplaintStatus(c, 'resolved')}>اتحلت</button>}
                 {compensatedOrderIds.has(c.order_id)
-                  ? <span className="text-sm font-semibold text-emerald-700 flex-1 text-center py-2"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />اتعوّض</span>
+                  ? <span className="text-sm font-semibold text-success flex-1 text-center py-2"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />اتعوّض</span>
                   : <button className="btn-ghost flex-1 text-sm" onClick={() => compensateFromComplaint(c)}><Icon name="creditCard" size="sm" className="inline-block align-[-0.15em] me-1" />تعويض العميل</button>}
                 {c.category === 'driver_conduct' && c.driver_id && (
-                  <button className="btn-ghost flex-1 text-sm !text-red-600" onClick={() => flagDriverDispute(c)}><Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />علّم في سجل المندوب</button>
+                  <button className="btn-ghost flex-1 text-sm !text-danger" onClick={() => flagDriverDispute(c)}><Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />علّم في سجل المندوب</button>
                 )}
               </div>
             </div>
@@ -3543,7 +3543,7 @@ export default function Admin() {
                 visible message at all -- which is how ten distinct reasons
                 became one alert() saying nothing. */}
             {modalError && (
-              <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3" role="alert">{modalError}</p>
+              <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-3" role="alert">{modalError}</p>
             )}
             {assignableDrivers.length === 0 && (
               <p className="text-mist text-sm">
@@ -3581,7 +3581,7 @@ export default function Admin() {
               <p className="text-coral-700 text-sm mb-3"><Icon name="van" size="sm" className="inline-block align-[-0.15em] me-1" />الطلب محتاج فان، لسه السعر متأكدش أو الطلب كبير</p>
             )}
             {modalError && (
-              <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3">{modalError}</p>
+              <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-3">{modalError}</p>
             )}
             {reassignCandidates.length === 0 && (
               <p className="text-mist text-sm">
@@ -3718,15 +3718,15 @@ function DailyReportTab() {
       </div>
 
       {busy && <div className="card p-6 text-center text-mist">بنحسب…</div>}
-      {err && <div className="card p-4 text-red-600 text-sm">{err}</div>}
+      {err && <div className="card p-4 text-danger text-sm">{err}</div>}
 
       {r && !busy && (
         <>
-          <div className={`card p-5 ${losing ? 'bg-red-500/5 border-red-500/25' : 'bg-emerald-500/5 border-emerald-500/25'}`}>
+          <div className={`card p-5 ${losing ? 'bg-dangerbg border-dangerline' : 'bg-successbg border-successline'}`}>
             <p className="text-sm font-semibold mb-1">
               {losing ? '▼ نتيجة اليوم' : '▲ نتيجة اليوم'}
             </p>
-            <p className={`text-4xl font-bold ${losing ? 'text-red-600' : 'text-emerald-700'}`}>
+            <p className={`text-4xl font-bold ${losing ? 'text-danger' : 'text-success'}`}>
               <bdi dir="ltr">{n(r.result)}</bdi> <span className="text-lg">ج.م</span>
             </p>
             <p className="text-sm text-mist mt-2">
@@ -3803,7 +3803,7 @@ function Stat({ k, v, sub, warn }: { k: string; v: string; sub?: string; warn?: 
   return (
     <div className="card p-3.5">
       <p className="text-[11px] text-mist mb-1 min-h-[2.4em] leading-snug">{k}</p>
-      <p className={`text-xl font-bold ${warn ? 'text-red-600' : ''}`}>{v}</p>
+      <p className={`text-xl font-bold ${warn ? 'text-warning' : ''}`}>{v}</p>
       {sub && <p className="text-[11px] text-mist mt-0.5">{sub}</p>}
     </div>
   )

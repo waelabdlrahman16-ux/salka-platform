@@ -310,10 +310,10 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
         </div>
 
         {formError && (
-          <p className="text-sm text-red-600 bg-red-500/10 rounded-lg p-2.5 mb-3" role="alert">{formError}</p>
+          <p className="text-sm text-danger bg-dangerbg rounded-lg p-2.5 mb-3" role="alert">{formError}</p>
         )}
         {justSaved && (
-          <p className="text-xs text-emerald-700 bg-emerald-500/10 rounded-lg p-2 mb-3"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />اتضاف "{justSaved}"، كمّل اللي بعده</p>
+          <p className="text-xs text-success bg-successbg rounded-lg p-2 mb-3"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />اتضاف "{justSaved}"، كمّل اللي بعده</p>
         )}
 
         <div className="card p-3.5 space-y-2.5">
@@ -454,7 +454,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
                     />
                     <button
                       type="button"
-                      className="text-xs text-red-600 px-1 shrink-0"
+                      className="text-xs text-danger px-1 shrink-0"
                       onClick={() => setModifierGroups(groups => groups.filter((_, i) => i !== groupIndex))}
                     >حذف</button>
                   </div>

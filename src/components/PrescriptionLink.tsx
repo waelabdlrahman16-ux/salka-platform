@@ -36,7 +36,7 @@ export default function PrescriptionLink({ path }: { path: string | null | undef
       <button className="btn-ghost !py-1.5 !px-3 text-xs" onClick={open} disabled={busy}>
         {busy ? 'جاري الفتح…' : <><Icon name="camera" size="sm" className="inline-block align-[-0.15em] me-1" />شوف الروشتة</>}
       </button>
-      {error && <span className="text-xs text-red-600">{error}</span>}
+      {error && <span className="text-xs text-danger">{error}</span>}
     </span>
   )
 }

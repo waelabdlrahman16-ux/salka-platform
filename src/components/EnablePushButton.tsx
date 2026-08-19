@@ -105,8 +105,8 @@ export default function EnablePushButton({
   // had just recorded was never rendered. Three attempts, no information.
   if (failed) {
     return (
-      <div className="mb-3 text-xs bg-red-500/10 rounded-xl p-3 space-y-2">
-        <p className="text-red-700 font-semibold">التنبيهات مافعّلتش</p>
+      <div className="mb-3 text-xs bg-dangerbg rounded-xl p-3 space-y-2">
+        <p className="text-danger font-semibold">التنبيهات مافعّلتش</p>
         <p className="text-mist break-all" dir="ltr">{reason || 'سبب غير معروف'}</p>
         <Trail lines={trail} />
         <button className="btn-ghost !py-1.5 !px-3 text-xs"
@@ -199,7 +199,7 @@ export default function EnablePushButton({
       </p>
       <Trail lines={trail} />
       {failed && (
-        <p className="text-xs text-red-600 bg-red-500/10 rounded-xl p-2.5 mt-2">
+        <p className="text-xs text-danger bg-dangerbg rounded-xl p-2.5 mt-2">
           مش قادرين نفعّل التنبيهات دلوقتي. جرب تاني، ولو المشكلة اتكررت افتح الموقع من المتصفح مباشرة
         </p>
       )}

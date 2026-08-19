@@ -682,8 +682,8 @@ export default function Home() {
             <h3 id="place-picker-title" className="font-bold text-lg mb-3">فين مكانك؟</h3>
 
             {compoundsFailed && (
-              <div className="bg-red-500/10 rounded-xl p-3 mb-3 text-center">
-                <p className="text-sm text-red-600">مش قادرين نجيب الأماكن دلوقتي</p>
+              <div className="bg-dangerbg rounded-xl p-3 mb-3 text-center">
+                <p className="text-sm text-danger">مش قادرين نجيب الأماكن دلوقتي</p>
                 <button className="btn-ghost mt-2 text-sm" onClick={loadCompounds}>جرب تاني</button>
               </div>
             )}

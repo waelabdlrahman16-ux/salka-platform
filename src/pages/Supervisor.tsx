@@ -280,14 +280,14 @@ export default function Supervisor() {
       </p>
 
       {error && (
-        <div ref={errorRef} className="bg-red-500/10 rounded-xl p-3 mb-4 flex items-center justify-between gap-3">
-          <p className="text-sm text-red-700">{error}</p>
+        <div ref={errorRef} className="bg-dangerbg rounded-xl p-3 mb-4 flex items-center justify-between gap-3">
+          <p className="text-sm text-danger">{error}</p>
           <button className="btn-ghost !py-1.5 text-xs shrink-0" onClick={load}>حدّث</button>
         </div>
       )}
 
       {escalations.length > 0 && (
-        <div className="card p-4 mb-4 border-red-400/50 bg-red-500/5">
+        <div className="card p-4 mb-4 border-dangerline bg-dangerbg">
           <p className="font-bold mb-3"><Icon name="siren" size="sm" className="inline-block align-[-0.15em] me-1" />مندوبين محتاجين قرار ({escalations.length})</p>
           <div className="space-y-2.5">
             {escalations.map(a => (
@@ -303,7 +303,7 @@ export default function Supervisor() {
                 <div className="flex gap-2 mt-2.5 flex-wrap">
                   <a className="btn-ghost !py-1.5 text-xs flex-1 min-w-[6rem] text-center" href={`tel:${a.orders?.customer_phone}`}>اتصل</a>
                   <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[6rem]" onClick={() => resolve(a, 'wait')}>يستنى</button>
-                  <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[6rem] !text-red-600" onClick={() => resolve(a, 'fail')}>توصيل فاشل</button>
+                  <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[6rem] !text-danger" onClick={() => resolve(a, 'fail')}>توصيل فاشل</button>
                   <button className="btn-danger !py-1.5 text-xs flex-1 min-w-[6rem]" onClick={() => resolve(a, 'refund')}>إلغاء واسترداد</button>
                 </div>
               </div>
@@ -360,7 +360,7 @@ export default function Supervisor() {
                   onClick={() => markReady(o)}>
                   {busy === `ready:${o.id}` ? '…' : 'جاهز للاستلام'}
                 </button>
-                <button className="w-full text-xs text-red-600 font-semibold mt-2.5 py-1"
+                <button className="w-full text-xs text-danger font-semibold mt-2.5 py-1"
                   onClick={() => cancelOrder(o)}>
                   مش لاقي الطلب. الغِ الطلب
                 </button>
@@ -420,7 +420,7 @@ export default function Supervisor() {
               </button>
             )}
 
-            <button className="w-full text-xs text-red-600 font-semibold mt-2.5 py-1"
+            <button className="w-full text-xs text-danger font-semibold mt-2.5 py-1"
               onClick={() => cancelOrder(o)}>
               {vendorNoun(o.restaurants?.vendor_type)} رفض / مش هينفع. الغِ الطلب
             </button>
@@ -503,7 +503,7 @@ export default function Supervisor() {
           <div className="card !rounded-2xl w-full max-w-sm p-5 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <h3 id="sv-assign-driver-title" className="font-bold mb-1">تعيين مندوب لطلب #{assigning.id}</h3>
             <p className="text-xs text-mist mb-3">{assigning.restaurants?.name} → {addr(assigning)}</p>
-            {modalError && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3">{modalError}</p>}
+            {modalError && <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-3">{modalError}</p>}
             {availableDrivers.length === 0 && <p className="text-sm text-mist">مفيش مندوبين متاحين دلوقتي</p>}
             <div className="space-y-2">
               {availableDrivers.map(d => (
@@ -588,14 +588,14 @@ function QuoteCard({ order, addr, busy, onConfirm, onCancel }: {
           <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{addr}</p>
         </div>
         <span className={`text-xs font-semibold rounded-full px-2.5 py-1 shrink-0 ${
-          late ? 'bg-red-500/15 text-red-700' : urgent ? 'bg-coral-200 text-coral-700' : 'bg-shellup text-mist'
+          late ? 'bg-warningbg text-warning' : urgent ? 'bg-coral-200 text-coral-700' : 'bg-shellup text-mist'
         }`}>
           {late ? `متأخر ${elapsedMinutes} د` : `مستني ${elapsedMinutes} د`}
         </span>
       </div>
 
       {urgent && (
-        <p className={`mt-2 text-xs font-bold ${late ? 'text-red-700' : 'text-coral-700'}`}>
+        <p className={`mt-2 text-xs font-bold ${late ? 'text-warning' : 'text-coral-700'}`}>
           {late ? 'عدّى وعد الـ10 دقايق. سعّره فورًا' : 'اتصل وسعّر دلوقتي قبل ما يعدّي 10 دقايق'}
         </p>
       )}
@@ -628,7 +628,7 @@ function QuoteCard({ order, addr, busy, onConfirm, onCancel }: {
         </p>
       </div>
 
-      <button className="w-full text-xs text-red-600 font-semibold mt-2.5 py-1" onClick={onCancel}>
+      <button className="w-full text-xs text-danger font-semibold mt-2.5 py-1" onClick={onCancel}>
         مش لاقي الطلب. الغِ الطلب
       </button>
     </div>

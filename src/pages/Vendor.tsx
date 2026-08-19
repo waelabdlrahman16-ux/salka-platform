@@ -292,7 +292,7 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
       </p>
 
       {sent && (
-        <div className="bg-emerald-50 text-emerald-800 rounded-xl p-3.5 text-sm mb-4 space-y-2">
+        <div className="bg-successbg text-success rounded-xl p-3.5 text-sm mb-4 space-y-2">
           <p className="font-semibold text-center"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />تم إرسال الطلب للمندوبين، طلب #{sent.id}</p>
           <p className="text-xs">ابعت اللينك ده للعميل عشان يتابع المندوب:</p>
           <div className="flex gap-2">
@@ -340,9 +340,9 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
         <div><label className="label" htmlFor={`${fid}-3`}>اسم العميل *</label>
           <input id={`${fid}-3`} className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
         <div><label className="label" htmlFor={`${fid}-4`}>رقم موبايل العميل *</label>
-          <input id={`${fid}-4`} className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-red-400' : ''}`}
+          <input id={`${fid}-4`} className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-dangerline' : ''}`}
             dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} placeholder="01xxxxxxxxx" maxLength={13} />
-          {phone.trim() && !isValidEgyptPhone(phone) && <p className="text-xs text-red-600 mt-1">{PHONE_HINT}</p>}</div>
+          {phone.trim() && !isValidEgyptPhone(phone) && <p className="text-xs text-danger mt-1">{PHONE_HINT}</p>}</div>
         <div><label className="label" htmlFor={`${fid}-5`}>المكان *</label>
           <select id={`${fid}-5`} className="field" value={compoundId ?? ''} onChange={e => setCompoundId(Number(e.target.value) || null)}>
             <option value="">اختر المكان…</option>
@@ -393,13 +393,13 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
       )}
 
       {feeFailed && compoundId && (
-        <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">
+        <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-4">
           مش قادرين نحسب رسوم التوصيل دلوقتي.{' '}
           <button className="underline font-semibold" onClick={retryFee}>جرب تاني</button>
         </p>
       )}
 
-      {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">{error}</p>}
+      {error && <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-4">{error}</p>}
 
       <button className="btn-sea w-full !py-3.5 mb-5" disabled={!valid || saving} onClick={submit}>
         {saving ? 'جاري الإرسال…'
@@ -721,7 +721,7 @@ function KitchenVendor({ rid }: { rid: number }) {
     const ok = o.status === 'Delivered'
     return (
       <div key={o.id} className="card !rounded-2xl p-3.5 flex items-center gap-3">
-        <span className={`w-9 h-9 rounded-full grid place-items-center shrink-0 ${ok ? 'bg-emerald-100 text-emerald-700' : 'bg-shellup text-mist'}`}>
+        <span className={`w-9 h-9 rounded-full grid place-items-center shrink-0 ${ok ? 'bg-successbg text-success' : 'bg-shellup text-mist'}`}>
           <Icon name={ok ? 'check' : 'x'} size="sm" />
         </span>
         <div className="min-w-0 flex-1">
@@ -801,7 +801,7 @@ function KitchenVendor({ rid }: { rid: number }) {
           <div className="shrink-0 text-left">
             {waitedMin !== null && !completed ? (
               <span className={`inline-flex items-center gap-1 text-sm font-bold rounded-xl px-3 py-1.5 border ${
-                late ? 'border-red-400/50 bg-red-500/10 text-red-600'
+                late ? 'border-warningline bg-warningbg text-warning'
                      : 'border-line bg-shell text-foam'}`}>
                 <Icon name="clock" size="sm" className="inline-block align-[-0.15em] me-1" />{waitedMin < 1 ? 'دلوقتي' : `${waitedMin} د`}
               </span>
@@ -890,8 +890,8 @@ function KitchenVendor({ rid }: { rid: number }) {
             was owed. What a kitchen needs is what to cook. */}
 
         {!completed && remaining(o) !== null && o.kitchen_status !== 'ready' && (
-          <div className={`mt-3 rounded-2xl p-3 text-center ${remaining(o)! <= 2 ? 'bg-red-500/10' : 'bg-shellup'}`}>
-            <p className={`font-bold leading-none ${remaining(o)! <= 2 ? 'text-red-600 text-3xl' : 'text-sea text-3xl'}`}>
+          <div className={`mt-3 rounded-2xl p-3 text-center ${remaining(o)! <= 2 ? 'bg-dangerbg' : 'bg-shellup'}`}>
+            <p className={`font-bold leading-none ${remaining(o)! <= 2 ? 'text-danger text-3xl' : 'text-sea text-3xl'}`}>
               {remaining(o)! < 0 ? `متأخر ${Math.abs(remaining(o)!)} د` : `${remaining(o)} د`}
             </p>
             <p className="text-xs text-mist mt-1">{remaining(o)! < 0 ? <><Icon name="clock" size="sm" className="inline-block align-[-0.15em] me-1" />متأخر عن الوقت المتوقع</> : 'متبقي للتجهيز'}</p>
@@ -899,7 +899,7 @@ function KitchenVendor({ rid }: { rid: number }) {
         )}
 
         {completed ? (
-          <p className={`text-center text-sm mt-3 font-semibold ${o.status === 'Delivered' ? 'text-emerald-700' : 'text-mist'}`}>
+          <p className={`text-center text-sm mt-3 font-semibold ${o.status === 'Delivered' ? 'text-success' : 'text-mist'}`}>
             {completed}
           </p>
         ) : big ? (
@@ -922,7 +922,7 @@ function KitchenVendor({ rid }: { rid: number }) {
                     : stage.action}
               </button>
             )}
-            <button className="btn-ghost w-full !rounded-2xl !text-sm mt-2 !text-red-600 !border-red-400/40"
+            <button className="btn-ghost w-full !rounded-2xl !text-sm mt-2 !text-danger !border-dangerline"
               onClick={() => { setDeclineError(''); setDeclining(o) }}>رفض الطلب</button>
           </div>
         ) : (
@@ -958,8 +958,8 @@ function KitchenVendor({ rid }: { rid: number }) {
                 const waitMin = minsSince(o.ready_at)
                 const stale = waitMin !== null && waitMin >= 15
                 return (
-                  <div className={`mt-3 rounded-2xl p-3.5 text-center ${stale ? 'bg-red-500/10' : 'bg-shellup'}`}>
-                    <p className={`text-sm font-semibold ${stale ? 'text-red-700' : 'text-sea'}`}>
+                  <div className={`mt-3 rounded-2xl p-3.5 text-center ${stale ? 'bg-warningbg' : 'bg-shellup'}`}>
+                    <p className={`text-sm font-semibold ${stale ? 'text-warning' : 'text-sea'}`}>
                       <Icon name={stale ? 'warning' : 'check'} size="xs" className="inline-block align-[-0.15em] me-1" />في انتظار المندوب{waitMin !== null ? `، من ${waitMin} دقيقة` : ''}
                     </p>
                   </div>
@@ -979,7 +979,7 @@ function KitchenVendor({ rid }: { rid: number }) {
                     <p className="text-sea text-sm font-semibold mt-0.5">{label}</p>
                   </div>
                   {d.driver_phone && d.status !== 'Delivered' && (
-                    <a href={`tel:${d.driver_phone}`} className="shrink-0 w-11 h-11 rounded-full bg-emerald-500/15 text-emerald-800 grid place-items-center" aria-label="اتصال بالمندوب"><Icon name="phone" size="md" /></a>
+                    <a href={`tel:${d.driver_phone}`} className="shrink-0 w-11 h-11 rounded-full bg-successbg text-success grid place-items-center" aria-label="اتصال بالمندوب"><Icon name="phone" size="md" /></a>
                   )}
                 </div>
               )
@@ -995,8 +995,8 @@ function KitchenVendor({ rid }: { rid: number }) {
       {/* A failed accept used to be completely silent. This is the only place
           the vendor learns the tap did not take. */}
       {boardError && (
-        <div className="card p-3 mb-3 border-red-400/50 bg-red-500/5 flex items-center justify-between gap-3">
-          <p className="text-sm text-red-700 font-semibold">{boardError}</p>
+        <div className="card p-3 mb-3 border-dangerline bg-dangerbg flex items-center justify-between gap-3">
+          <p className="text-sm text-danger font-semibold">{boardError}</p>
           <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0" onClick={() => setBoardError('')}>تمام</button>
         </div>
       )}
@@ -1060,7 +1060,7 @@ function KitchenVendor({ rid }: { rid: number }) {
 
       {slotsOpen && (usesSlots || vendorType === 'supermarket') && (
         <div className="card p-4 mb-4">
-          {slotError && <p className="text-sm text-red-600 mb-2">{slotError}</p>}
+          {slotError && <p className="text-sm text-danger mb-2">{slotError}</p>}
           <div className="space-y-2">
             {slots.map(sl => (
               <div key={sl.id} className="flex items-center justify-between bg-night border border-line rounded-xl p-2.5 text-sm">
@@ -1171,7 +1171,7 @@ function KitchenVendor({ rid }: { rid: number }) {
             <h3 id="decline-order-title" className="font-bold mb-2">رفض الطلب #{declining.id}</h3>
             <p className="text-sm text-mist mb-4">هيتم إلغاء الطلب وإخطار العميل. متاح فقط قبل بدء التحضير.</p>
             {declineError && (
-              <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3">{declineError}</p>
+              <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-3">{declineError}</p>
             )}
             <div className="flex gap-3">
               <button className="btn-ghost !rounded-2xl flex-1" disabled={declineBusy} onClick={() => { setDeclining(null); setDeclineError('') }}>تراجع</button>

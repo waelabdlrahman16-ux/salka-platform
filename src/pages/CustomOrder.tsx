@@ -579,7 +579,7 @@ export default function CustomOrder() {
             <div className="flex items-center gap-3">
               <img src={rxPreview} alt="الروشتة" className="w-14 h-14 rounded-xl object-cover border border-line shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-emerald-700">الروشتة اترفعت<Icon name="check" size="xs" className="inline-block align-[-0.15em] ms-1" /></p>
+                <p className="text-sm font-bold text-success">الروشتة اترفعت<Icon name="check" size="xs" className="inline-block align-[-0.15em] ms-1" /></p>
                 <p className="text-xs text-mist mt-0.5">الصيدلي هيقراها ويتصل بيك بالسعر</p>
               </div>
               <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0"
@@ -933,9 +933,9 @@ export default function CustomOrder() {
           <div><label className="label" htmlFor={`${fid}-2`}>الاسم *</label>
             <input id={`${fid}-2`} className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
           <div><label className="label" htmlFor={`${fid}-3`}>رقم الموبايل *</label>
-            <input id={`${fid}-3`} className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-red-400' : ''}`}
+            <input id={`${fid}-3`} className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-dangerline' : ''}`}
               dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} placeholder="01xxxxxxxxx" maxLength={13} />
-            {phone.trim() && !isValidEgyptPhone(phone) && <p className="text-xs text-red-600 mt-1">{PHONE_HINT}</p>}</div>
+            {phone.trim() && !isValidEgyptPhone(phone) && <p className="text-xs text-danger mt-1">{PHONE_HINT}</p>}</div>
           <div><label className="label" htmlFor={`${fid}-4`}>المكان *</label>
             <select id={`${fid}-4`} className="field" value={compoundId ?? ''} onChange={e => setCompoundId(Number(e.target.value) || null)}>
               <option value="">اختر مكانك…</option>
@@ -980,13 +980,13 @@ export default function CustomOrder() {
       </p>
 
       {feeFailed && compoundId && (
-        <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">
+        <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-4">
           مش قادرين نحسب رسوم التوصيل دلوقتي.{' '}
           <button className="underline font-semibold" onClick={retryFee}>جرب تاني</button>
         </p>
       )}
 
-      {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">{error}</p>}
+      {error && <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-4">{error}</p>}
 
       {/* The reason a disabled button is disabled belongs next to the button.
           A supermarket order with no open slot used to sit behind a dead

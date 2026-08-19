@@ -74,7 +74,7 @@ export default function DriverForm({ initial, onDone, onCancel }: {
         <p className="font-bold text-sm">{f.id ? 'تعديل مندوب' : 'مندوب جديد'}</p>
         <button className="text-mist text-xs" onClick={onCancel}>إغلاق<Icon name="x" size="xs" className="inline-block align-[-0.15em] ms-1" /></button>
       </div>
-      {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3" role="alert">{error}</p>}
+      {error && <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-3" role="alert">{error}</p>}
 
       <div className="grid grid-cols-2 gap-2.5">
         <div>

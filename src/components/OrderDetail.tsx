@@ -84,7 +84,7 @@ export function OrderLines({ order }: { order: Order }) {
   }
 
   if (failed) {
-    return <p className="text-red-600 text-xs">مش قادرين نحمّل أصناف الطلب. حدّث الصفحة قبل ما تتصرف فيه</p>
+    return <p className="text-danger text-xs">مش قادرين نحمّل أصناف الطلب. حدّث الصفحة قبل ما تتصرف فيه</p>
   }
   if (lines === null) return <p className="text-mist text-xs">…</p>
   // Still render the note on an item-less order: a pickup_request keeps the

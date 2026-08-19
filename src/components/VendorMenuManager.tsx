@@ -125,8 +125,8 @@ export default function VendorMenuManager({ restaurant, onClose }: {
       </div>
 
       {error && (
-        <div className="card p-3 mb-3 border-red-400/50 bg-red-500/5 flex items-center justify-between gap-3" role="alert">
-          <p className="text-sm text-red-700 font-semibold">{error}</p>
+        <div className="card p-3 mb-3 border-dangerline bg-dangerbg flex items-center justify-between gap-3" role="alert">
+          <p className="text-sm text-danger font-semibold">{error}</p>
           <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0" onClick={load}>جرب تاني</button>
         </div>
       )}

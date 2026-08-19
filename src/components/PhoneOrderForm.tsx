@@ -122,7 +122,7 @@ export default function PhoneOrderForm({ onCreated }: { onCreated: () => void })
           <Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />اتعمل طلب #{done.id}، المندوب هيحصّل {done.total} ج.م. موجود دلوقتي في الطلبات غير المعيّنة.
         </p>
       )}
-      {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3" role="alert">{error}</p>}
+      {error && <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-3" role="alert">{error}</p>}
 
       <div className="space-y-2.5">
         <div>

@@ -110,7 +110,7 @@ export default function MyOrders() {
           {recoveryState === 'sent' ? <p className="text-sm text-sea mt-3">تم إرسال طلبك، هنراجع ونتصل بيك.</p> : <>
             <input className="field text-center mt-4" dir="ltr" value={recoveryPhone} onChange={e => setRecoveryPhone(e.target.value)} placeholder="010xxxxxxxx" />
             <button className="btn-sea w-full mt-2" disabled={recoveryState==='sending'||!isValidEgyptPhone(recoveryPhone)} onClick={requestRecovery}>اربط طلباتي القديمة</button>
-            {recoveryState === 'error' && <p className="text-xs text-red-700 mt-2">مش قادرين نسجل الطلب دلوقتي. جرّب تاني.</p>}
+            {recoveryState === 'error' && <p className="text-xs text-danger mt-2">مش قادرين نسجل الطلب دلوقتي. جرّب تاني.</p>}
           </>}
         </div>
       )}
@@ -183,7 +183,7 @@ export default function MyOrders() {
 
       {customer?.phone && error && (
         <div className="card p-4 mt-5 text-center">
-          <p className="text-sm text-red-600">{error}</p>
+          <p className="text-sm text-danger">{error}</p>
           <button className="btn-ghost mt-3 text-sm" disabled={busy} onClick={() => loadOrders()}>
             جرب تاني
           </button>

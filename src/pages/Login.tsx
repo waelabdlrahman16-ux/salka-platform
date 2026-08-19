@@ -51,7 +51,7 @@ export default function Login() {
           </div>
         </div>
 
-        {error && <p className="text-red-600 text-sm mt-3">{error}</p>}
+        {error && <p className="text-danger text-sm mt-3">{error}</p>}
 
         <button className="btn-sea w-full mt-5" disabled={busy || !email || !password} onClick={submit}>
           {busy ? 'جاري الدخول…' : 'دخول'}
