@@ -411,7 +411,7 @@ export default function RestaurantDetail() {
             {/* A range, not a single number. "16 دقيقة تقريبًا" reads as a
                 promise; the home card already says 20–30 for the same vendor,
                 so the two screens disagreed about the same restaurant. */}
-            {totalEta && <span>يوصلك <bdi dir="ltr">{totalEta.min}–{totalEta.max}</bdi> دقيقة</span>}
+            {totalEta && <span>يوصلك <bdi dir="ltr">{totalEta.min} – {totalEta.max}</bdi> دقيقة</span>}
             {restaurant.category && (
               <>
                 {totalEta && <span aria-hidden="true">•</span>}

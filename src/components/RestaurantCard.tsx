@@ -89,7 +89,7 @@ export default function RestaurantCard({
         <>
           <span className="flex items-center gap-1">
             <Icon name="clock" size="xs" className="text-mist" />
-            <span className="text-seadeep"><bdi dir="ltr">{etaMinutes.min}–{etaMinutes.max}</bdi> د</span>
+            <span className="text-seadeep"><bdi dir="ltr">{etaMinutes.min} – {etaMinutes.max}</bdi> د</span>
           </span>
           {r.category && <><span aria-hidden="true">•</span><span className="truncate">{r.category}</span></>}
         </>

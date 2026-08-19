@@ -621,7 +621,7 @@ export default function CheckoutPage() {
             <div>
               <p className="font-bold text-sm">التوصيل</p>
               <p className="text-xs text-mist">
-                يوصلك خلال <bdi dir="ltr">{quote.sla_minutes}–{quote.sla_max_minutes ?? quote.sla_minutes + 10}</bdi> دقيقة
+                يوصلك خلال <bdi dir="ltr">{quote.sla_minutes} – {quote.sla_max_minutes ?? quote.sla_minutes + 10}</bdi> دقيقة
               </p>
             </div>
           </div>
