@@ -134,9 +134,12 @@ export default function Profile() {
         body: 'اسمك ورقمك بيتحطوا لوحدهم في الأوردر' },
     ]
     return (
-      <div className="max-w-sm mx-auto py-8">
-        <div className="text-center mb-7">
-          <span className="w-14 h-14 rounded-2xl bg-successbg text-success grid place-items-center mx-auto mb-3">
+      <div className="max-w-sm mx-auto pb-8">
+        {/* The same cream band as هنجبلك, bleeding to the screen edges and
+            fading into the page. This screen has no photography either, so the
+            surface carries it rather than a bigger typeface. */}
+        <div className="-mx-4 -mt-6 mb-7 px-4 pt-8 pb-6 bg-gradient-to-b from-cream to-night text-center">
+          <span className="w-14 h-14 rounded-2xl bg-white/70 text-[#6B4A18] grid place-items-center mx-auto mb-3">
             <Icon name="circleUser" size="xl" />
           </span>
           <h1 className="font-bold text-xl mb-1">اعمل حساب في ثانية</h1>
@@ -146,7 +149,10 @@ export default function Profile() {
         <ul className="space-y-3 mb-7">
           {perks.map(p => (
             <li key={p.title} className="card p-3.5 flex items-start gap-3">
-              <span className="w-9 h-9 rounded-lg bg-warm text-coral-700 grid place-items-center shrink-0">
+              {/* The same pair as the pharmacy and supermarket tiles: cream with
+                  #6B4A18 at 6.95:1. coral read as an error colour on a screen
+                  that is selling something. */}
+              <span className="w-9 h-9 rounded-lg bg-cream text-[#6B4A18] grid place-items-center shrink-0">
                 <Icon name={p.icon} size="md" />
               </span>
               <span className="min-w-0">
