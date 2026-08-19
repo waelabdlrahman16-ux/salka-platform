@@ -593,29 +593,55 @@ export default function CustomOrder() {
           call nav(-1), which on a cold start from a shared /restaurant/:id link
           -- redirected here with replace:true, so that entry is gone -- either
           did nothing or threw the customer out of the app entirely. */}
-      <button className="text-sm text-mist hover:text-foam mb-3" onClick={() => {
-        const siblings = typeFilter ? vendors.filter(v => v.vendor_type === typeFilter) : vendors
-        if (siblings.length > 1) setVendor(null); else nav('/')
-      }}><Icon name="chevronLeft" size="xs" className="inline-block align-middle ml-1" />رجوع</button>
-      <div className="flex items-center gap-2 mb-1 flex-wrap">
-        <h1 className="text-2xl font-bold">{vendor.name}</h1>
-        <span className="text-[11px] font-bold text-sea bg-sea/10 rounded px-2 py-0.5">
-          {deliveryFee !== null ? `${deliveryFee} ج.م توصيل` : 'التوصيل حسب مكانك'}
-        </span>
+      {/* The same gradient band as the list this screen came from, so the two
+          read as one place. Back is the app's icon button rather than a word,
+          the vendor's mark identifies where you are, and the fee sits with the
+          name instead of on a line of its own. */}
+      <div className="-mx-4 -mt-6 mb-4 px-4 pt-4 pb-5 bg-gradient-to-b from-coral-100 to-night">
+        <button aria-label="رجوع" title="رجوع"
+          className="grid place-items-center min-w-[44px] min-h-[44px] -mr-2.5 mb-1"
+          onClick={() => {
+            const siblings = typeFilter ? vendors.filter(v => v.vendor_type === typeFilter) : vendors
+            if (siblings.length > 1) setVendor(null); else nav('/')
+          }}>
+          <span className="w-8 h-8 rounded-full bg-white/70 text-slate-700 grid place-items-center">
+            <Icon name="chevronLeft" size="sm" className="rotate-180" />
+          </span>
+        </button>
+        <div className="flex items-center gap-3">
+          <span className="w-12 h-12 rounded-xl overflow-hidden grid place-items-center shrink-0 bg-white/70 border border-line">
+            {vendor.vendor_type === 'pharmacy' || vendor.vendor_type === 'supermarket'
+              ? <Icon name={VENDOR_TYPE_ART[vendor.vendor_type].icon} size="lg"
+                  className={vendor.vendor_type === 'pharmacy' ? 'text-coral-800' : 'text-[#6B4A18]'} />
+              : vendor.logo_url
+                  ? <img src={vendor.logo_url} alt="" className="w-full h-full object-cover" />
+                  : <Icon name="storefront" size="lg" className="text-mist" />}
+          </span>
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold truncate leading-tight">{vendor.name}</h1>
+            <p className="text-[13px] text-mist mt-0.5">
+              {deliveryFee !== null ? `${deliveryFee} ج.م توصيل` : 'التوصيل حسب مكانك'}
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* The four-step numbered card that used to open this screen is now one
-          line plus a disclosure. The promise that matters -- we call you with
-          the price, you can say no, nothing is paid now -- stays visible,
-          because that is the deal being struck. The mechanics moved behind
-          "إزاي بيشتغل؟". Someone who wants paracetamol should not have to read
-          an explainer to get to a text box. */}
-      <p className="text-mist text-sm mb-3">
-        هنتصل بيك بسعر الأصناف قبل ما نجهّز حاجة • مفيش دفع دلوقتي •{' '}
-        <button className="text-sea font-semibold underline" onClick={() => setHowOpen(o => !o)}>
-          {howOpen ? 'إخفاء' : 'إزاي بيشتغل؟'}
-        </button>
-      </p>
+      {/* The deal being struck, as a card rather than a run-on sentence with a
+          link buried in it. The four-step explainer that used to open this
+          screen is still behind «إزاي بيشتغل؟» -- someone who wants paracetamol
+          should not have to read an explainer to reach a text box. */}
+      <div className="card !bg-warm p-3.5 mb-4 flex items-start gap-2.5">
+        <Icon name="phone" size="sm" className="text-sea shrink-0 mt-0.5" />
+        <div className="min-w-0">
+          <p className="text-[13px] font-semibold">هنتصل بيك بالسعر قبل ما نجهّز</p>
+          <p className="text-[13px] text-mist mt-0.5">
+            مفيش دفع دلوقتي.{' '}
+            <button className="text-sea font-semibold underline" onClick={() => setHowOpen(o => !o)}>
+              {howOpen ? 'إخفاء' : 'إزاي بيشتغل؟'}
+            </button>
+          </p>
+        </div>
+      </div>
 
       {howOpen && (
         <ol className="card p-4 mb-4 text-sm space-y-2 bg-shellup/50">
