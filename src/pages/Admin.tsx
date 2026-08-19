@@ -59,7 +59,7 @@ function toDataError<T>(p: Promise<RpcResult<T>>): Promise<{ data: T | null; err
 function StarRow({ n }: { n: number }) {
   return (
     <span className="inline-flex items-center gap-0.5 align-middle">
-      {[1,2,3,4,5].map(i => <Icon key={i} name="star" className={`w-3 h-3 ${i <= n ? 'text-sand' : 'text-line'}`} />)}
+      {[1,2,3,4,5].map(i => <Icon key={i} name="star" className={`w-3 h-3 ${i <= n ? 'text-coral-600' : 'text-line'}`} />)}
     </span>
   )
 }
@@ -1760,7 +1760,7 @@ export default function Admin() {
     <div className="mt-2.5 bg-night border border-line rounded-xl p-3 text-sm space-y-1">
       <p><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
       <p><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{addr(o)}</p>
-      {o.customer_note && <p className="text-sandink"><Icon name="penToSquare" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_note}</p>}
+      {o.customer_note && <p className="text-coral-700"><Icon name="penToSquare" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_note}</p>}
     </div>
   )
 
@@ -1857,12 +1857,12 @@ export default function Admin() {
                     </span>
                   </div>
                   {full?.pricing_status === 'pending_quote' && (
-                    <p className="text-xs text-sandink font-semibold mt-1.5 bg-sand/10 rounded-lg px-2 py-1">
+                    <p className="text-xs text-coral-700 font-semibold mt-1.5 bg-coral-100 rounded-lg px-2 py-1">
                       <Icon name="receipt" size="sm" className="inline-block align-[-0.15em] me-1" />واقف عليك إنت، الطلب ده محتاج تسعير قبل ما أي مندوب يقدر ياخده
                     </p>
                   )}
                   {(full?.customer_note?.trim() || full?.request_notes?.trim()) && (
-                    <div className="mt-2 rounded-xl border border-sand/40 bg-sand/10 px-3 py-2 text-xs text-sandink space-y-1">
+                    <div className="mt-2 rounded-xl border border-coral-300 bg-coral-100 px-3 py-2 text-xs text-coral-700 space-y-1">
                       {full.customer_note?.trim() && <p><Icon name="chatCircle" size="sm" className="inline-block align-[-0.15em] me-1" />ملاحظة العميل: {full.customer_note}</p>}
                       {full.request_notes?.trim() && <p><Icon name="penToSquare" size="sm" className="inline-block align-[-0.15em] me-1" />تفاصيل الطلب: {full.request_notes}</p>}
                     </div>
@@ -1954,7 +1954,7 @@ export default function Admin() {
                   <p className="font-semibold text-sm">طلب #{o.id}: {o.restaurants?.name}: {o.total} ج.م</p>
                   <p className="text-xs text-mist mt-0.5"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
                   <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{addr(o)}</p>
-                  <p className="text-xs text-sandink mt-1">
+                  <p className="text-xs text-coral-700 mt-1">
                     {a.delivery_problem_reason
                       ? <><Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />{`المندوب بلّغ: ${a.delivery_problem_reason}`}</>
                       : 'المندوب اتصل ومردش حد، اتبلّغ الإدارة'}
@@ -1974,7 +1974,7 @@ export default function Admin() {
       )}
 
       {pendingInstapay.length > 0 && (
-        <div className="card p-4 mb-4 border-sand/50 bg-sand/5">
+        <div className="card p-4 mb-4 border-coral-300 bg-coral-50">
           <p className="font-bold mb-3"><Icon name="mobileScreen" size="sm" className="inline-block align-[-0.15em] me-1" />تحويلات InstaPay بانتظار التأكيد ({pendingInstapay.length})</p>
           <div className="space-y-2.5">
             {pendingInstapay.map(o => (
@@ -2071,7 +2071,7 @@ export default function Admin() {
                 </span>
               </div>
               {o.order_type === 'custom_request' && (
-                <p className="text-sandink text-sm mt-1.5"><Icon name="receipt" size="sm" className="inline-block align-[-0.15em] me-1" />طلب خاص{o.pricing_status === 'pending_quote' ? '، لسه محتاج تسعير من تبويب الطلبات' : ''}</p>
+                <p className="text-coral-700 text-sm mt-1.5"><Icon name="receipt" size="sm" className="inline-block align-[-0.15em] me-1" />طلب خاص{o.pricing_status === 'pending_quote' ? '، لسه محتاج تسعير من تبويب الطلبات' : ''}</p>
               )}
               {o.order_type === 'pickup_request' && (
                 <p className="text-sm mt-1.5"><Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />طلب مندوب بس{o.payment_mode === 'driver_pays' ? `، المندوب يدفع ${o.collect_amount} ج.م` : ''}</p>
@@ -2093,7 +2093,7 @@ export default function Admin() {
               {(() => {
                 const priorAttempts = assignments.filter(a => a.order_id === o.id && a.status !== 'Offered')
                 return priorAttempts.length > 0 ? (
-                  <p className="text-xs text-sandink mt-1.5">
+                  <p className="text-xs text-coral-700 mt-1.5">
                     <Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />اتعرض قبل كده على {priorAttempts.length} مندوب ({priorAttempts.map(a => a.drivers?.name).filter(Boolean).join('، ')})
                   </p>
                 ) : null
@@ -2244,8 +2244,8 @@ export default function Admin() {
                   <button onClick={() => setShowTestOrders(v => !v)}
                     className={`rounded-full border px-3.5 min-h-[36px] text-sm font-semibold transition-colors ${
                       showTestOrders
-                        ? 'bg-sandink border-sandink text-white'
-                        : 'bg-shell border-dashed border-linestrong text-sandink'}`}>
+                        ? 'bg-coral-700 border-coral-700 text-white'
+                        : 'bg-shell border-dashed border-slate-500 text-coral-700'}`}>
                     <Icon name="flask" size="sm" className="inline-block align-[-0.15em] me-1" />التجارب
                     <span className={`text-xs font-normal ${showTestOrders ? 'text-white/70' : 'text-mist'}`}> {testCount}</span>
                   </button>
@@ -2364,13 +2364,13 @@ export default function Admin() {
                       for revenue by someone glancing at the screen. */}
                   {group.items.map(o => (
             <div key={o.id} className={o.is_test
-              ? 'card p-4 border-dashed border-linestrong bg-sand/10'
+              ? 'card p-4 border-dashed border-slate-500 bg-coral-100'
               : 'card p-4'}>
               <div className="flex items-start justify-between">
                 <h2 className="font-bold">
                   #{o.id} · {o.restaurants?.name}
                   {o.is_test && (
-                    <span className="mr-2 align-middle text-[10px] font-bold bg-sandink text-white rounded-full px-2 py-0.5">
+                    <span className="mr-2 align-middle text-[10px] font-bold bg-coral-700 text-white rounded-full px-2 py-0.5">
                       <Icon name="flask" size="sm" className="inline-block align-[-0.15em] me-1" />تجربة
                     </span>
                   )}
@@ -2382,7 +2382,7 @@ export default function Admin() {
                       small underneath -- buried the one fact that matters. */}
                   <span className={`font-bold block ${
                     isCancelled(o.status) ? 'text-red-600'
-                    : o.is_test ? 'text-sandink' : 'text-sea'}`}>
+                    : o.is_test ? 'text-coral-700' : 'text-sea'}`}>
                     {isCancelled(o.status) ? 'ملغي'
                       : o.pricing_status === 'pending_quote' ? 'قيد التسعير'
                       : `${o.total} ج.م`}
@@ -2399,7 +2399,7 @@ export default function Admin() {
               {!o.is_test && <OrderAdjust orderId={o.id} onDone={() => load(true)} />}
 
               {o.order_type === 'custom_request' && (
-                <div className="mt-2.5 bg-sand/10 border border-sand/30 rounded-xl p-3 text-sm space-y-1">
+                <div className="mt-2.5 bg-coral-100 border border-coral-200 rounded-xl p-3 text-sm space-y-1">
                   <p className="font-semibold"><Icon name="receipt" size="sm" className="inline-block align-[-0.15em] me-1" />طلب خاص</p>
                   {(o.request_items ?? []).map((it, i) => <p key={i}>• {it.name} × {it.qty}</p>)}
                   {o.request_notes && <p className="italic">"{o.request_notes}"</p>}
@@ -2568,7 +2568,7 @@ export default function Admin() {
                       {a.responded_at && <p>رد: {fmtTime(a.responded_at)}</p>}
                       {a.picked_up_at && <p>استلم من المطعم: {fmtTime(a.picked_up_at)}</p>}
                       {a.delivered_at && <p>سلّم: {fmtTime(a.delivered_at)}</p>}
-                      {a.rejection_reason && <p className="text-sandink">سبب: {a.rejection_reason}</p>}
+                      {a.rejection_reason && <p className="text-coral-700">سبب: {a.rejection_reason}</p>}
                     </div>
                   ))}
                   {assignments.filter(a => a.order_id === o.id).length === 0 && (
@@ -2598,7 +2598,7 @@ export default function Admin() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
             <div className="card p-4 text-center"><p className="text-sm text-mist">التوصيلات (آخر 300)</p><p className="text-2xl font-bold mt-1">{earnings.length}</p></div>
             <div className="card p-4 text-center"><p className="text-sm text-mist">أرباح المندوبين</p><p className="text-2xl font-bold mt-1 text-sea">{totalDriver} ج.م</p></div>
-            <div className="card p-4 text-center"><p className="text-sm text-mist">أرباح الإدارة</p><p className="text-2xl font-bold mt-1 text-sandink">{totalAdmin} ج.م</p></div>
+            <div className="card p-4 text-center"><p className="text-sm text-mist">أرباح الإدارة</p><p className="text-2xl font-bold mt-1 text-coral-700">{totalAdmin} ج.م</p></div>
           </div>
           {earnings.length === 0 && (
             <div className="card p-6 text-center text-mist">مفيش أرباح مسجّلة لسه</div>
@@ -2607,7 +2607,7 @@ export default function Admin() {
             {earnings.map(e => (
               <div key={e.id} className="card p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-sm">
                 <span className="font-semibold">{e.drivers?.name}، طلب #{e.order_id}</span>
-                <span className="text-mist">رسوم: {e.delivery_fee} · <span className="text-sea">مندوب: {e.driver_earning}</span> · <span className="text-sandink">إدارة: {e.admin_amount}</span></span>
+                <span className="text-mist">رسوم: {e.delivery_fee} · <span className="text-sea">مندوب: {e.driver_earning}</span> · <span className="text-coral-700">إدارة: {e.admin_amount}</span></span>
               </div>
             ))}
           </div>
@@ -2718,7 +2718,7 @@ export default function Admin() {
                     <p className="text-[11px] text-mist mt-2 leading-relaxed">
                       الرقم = المركز (١ يعني الأول). سيبه فاضي يعني مش مرتّب.
                       «مميز» بيرفعه فوق غير المرتّبين من غير ما تحدد له مركز.
-                      <b className="text-sandink"> المطعم المقفول بينزل تحت في كل الأحوال.</b>
+                      <b className="text-coral-700"> المطعم المقفول بينزل تحت في كل الأحوال.</b>
                     </p>
                   </div>
                 )}
@@ -2756,7 +2756,7 @@ export default function Admin() {
                         onChange={e => e.target.files?.[0] && uploadCover(r, e.target.files[0])} />
                       {r.cover_image_url
                         ? <img src={r.cover_image_url} alt="" className="w-full aspect-[5/2] rounded-xl object-cover border border-line group-hover:opacity-80" />
-                        : <div className="w-full aspect-[5/2] rounded-xl bg-shellup border border-dashed border-linestrong grid place-items-center text-mist text-xs group-hover:opacity-80">
+                        : <div className="w-full aspect-[5/2] rounded-xl bg-shellup border border-dashed border-slate-500 grid place-items-center text-mist text-xs group-hover:opacity-80">
                             اضغط لرفع صورة واجهة المطعم
                           </div>}
                     </label>
@@ -2777,7 +2777,7 @@ export default function Admin() {
                     )}
                   </div>
                 )}
-                {imageError && expanded && <p className="text-xs text-sandink mt-1">{imageError}</p>}
+                {imageError && expanded && <p className="text-xs text-coral-700 mt-1">{imageError}</p>}
 
                 {/* Hidden markup folded into menu prices instead of a checkout
                     line item -- customers never see "app fee" separately, they
@@ -3116,7 +3116,7 @@ export default function Admin() {
         <div className="space-y-5">
           {settlementRequests.length > 0 && (
             <div>
-              <h2 className="font-bold text-sandink mb-3"><Icon name="hourglass" size="sm" className="inline-block align-[-0.15em] me-1" />طلبات تسوية مبكرة</h2>
+              <h2 className="font-bold text-coral-700 mb-3"><Icon name="hourglass" size="sm" className="inline-block align-[-0.15em] me-1" />طلبات تسوية مبكرة</h2>
               <div className="space-y-2.5">
                 {settlementRequests.map(sr => (
                   <div key={sr.id} className="card p-3.5 flex items-center justify-between text-sm">
@@ -3147,7 +3147,7 @@ export default function Admin() {
                   <div className="grid grid-cols-2 gap-3 mt-3">
                     <div className="bg-night border border-line rounded-xl p-3">
                       <p className="text-xs text-mist">كاش معاه</p>
-                      <p className="font-bold text-sandink mt-0.5">{d.cash_held ?? 0} ج.م</p>
+                      <p className="font-bold text-coral-700 mt-0.5">{d.cash_held ?? 0} ج.م</p>
                       {(d.cash_held ?? 0) >= 3000 && <p className="text-xs text-red-600 mt-1"><Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />تجاوز حد الأمان</p>}
                     </div>
                     <div className="bg-night border border-line rounded-xl p-3">
@@ -3200,7 +3200,7 @@ export default function Admin() {
                 وبعدين دوس "حوّلت المبلغ"، الزرار بيسجّل التحويل بس، مش بيحوّل.
               </p>
               {pendingRefunds.map(o => (
-                <div key={o.id} className="card p-4 border-sand/40">
+                <div key={o.id} className="card p-4 border-coral-300">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="font-semibold text-sm truncate">طلب #{o.id}: {o.vendor_name ?? '—'}</p>
@@ -3285,7 +3285,7 @@ export default function Admin() {
             <div key={c.id} className="card p-4">
               <div className="flex items-start justify-between gap-2">
                 <h2 className="font-bold">طلب #{c.order_id}: {c.orders?.restaurants?.name}</h2>
-                <span className={`text-xs font-semibold rounded-full px-2.5 py-1 shrink-0 ${c.status === 'open' ? 'bg-red-500/15 text-red-600' : c.status === 'reviewed' ? 'bg-sand/15 text-sandink' : 'bg-emerald-500/15 text-emerald-700'}`}>
+                <span className={`text-xs font-semibold rounded-full px-2.5 py-1 shrink-0 ${c.status === 'open' ? 'bg-red-500/15 text-red-600' : c.status === 'reviewed' ? 'bg-coral-100 text-coral-700' : 'bg-emerald-500/15 text-emerald-700'}`}>
                   {c.status === 'open' ? 'جديدة' : c.status === 'reviewed' ? 'قيد المراجعة' : 'اتحلت'}
                 </span>
               </div>
@@ -3489,7 +3489,7 @@ export default function Admin() {
                 {open && (
                   <div className="mt-3 pt-3 border-t border-line">
                     {explicit.length > 0 && (
-                      <p className="text-xs text-sandink mb-2"><Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />المطعم ده حاليًا مقتصر بس على الأماكن المعلّمة تحت، لو عايزه يرجع يوصل بالمسافة القصوى بس، شيل كل التعليمات.</p>
+                      <p className="text-xs text-coral-700 mb-2"><Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />المطعم ده حاليًا مقتصر بس على الأماكن المعلّمة تحت، لو عايزه يرجع يوصل بالمسافة القصوى بس، شيل كل التعليمات.</p>
                     )}
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-64 overflow-y-auto">
                       {compounds.map(c => {
@@ -3519,7 +3519,7 @@ export default function Admin() {
             <p className="text-sm text-mist mb-1">كلمة السر</p>
             <p className="font-mono text-sm bg-night border border-line rounded-lg p-2.5 mb-4" dir="ltr">{newCreds.password}</p>
             <div className="flex items-center gap-2 mb-4">
-              <p className="text-xs text-sandink flex-1"><Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />ده ظاهر مرة واحدة بس. انسخه وابعته دلوقتي</p>
+              <p className="text-xs text-coral-700 flex-1"><Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />ده ظاهر مرة واحدة بس. انسخه وابعته دلوقتي</p>
               <button className="btn-sea !py-2 text-xs shrink-0" onClick={() => {
                 navigator.clipboard.writeText(`${newCreds.email}\n${newCreds.password}`)
                 setCredsCopied(true)
@@ -3536,7 +3536,7 @@ export default function Admin() {
           <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
             <h3 id="assign-driver-title" className="font-bold mb-4">اختيار مندوب متاح، طلب #{assigning.id}</h3>
             {assigningNeedsVan && (
-              <p className="text-sandink text-sm mb-3"><Icon name="van" size="sm" className="inline-block align-[-0.15em] me-1" />الطلب محتاج فان، لسه السعر متأكدش أو الطلب كبير</p>
+              <p className="text-coral-700 text-sm mb-3"><Icon name="van" size="sm" className="inline-block align-[-0.15em] me-1" />الطلب محتاج فان، لسه السعر متأكدش أو الطلب كبير</p>
             )}
             {/* The refusal has to be readable HERE. The page-level banner sits
                 behind a fixed inset-0 overlay, so a failed assign produced no
@@ -3558,7 +3558,7 @@ export default function Admin() {
                     <p className="font-semibold">{d.name}</p>
                     <p className="text-sm text-mist mt-0.5"><Icon name="star" size="sm" className="inline-block align-[-0.15em] me-1" />{d.rating} · {d.total_deliveries} توصيلة · {vehicleLabel(d.vehicle_type)} · {d.vehicle_plate}</p>
                     {driverActiveCount > 0 && (
-                      <p className="text-xs text-sandink mt-1">شغال دلوقتي على {driverActiveCount} طلب</p>
+                      <p className="text-xs text-coral-700 mt-1">شغال دلوقتي على {driverActiveCount} طلب</p>
                     )}
                   </button>
                 )
@@ -3578,7 +3578,7 @@ export default function Admin() {
               دلوقتي مع {reassigning.drivers?.name ?? 'مندوب'} · {assignmentStatusLabel(reassigning.status)}
             </p>
             {reassignNeedsVan && (
-              <p className="text-sandink text-sm mb-3"><Icon name="van" size="sm" className="inline-block align-[-0.15em] me-1" />الطلب محتاج فان، لسه السعر متأكدش أو الطلب كبير</p>
+              <p className="text-coral-700 text-sm mb-3"><Icon name="van" size="sm" className="inline-block align-[-0.15em] me-1" />الطلب محتاج فان، لسه السعر متأكدش أو الطلب كبير</p>
             )}
             {modalError && (
               <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3">{modalError}</p>
@@ -3598,7 +3598,7 @@ export default function Admin() {
                     <p className="font-semibold">{d.name}</p>
                     <p className="text-sm text-mist mt-0.5"><Icon name="star" size="sm" className="inline-block align-[-0.15em] me-1" />{d.rating} · {vehicleLabel(d.vehicle_type)} · {d.vehicle_plate}</p>
                     {driverActiveCount > 0 && (
-                      <p className="text-xs text-sandink mt-1">شغال دلوقتي على {driverActiveCount} طلب</p>
+                      <p className="text-xs text-coral-700 mt-1">شغال دلوقتي على {driverActiveCount} طلب</p>
                     )}
                   </button>
                 )
@@ -3748,7 +3748,7 @@ function DailyReportTab() {
           </div>
 
           {(Number(r.unpriced_left_open) > 0 || Number(r.unpaid_left_open) > 0) && (
-            <div className="card p-4 bg-sand/10 border-sand/40 text-sm">
+            <div className="card p-4 bg-coral-100 border-coral-300 text-sm">
               <b>سايبين معلّق:</b>{' '}
               {Number(r.unpriced_left_open) > 0 && <>{n(r.unpriced_left_open)} طلب مستني تسعير. </>}
               {Number(r.unpaid_left_open) > 0 && <>{n(r.unpaid_left_open)} طلب مستني دفع.</>}

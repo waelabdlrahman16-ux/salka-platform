@@ -409,8 +409,8 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
           </p>
         )}
         {loadError && (
-          <div className="border border-sand/60 bg-sand/10 rounded-xl p-3 mb-3 flex items-center justify-between gap-3" role="alert">
-            <p className="text-sm text-sandink font-semibold"><Icon name="broadcast" size="sm" className="inline-block align-[-0.15em] me-1" />{loadError}</p>
+          <div className="border border-coral-300 bg-coral-100 rounded-xl p-3 mb-3 flex items-center justify-between gap-3" role="alert">
+            <p className="text-sm text-coral-700 font-semibold"><Icon name="broadcast" size="sm" className="inline-block align-[-0.15em] me-1" />{loadError}</p>
             <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0" onClick={loadOptions}>حدّث</button>
           </div>
         )}

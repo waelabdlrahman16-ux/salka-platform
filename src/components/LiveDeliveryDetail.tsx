@@ -19,7 +19,7 @@ function seenLabel(seconds: number | null): { text: string; tone: string } {
   if (seconds == null) return { text: 'مفيش موقع من المندوب', tone: 'text-mist' }
   if (seconds < 90) return { text: 'موقعه دلوقتي', tone: 'text-sea' }
   if (seconds < 180) return { text: `آخر تحديث من ${Math.round(seconds / 60)} دقيقة`, tone: 'text-mist' }
-  if (seconds < 3600) return { text: `آخر تحديث من ${Math.round(seconds / 60)} دقيقة`, tone: 'text-sandink' }
+  if (seconds < 3600) return { text: `آخر تحديث من ${Math.round(seconds / 60)} دقيقة`, tone: 'text-coral-700' }
   return { text: `آخر تحديث من ${Math.round(seconds / 3600)} ساعة`, tone: 'text-red-500' }
 }
 
@@ -72,7 +72,7 @@ export default function LiveDeliveryDetail({ live }: { live?: LiveDelivery }) {
           </div>
         )}
         {live.request_notes && (
-          <p className="text-xs text-sandink mt-2"><Icon name="penToSquare" size="xs" className="inline-block align-[-0.15em] me-1" />{live.request_notes}</p>
+          <p className="text-xs text-coral-700 mt-2"><Icon name="penToSquare" size="xs" className="inline-block align-[-0.15em] me-1" />{live.request_notes}</p>
         )}
       </div>
 

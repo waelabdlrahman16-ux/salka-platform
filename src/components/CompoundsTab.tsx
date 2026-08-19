@@ -166,7 +166,7 @@ export default function CompoundsTab() {
       )}
 
       {missingCoords > 0 && (
-        <p className="text-xs text-sandink bg-sand/10 rounded-xl p-3">
+        <p className="text-xs text-coral-700 bg-coral-100 rounded-xl p-3">
           <Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />{missingCoords} كومباوند شغّال من غير إحداثيات، خريطة تتبع المندوب مش هتشتغل فيهم.
         </p>
       )}

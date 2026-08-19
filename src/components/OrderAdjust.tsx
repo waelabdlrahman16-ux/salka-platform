@@ -82,7 +82,7 @@ export default function OrderAdjust({ orderId, onDone }: {
           onClick={() => { setOpen(true); setResult(null) }}>
           تعديل مبلغ الطلب
         </button>
-        <button className="text-xs text-sandink hover:text-foam underline" disabled={saving}
+        <button className="text-xs text-coral-700 hover:text-foam underline" disabled={saving}
           onClick={markAsAuditTest}>
           <Icon name="flask" size="sm" className="inline-block align-[-0.15em] me-1" />تسجيل كاختبار تدقيق
         </button>
@@ -145,7 +145,7 @@ export default function OrderAdjust({ orderId, onDone }: {
           <input type="checkbox" className="w-4 h-4" checked={chargeFee}
             onChange={e => setChargeFee(e.target.checked)} />
           احسب رسوم الخدمة على الزيادة كمان
-          {!chargeFee && <span className="text-sandink font-semibold"> · الرسوم هتفضل زي ما هي</span>}
+          {!chargeFee && <span className="text-coral-700 font-semibold"> · الرسوم هتفضل زي ما هي</span>}
         </label>
       )}
 

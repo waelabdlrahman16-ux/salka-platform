@@ -137,7 +137,7 @@ export default function VendorHoursRow({ restaurant, onSaved }: {
               ariaLabel={`${d.label}، ${v.closed ? 'مقفول' : 'مفتوح'}`}
             />
             {v.closed && <span className="text-[10.5px] text-mist shrink-0">مقفول اليوم ده</span>}
-            {overnight && <span className="text-[10px] text-sandink shrink-0" title="بيعدّي نص الليل"><Icon name="moon" size="xs" /></span>}
+            {overnight && <span className="text-[10px] text-coral-700 shrink-0" title="بيعدّي نص الليل"><Icon name="moon" size="xs" /></span>}
           </div>
         )
       })}

@@ -322,7 +322,7 @@ export default function MenuItemsPanel({
         })}
         {!reorderMode && (
           <button onClick={() => { setAdding(true); setCatError('') }}
-            className="shrink-0 rounded-full border border-dashed border-linestrong bg-shell px-3.5 min-h-[34px] text-xs font-semibold text-sea">
+            className="shrink-0 rounded-full border border-dashed border-slate-500 bg-shell px-3.5 min-h-[34px] text-xs font-semibold text-sea">
             ＋ قسم
           </button>
         )}
@@ -337,7 +337,7 @@ export default function MenuItemsPanel({
           {/* 61 categories exist across 11 vendors, several of them near-misses
               of each other. This is where that stops. */}
           {dupWarning && (
-            <p className="text-xs text-sandink bg-sandink/10 rounded-lg p-2">
+            <p className="text-xs text-coral-700 bg-coral-100 rounded-lg p-2">
               <Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />في قسم اسمه «{dupWarning}» عندك:{' '}
               <button className="underline font-semibold" onClick={() => { setActive(dupWarning); setAdding(false); setNewCat('') }}>
                 استخدمه
@@ -407,7 +407,7 @@ export default function MenuItemsPanel({
                       onChange={e => e.target.files?.[0] && onUploadImage(it, e.target.files[0])} />
                     {it.image_url
                       ? <img src={it.image_url} alt="" className="w-11 h-11 rounded-lg object-cover border border-line" />
-                      : <span className="w-11 h-11 rounded-lg border border-dashed border-linestrong bg-shellup grid place-items-center text-mist text-lg">＋</span>}
+                      : <span className="w-11 h-11 rounded-lg border border-dashed border-slate-500 bg-shellup grid place-items-center text-mist text-lg">＋</span>}
                     <span className="absolute -bottom-1 -left-1 w-[18px] h-[18px] rounded-full bg-sea text-white grid place-items-center border-2 border-night">
                       {uploadingImage === `i${it.id}` ? <span className="text-[9px]">…</span> : (
                         <svg viewBox="0 0 24 24" className="w-2.5 h-2.5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -445,7 +445,7 @@ export default function MenuItemsPanel({
                   {sz ? (
                     // No editable box: this number is not what the customer pays.
                     <button onClick={() => onEdit(it)}
-                      className="w-24 shrink-0 text-center text-xs font-semibold text-sandink bg-sandink/10 rounded-xl py-2 whitespace-nowrap">
+                      className="w-24 shrink-0 text-center text-xs font-semibold text-coral-700 bg-coral-100 rounded-xl py-2 whitespace-nowrap">
                       من {sz.min}
                     </button>
                   ) : (
@@ -472,7 +472,7 @@ export default function MenuItemsPanel({
                     <button onClick={() => onToggleRx(it)} title="روشتة"
                       aria-pressed={it.requires_prescription} aria-label="محتاج وصفة"
                       className={`shrink-0 w-10 h-10 rounded-lg grid place-items-center transition-colors ${
-                        it.requires_prescription ? 'bg-sandink/15 text-sandink' : 'bg-shellup text-mist'}`}>
+                        it.requires_prescription ? 'bg-coral-200 text-coral-700' : 'bg-shellup text-mist'}`}>
                       <svg viewBox="0 0 24 24" className="w-[17px] h-[17px]" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <path d="M10.5 20.5a5 5 0 0 1-7-7l10-10a5 5 0 0 1 7 7l-10 10z" />
                         <path d="M8.5 8.5l7 7" />
