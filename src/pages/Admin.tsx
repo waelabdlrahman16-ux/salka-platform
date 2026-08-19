@@ -2523,7 +2523,9 @@ export default function Admin() {
               })()}
 
               <button className="text-xs text-sea font-semibold mt-3" onClick={() => toggleOrderDetail(o.id)}>
-                {openHistory === o.id ? 'إخفاء التفاصيل ▲' : 'عرض التفاصيل الكاملة ▼'}
+                {openHistory === o.id
+                  ? <>إخفاء التفاصيل<Icon name="caretUp" size="xs" className="inline-block align-[-0.15em] ms-1" /></>
+                  : <>عرض التفاصيل الكاملة<Icon name="caretDown" size="xs" className="inline-block align-[-0.15em] ms-1" /></>}
               </button>
               {openHistory === o.id && (
                 <div className="mt-2 bg-night border border-line rounded-xl p-3 text-xs space-y-1.5">
@@ -3724,7 +3726,7 @@ function DailyReportTab() {
         <>
           <div className={`card p-5 ${losing ? 'bg-dangerbg border-dangerline' : 'bg-successbg border-successline'}`}>
             <p className="text-sm font-semibold mb-1">
-              {losing ? '▼ نتيجة اليوم' : '▲ نتيجة اليوم'}
+              <Icon name={losing ? 'caretDown' : 'caretUp'} size="xs" className="inline-block align-[-0.15em] me-1" />نتيجة اليوم
             </p>
             <p className={`text-4xl font-bold ${losing ? 'text-danger' : 'text-success'}`}>
               <bdi dir="ltr">{n(r.result)}</bdi> <span className="text-lg">ج.م</span>

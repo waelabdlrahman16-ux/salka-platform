@@ -17,6 +17,17 @@ import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/plac
 import { publicCatalog } from '../lib/publicCatalog'
 
 
+// Off until the category art exists. The chips currently carry the food emoji,
+// which is fine as an appetite cue at 20px next to a word -- but with the label
+// removed they became five emoji in five boxes and read as decoration rather
+// than a filter. Wael is drawing a dish illustration per category; this comes
+// back on when they land.
+//
+// A flag rather than deleting the block: everything downstream still works --
+// `kind` filtering, the filtered-empty state, «شوف كل المطاعم» -- so switching
+// this to true is the whole re-enable.
+const SHOW_CATEGORY_CHIPS = false
+
 export default function Home() {
   const [compounds, setCompounds] = useState<Compound[]>([])
   const [compoundId, setCompoundId] = useState<number | null>(null)
@@ -454,7 +465,7 @@ export default function Home() {
           <span className="flex items-center gap-1 min-w-0">
             <Icon name="locationDot" size="sm" className="shrink-0 text-sea" />
             <span className="font-bold text-[17px] truncate">{selected ? selected.name : 'اختر مكانك'}</span>
-            <span className="text-mist text-xs shrink-0">▾</span>
+            <Icon name="caretDown" size="xs" className="text-mist shrink-0" />
           </span>
         </button>
         {/* Neutral, not coral. A delivery fee is an ordinary fact, and coral is
@@ -560,7 +571,7 @@ export default function Home() {
               There is no «إلغاء الفلتر» button any more: onClick already does
               setKind(kind === k ? null : k), so tapping the active chip clears it.
               The button was a second control for behaviour the chip already had. */}
-          {availableKinds.length > 1 && (
+          {SHOW_CATEGORY_CHIPS && availableKinds.length > 1 && (
             <div className="flex gap-2 overflow-x-auto pb-1 mb-4 -mx-4 px-4 scrollbar-none">
               {availableKinds.map(({ kind: k, emoji }) => {
                 return (

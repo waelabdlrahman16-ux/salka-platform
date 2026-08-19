@@ -772,7 +772,9 @@ export default function Track() {
               show at every step instead of one "قيد التجهيز" covering all of it. */}
           <button className="text-xs text-sea font-semibold mt-3"
             onClick={() => setTimelineOpen(v => !v)}>
-            {timelineOpen ? 'إخفاء التفاصيل ▲' : 'إزاي طلبك ماشي ▼'}
+            {timelineOpen
+              ? <>إخفاء التفاصيل<Icon name="caretUp" size="xs" className="inline-block align-[-0.15em] ms-1" /></>
+              : <>إزاي طلبك ماشي<Icon name="caretDown" size="xs" className="inline-block align-[-0.15em] ms-1" /></>}
           </button>
           {timelineOpen && (
             <ol className="mt-2.5 border-t border-line pt-3 space-y-0">

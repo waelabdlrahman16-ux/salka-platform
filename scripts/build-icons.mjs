@@ -51,7 +51,7 @@ const MAP = [
   ['stethoscope', 'stethoscope'], ['handSoap', 'hand-soap'], ['basket', 'basket'],
   ['sprayBottle', 'spray-bottle'], ['umbrella', 'umbrella-simple'],
   ['baby', 'baby'], ['carrot', 'carrot'], ['cheese', 'cheese'],
-  ['asclepius', 'asclepius'],
+  ['asclepius', 'asclepius'], ['caretDown', 'caret-down'], ['caretUp', 'caret-up'],
 ]
 
 // Icons that also ship a FILLED variant. Deliberately a short list, not all 80:
