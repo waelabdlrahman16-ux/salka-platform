@@ -12,6 +12,7 @@ import { track, trackOnce } from '../lib/analytics'
 import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
 import { PROMO_SCOPE_LABEL, type PromoScope } from '../lib/promoScope'
 import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
+import { rememberLiveOrder } from '../lib/liveOrder'
 import LocationPreviewMap from '../components/LocationPreviewMap'
 import type { Compound, Discount, MenuItem, MenuItemAddon, MenuItemCombo, MenuItemSize, Restaurant, Slot } from '../lib/types'
 import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
@@ -426,6 +427,9 @@ export default function CheckoutPage() {
     })
 
     cart.clear()
+    // Persist before navigating: the token was previously only ever in the URL,
+    // so closing the tab lost the order.
+    rememberLiveOrder(String(data.token))
     nav(`/track/${data.token}`)
   }
 

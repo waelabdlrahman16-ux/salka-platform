@@ -52,13 +52,19 @@ const MAP = [
   ['sprayBottle', 'spray-bottle'], ['umbrella', 'umbrella-simple'],
   ['baby', 'baby'], ['carrot', 'carrot'], ['cheese', 'cheese'],
   ['asclepius', 'asclepius'], ['caretDown', 'caret-down'], ['caretUp', 'caret-up'],
+  ['checkCircle', 'check-circle'], ['motorcycle', 'motorcycle'],
+  ['calendarCheck', 'calendar-check'],
 ]
 
 // Icons that also ship a FILLED variant. Deliberately a short list, not all 80:
 // the fill weight is a second full copy of every path, so generating it for the
 // whole set would add ~12kB gzip to carry five nav icons. Add a name here only
 // when something actually renders a filled state.
-const FILLED = ['house', 'van', 'tag', 'cartShopping', 'circleUser']
+// The nav five, plus the five the live-order card uses for its stages.
+// Filled is the right weight there: the card REPORTS a state, and an
+// outline glyph reads as something you can press.
+const FILLED = ['house', 'van', 'tag', 'cartShopping', 'circleUser',
+  'checkCircle', 'storefront', 'motorcycle', 'locationDot', 'calendarCheck']
 
 if (!existsSync(A)) {
   console.error(`${A} not found. Run:  npm i -D @phosphor-icons/core`)

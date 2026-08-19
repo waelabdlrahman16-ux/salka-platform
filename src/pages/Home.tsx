@@ -10,6 +10,7 @@ import { BROWSE_KINDS, vendorKind, normaliseArabic, VENDOR_TYPE_ART, type Vendor
 import Icon from '../components/Icon'
 import BannerRail from '../components/BannerRail'
 import RestaurantCard from '../components/RestaurantCard'
+import LiveOrderCard from '../components/LiveOrderCard'
 import FeedAdCard, { type FeedAdCardData } from '../components/FeedAdCard'
 import FeaturedProductsRail, { type FeaturedProductCard } from '../components/FeaturedProductsRail'
 import type { Compound, Discount, Restaurant } from '../lib/types'
@@ -515,6 +516,11 @@ export default function Home() {
           banners when there are any (an admin who paid for that space should
           not have it shared), but promoted above -- filling the gap, not
           leaving one -- the moment there are none. */}
+      {/* Above the promo rail on purpose: a customer who already has an order in
+          flight is not shopping, and the first thing the screen owes them is
+          where that order is. Renders null when there is nothing live. */}
+      <LiveOrderCard />
+
       {!hasBanners && quickAccessTiles}
       <BannerRail onBanners={setHasBanners} />
       {hasBanners && quickAccessTiles}
