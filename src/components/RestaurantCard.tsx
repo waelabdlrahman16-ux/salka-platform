@@ -176,9 +176,10 @@ export default function RestaurantCard({
 
       {/* Tightened from p-3 and a 36px logo. ~15px of padding that was not
           carrying any information, which is most of what the shorter cover
-          would otherwise have handed straight back. */}
+          would otherwise have handed straight back. The mark is 40px: the same
+          height as the two lines beside it, so the row squares off. */}
       <div className="flex items-center gap-2.5 px-2.5 py-2.5">
-        <span className="w-8 h-8 rounded-lg overflow-hidden grid place-items-center text-base shrink-0 border border-line"
+        <span className="w-10 h-10 rounded-lg overflow-hidden grid place-items-center text-base shrink-0 border border-line"
           style={{ background: art.tint }}>
           {r.logo_url
             ? <img src={sized(r.logo_url, IMG.icon)} alt="" loading="eager" className="w-full h-full object-cover" />

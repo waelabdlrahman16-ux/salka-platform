@@ -452,17 +452,17 @@ export default function CustomOrder() {
                     customer recognises by their mark -- Krispy Kreme, Costa and KFC
                     are the opposite, and stripping their logos made them harder to
                     find, not more consistent. */}
-                <span className="w-8 h-8 rounded-lg overflow-hidden grid place-items-center shrink-0 border border-line"
+                <span className="w-10 h-10 rounded-lg overflow-hidden grid place-items-center shrink-0 border border-line"
                   style={(v.vendor_type === 'pharmacy' || v.vendor_type === 'supermarket')
                     ? { background: VENDOR_TYPE_ART[v.vendor_type].tint,
                         color: VENDOR_TYPE_ART[v.vendor_type].ink }
                     : { background: art.tint }}>
                   {v.vendor_type === 'pharmacy' || v.vendor_type === 'supermarket'
-                    ? <Icon name={VENDOR_TYPE_ART[v.vendor_type].icon} size="md" />
+                    ? <Icon name={VENDOR_TYPE_ART[v.vendor_type].icon} size="lg" />
                     : v.logo_url
                         ? <img src={v.logo_url} alt="" loading="eager" className="w-full h-full object-cover"
                             onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
-                        : <Icon name="storefront" size="md" className="text-mist" />}
+                        : <Icon name="storefront" size="lg" className="text-mist" />}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-baseline gap-1.5 min-w-0">
