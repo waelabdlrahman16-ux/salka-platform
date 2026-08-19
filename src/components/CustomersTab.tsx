@@ -410,7 +410,7 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
             <p dir="ltr" className="text-sm text-mist text-right">{dial(c.phone)}</p>
             {c.email && <p dir="ltr" className="text-xs text-mist text-right break-all">{c.email}</p>}
           </div>
-          <button className="text-mist hover:text-foam text-sm shrink-0 min-h-[44px] inline-flex items-center" onClick={onClose}>إغلاق ✕</button>
+          <button className="text-mist hover:text-foam text-sm shrink-0 min-h-[44px] inline-flex items-center" onClick={onClose}>إغلاق<Icon name="x" size="xs" className="inline-block align-[-0.15em] ms-1" /></button>
         </div>
 
         <div className="p-4 space-y-4">

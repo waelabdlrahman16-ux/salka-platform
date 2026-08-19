@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import Icon from './Icon'
 import { adminReport } from '../lib/adminReports'
 
 type CoverageRow = {
@@ -133,7 +134,7 @@ export default function PushCoveragePanel() {
             <p className="text-xs text-mist">{ROLE_AR[c.role] ?? c.role}</p>
             <p className="text-xl font-bold mt-1">{c.registered}/{c.total}</p>
             <p className={`text-xs mt-1 ${c.missing + c.stale > 0 ? 'text-red-700 font-semibold' : 'text-emerald-700'}`}>
-              {c.missing > 0 ? `${c.missing} بدون تنبيهات` : c.stale > 0 ? `${c.stale} تسجيل قديم` : 'كلهم مسجلين ✓'}
+              {c.missing > 0 ? `${c.missing} بدون تنبيهات` : c.stale > 0 ? `${c.stale} تسجيل قديم` : <>كلهم مسجلين<Icon name="check" size="xs" className="inline-block align-[-0.15em] ms-1" /></>}
             </p>
           </div>
         ))}
@@ -148,7 +149,7 @@ export default function PushCoveragePanel() {
 
       <section>
         <h3 className="font-bold mb-2">محتاجين تفعيل ({missing.length})</h3>
-        {missing.length === 0 ? <div className="card p-4 text-emerald-700 font-semibold">كل حسابات التشغيل مسجلة للتنبيهات ✓</div> : (
+        {missing.length === 0 ? <div className="card p-4 text-emerald-700 font-semibold">كل حسابات التشغيل مسجلة للتنبيهات<Icon name="check" size="xs" className="inline-block align-[-0.15em] ms-1" /></div> : (
           <div className="space-y-2">
             {missing.map(p => (
               <div key={p.profile_id} className="card p-3.5 border-red-400/40 flex items-center justify-between gap-3">

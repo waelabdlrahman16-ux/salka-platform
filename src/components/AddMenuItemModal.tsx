@@ -306,14 +306,14 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
         {sheetElement}
         <div className="flex items-center justify-between mb-3 px-1">
           <h2 id="add-menu-item-title" className="font-bold text-lg text-foam">إضافة صنف: {restaurant.name}</h2>
-          <button className="text-mist text-sm bg-shell rounded-full px-3 py-1" onClick={requestClose}>✗ إغلاق</button>
+          <button className="text-mist text-sm bg-shell rounded-full px-3 py-1" onClick={requestClose}><Icon name="x" size="sm" className="inline-block align-[-0.15em] me-1" />إغلاق</button>
         </div>
 
         {formError && (
           <p className="text-sm text-red-600 bg-red-500/10 rounded-lg p-2.5 mb-3" role="alert">{formError}</p>
         )}
         {justSaved && (
-          <p className="text-xs text-emerald-700 bg-emerald-500/10 rounded-lg p-2 mb-3">✓ اتضاف "{justSaved}"، كمّل اللي بعده</p>
+          <p className="text-xs text-emerald-700 bg-emerald-500/10 rounded-lg p-2 mb-3"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />اتضاف "{justSaved}"، كمّل اللي بعده</p>
         )}
 
         <div className="card p-3.5 space-y-2.5">

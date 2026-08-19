@@ -232,7 +232,7 @@ export default function MenuItemsPanel({
         <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-2.5 mb-2" role="alert">{catError}</p>
       )}
       {savedNotice && (
-        <p className="text-xs text-emerald-700 bg-emerald-500/10 rounded-xl p-2.5 mb-2" role="status">✓ {savedNotice}</p>
+        <p className="text-xs text-emerald-700 bg-emerald-500/10 rounded-xl p-2.5 mb-2" role="status"><Icon name="check" size="xs" className="inline-block align-[-0.15em] me-1" />{savedNotice}</p>
       )}
 
       <input className="field text-sm mb-2.5" value={search} onChange={e => setSearch(e.target.value)}
@@ -257,9 +257,9 @@ export default function MenuItemsPanel({
           <p className="text-xs text-mist mb-2">غيّر الترتيب من الأسهم؛ السحب يفضل متاح على الكمبيوتر. «الكل» ثابت أول واحد.</p>
           <div className="flex flex-wrap gap-1.5">
             {cats.map((cat, index) => <div key={cat.id} className="flex items-center gap-1 rounded-lg bg-shell px-2 py-1 text-xs font-semibold">
-              <button type="button" aria-label={`حرّك ${cat.name} يمين`} disabled={reorderBusy || index === 0} onClick={() => moveCategory(cat.name, -1)}>→</button>
+              <button type="button" aria-label={`حرّك ${cat.name} يمين`} disabled={reorderBusy || index === 0} onClick={() => moveCategory(cat.name, -1)}><Icon name="arrowRight" size="xs" /></button>
               <span>{cat.name}</span>
-              <button type="button" aria-label={`حرّك ${cat.name} شمال`} disabled={reorderBusy || index === cats.length - 1} onClick={() => moveCategory(cat.name, 1)}>←</button>
+              <button type="button" aria-label={`حرّك ${cat.name} شمال`} disabled={reorderBusy || index === cats.length - 1} onClick={() => moveCategory(cat.name, 1)}><Icon name="chevronLeft" size="xs" /></button>
             </div>)}
           </div>
         </div>
