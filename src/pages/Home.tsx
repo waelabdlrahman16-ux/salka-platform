@@ -447,7 +447,7 @@ export default function Home() {
           )}
         </button>
         {deliveryFee !== null && (
-          <span className="shrink-0 text-[11px] font-bold text-sandink bg-sand/20 rounded-lg px-2.5 py-1 mt-3">
+          <span className="shrink-0 text-[11px] font-bold text-coral-700 bg-coral-200 rounded-lg px-2.5 py-1 mt-3">
             {deliveryFee} ج.م توصيل
           </span>
         )}
@@ -655,7 +655,7 @@ export default function Home() {
                             since vendorHours landed -- this chip is a second,
                             older rendering of the same fact and was missed. */}
                         {openLabel(r).text !== 'مقفول' && (
-                          <span className="text-[10px] text-sandink block">{openLabel(r).text}</span>
+                          <span className="text-[10px] text-coral-700 block">{openLabel(r).text}</span>
                         )}
                       </span>
                     </Link>
@@ -715,7 +715,7 @@ export default function Home() {
               </button>
             </div>
 
-            {locationError && <p className="text-xs text-sandink mb-3 text-center">{locationError}</p>}
+            {locationError && <p className="text-xs text-coral-700 mb-3 text-center">{locationError}</p>}
 
             {nearby && (
               <div className="mb-4">

@@ -101,7 +101,7 @@ export default function CartPage() {
   if (!cart.restaurantId || validLines.length === 0) {
     return (
       <div className="text-center py-16">
-        {removedNotice && <p className="text-sandink text-sm mb-4 bg-sand/10 rounded-xl p-3 mx-4">{removedNotice}</p>}
+        {removedNotice && <p className="text-coral-700 text-sm mb-4 bg-coral-100 rounded-xl p-3 mx-4">{removedNotice}</p>}
         <Icon name="cartShopping" size="xl" className="mx-auto mb-3 text-mist" />
         <p className="font-bold text-lg mb-1">عربتك فاضية</p>
         <p className="text-mist text-sm mb-4">لسه ما ضفتش أي حاجة من المطاعم</p>
@@ -126,7 +126,7 @@ export default function CartPage() {
           <p className="font-bold truncate">{restaurant.name}</p>
         </div>
       )}
-      {removedNotice && <p className="text-sandink text-sm mb-4 bg-sand/10 rounded-xl p-3">{removedNotice}</p>}
+      {removedNotice && <p className="text-coral-700 text-sm mb-4 bg-coral-100 rounded-xl p-3">{removedNotice}</p>}
 
       {/* Without this the failure showed as «لحظة…» on a permanently disabled
           button, with no reason and no way forward. */}

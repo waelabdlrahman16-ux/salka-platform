@@ -104,16 +104,16 @@ export default function ProductCard({
             </span>
           )}
           {discountPct != null && (
-            // bg-sand carried white text at 2.87:1, against the palette file's
-            // own rule that sand "must never carry text". sandink is the same
-            // hue at 6.4:1. And since we are here: say how much, not just that
+            // Carried white text on gold at 2.87:1, against the palette file's own
+            // rule that the decorative gold "must never carry text". coral-700 is
+            // 5.75:1. And since we are here: say how much, not just that
             // there is one -- «خصم» tells the customer nothing they can weigh.
             //
             // …but only when there is a whole percent to say. originalPrice was
             // guarded with `!= null`, so a 0-priced row divided by zero and
             // rendered «خصم NaN%», and a 1 ج.م fixed discount on a 250 ج.م item
             // rounded to «خصم 0%» -- a badge advertising nothing.
-            <span className="absolute top-1.5 left-1.5 bg-sandink text-white rounded-full px-2 py-0.5 text-[10px] font-bold">
+            <span className="absolute top-1.5 left-1.5 bg-coral-700 text-white rounded-full px-2 py-0.5 text-[10px] font-bold">
               خصم <bdi dir="ltr">{discountPct}%</bdi>
             </span>
           )}

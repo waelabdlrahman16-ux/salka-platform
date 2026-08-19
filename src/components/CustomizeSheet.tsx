@@ -126,7 +126,7 @@ export default function CustomizeSheet({
                   convention, it announces as nothing useful, and in an RTL line it
                   lands where a reader does not look for it. */}
               {availableCombos.length > 0 ? 'ساندوتش لوحده ولا كومبو؟' : 'الحجم'}{' '}
-              <span className="text-sandink font-normal text-xs">(مطلوب)</span>
+              <span className="text-coral-700 font-normal text-xs">(مطلوب)</span>
             </p>
             <div className="space-y-2">
               {/* Plain rows. With sizes, each size is its own row; without, one
@@ -168,7 +168,7 @@ export default function CustomizeSheet({
         {addonGroups.map(g => (
           <div key={g.id} className="mb-4">
             <p className="font-semibold text-sm mb-2">
-              {g.name} {g.min_select > 0 && <span className="text-sandink font-normal text-xs">(مطلوب)</span>}
+              {g.name} {g.min_select > 0 && <span className="text-coral-700 font-normal text-xs">(مطلوب)</span>}
               {g.max_select === 1
                 ? <span className="text-mist font-normal"> (اختار واحد)</span>
                 : g.max_select != null && <span className="text-mist font-normal"> (حد أقصى {g.max_select})</span>}

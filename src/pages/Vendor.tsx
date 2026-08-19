@@ -782,7 +782,7 @@ function KitchenVendor({ rid }: { rid: number }) {
       : null
     const late = waitedMin !== null && waitedMin >= 10
     return (
-      <div key={o.id} className={`card !rounded-2xl p-4 ${big ? 'border-sand ring-2 ring-sand/50' : ''}`}>
+      <div key={o.id} className={`card !rounded-2xl p-4 ${big ? 'border-coral-300 ring-2 ring-coral-300' : ''}`}>
         {/* Reference shape: the order number is the biggest thing on the card
             and the clock sits opposite it, instead of a row of same-weight
             chips. A kitchen identifies a ticket by its number. */}
@@ -812,8 +812,8 @@ function KitchenVendor({ rid }: { rid: number }) {
         </div>
 
         {o.customer_note?.trim() && (
-          <div className="mt-3 border border-sand/40 bg-sand/10 rounded-xl p-3">
-            <p className="text-xs font-bold text-sandink"><Icon name="chatCircle" size="sm" className="inline-block align-[-0.15em] me-1" />ملاحظة العميل</p>
+          <div className="mt-3 border border-coral-300 bg-coral-100 rounded-xl p-3">
+            <p className="text-xs font-bold text-coral-700"><Icon name="chatCircle" size="sm" className="inline-block align-[-0.15em] me-1" />ملاحظة العميل</p>
             <p className="text-sm mt-1 font-semibold whitespace-pre-wrap">{o.customer_note}</p>
           </div>
         )}
@@ -827,7 +827,7 @@ function KitchenVendor({ rid }: { rid: number }) {
         {o.order_type === 'custom_request' && (
           <div className="mt-3 bg-night border border-line !rounded-2xl p-3.5 text-sm space-y-1.5">
             {o.pricing_status === 'pending_quote' && (
-              <p className="text-sandink text-xs font-semibold pb-1.5 border-b border-line">
+              <p className="text-coral-700 text-xs font-semibold pb-1.5 border-b border-line">
                 <Icon name="receipt" size="sm" className="inline-block align-[-0.15em] me-1" />طلب لسه ما اتسعّرش، الإدارة هتتصل بالعميل وتحط السعر
               </p>
             )}
@@ -841,7 +841,7 @@ function KitchenVendor({ rid }: { rid: number }) {
               </div>
             ))}
             {o.request_notes && (
-              <p className="text-sandink pt-1.5 border-t border-line"><Icon name="penToSquare" size="sm" className="inline-block align-[-0.15em] me-1" />{o.request_notes}</p>
+              <p className="text-coral-700 pt-1.5 border-t border-line"><Icon name="penToSquare" size="sm" className="inline-block align-[-0.15em] me-1" />{o.request_notes}</p>
             )}
             {o.prescription_path && (
               <div className="pt-1.5 border-t border-line"><PrescriptionLink path={o.prescription_path} /></div>
@@ -877,7 +877,7 @@ function KitchenVendor({ rid }: { rid: number }) {
         </div>
 
         {(items[o.id] ?? []).some(it => it.requires_prescription) && (
-          <p className="text-sandink text-sm mt-2"><Icon name="pill" size="sm" className="inline-block align-[-0.15em] me-1" />الطلب فيه صنف يحتاج روشتة. أكّد مع العميل قبل التجهيز</p>
+          <p className="text-coral-700 text-sm mt-2"><Icon name="pill" size="sm" className="inline-block align-[-0.15em] me-1" />الطلب فيه صنف يحتاج روشتة. أكّد مع العميل قبل التجهيز</p>
         )}
 
         {/* No money on this ticket beyond the per-item prices.
@@ -1008,8 +1008,8 @@ function KitchenVendor({ rid }: { rid: number }) {
           poll, and a vendor who dismissed it would be straight back to trusting
           an empty screen. */}
       {(loadError || nameFailed || openStateFailed) && (
-        <div className="card p-3 mb-3 border-sand/60 bg-sand/10 flex items-center justify-between gap-3">
-          <p className="text-sm text-sandink font-semibold">
+        <div className="card p-3 mb-3 border-coral-300 bg-coral-100 flex items-center justify-between gap-3">
+          <p className="text-sm text-coral-700 font-semibold">
             <Icon name="broadcast" size="sm" className="inline-block align-[-0.15em] me-1" />{loadError
               || (openStateFailed
                 ? 'مش قادرين نتأكد إذا كنت فاتح ولا مقفول، الحالة تحت ممكن تكون قديمة'
@@ -1022,8 +1022,8 @@ function KitchenVendor({ rid }: { rid: number }) {
       {/* Closed is not a small badge. It means zero orders all evening, and it
           is the single most likely reason a vendor thinks the app is broken. */}
       {!isOpen && (
-        <div className="card p-4 mb-3 border-sand/50 bg-sand/10 text-center">
-          <p className="font-bold text-sandink">المطعم مقفول دلوقتي</p>
+        <div className="card p-4 mb-3 border-coral-300 bg-coral-100 text-center">
+          <p className="font-bold text-coral-700">المطعم مقفول دلوقتي</p>
           <p className="text-sm text-mist mt-1">مش هتوصلك أي طلبات جديدة لحد ما تفتحه من المفتاح اللي تحت.</p>
         </div>
       )}
@@ -1120,7 +1120,7 @@ function KitchenVendor({ rid }: { rid: number }) {
 
           {newOrders.length > 0 && (
             <div className="mb-5 space-y-3">
-              <p className="text-sandink font-bold animate-pulse"><Icon name="bell" size="sm" className="inline-block align-[-0.15em] me-1" />محتاج ردّك: {newOrders.length}</p>
+              <p className="text-coral-700 font-bold animate-pulse"><Icon name="bell" size="sm" className="inline-block align-[-0.15em] me-1" />محتاج ردّك: {newOrders.length}</p>
               {newOrders.map(o => card(o, true))}
             </div>
           )}

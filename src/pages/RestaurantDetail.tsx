@@ -379,7 +379,7 @@ export default function RestaurantDetail() {
           {restaurant.is_open ? 'مفتوح' : 'مغلق'}
         </span>
         {deliveryFee !== null && (
-          <span className="text-[11px] font-bold text-sandink bg-sand/20 rounded-lg px-2 py-1 shrink-0">
+          <span className="text-[11px] font-bold text-coral-700 bg-coral-200 rounded-lg px-2 py-1 shrink-0">
             {deliveryFee} ج.م توصيل
           </span>
         )}
@@ -401,7 +401,7 @@ export default function RestaurantDetail() {
             {(restaurant.review_count ?? 0) > 0 && (
               <>
                 <span className="flex items-center gap-1">
-                  <Icon name="star" size="xs" className="text-sand" />
+                  <Icon name="star" size="xs" className="text-coral-600" />
                   <span className="font-bold text-foam">{restaurant.rating_real ?? restaurant.rating}</span>
                   <span>({restaurant.review_count})</span>
                 </span>

@@ -98,7 +98,7 @@ export default function OptionRowsCard({
           </div>
 
           {warning && (
-            <p className="text-xs text-sandink bg-sandink/10 rounded-lg p-2 mb-3"><Icon name="warning" size="xs" className="inline-block align-[-0.15em] me-1" />{warning}</p>
+            <p className="text-xs text-coral-700 bg-coral-100 rounded-lg p-2 mb-3"><Icon name="warning" size="xs" className="inline-block align-[-0.15em] me-1" />{warning}</p>
           )}
 
           <div className="flex gap-2">
