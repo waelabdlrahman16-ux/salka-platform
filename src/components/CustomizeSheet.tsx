@@ -117,7 +117,7 @@ export default function CustomizeSheet({
   // see the note in ProductDetailSheet.
   return (
     <div ref={overlayRef} role="dialog" aria-labelledby="customize-sheet-title" aria-modal="true" className="fixed inset-0 z-50 bg-black/60" onClick={onClose}>
-      <div className="card fixed inset-x-0 bottom-0 w-full p-5 rounded-t-[28px] rounded-b-none max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="card fixed inset-x-0 bottom-0 w-full p-5 !rounded-t-[4px] rounded-b-none max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         {/* The dish, before the radio buttons. This sheet opened straight onto
             «ساندوتش لوحده ولا كومبو؟» -- a form about a thing the customer
             could no longer see, even though the card they tapped was showing
@@ -126,7 +126,7 @@ export default function CustomizeSheet({
         {/* overflow-hidden + the same top radius, or the photo squares off the
             corners the sheet just rounded. */}
         {item.image_url && (
-          <div className="-mx-5 -mt-5 mb-4 relative overflow-hidden rounded-t-[28px]">
+          <div className="-mx-5 -mt-5 mb-4 relative overflow-hidden rounded-t-[4px]">
             <img src={sized(item.image_url, IMG.wide)} alt="" loading="eager" decoding="async"
               className="w-full h-60 object-cover"
               onError={e => { (e.currentTarget.closest('div') as HTMLElement).style.display = 'none' }} />

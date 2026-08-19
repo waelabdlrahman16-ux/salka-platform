@@ -71,7 +71,7 @@ export default function ProductDetailSheet({
   // removes the whole failure mode instead of chasing why it misfires.
   return (
     <div ref={overlayRef} role="dialog" aria-labelledby="product-detail-title" aria-modal="true" className="fixed inset-0 z-50 bg-black/60" onClick={onClose}>
-      <div className="fixed inset-x-0 bottom-0 w-full max-h-[90vh] overflow-y-auto bg-shell rounded-t-[28px]" onClick={e => e.stopPropagation()}>
+      <div className="fixed inset-x-0 bottom-0 w-full max-h-[90vh] overflow-y-auto bg-shell rounded-t-[4px]" onClick={e => e.stopPropagation()}>
         {/* Drag handle: a purely visual affordance signalling "this sheet
             swipes down to close" -- it does not itself carry a gesture,
             useDismissable's backdrop tap/Back-button handling already does

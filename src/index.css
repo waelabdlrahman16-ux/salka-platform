@@ -21,10 +21,10 @@
 html { font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif; overflow-x: hidden; overflow-x: clip; }
 body { @apply bg-night text-foam antialiased; overflow-x: hidden; overflow-x: clip; }
 
-/* 16px, Wael's call. Cards were 12px while the vendor cards and the promo
-   banner overrode to 24px, so a single screen stacked three different corners
-   down its length. One number here moves every card in every portal. */
-.card { @apply bg-shell border border-line rounded-2xl; }
+/* 12px is the base card: quick tiles and product cards. The vendor card and
+   the promo banner override to 16px -- they carry a photograph, and a larger
+   corner reads on a big surface where it would look sloppy on a small one. */
+.card { @apply bg-shell border border-line rounded-xl; }
 
 /* min-h-[44px] is the floor Apple asks for and Google exceeds at 48. The padding
    alone gave ~42px, and every `!py-1.5` override around the app cut that to ~32.
@@ -46,7 +46,7 @@ body { @apply bg-night text-foam antialiased; overflow-x: hidden; overflow-x: cl
    slate-500 (#867E76) drew the box harder than the content inside it. Both
    step back one rung -- placeholder slate-400, border slate-300 -- which on a
    white ground still separates the field without competing with it. */
-.field { @apply w-full h-10 rounded-xl bg-night border border-slate-300 px-3.5 text-foam placeholder:text-slate-300 focus:outline-none focus:border-sea focus:ring-1 focus:ring-sea; }
+.field { @apply w-full h-10 rounded-lg bg-night border border-slate-300 px-3.5 text-foam placeholder:text-slate-300 focus:outline-none focus:border-sea focus:ring-1 focus:ring-sea; }
 select.field {
   @apply appearance-none bg-no-repeat pr-3.5;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%236E655C'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z' clip-rule='evenodd'/%3E%3C/svg%3E");

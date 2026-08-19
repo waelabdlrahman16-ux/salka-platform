@@ -135,7 +135,7 @@ export default function RestaurantCard({
       // bottom of the list on its own. Greyscale plus the reopening time beside
       // the name says it once and still lets someone see the food and decide to
       // come back at nine.
-      className="block card !bg-shellup overflow-hidden !rounded-3xl"
+      className="block card !bg-shellup overflow-hidden !rounded-2xl"
     >
       {/* 5:2, trimmed again on 2026-08-07 at Wael's request after seeing it
           rendered at real phone width. On a 390px screen (minus the app's 16px
@@ -168,7 +168,7 @@ export default function RestaurantCard({
         )}
 
         {rated && !closed && (
-          <span className="absolute bottom-2 right-2 bg-white/95 text-[12px] rounded-lg px-2 py-0.5 shadow-sm">
+          <span className="absolute bottom-2 right-2 bg-white/95 text-[12px] rounded-md px-2 py-0.5 shadow-sm">
             {ratingChip}
           </span>
         )}
