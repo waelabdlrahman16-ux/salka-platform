@@ -632,7 +632,7 @@ export default function Track() {
               <p className="text-2xl mb-1">🎉</p>
               <p className="font-bold text-lg">{driverName} وصل تحت</p>
               {o.payment_method === 'cod' && (
-                <p className="text-sm opacity-90 mt-0.5">معاه طلبك · جهّز {o.total} ج.م كاش</p>
+                <p className="text-sm opacity-90 mt-0.5">معاه طلبك • جهّز {o.total} ج.م كاش</p>
               )}
             </div>
           )}
@@ -901,7 +901,7 @@ export default function Track() {
               {o.payment_method === 'online' ? 'مدفوع أونلاين'
                 : o.payment_method === 'instapay' ? 'مدفوع InstaPay'
                 : o.cod_deposit_amount != null
-                  ? `كاش عند الاستلام · العربون ${o.cod_deposit_amount} ج.م مدفوع`
+                  ? `كاش عند الاستلام • العربون ${o.cod_deposit_amount} ج.م مدفوع`
                   : 'كاش عند الاستلام'}
             </p>
           </div>
@@ -969,7 +969,7 @@ export default function Track() {
                   <span className="block">{it.image_url ? `${it.name} × ${it.qty}` : it.name}</span>
                   {(it.combo_name || it.size_name || (it.addon_names && it.addon_names.length > 0)) && (
                     <span className="block text-xs text-mist mt-0.5">
-                      {[it.combo_name && `🍟 كومبو ${it.combo_name}`, it.size_name, ...(it.addon_names ?? [])].filter(Boolean).join(' · ')}
+                      {[it.combo_name && `🍟 كومبو ${it.combo_name}`, it.size_name, ...(it.addon_names ?? [])].filter(Boolean).join(' • ')}
                     </span>
                   )}
                 </span>

@@ -211,7 +211,7 @@ export default function CustomizeSheet({
           <button className="btn-ghost flex-1" onClick={onClose}>إلغاء</button>
           <button className="btn-sea flex-1" disabled={!valid}
             onClick={() => onConfirm(chosenCombo ? null : sizeId, chosenCombo?.id ?? null, addonIds, qty)}>
-            إضافة · {total} ج.م
+            إضافة • {total} ج.م
           </button>
         </div>
       </div>

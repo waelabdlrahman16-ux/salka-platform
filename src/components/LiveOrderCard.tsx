@@ -77,7 +77,7 @@ export default function LiveOrderCard() {
         </span>
         <div className="min-w-0 flex-1">
           <p className="font-bold text-[15px] truncate">{STAGE_LABEL[stage]}</p>
-          <p className="text-xs text-mist truncate">#{live.id} · {live.restaurant_name}</p>
+          <p className="text-xs text-mist truncate">#{live.id} • {live.restaurant_name}</p>
         </div>
         <span className={`text-[11px] font-bold rounded-full px-2.5 py-0.5 border shrink-0 ${
           late ? 'bg-warningbg border-warningline text-warning'

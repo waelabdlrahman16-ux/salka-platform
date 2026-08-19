@@ -121,7 +121,7 @@ export default function Catalog() {
                   <p className="font-bold truncate">{r.name}</p>
                   <p className="text-xs text-mist mt-0.5">
                     {r.vendor_type === 'pharmacy' ? 'صيدلية' : r.vendor_type === 'supermarket' ? 'سوبر ماركت' : 'مطعم'}
-                    {' · '}{countFor(r.id)} صنف
+                    {' • '}{countFor(r.id)} صنف
                   </p>
                 </div>
                 {/* Same U+2039 bidi-mirroring bug as the chooser: the

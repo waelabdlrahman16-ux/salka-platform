@@ -278,7 +278,7 @@ export default function FeedAdsAdmin({ restaurants }: { restaurants: Restaurant[
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-sm truncate">{r.title || 'من غير عنوان'}</p>
               <p className="text-xs text-mist truncate">
-                {r.link_url || 'من غير لينك'}{note ? ` · ${note}` : ''}
+                {r.link_url || 'من غير لينك'}{note ? ` • ${note}` : ''}
               </p>
             </div>
             <div className="flex items-center gap-1 shrink-0">

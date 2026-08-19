@@ -340,7 +340,7 @@ export default function RestaurantDetail() {
             <span className="font-bold text-sm truncate">{restaurant.name}</span>
             {visibleCat && !menuQuery && (
               <>
-                <span className="text-mist text-xs shrink-0">·</span>
+                <span className="text-mist text-xs shrink-0">•</span>
                 <span className="text-xs text-mist truncate">{visibleCat}</span>
               </>
             )}
@@ -405,7 +405,7 @@ export default function RestaurantDetail() {
                   <span className="font-bold text-foam">{restaurant.rating_real ?? restaurant.rating}</span>
                   <span>({restaurant.review_count})</span>
                 </span>
-                <span aria-hidden="true">·</span>
+                <span aria-hidden="true">•</span>
               </>
             )}
             {/* A range, not a single number. "16 دقيقة تقريبًا" reads as a
@@ -414,7 +414,7 @@ export default function RestaurantDetail() {
             {totalEta && <span>يوصلك {totalEta.min}–{totalEta.max} دقيقة</span>}
             {restaurant.category && (
               <>
-                {totalEta && <span aria-hidden="true">·</span>}
+                {totalEta && <span aria-hidden="true">•</span>}
                 <span className="truncate">{restaurant.category}</span>
               </>
             )}
@@ -607,7 +607,7 @@ export default function RestaurantDetail() {
           and the basket survives in sessionStorage -- so a reload onto this
           page with a combo in the cart priced it from menu_items.price
           (دوبل بيج تايستي: 433 instead of the 575 combo) and, in the tick
-          before items land at all, showed "0 ج.م · شوف العربة" over a badge of
+          before items land at all, showed "0 ج.م • شوف العربة" over a badge of
           1. The count is always true, so it stays; only the money waits. */}
       {cart.count > 0 && restaurant.is_open && (
         <div className="fixed inset-x-0 z-30 px-4"
@@ -623,7 +623,7 @@ export default function RestaurantDetail() {
               </span>
             </span>
             <span className="font-bold text-sm shrink-0">
-              {optionsLoaded ? `${Math.round(cartSubtotal * 100) / 100} ج.م · ` : ''}شوف العربة
+              {optionsLoaded ? `${Math.round(cartSubtotal * 100) / 100} ج.م • ` : ''}شوف العربة
             </span>
           </button>
         </div>

@@ -123,7 +123,7 @@ export default function PushCoveragePanel() {
       {probe && (
         <div className={`card p-3 text-sm font-semibold ${probe.results.some(r => !r.alive) ? 'border-dangerline text-danger' : 'border-successline/40 text-success'}`}>
           فحصنا {probe.checked} جهاز من غير ما نبعت أي تنبيه: {probe.results.filter(r => r.alive).length} سليم
-          {probe.results.some(r => !r.alive) && ` · ${probe.results.filter(r => !r.alive).length} محتاج إعادة تسجيل`}
+          {probe.results.some(r => !r.alive) && ` • ${probe.results.filter(r => !r.alive).length} محتاج إعادة تسجيل`}
         </div>
       )}
       {probeError && <div className="card p-3 text-sm text-danger font-semibold">{probeError}</div>}

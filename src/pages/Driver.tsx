@@ -580,7 +580,7 @@ export default function DriverPage() {
   async function reportProblem(a: Assignment) {
     const reason = await promptSheet({
       title: 'في مشكلة في الطلب ده؟ اكتبها والإدارة هتشوفها فورًا',
-      body: 'مثال: العنوان غلط · العميل رفض الطلب · البوابة مش بتدخلني',
+      body: 'مثال: العنوان غلط • العميل رفض الطلب • البوابة مش بتدخلني',
       multiline: true,
       placeholder: 'اكتب المشكلة…',
     })
@@ -777,7 +777,7 @@ export default function DriverPage() {
       <div className="flex items-center justify-between mb-3">
         <div className="min-w-0">
           <h1 className="text-xl font-bold truncate"><Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />{driver.name}</h1>
-          <p className="text-sm text-mist"><Icon name="star" size="sm" className="inline-block align-[-0.15em] me-1" />{driver.rating} · {driver.total_deliveries} توصيلة{streakDays >= 2 ? ` · 🔥 ${streakDays} أيام متتالية` : ''}</p>
+          <p className="text-sm text-mist"><Icon name="star" size="sm" className="inline-block align-[-0.15em] me-1" />{driver.rating} • {driver.total_deliveries} توصيلة{streakDays >= 2 ? ` • 🔥 ${streakDays} أيام متتالية` : ''}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Toggle
@@ -867,9 +867,9 @@ export default function DriverPage() {
                   renders "— ج.م" instead of a confident zero -- and this overlay,
                   the one full-screen moment a driver actually reads their
                   earnings, used the raw values. Deliver an order with stats down
-                  and the celebration said "0 ج.م · 0 طلبات". */}
+                  and the celebration said "0 ج.م • 0 طلبات". */}
               <p className="text-lg font-bold text-sea mt-0.5">
-                {money(todayEarnings)} · {haveStats ? `${todayOrders} طلبات` : '—'}
+                {money(todayEarnings)} • {haveStats ? `${todayOrders} طلبات` : '—'}
               </p>
               {/* Was a hardcoded "+10" that could disagree with the recorded
                   earning. Show the tier progress instead -- it is the number
@@ -928,9 +928,9 @@ export default function DriverPage() {
               <div key={a.id} className="card !rounded-2xl p-3.5 flex items-center gap-3">
                 <span className="w-9 h-9 rounded-full bg-successbg text-success grid place-items-center shrink-0"><Icon name="check" size="md" /></span>
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-sm truncate">#{o.id} · {o.restaurants?.name}</p>
+                  <p className="font-semibold text-sm truncate">#{o.id} • {o.restaurants?.name}</p>
                   <p className="text-xs text-mist mt-0.5 truncate">
-                    {o.zone}{a.delivered_at ? ` · ${fmtWhen(a.delivered_at)}` : ''}
+                    {o.zone}{a.delivered_at ? ` • ${fmtWhen(a.delivered_at)}` : ''}
                   </p>
                 </div>
                 <span className="text-sm font-semibold text-success shrink-0">
@@ -952,7 +952,7 @@ export default function DriverPage() {
               <div key={a.id} className="card !rounded-2xl p-3.5 flex items-center gap-3 border-line">
                 <span className="w-9 h-9 rounded-full bg-shellup text-mist grid place-items-center shrink-0"><Icon name="x" size="md" /></span>
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-sm truncate">#{o.id} · {o.restaurants?.name}</p>
+                  <p className="font-semibold text-sm truncate">#{o.id} • {o.restaurants?.name}</p>
                   <p className="text-xs text-mist mt-0.5">
                     {dead.moved ? 'الطلب اتنقل لمندوب تاني'
                       : a.status === 'Failed' ? 'اتسجل كتوصيل فاشل'
@@ -1347,7 +1347,7 @@ export default function DriverPage() {
         onToggle={e => setRefsOpen((e.currentTarget as HTMLDetailsElement).open)}>
         <summary className="card px-4 py-3 cursor-pointer list-none flex items-center justify-between select-none min-h-[44px]">
           <span className="font-semibold text-sm"><Icon name="coins" size="sm" className="inline-block align-[-0.15em] me-1" />الأرباح والورديات</span>
-          <span className="text-mist text-xs">{money(todayEarnings)} · اضغط للتفاصيل</span>
+          <span className="text-mist text-xs">{money(todayEarnings)} • اضغط للتفاصيل</span>
         </summary>
         <div className="mt-3">
       <div className="grid grid-cols-2 gap-3 mb-3">
@@ -1516,7 +1516,7 @@ export default function DriverPage() {
               <div key={sw.request_id} className="card p-4 border-coral-300">
                 <p className="font-semibold">
                   {new Date(sw.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', weekday: 'long', day: 'numeric', month: 'numeric' })}
-                  {' '}· {sw.start_time.slice(0,5)}–{sw.end_time.slice(0,5)}
+                  {' '}• {sw.start_time.slice(0,5)}–{sw.end_time.slice(0,5)}
                 </p>
                 <p className="text-sm text-mist mt-1">مطلوبة من {sw.requested_by_name}</p>
                 {sw.reason && <p className="text-sm text-mist mt-0.5">"{sw.reason}"</p>}

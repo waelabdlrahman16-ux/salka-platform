@@ -207,8 +207,8 @@ export default function FunnelPanel() {
                     {(v.customization_opened > 0 || v.checkout_blocked > 0) && (
                       <p className="text-[10px] text-mist mt-1">
                         فتح الاختيارات {v.customization_opened}
-                        {' · '}خرج من غير إضافة {v.customization_abandoned}
-                        {' · '}اتعطّل في التأكيد {v.checkout_blocked}
+                        {' • '}خرج من غير إضافة {v.customization_abandoned}
+                        {' • '}اتعطّل في التأكيد {v.checkout_blocked}
                       </p>
                     )}
                   </div>

@@ -89,8 +89,8 @@ export default function AddonsCard({
                   {isSwap
                     ? <><Icon name="repeat" size="xs" className="inline-block align-[-0.15em] me-1" />اختيار واحد بس</>
                     : <><Icon name="plus" size="xs" className="inline-block align-[-0.15em] me-1" />إضافات، أكتر من واحدة</>}
-                  {g.min_select > 0 && <span className="text-coral-700"> · مطلوب</span>}
-                  {!isSwap && g.max_select != null && <span> · حد أقصى {g.max_select}</span>}
+                  {g.min_select > 0 && <span className="text-coral-700"> • مطلوب</span>}
+                  {!isSwap && g.max_select != null && <span> • حد أقصى {g.max_select}</span>}
                 </p>
               </div>
               <button className="text-danger text-xs shrink-0 disabled:opacity-40" disabled={disabled} onClick={() => onRemoveGroup(g.id)}>حذف المجموعة</button>

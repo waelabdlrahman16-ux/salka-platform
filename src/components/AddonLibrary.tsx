@@ -162,7 +162,7 @@ export default function AddonLibrary({ restaurantId, items }: {
             </div>
           ) : (
             <button className="text-[11px] text-sea font-semibold mb-2 block" onClick={() => setAdvanced(true)}>
-              تحت مجموعة "{groupName}" · غيّرها
+              تحت مجموعة "{groupName}" • غيّرها
             </button>
           )}
           <p className="text-[11px] text-mist mb-2">السعر هنا بداية بس. تعدّله على كل صنف لوحده بعدين.</p>

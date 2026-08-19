@@ -646,7 +646,7 @@ export default function Home() {
                         <span className="min-w-0 flex-1">
                           <span className="block text-sm font-semibold truncate">{h.name}</span>
                           <span className="block text-xs text-mist truncate">
-                            {h.restaurant_name}{h.is_open ? '' : ' · مقفول'}
+                            {h.restaurant_name}{h.is_open ? '' : ' • مقفول'}
                           </span>
                         </span>
                         {/* "من" when the number is a starting point, exactly as

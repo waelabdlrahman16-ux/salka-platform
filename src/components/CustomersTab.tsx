@@ -217,7 +217,7 @@ export default function CustomersTab() {
       <div className="grid grid-cols-3 gap-2">
         <Stat label="عملاء" value={String(totals.people)} />
         <Stat label="طلبوا فعلًا" value={String(totals.ordered)} />
-        <Stat label="رجعوا تاني" value={`${totals.returned} · ${totals.repeatRate}%`} />
+        <Stat label="رجعوا تاني" value={`${totals.returned} • ${totals.repeatRate}%`} />
         <Stat label="إجمالي الإنفاق" value={money(totals.revenue)} />
         <Stat label="متوسط للعميل"
           value={money(totals.ordered ? totals.revenue / totals.ordered : 0)} />
@@ -269,13 +269,13 @@ export default function CustomersTab() {
                 </div>
                 <p dir="ltr" className="text-sm text-mist mt-0.5 text-right">{dial(c.phone)}</p>
                 <p className="text-xs text-mist mt-0.5 truncate">
-                  {[c.last_zone, c.last_unit].filter(Boolean).join(' · ') || 'لسه مافيش عنوان'}
+                  {[c.last_zone, c.last_unit].filter(Boolean).join(' • ') || 'لسه مافيش عنوان'}
                 </p>
               </div>
               <div className="text-left shrink-0">
                 <p className="font-bold">{money(c.spend)}</p>
                 <p className="text-xs text-mist mt-0.5">
-                  {c.delivered} مكتمل{c.cancelled > 0 ? ` · ${c.cancelled} ملغي` : ''}
+                  {c.delivered} مكتمل{c.cancelled > 0 ? ` • ${c.cancelled} ملغي` : ''}
                 </p>
                 <p className="text-xs text-mist mt-0.5">
                   {c.days_quiet === null ? 'مطلبش' : c.days_quiet === 0 ? 'النهارده' : `ساكت ${c.days_quiet} يوم`}
@@ -429,7 +429,7 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
             <Field label="آخر طلب" value={day(c.last_at)} />
             <Field label="سجّل معانا" value={day(c.signed_up_at)} />
             <Field label="رصيد المحفظة" value={money(c.wallet)} />
-            <Field label="آخر مكان" value={[c.last_zone, c.last_unit].filter(Boolean).join(' · ') || '—'} />
+            <Field label="آخر مكان" value={[c.last_zone, c.last_unit].filter(Boolean).join(' • ') || '—'} />
             <Field label="أكتر مطعم" value={c.favourite_vendor || '—'} />
             <Field label="طريقة الدفع" value={c.last_payment || '—'} />
             <Field label="تقييمه للمندوبين" value={c.avg_rating_given ? `${c.avg_rating_given} ★` : '—'} />
@@ -440,7 +440,7 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
               <p className="font-bold text-sm text-danger">شكاوى ({detail.complaints.length})</p>
               {detail.complaints.map(x => (
                 <div key={x.id} className="text-xs">
-                  <p className="font-semibold">#{x.order_id} · {x.category || 'شكوى'} · {x.status || 'مفتوحة'}</p>
+                  <p className="font-semibold">#{x.order_id} • {x.category || 'شكوى'} • {x.status || 'مفتوحة'}</p>
                   {x.description && <p className="text-mist mt-0.5">{x.description}</p>}
                 </div>
               ))}
@@ -496,15 +496,15 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
               {detail?.orders.map(o => (
                 <div key={o.id} className="border border-line rounded-xl p-3">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-bold text-sm">#{o.id} · {o.vendor_name || 'طلب خاص'}</span>
+                    <span className="font-bold text-sm">#{o.id} • {o.vendor_name || 'طلب خاص'}</span>
                     <span className="text-xs text-mist">{dayTime(o.created_at)}</span>
                   </div>
                   <div className="flex items-center gap-2 mt-1 flex-wrap text-xs text-mist">
                     <span className="font-semibold text-foam">{orderStatusLabel(o.status)}</span>
-                    <span>·</span>
+                    <span>•</span>
                     <span>{money(o.total)}</span>
-                    {o.payment_method && <><span>·</span><span>{o.payment_method}</span></>}
-                    {o.driver_name && <><span>·</span><span>{o.driver_name}</span></>}
+                    {o.payment_method && <><span>•</span><span>{o.payment_method}</span></>}
+                    {o.driver_name && <><span>•</span><span>{o.driver_name}</span></>}
                   </div>
                   {o.items && <p className="text-xs text-mist mt-1.5">{o.items}</p>}
                   {o.request_notes && <p className="text-xs text-mist mt-1"><Icon name="penToSquare" size="xs" className="inline-block align-[-0.15em] me-1" />{o.request_notes}</p>}

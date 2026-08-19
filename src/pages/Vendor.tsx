@@ -177,13 +177,13 @@ function RideHistoryPanel({ restaurantId }: { restaurantId: number }) {
       {rides.map(o => (
         <div key={o.id} className="card p-3.5">
           <div className="flex items-center justify-between">
-            <p className="font-semibold text-sm">#{o.id} · {o.customer_name}</p>
+            <p className="font-semibold text-sm">#{o.id} • {o.customer_name}</p>
             <span className="text-xs font-semibold text-mist">{orderStatusLabel(o.status)}</span>
           </div>
           <p className="text-mist text-xs mt-0.5">{o.zone}، وحدة {o.unit_number}</p>
           <p className="text-xs text-mist mt-1">
             {new Date(o.created_at).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'short' })}
-            {o.payment_mode === 'driver_pays' ? ` · المندوب دفع ${o.collect_amount} ج.م` : ' · مدفوع مقدمًا'}
+            {o.payment_mode === 'driver_pays' ? ` • المندوب دفع ${o.collect_amount} ج.م` : ' • مدفوع مقدمًا'}
           </p>
         </div>
       ))}
@@ -414,7 +414,7 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
             {recent.map(o => (
               <div key={o.id} className="card p-3.5 flex items-center justify-between text-sm">
                 <div>
-                  <p className="font-semibold">#{o.id} · {o.customer_name}</p>
+                  <p className="font-semibold">#{o.id} • {o.customer_name}</p>
                   <p className="text-mist text-xs mt-0.5">{o.zone}، وحدة {o.unit_number}</p>
                 </div>
                 <span className="text-xs font-semibold text-mist">{orderStatusLabel(o.status)}</span>
@@ -725,7 +725,7 @@ function KitchenVendor({ rid }: { rid: number }) {
           <Icon name={ok ? 'check' : 'x'} size="sm" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-sm truncate">#{o.id} · {o.customer_name}</p>
+          <p className="font-semibold text-sm truncate">#{o.id} • {o.customer_name}</p>
           <p className="text-xs text-mist mt-0.5 truncate">{label}</p>
         </div>
         <span className="text-xs text-mist shrink-0">{o.zone}</span>
@@ -820,7 +820,7 @@ function KitchenVendor({ rid }: { rid: number }) {
 
         {/* A custom_request order writes NO order_items rows -- the whole list
             lives in orders.request_items -- so this ticket used to render an
-            empty box. The pharmacist was being asked to press "قبول · 20 د" on
+            empty box. The pharmacist was being asked to press "قبول • 20 د" on
             an order whose contents only the admin and the customer could see.
             There are no prices here because there are none yet: the admin quotes
             them by phone, and pricing_status stays 'pending_quote' until then. */}
@@ -867,7 +867,7 @@ function KitchenVendor({ rid }: { rid: number }) {
                   <span className="block text-xs text-mist mt-0.5">
                     {/* The combo goes first and is marked: it changes what the
                         kitchen actually assembles, not just how much it costs. */}
-                    {[it.combo_name && `🍟 كومبو ${it.combo_name}`, it.size_name, ...(it.addon_names ?? [])].filter(Boolean).join(' · ')}
+                    {[it.combo_name && `🍟 كومبو ${it.combo_name}`, it.size_name, ...(it.addon_names ?? [])].filter(Boolean).join(' • ')}
                   </span>
                 )}
               </span>
@@ -909,7 +909,7 @@ function KitchenVendor({ rid }: { rid: number }) {
                 {[15, 20, 30].map(m => (
                   <button key={m} className="btn-sea flex-1 !rounded-2xl !text-base !py-3.5"
                     disabled={busyOrder === o.id} onClick={() => advance(o, 'preparing', m)}>
-                    {busyOrder === o.id ? '…' : `قبول · ${m} د`}
+                    {busyOrder === o.id ? '…' : `قبول • ${m} د`}
                   </button>
                 ))}
               </div>
@@ -932,7 +932,7 @@ function KitchenVendor({ rid }: { rid: number }) {
                 {[15, 20, 30].map(m => (
                   <button key={m} className="btn-sea flex-1 !rounded-2xl !text-sm !py-2.5 active:scale-95 transition-transform"
                     disabled={busyOrder === o.id} onClick={() => advance(o, 'preparing', m)}>
-                    {busyOrder === o.id ? '…' : `قبول · ${m} د`}
+                    {busyOrder === o.id ? '…' : `قبول • ${m} د`}
                   </button>
                 ))}
               </div>
@@ -1064,7 +1064,7 @@ function KitchenVendor({ rid }: { rid: number }) {
           <div className="space-y-2">
             {slots.map(sl => (
               <div key={sl.id} className="flex items-center justify-between bg-night border border-line rounded-xl p-2.5 text-sm">
-                <span><bdi dir="ltr">{sl.start_time.slice(0, 5)} – {sl.end_time.slice(0, 5)}</bdi> · سعة {sl.capacity}</span>
+                <span><bdi dir="ltr">{sl.start_time.slice(0, 5)} – {sl.end_time.slice(0, 5)}</bdi> • سعة {sl.capacity}</span>
                 <Toggle on={!!sl.active} onChange={() => toggleSlot(sl)} label="فعّالة" labelOff="موقوفة" />
               </div>
             ))}
@@ -1090,7 +1090,7 @@ function KitchenVendor({ rid }: { rid: number }) {
       {reliability && reliability.total_orders > 0 && (
         <p className="text-xs text-mist mb-4">
           آخر 30 يوم: {reliability.total_orders} طلب
-          {reliability.avg_accept_minutes !== null && ` · متوسط وقت القبول ${reliability.avg_accept_minutes} دقيقة`}
+          {reliability.avg_accept_minutes !== null && ` • متوسط وقت القبول ${reliability.avg_accept_minutes} دقيقة`}
         </p>
       )}
       {(!reliability || reliability.total_orders === 0) && <div className="mb-4" />}

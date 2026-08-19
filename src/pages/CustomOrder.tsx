@@ -444,7 +444,7 @@ export default function CustomOrder() {
             const today = next?.scheduled_date === cairoToday()
             return (
               <button key={v.id}
-                className="card p-3 w-full text-right flex items-center gap-3 hover:border-sea/40 transition-colors"
+                className="card px-2.5 py-2.5 w-full text-right flex items-center gap-2.5 hover:border-sea/40 transition-colors"
                 onClick={() => setVendor(v)}>
                 {/* Salka's OWN two errand destinations get an icon; every other
                     vendor in this list is a real brand and keeps its logo.
@@ -452,21 +452,21 @@ export default function CustomOrder() {
                     customer recognises by their mark -- Krispy Kreme, Costa and KFC
                     are the opposite, and stripping their logos made them harder to
                     find, not more consistent. */}
-                <span className="w-12 h-12 rounded-lg overflow-hidden grid place-items-center shrink-0"
+                <span className="w-8 h-8 rounded-lg overflow-hidden grid place-items-center shrink-0 border border-line"
                   style={(v.vendor_type === 'pharmacy' || v.vendor_type === 'supermarket')
                     ? { background: VENDOR_TYPE_ART[v.vendor_type].tint,
                         color: VENDOR_TYPE_ART[v.vendor_type].ink }
                     : { background: art.tint }}>
                   {v.vendor_type === 'pharmacy' || v.vendor_type === 'supermarket'
-                    ? <Icon name={VENDOR_TYPE_ART[v.vendor_type].icon} size="lg" />
+                    ? <Icon name={VENDOR_TYPE_ART[v.vendor_type].icon} size="md" />
                     : v.logo_url
                         ? <img src={v.logo_url} alt="" loading="eager" className="w-full h-full object-cover"
                             onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
-                        : <Icon name="storefront" size="lg" className="text-mist" />}
+                        : <Icon name="storefront" size="md" className="text-mist" />}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-2">
-                    <span className="font-bold text-[15px] truncate">{v.name}</span>
+                  <span className="flex items-baseline gap-1.5 min-w-0">
+                    <span className="font-bold text-[15px] truncate leading-tight">{v.name}</span>
                     {/* «مفتوحة» carried no information: a shop that is closed is not
                         in this list at all, so the badge was true of every row and
                         told you nothing. «فترات محددة» stays -- that one is a real
@@ -478,7 +478,7 @@ export default function CustomOrder() {
                   {v.description && (
                     <span className="block text-xs text-mist mt-0.5 truncate">{v.description}</span>
                   )}
-                  <span className="block text-xs text-mist mt-1">
+                  <span className="block text-xs text-mist mt-0.5">
                     {/* The fee already waited for a compound; the TIME did not, and
                         it should have. prep_minutes + 20 treats the drive as a
                         constant, on a coast that runs 31km -- so an unlocated
@@ -488,15 +488,14 @@ export default function CustomOrder() {
                         wherever you are. */}
                     {deliveryFee === null
                       ? 'التوصيل والوقت حسب مكانك'
-                      : `التوصيل ${deliveryFee} ج.م · خلال ${v.prep_minutes + 20} دقيقة تقريبًا`}
+                      : `التوصيل ${deliveryFee} ج.م • خلال ${v.prep_minutes + 20} دقيقة تقريبًا`}
                     {/* Slots are the vendor's own schedule, so they hold wherever
                         you are and print either way. */}
                     {usesSlots && (next
-                      ? ` · أقرب فترة ${today ? '' : 'بكرة '}${next.start_time.slice(0, 5)}`
-                      : ' · مفيش فترات دلوقتي')}
+                      ? ` • أقرب فترة ${today ? '' : 'بكرة '}${next.start_time.slice(0, 5)}`
+                      : ' • مفيش فترات دلوقتي')}
                   </span>
                 </span>
-                <Icon name="chevronLeft" size="xs" className="text-mist shrink-0" />
               </button>
             )
           })}
@@ -557,7 +556,7 @@ export default function CustomOrder() {
           "إزاي بيشتغل؟". Someone who wants paracetamol should not have to read
           an explainer to get to a text box. */}
       <p className="text-mist text-sm mb-3">
-        هنتصل بيك بسعر الأصناف قبل ما نجهّز حاجة · مفيش دفع دلوقتي ·{' '}
+        هنتصل بيك بسعر الأصناف قبل ما نجهّز حاجة • مفيش دفع دلوقتي •{' '}
         <button className="text-sea font-semibold underline" onClick={() => setHowOpen(o => !o)}>
           {howOpen ? 'إخفاء' : 'إزاي بيشتغل؟'}
         </button>
@@ -670,7 +669,7 @@ export default function CustomOrder() {
                   className={`card p-3 text-right ${on ? 'border-sea' : ''}`}
                   onClick={() => setSlot(sl)}>
                   <p className="text-sm font-semibold">{sl.start_time.slice(0, 5)}–{sl.end_time.slice(0, 5)}</p>
-                  <p className="text-xs text-mist mt-0.5">{today ? 'النهاردة' : 'بكرة'} · باقي {sl.remaining}</p>
+                  <p className="text-xs text-mist mt-0.5">{today ? 'النهاردة' : 'بكرة'} • باقي {sl.remaining}</p>
                 </button>
               )
             })}
@@ -776,7 +775,7 @@ export default function CustomOrder() {
             <span className="flex-1 min-w-0">
               <span className="block text-sm font-bold">اطلب زي المرة اللي فاتت</span>
               <span className="block text-xs text-mist truncate mt-0.5">
-                {lastRequest.request_items.map(it => it.name).join(' · ')}
+                {lastRequest.request_items.map(it => it.name).join(' • ')}
               </span>
             </span>
           </button>
@@ -906,8 +905,8 @@ export default function CustomOrder() {
             <p className="text-xs text-mist">
               {rxPath && lines.length === 0
                 ? 'روشتة مرفوعة'
-                : [rxPath ? 'روشتة مرفوعة' : null, lines.map(l => `${l.name}${l.qty > 1 ? ` ×${l.qty}` : ''}`).join(' · ')]
-                    .filter(Boolean).join(' · ')}
+                : [rxPath ? 'روشتة مرفوعة' : null, lines.map(l => `${l.name}${l.qty > 1 ? ` ×${l.qty}` : ''}`).join(' • ')]
+                    .filter(Boolean).join(' • ')}
             </p>
           </div>
 
@@ -920,8 +919,8 @@ export default function CustomOrder() {
           onClick={() => setAddressExpanded(true)}>
           <Icon name="locationDot" size="md" className="shrink-0 mt-0.5" />
           <span className="flex-1 min-w-0">
-            <span className="block font-bold text-sm">{selectedCompound?.name} · {unit}</span>
-            <span className="block text-xs text-mist mt-0.5 truncate">{name} · <span dir="ltr">{phone}</span></span>
+            <span className="block font-bold text-sm">{selectedCompound?.name} • {unit}</span>
+            <span className="block text-xs text-mist mt-0.5 truncate">{name} • <span dir="ltr">{phone}</span></span>
           </span>
           <span className="text-sea text-xs font-semibold shrink-0 mt-1"><Icon name="pencilSimple" size="xs" className="inline-block align-[-0.15em] me-0.5" />تغيير</span>
         </button>
@@ -945,7 +944,7 @@ export default function CustomOrder() {
                         setAddressExpanded(false)
                       }}>
                       <span className="block text-sm font-bold">{a.label || a.compound_name}</span>
-                      <span className="block text-xs text-mist">{a.compound_name} · {a.unit_number}</span>
+                      <span className="block text-xs text-mist">{a.compound_name} • {a.unit_number}</span>
                     </button>
                   )
                 })}

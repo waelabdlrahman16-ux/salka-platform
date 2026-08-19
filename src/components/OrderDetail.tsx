@@ -101,7 +101,7 @@ export function OrderLines({ order }: { order: Order }) {
           {(l.combo_name || l.size_name || (l.addon_names && l.addon_names.length > 0)) && (
             <span className="block text-xs text-mist">
               {[l.combo_name && `كومبو ${l.combo_name}`, l.size_name, ...(l.addon_names ?? [])]
-                .filter(Boolean).join(' · ')}
+                .filter(Boolean).join(' • ')}
             </span>
           )}
         </div>

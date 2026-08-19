@@ -158,7 +158,7 @@ export default function CartPage() {
                 <h3 className="font-semibold text-sm truncate">{item.name}</h3>
                 {(sizeName || comboName || addonNames.length > 0) && (
                   <p className="text-xs text-mist mt-0.5 truncate">
-                    {[comboName && `🍟 ${comboName}`, sizeName, ...addonNames].filter(Boolean).join(' · ')}
+                    {[comboName && `🍟 ${comboName}`, sizeName, ...addonNames].filter(Boolean).join(' • ')}
                   </p>
                 )}
                 <p className="text-sm mt-0.5">

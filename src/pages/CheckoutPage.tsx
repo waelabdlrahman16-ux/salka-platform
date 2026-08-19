@@ -204,7 +204,7 @@ export default function CheckoutPage() {
       .then(({ data }) => setDiscounts(data ?? []))
     // A failed read, a missing row or a value of "0" all left this null, and
     // the deposit warning is gated on it being non-null -- so the customer was
-    // shown no payment terms at all, tapped 'تأكيد الطلب · 1215 ج.م' believing
+    // shown no payment terms at all, tapped 'تأكيد الطلب • 1215 ج.م' believing
     // it was cash on delivery, and landed on a full-screen InstaPay wall. The
     // old bug quoted the WRONG terms; this one quoted none. Both are the same
     // shape: a server-owned number the screen guesses at.
@@ -468,7 +468,7 @@ export default function CheckoutPage() {
               return (
                 <button key={`${sl.id}-${sl.scheduled_date}`} className={`card p-3 text-right ${on ? 'border-sea' : ''}`} onClick={() => setSlot(sl)}>
                   <p className="text-sm font-semibold">{sl.start_time.slice(0, 5)}–{sl.end_time.slice(0, 5)}</p>
-                  <p className="text-xs text-mist mt-0.5">{today ? 'النهاردة' : 'بكرة'} · باقي {sl.remaining}</p>
+                  <p className="text-xs text-mist mt-0.5">{today ? 'النهاردة' : 'بكرة'} • باقي {sl.remaining}</p>
                 </button>
               )
             })}
@@ -704,7 +704,7 @@ export default function CheckoutPage() {
           </label>
           {/* The same disclosure the cash path already gets, for the same
               reason. An InstaPay order is BORN at awaiting_payment: the button
-              says «تأكيد الطلب · {finalTotal} ج.م», the basket is emptied, and
+              says «تأكيد الطلب • {finalTotal} ج.م», the basket is emptied, and
               the customer lands on a full-screen transfer wall they were never
               warned about -- and nothing is cooked until they pay. That exact
               complaint was fixed for the cash-deposit path and left open here,
@@ -728,7 +728,7 @@ export default function CheckoutPage() {
               <span>
                 {item?.name} × {l.qty}
                 {(sizeName || comboName || addonNames.length > 0) && (
-                  <span className="text-mist"> ({[comboName && `🍟 ${comboName}`, sizeName, ...addonNames].filter(Boolean).join(' · ')})</span>
+                  <span className="text-mist"> ({[comboName && `🍟 ${comboName}`, sizeName, ...addonNames].filter(Boolean).join(' • ')})</span>
                 )}
               </span>
               <span>
@@ -748,7 +748,7 @@ export default function CheckoutPage() {
           </span>
         </div>
         {promoDiscount > 0 && (
-          <div className="flex justify-between text-sm text-success"><span>كود خصم {promoCode.trim().toUpperCase()} · {PROMO_SCOPE_LABEL[promoQuote?.applies_to ?? 'all']}</span><span>-{promoDiscount} ج.م</span></div>
+          <div className="flex justify-between text-sm text-success"><span>كود خصم {promoCode.trim().toUpperCase()} • {PROMO_SCOPE_LABEL[promoQuote?.applies_to ?? 'all']}</span><span>-{promoDiscount} ج.م</span></div>
         )}
         <div className="flex justify-between text-sm text-mist">
           <span>رسوم الخدمة</span>
@@ -856,7 +856,7 @@ export default function CheckoutPage() {
         {saving ? 'جاري التجهيز…'
           : deliveryFee === null ? (feeLoading ? 'بنحسب التوصيل…' : 'تأكيد الطلب')
           : serviceFee === null ? (serviceFeeLoading ? 'بنحسب رسوم الخدمة…' : 'تأكيد الطلب')
-          : `تأكيد الطلب · ${finalTotal} ج.م`}
+          : `تأكيد الطلب • ${finalTotal} ج.م`}
       </button>
 
       <p className="text-xs text-mist text-center mt-3">
