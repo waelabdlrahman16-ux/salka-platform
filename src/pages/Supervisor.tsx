@@ -288,13 +288,13 @@ export default function Supervisor() {
 
       {escalations.length > 0 && (
         <div className="card p-4 mb-4 border-red-400/50 bg-red-500/5">
-          <p className="font-bold mb-3">🚨 مندوبين محتاجين قرار ({escalations.length})</p>
+          <p className="font-bold mb-3"><Icon name="siren" size="sm" className="inline-block align-[-0.15em] me-1" />مندوبين محتاجين قرار ({escalations.length})</p>
           <div className="space-y-2.5">
             {escalations.map(a => (
               <div key={a.id} className="bg-night border border-line rounded-xl p-3">
                 <p className="font-semibold text-sm">طلب #{a.order_id}: {a.orders?.restaurants?.name}</p>
                 <p className="text-xs text-mist mt-0.5">
-                  <Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />{a.drivers?.name} · 👤 {a.orders?.customer_name} ·{' '}
+                  <Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />{a.drivers?.name} · <Icon name="user" size="xs" className="inline-block align-[-0.15em] me-1" />{a.orders?.customer_name} ·{' '}
                   <a className="text-sea" dir="ltr" href={`tel:${a.orders?.customer_phone}`}>{a.orders?.customer_phone}</a>
                 </p>
                 <p className="text-xs text-sandink mt-1">
@@ -317,7 +317,7 @@ export default function Supervisor() {
              above the phone-call list rather than beside it. */}
       {needsQuote.length > 0 && (
         <>
-          <h2 className="font-bold mb-2.5">🧾 محتاج تسعير ({needsQuote.length})</h2>
+          <h2 className="font-bold mb-2.5"><Icon name="receipt" size="sm" className="inline-block align-[-0.15em] me-1" />محتاج تسعير ({needsQuote.length})</h2>
           <div className="space-y-3 mb-6">
             {needsQuote.map(o => (
               <QuoteCard key={o.id} order={o} addr={addr(o)}
@@ -332,15 +332,15 @@ export default function Supervisor() {
       {/* 0b. Priced, now go and buy it. */}
       {needsShopping.length > 0 && (
         <>
-          <h2 className="font-bold mb-2.5">🛒 اشتري وجهّز ({needsShopping.length})</h2>
+          <h2 className="font-bold mb-2.5"><Icon name="cartShopping" size="sm" className="inline-block align-[-0.15em] me-1" />اشتري وجهّز ({needsShopping.length})</h2>
           <div className="space-y-3 mb-6">
             {needsShopping.map(o => (
               <div key={o.id} className="card p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <h3 className="font-bold">#{o.id} · {o.restaurants?.name}</h3>
-                    <p className="text-xs text-mist mt-0.5">👤 {o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
-                    <p className="text-xs text-mist mt-0.5">📍 {addr(o)}</p>
+                    <p className="text-xs text-mist mt-0.5"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
+                    <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{addr(o)}</p>
                   </div>
                   <div className="text-left shrink-0">
                     <span className="font-bold text-sea block">{o.total} ج.م</span>
@@ -373,7 +373,7 @@ export default function Supervisor() {
       {/* 1. The phone call. This is the supervisor's actual job: the restaurant
              does not have a screen, so nothing moves until someone rings them
              and then records the answer here. */}
-      <h2 className="font-bold mb-2.5">☎️ كلّم المطعم ({needsKitchen.length})</h2>
+      <h2 className="font-bold mb-2.5"><Icon name="phone" size="sm" className="inline-block align-[-0.15em] me-1" />كلّم المطعم ({needsKitchen.length})</h2>
       {needsKitchen.length === 0 && (
         <div className="card p-5 text-center text-mist text-sm mb-6">مفيش طلبات مستنية مكالمة</div>
       )}
@@ -383,8 +383,8 @@ export default function Supervisor() {
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <h3 className="font-bold">#{o.id} · {o.restaurants?.name}</h3>
-                <p className="text-xs text-mist mt-0.5">👤 {o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
-                <p className="text-xs text-mist mt-0.5">📍 {addr(o)}</p>
+                <p className="text-xs text-mist mt-0.5"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
+                <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{addr(o)}</p>
               </div>
               <div className="text-left shrink-0">
                 <span className="font-bold text-sea block">{o.total} ج.م</span>
@@ -429,7 +429,7 @@ export default function Supervisor() {
       </div>
 
       {/* 2. Dispatch */}
-      <h2 className="font-bold mb-2.5">🛵 جاهز ومحتاج مندوب ({unassigned.length})</h2>
+      <h2 className="font-bold mb-2.5"><Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />جاهز ومحتاج مندوب ({unassigned.length})</h2>
       {unassigned.length === 0 && (
         <div className="card p-5 text-center text-mist text-sm mb-6">مفيش طلبات جاهزة مستنية مندوب</div>
       )}
@@ -439,8 +439,8 @@ export default function Supervisor() {
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="font-bold text-sm">#{o.id} · {o.restaurants?.name}</p>
-                <p className="text-xs text-mist mt-0.5">👤 {o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
-                <p className="text-xs text-mist mt-0.5">📍 {addr(o)}</p>
+                <p className="text-xs text-mist mt-0.5"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
+                <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{addr(o)}</p>
               </div>
               <div className="text-left shrink-0">
                 <span className="font-bold text-sea block">{o.total} ج.م</span>
@@ -464,7 +464,7 @@ export default function Supervisor() {
       <PhoneOrderForm onCreated={load} />
 
       {/* 3. In flight */}
-      <h2 className="font-bold mb-2.5">🚚 توصيلات جارية ({assignments.length})</h2>
+      <h2 className="font-bold mb-2.5"><Icon name="van" size="sm" className="inline-block align-[-0.15em] me-1" />توصيلات جارية ({assignments.length})</h2>
       {assignments.length === 0 && (
         <div className="card p-5 text-center text-mist text-sm">مفيش توصيلات جارية</div>
       )}
@@ -474,9 +474,9 @@ export default function Supervisor() {
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="font-bold text-sm truncate">#{a.order_id} · {a.orders?.restaurants?.name}</p>
-                <p className="text-xs text-mist mt-0.5">🛵 {a.drivers?.name} · محاولة {a.attempt_number}</p>
-                {a.orders && <p className="text-xs text-mist mt-0.5">👤 {a.orders.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${a.orders.customer_phone}`}>{a.orders.customer_phone}</a></p>}
-                <p className="text-xs text-mist mt-0.5">📍 {a.orders ? addr(a.orders) : '—'}</p>
+                <p className="text-xs text-mist mt-0.5"><Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />{a.drivers?.name} · محاولة {a.attempt_number}</p>
+                {a.orders && <p className="text-xs text-mist mt-0.5"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{a.orders.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${a.orders.customer_phone}`}>{a.orders.customer_phone}</a></p>}
+                <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{a.orders ? addr(a.orders) : '—'}</p>
               </div>
               <span className="text-xs font-semibold bg-shellup rounded-full px-2.5 py-1 shrink-0">
                 {assignmentStatusLabel(a.status)}
@@ -531,7 +531,7 @@ function CustomerNote({ order }: { order: Order }) {
   if (!note) return null
   return (
     <div className="mt-3 border border-sand/40 bg-sand/10 rounded-xl p-3">
-      <p className="text-xs font-bold text-sandink">💬 ملاحظة العميل</p>
+      <p className="text-xs font-bold text-sandink"><Icon name="chatCircle" size="sm" className="inline-block align-[-0.15em] me-1" />ملاحظة العميل</p>
       <p className="text-sm mt-1 font-semibold whitespace-pre-wrap">{note}</p>
     </div>
   )
@@ -550,7 +550,7 @@ function PaymentSummary({ order }: { order: Order }) {
         : order.payment_method
   const collect = order.collect_amount ?? (order.payment_method === 'cod' ? order.total : null)
   const deposit = order.cod_deposit_amount
-  if (collect == null && !deposit) return <p className="text-xs text-mist mt-2">💳 {method}</p>
+  if (collect == null && !deposit) return <p className="text-xs text-mist mt-2"><Icon name="creditCard" size="sm" className="inline-block align-[-0.15em] me-1" />{method}</p>
   return (
     <div className="mt-2 rounded-xl bg-shellup px-3 py-2 text-xs text-mist flex flex-wrap gap-x-3 gap-y-1">
       <span><Icon name="creditCard" size="sm" className="inline-block align-[-0.15em] me-1" />{method}</span>
@@ -584,8 +584,8 @@ function QuoteCard({ order, addr, busy, onConfirm, onCancel }: {
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="font-bold">#{order.id} · {order.restaurants?.name}</h3>
-          <p className="text-xs text-mist mt-0.5">👤 {order.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${order.customer_phone}`}>{order.customer_phone}</a></p>
-          <p className="text-xs text-mist mt-0.5">📍 {addr}</p>
+          <p className="text-xs text-mist mt-0.5"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{order.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${order.customer_phone}`}>{order.customer_phone}</a></p>
+          <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{addr}</p>
         </div>
         <span className={`text-xs font-semibold rounded-full px-2.5 py-1 shrink-0 ${
           late ? 'bg-red-500/15 text-red-700' : urgent ? 'bg-sand/20 text-sandink' : 'bg-shellup text-mist'

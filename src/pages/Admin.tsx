@@ -1679,7 +1679,8 @@ export default function Admin() {
     load(true)
   }
 
-  const vehicleLabel = (v: string) => v === 'van' ? '🚐 فان' : '🏍️ موتوسيكل'
+  const vehicleLabel = (v: string) => v === 'van'
+    ? <><Icon name="van" size="xs" className="inline-block align-[-0.15em] me-1" />فان</> : <><Icon name="moped" size="xs" className="inline-block align-[-0.15em] me-1" />موتوسيكل</>
   const fmtTime = (iso: string | null) => iso ? new Date(iso).toLocaleString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : null
 
   // Only orders where the CUSTOMER has said they transferred.
@@ -1700,9 +1701,10 @@ export default function Admin() {
     && o.status === 'awaiting_payment'
     && o.instapay_claimed_at != null)
 
-  const CATEGORY_LABEL: Record<string, string> = {
-    missing_item: '📦 نقص صنف', wrong_item: '✗ صنف غلط', driver_conduct: '🛵 مشكلة مع المندوب',
-    quality: '👎 جودة الطلب', other: '❓ حاجة تانية'
+  const CATEGORY_LABEL: Record<string, React.ReactNode> = {
+    missing_item: <><Icon name="boxOpen" size="xs" className="inline-block align-[-0.15em] me-1" />نقص صنف</>, wrong_item: <><Icon name="x" size="xs" className="inline-block align-[-0.15em] me-1" />صنف غلط</>,
+    driver_conduct: <><Icon name="moped" size="xs" className="inline-block align-[-0.15em] me-1" />مشكلة مع المندوب</>,
+    quality: <><Icon name="thumbsDown" size="xs" className="inline-block align-[-0.15em] me-1" />جودة الطلب</>, other: <><Icon name="question" size="xs" className="inline-block align-[-0.15em] me-1" />حاجة تانية</>
   }
 
   async function flagDriverDispute(c: Complaint) {
@@ -1758,7 +1760,7 @@ export default function Admin() {
     <div className="mt-2.5 bg-night border border-line rounded-xl p-3 text-sm space-y-1">
       <p><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
       <p><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{addr(o)}</p>
-      {o.customer_note && <p className="text-sandink">📝 {o.customer_note}</p>}
+      {o.customer_note && <p className="text-sandink"><Icon name="penToSquare" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_note}</p>}
     </div>
   )
 
@@ -1802,7 +1804,7 @@ export default function Admin() {
             </span>
           )}
           <button className="btn-ghost !py-1.5 !px-3 text-xs" onClick={manualRefresh} disabled={refreshing}>
-            {refreshing ? 'جاري التحديث…' : '🔄 حدّث'}
+            {refreshing ? 'جاري التحديث…' : <><Icon name="repeat" size="sm" className="inline-block align-[-0.15em] me-1" />حدّث</>}
           </button>
         </div>
       </div>
@@ -1829,7 +1831,7 @@ export default function Admin() {
           60-minute Accepted and 90-minute Out_for_Delivery cases were invisible. */}
       {stalled.length > 0 && (
         <div className="card p-4 mb-4 border-red-400/50 bg-red-500/5">
-          <p className="font-bold mb-3">⏳ طلبات واقفة محتاجة تدخّل ({stalled.length})</p>
+          <p className="font-bold mb-3"><Icon name="hourglass" size="sm" className="inline-block align-[-0.15em] me-1" />طلبات واقفة محتاجة تدخّل ({stalled.length})</p>
           <div className="space-y-2.5">
             {stalled.map(o => {
               const hrs = Math.floor(o.minutes_stalled / 60)
@@ -1848,7 +1850,7 @@ export default function Admin() {
                       <p className="text-xs text-mist mt-0.5">
                         <Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a>
                       </p>
-                      <p className="text-xs text-mist mt-0.5">📍 {o.compound_name ?? '—'}</p>
+                      <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{o.compound_name ?? '—'}</p>
                     </div>
                     <span className="text-xs font-semibold bg-red-500/10 text-red-700 rounded-full px-2.5 py-1 shrink-0">
                       {orderStatusLabel(o.status)}
@@ -1892,7 +1894,7 @@ export default function Admin() {
                       <button className="btn-sea !py-1.5 text-xs flex-1 min-w-[7rem]"
                         disabled={accountBusy === `instapay-${o.id}`}
                         onClick={() => full && confirmInstapayPayment(full)}>
-                        {accountBusy === `instapay-${o.id}` ? '…' : '💳 تأكيد الاستلام'}
+                        {accountBusy === `instapay-${o.id}` ? '…' : <><Icon name="creditCard" size="sm" className="inline-block align-[-0.15em] me-1" />تأكيد الاستلام</>}
                       </button>
                     )}
 
@@ -1942,7 +1944,7 @@ export default function Admin() {
 
       {noAnswerReports.length > 0 && (
         <div className="card p-4 mb-4 border-red-400/50 bg-red-500/5">
-          <p className="font-bold mb-3">☎️ عملاء ما ردوش على المندوب ({noAnswerReports.length})</p>
+          <p className="font-bold mb-3"><Icon name="phone" size="sm" className="inline-block align-[-0.15em] me-1" />عملاء ما ردوش على المندوب ({noAnswerReports.length})</p>
           <div className="space-y-2.5">
             {noAnswerReports.map(a => {
               const o = a.orders
@@ -1950,11 +1952,11 @@ export default function Admin() {
               return (
                 <div key={a.id} className="bg-night border border-line rounded-xl p-3">
                   <p className="font-semibold text-sm">طلب #{o.id}: {o.restaurants?.name}: {o.total} ج.م</p>
-                  <p className="text-xs text-mist mt-0.5">👤 {o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
-                  <p className="text-xs text-mist mt-0.5">📍 {addr(o)}</p>
+                  <p className="text-xs text-mist mt-0.5"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
+                  <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{addr(o)}</p>
                   <p className="text-xs text-sandink mt-1">
                     {a.delivery_problem_reason
-                      ? `🛵 المندوب بلّغ: ${a.delivery_problem_reason}`
+                      ? <><Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />{`المندوب بلّغ: ${a.delivery_problem_reason}`}</>
                       : 'المندوب اتصل ومردش حد، اتبلّغ الإدارة'}
                   </p>
                   <div className="flex gap-2 mt-2.5 flex-wrap">
@@ -1973,7 +1975,7 @@ export default function Admin() {
 
       {pendingInstapay.length > 0 && (
         <div className="card p-4 mb-4 border-sand/50 bg-sand/5">
-          <p className="font-bold mb-3">📲 تحويلات InstaPay بانتظار التأكيد ({pendingInstapay.length})</p>
+          <p className="font-bold mb-3"><Icon name="mobileScreen" size="sm" className="inline-block align-[-0.15em] me-1" />تحويلات InstaPay بانتظار التأكيد ({pendingInstapay.length})</p>
           <div className="space-y-2.5">
             {pendingInstapay.map(o => (
               <div key={o.id} className="bg-night border border-line rounded-xl p-3 flex items-center justify-between gap-3">
@@ -2069,10 +2071,10 @@ export default function Admin() {
                 </span>
               </div>
               {o.order_type === 'custom_request' && (
-                <p className="text-sandink text-sm mt-1.5">🧾 طلب خاص{o.pricing_status === 'pending_quote' ? '، لسه محتاج تسعير من تبويب الطلبات' : ''}</p>
+                <p className="text-sandink text-sm mt-1.5"><Icon name="receipt" size="sm" className="inline-block align-[-0.15em] me-1" />طلب خاص{o.pricing_status === 'pending_quote' ? '، لسه محتاج تسعير من تبويب الطلبات' : ''}</p>
               )}
               {o.order_type === 'pickup_request' && (
-                <p className="text-sm mt-1.5">🛵 طلب مندوب بس{o.payment_mode === 'driver_pays' ? `، المندوب يدفع ${o.collect_amount} ج.م` : ''}</p>
+                <p className="text-sm mt-1.5"><Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />طلب مندوب بس{o.payment_mode === 'driver_pays' ? `، المندوب يدفع ${o.collect_amount} ج.م` : ''}</p>
               )}
               {/* Was request_items-only, so a normal catalog order -- the
                   common case -- showed no items at all here: an admin
@@ -2085,9 +2087,9 @@ export default function Admin() {
               </div>
               <PriceBreakdown order={o} />
               {isCooking(o) && (
-                <p className="text-mist text-sm mt-1.5">👨‍🍳 لسه بيتحضر، متاح للمندوبين خلال {minsUntilDispatch(o)} دقيقة</p>
+                <p className="text-mist text-sm mt-1.5"><Icon name="forkKnife" size="sm" className="inline-block align-[-0.15em] me-1" />لسه بيتحضر، متاح للمندوبين خلال {minsUntilDispatch(o)} دقيقة</p>
               )}
-              {isLate(o) && <p className="text-red-600 text-sm mt-1.5">⚠ محدش استلم الطلب</p>}
+              {isLate(o) && <p className="text-red-600 text-sm mt-1.5"><Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />محدش استلم الطلب</p>}
               {(() => {
                 const priorAttempts = assignments.filter(a => a.order_id === o.id && a.status !== 'Offered')
                 return priorAttempts.length > 0 ? (
@@ -2120,7 +2122,7 @@ export default function Admin() {
                       <div className="flex items-start justify-between">
                         <div>
                           <h2 className="font-bold">#{a.order_id} · {a.orders?.restaurants?.name}</h2>
-                          <p className="text-sm text-mist mt-0.5">🛵 {a.drivers?.name} · محاولة {a.attempt_number}</p>
+                          <p className="text-sm text-mist mt-0.5"><Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />{a.drivers?.name} · محاولة {a.attempt_number}</p>
                         </div>
                         <span className="text-xs font-semibold bg-shellup rounded-full px-2.5 py-1">{assignmentStatusLabel(a.status)}</span>
                       </div>
@@ -2179,7 +2181,7 @@ export default function Admin() {
               <div className="flex items-start justify-between">
                 <div>
                   <h2 className="font-bold">{d.name}</h2>
-                  <p className="text-sm text-mist mt-0.5">★ {d.rating} · {d.total_deliveries} توصيلة · {vehicleLabel(d.vehicle_type)} · {d.vehicle_plate}</p>
+                  <p className="text-sm text-mist mt-0.5"><Icon name="star" size="sm" className="inline-block align-[-0.15em] me-1" />{d.rating} · {d.total_deliveries} توصيلة · {vehicleLabel(d.vehicle_type)} · {d.vehicle_plate}</p>
                   <p className="text-sm text-mist mt-0.5" dir="ltr">{d.phone}</p>
                   <p className="text-xs text-mist mt-1">إنستاباي: {d.instapay_number || d.phone}</p>
                   {/* So you can match the binding against the phone in the
@@ -2188,7 +2190,7 @@ export default function Admin() {
                     <Icon name="mobileScreen" size="sm" className="inline-block align-[-0.15em] me-1" />{d.device_id ? `مربوط بـ ${d.device_label || 'جهاز'}` : 'مش مربوط بجهاز لسه'}
                   </p>
                   {disputeCount > 0 && (
-                    <p className="text-sm text-red-600 font-semibold mt-1">⚠ {disputeCount} مشكلة مؤكدة في السجل</p>
+                    <p className="text-sm text-red-600 font-semibold mt-1"><Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />{disputeCount} مشكلة مؤكدة في السجل</p>
                   )}
                 </div>
                 <span className={d.active ? 'badge-open' : 'badge-closed'}>{driverStatusLabel(d.status)}</span>
@@ -2398,7 +2400,7 @@ export default function Admin() {
 
               {o.order_type === 'custom_request' && (
                 <div className="mt-2.5 bg-sand/10 border border-sand/30 rounded-xl p-3 text-sm space-y-1">
-                  <p className="font-semibold">🧾 طلب خاص</p>
+                  <p className="font-semibold"><Icon name="receipt" size="sm" className="inline-block align-[-0.15em] me-1" />طلب خاص</p>
                   {(o.request_items ?? []).map((it, i) => <p key={i}>• {it.name} × {it.qty}</p>)}
                   {o.request_notes && <p className="italic">"{o.request_notes}"</p>}
                   {o.prescription_path && <div className="pt-1"><PrescriptionLink path={o.prescription_path} /></div>}
@@ -2407,7 +2409,7 @@ export default function Admin() {
 
               {o.order_type === 'pickup_request' && (
                 <div className="mt-2.5 bg-shellup/60 rounded-xl p-3 text-sm space-y-1">
-                  <p className="font-semibold">🛵 طلب مندوب بس</p>
+                  <p className="font-semibold"><Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />طلب مندوب بس</p>
                   <p>{o.payment_mode === 'driver_pays' ? `المندوب يدفع ${o.collect_amount} ج.م ويحصلها كاش` : 'الأوردر متدفوع بالفعل'}</p>
                   {o.request_notes && <p className="italic">"{o.request_notes}"</p>}
                 </div>
@@ -2502,7 +2504,7 @@ export default function Admin() {
                         <Icon name="clock" size="sm" className="inline-block align-[-0.15em] me-1" />{mins} دقيقة{o.sla_minutes ? ` / ${o.sla_minutes}` : ''}{late ? '، متأخر' : ''}
                       </span>
                     )}
-                    <span className="bg-night border border-line rounded-lg px-2 py-1">💵 {cash}</span>
+                    <span className="bg-night border border-line rounded-lg px-2 py-1"><Icon name="moneyBill" size="sm" className="inline-block align-[-0.15em] me-1" />{cash}</span>
                     {/* WHEN, not just why. The reason chip said
                         «customer_cancelled» and nothing else, so the one
                         question you actually ask -- how long did we sit on it
@@ -2530,7 +2532,7 @@ export default function Admin() {
                       an item was missing" had no answer on this screen. */}
                   {o.order_type === 'catalog' && (
                     <div className="pb-2 mb-2 border-b border-line">
-                      <p className="font-semibold mb-1">🧾 الأصناف</p>
+                      <p className="font-semibold mb-1"><Icon name="receipt" size="sm" className="inline-block align-[-0.15em] me-1" />الأصناف</p>
                       {orderItems[o.id] === undefined ? (
                         <p className="text-mist">بنحمّل…</p>
                       ) : orderItems[o.id].length === 0 ? (
@@ -2550,7 +2552,7 @@ export default function Admin() {
                   {/* The money, itemised. The card shows one number; a customer
                       querying their bill is asking about these four. */}
                   <div className="pb-2 mb-2 border-b border-line">
-                    <p className="font-semibold mb-1">💰 الحساب</p>
+                    <p className="font-semibold mb-1"><Icon name="coins" size="sm" className="inline-block align-[-0.15em] me-1" />الحساب</p>
                     <p>المنتجات: {o.subtotal} ج.م</p>
                     <p>التوصيل: {o.delivery_fee} ج.م</p>
                     {Number(o.service_fee ?? 0) > 0 && <p>رسوم الخدمة: {o.service_fee} ج.م</p>}
@@ -2636,8 +2638,8 @@ export default function Admin() {
                   <select className="field !w-auto" value={newRestaurant.vendor_type}
                     onChange={e => setNewRestaurant({ ...newRestaurant, vendor_type: e.target.value })}>
                     <option value="restaurant">🍽️ مطعم</option>
-                    <option value="supermarket">🛒 سوبر ماركت</option>
-                    <option value="pharmacy">💊 صيدلية</option>
+                    <option value="supermarket"><Icon name="cartShopping" size="sm" className="inline-block align-[-0.15em] me-1" />سوبر ماركت</option>
+                    <option value="pharmacy"><Icon name="pill" size="sm" className="inline-block align-[-0.15em] me-1" />صيدلية</option>
                   </select>
                 </div>
                 <button className="btn-sea w-full" disabled={!newRestaurant.name.trim()}
@@ -2666,7 +2668,7 @@ export default function Admin() {
                           <span className="text-[10px] font-bold text-sea bg-sea/10 rounded-full px-1.5 py-0.5 ml-1.5 align-middle">#{r.display_order}</span>
                         )}
                         {r.name}
-                        {r.featured && <span className="text-sm align-middle"> ⭐</span>}
+                        {r.featured && <Icon name="star" size="xs" className="align-middle ms-1" />}
                         {r.archived ? ' (متوقف)' : ''}
                       </h2>
                       <p className="text-sm text-mist mt-0.5">{its.length} صنف · اضغط للتعديل والترتيب</p>
@@ -2711,7 +2713,7 @@ export default function Admin() {
                         value={rankDraft[r.id] ?? (r.display_order == null ? '' : String(r.display_order))}
                         onChange={e => setRankDraft(d => ({ ...d, [r.id]: e.target.value }))}
                         onBlur={() => commitRank(r)} />
-                      <Toggle on={!!r.featured} onChange={() => commitRank(r, !r.featured)} label="مميز ⭐" labelOff="مميز" />
+                      <Toggle on={!!r.featured} onChange={() => commitRank(r, !r.featured)} label="مميز" labelOff="مميز" />
                     </div>
                     <p className="text-[11px] text-mist mt-2 leading-relaxed">
                       الرقم = المركز (١ يعني الأول). سيبه فاضي يعني مش مرتّب.
@@ -2737,7 +2739,7 @@ export default function Admin() {
                     <div className="text-xs text-mist">
                       <p>{uploadingImage === `r${r.id}` ? 'جاري رفع الشعار…' : 'الشعار، بيظهر جنب الاسم'}</p>
                       {r.logo_url && (
-                        <button className="text-red-500 font-semibold mt-1" onClick={() => removeLogo(r)}>✗ إزالة الشعار</button>
+                        <button className="text-red-500 font-semibold mt-1" onClick={() => removeLogo(r)}><Icon name="x" size="sm" className="inline-block align-[-0.15em] me-1" />إزالة الشعار</button>
                       )}
                     </div>
                   </div>
@@ -2807,7 +2809,9 @@ export default function Admin() {
                     <button
                       className={`text-xs font-semibold ${r.archived ? 'text-emerald-700' : 'text-red-500'}`}
                       onClick={() => archiveRestaurant(r, !r.archived)}>
-                      {r.archived ? '↩ تفعيل المطعم تاني' : '⛔ إيقاف المطعم، يختفي من التطبيق خالص'}
+                      {r.archived
+                      ? <><Icon name="arrowUturn" size="sm" className="inline-block align-[-0.15em] me-1" />تفعيل المطعم تاني</>
+                      : <><Icon name="prohibit" size="sm" className="inline-block align-[-0.15em] me-1" />إيقاف المطعم، يختفي من التطبيق خالص</>}
                     </button>
                   </div>
                 )}
@@ -2831,14 +2835,14 @@ export default function Admin() {
                     <select className="field !w-auto !py-1.5 text-sm mr-auto" value={r.vendor_type}
                       onChange={e => updateRestaurant(r, { vendor_type: e.target.value })}>
                       <option value="restaurant">🍽️ مطعم</option>
-                      <option value="supermarket">🛒 سوبر ماركت</option>
-                      <option value="pharmacy">💊 صيدلية</option>
+                      <option value="supermarket"><Icon name="cartShopping" size="sm" className="inline-block align-[-0.15em] me-1" />سوبر ماركت</option>
+                      <option value="pharmacy"><Icon name="pill" size="sm" className="inline-block align-[-0.15em] me-1" />صيدلية</option>
                     </select>
                     <select className="field !w-auto !py-1.5 text-sm" value={r.order_mode}
                       onChange={e => updateRestaurant(r, { order_mode: e.target.value })}>
-                      <option value="catalog">📋 طلب من القايمة</option>
-                      <option value="custom_request">🧾 طلب خاص (نص حر)</option>
-                      <option value="pickup_request">🛵 طلب مندوب بس (نظامهم الخاص)</option>
+                      <option value="catalog"><Icon name="clipboardText" size="sm" className="inline-block align-[-0.15em] me-1" />طلب من القايمة</option>
+                      <option value="custom_request"><Icon name="receipt" size="sm" className="inline-block align-[-0.15em] me-1" />طلب خاص (نص حر)</option>
+                      <option value="pickup_request"><Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />طلب مندوب بس (نظامهم الخاص)</option>
                     </select>
                   </div>
                 )}
@@ -3036,7 +3040,7 @@ export default function Admin() {
         <div>
           {escalations.length > 0 && (
             <div className="mb-5">
-              <h2 className="font-bold text-red-600 mb-3">⚠ محتاجين تدخل الإدارة</h2>
+              <h2 className="font-bold text-red-600 mb-3"><Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />محتاجين تدخل الإدارة</h2>
               <div className="space-y-3">
                 {escalations.map((e: any) => (
                   <div key={e.id} className="card p-4 border-red-400/60">
@@ -3112,7 +3116,7 @@ export default function Admin() {
         <div className="space-y-5">
           {settlementRequests.length > 0 && (
             <div>
-              <h2 className="font-bold text-sandink mb-3">⏳ طلبات تسوية مبكرة</h2>
+              <h2 className="font-bold text-sandink mb-3"><Icon name="hourglass" size="sm" className="inline-block align-[-0.15em] me-1" />طلبات تسوية مبكرة</h2>
               <div className="space-y-2.5">
                 {settlementRequests.map(sr => (
                   <div key={sr.id} className="card p-3.5 flex items-center justify-between text-sm">
@@ -3144,7 +3148,7 @@ export default function Admin() {
                     <div className="bg-night border border-line rounded-xl p-3">
                       <p className="text-xs text-mist">كاش معاه</p>
                       <p className="font-bold text-sandink mt-0.5">{d.cash_held ?? 0} ج.م</p>
-                      {(d.cash_held ?? 0) >= 3000 && <p className="text-xs text-red-600 mt-1">⚠ تجاوز حد الأمان</p>}
+                      {(d.cash_held ?? 0) >= 3000 && <p className="text-xs text-red-600 mt-1"><Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />تجاوز حد الأمان</p>}
                     </div>
                     <div className="bg-night border border-line rounded-xl p-3">
                       <p className="text-xs text-mist">أرباح مستحقة</p>
@@ -3170,7 +3174,7 @@ export default function Admin() {
 
       {tab === 'wallet' && (
         <div className="card p-4">
-          <p className="font-semibold mb-2">💳 إضافة رصيد لمحفظة عميل</p>
+          <p className="font-semibold mb-2"><Icon name="creditCard" size="sm" className="inline-block align-[-0.15em] me-1" />إضافة رصيد لمحفظة عميل</p>
           <p className="text-xs text-mist mb-3">مفيد لتعويض عميل بعد شكوى، أو أي حالة تانية محتاجة رصيد</p>
           <div className="space-y-2">
             <input className="field" dir="ltr" placeholder="رقم موبايل العميل" aria-label="رقم موبايل العميل" value={walletPhone} onChange={e => setWalletPhone(e.target.value)} />
@@ -3188,7 +3192,7 @@ export default function Admin() {
       {tab === 'refunds' && (
         <div className="space-y-3">
           {pendingRefunds.length === 0 ? (
-            <div className="card p-6 text-center text-mist">مفيش مبالغ مستحقة للاسترداد 👌</div>
+            <div className="card p-6 text-center text-mist">مفيش مبالغ مستحقة للاسترداد</div>
           ) : (
             <>
               <p className="text-sm text-mist leading-relaxed">
@@ -3203,7 +3207,7 @@ export default function Admin() {
                       <p className="text-xs text-mist mt-0.5">
                         <Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a>
                       </p>
-                      {o.cancel_reason && <p className="text-xs text-mist mt-0.5">📝 {o.cancel_reason}</p>}
+                      {o.cancel_reason && <p className="text-xs text-mist mt-0.5"><Icon name="penToSquare" size="sm" className="inline-block align-[-0.15em] me-1" />{o.cancel_reason}</p>}
                       <p className="text-xs text-mist mt-0.5">
                         {o.payment_method === 'cod' ? 'عربون كاش أونلاين' : o.payment_method === 'instapay' ? 'إنستاباي' : o.payment_method}
                         {o.cancelled_at ? ` · اتلغى ${fmtTime(o.cancelled_at)}` : ''}
@@ -3237,7 +3241,7 @@ export default function Admin() {
               amount computed by admin_pending_refunds(). */}
           {lowRatings.length > 0 && (
             <div className="space-y-2 mb-1">
-              <p className="text-sm font-semibold">⭐ تقييمات منخفضة (نجمتين أو أقل)</p>
+              <p className="text-sm font-semibold"><Icon name="star" size="sm" className="inline-block align-[-0.15em] me-1" />تقييمات منخفضة (نجمتين أو أقل)</p>
               {lowRatings.map(rt => (
                 <div key={rt.id} className="card p-3.5 flex items-center justify-between gap-2">
                   <div className="min-w-0">
@@ -3249,8 +3253,8 @@ export default function Admin() {
                     </p>
                   </div>
                   {compensatedOrderIds.has(rt.order_id)
-                    ? <span className="text-xs font-semibold text-emerald-700 shrink-0 px-2.5 py-1.5">✓ اتعوّض</span>
-                    : <button className="btn-ghost !py-1.5 !px-2.5 text-xs shrink-0" onClick={() => compensateFromRating(rt)}>💳 تعويض العميل</button>}
+                    ? <span className="text-xs font-semibold text-emerald-700 shrink-0 px-2.5 py-1.5"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />اتعوّض</span>
+                    : <button className="btn-ghost !py-1.5 !px-2.5 text-xs shrink-0" onClick={() => compensateFromRating(rt)}><Icon name="creditCard" size="sm" className="inline-block align-[-0.15em] me-1" />تعويض العميل</button>}
                 </div>
               ))}
             </div>
@@ -3287,20 +3291,20 @@ export default function Admin() {
               </div>
               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 <span className="text-xs font-semibold bg-shellup rounded-full px-2 py-0.5">{CATEGORY_LABEL[c.category] ?? c.category}</span>
-                {c.drivers?.name && <span className="text-xs text-mist">🛵 {c.drivers.name}</span>}
+                {c.drivers?.name && <span className="text-xs text-mist"><Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />{c.drivers.name}</span>}
               </div>
               <p className="text-sm mt-2">{c.description}</p>
               {c.orders && (
-                <p className="text-sm text-mist mt-2">👤 {c.orders.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${c.orders.customer_phone}`}>{c.orders.customer_phone}</a></p>
+                <p className="text-sm text-mist mt-2"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{c.orders.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${c.orders.customer_phone}`}>{c.orders.customer_phone}</a></p>
               )}
               <div className="flex gap-2.5 mt-3 flex-wrap">
                 {c.status !== 'reviewed' && <button className="btn-ghost flex-1 text-sm" onClick={() => updateComplaintStatus(c, 'reviewed')}>قيد المراجعة</button>}
                 {c.status !== 'resolved' && <button className="btn-sea flex-1 text-sm" onClick={() => updateComplaintStatus(c, 'resolved')}>اتحلت</button>}
                 {compensatedOrderIds.has(c.order_id)
-                  ? <span className="text-sm font-semibold text-emerald-700 flex-1 text-center py-2">✓ اتعوّض</span>
-                  : <button className="btn-ghost flex-1 text-sm" onClick={() => compensateFromComplaint(c)}>💳 تعويض العميل</button>}
+                  ? <span className="text-sm font-semibold text-emerald-700 flex-1 text-center py-2"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />اتعوّض</span>
+                  : <button className="btn-ghost flex-1 text-sm" onClick={() => compensateFromComplaint(c)}><Icon name="creditCard" size="sm" className="inline-block align-[-0.15em] me-1" />تعويض العميل</button>}
                 {c.category === 'driver_conduct' && c.driver_id && (
-                  <button className="btn-ghost flex-1 text-sm !text-red-600" onClick={() => flagDriverDispute(c)}>⚠ علّم في سجل المندوب</button>
+                  <button className="btn-ghost flex-1 text-sm !text-red-600" onClick={() => flagDriverDispute(c)}><Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />علّم في سجل المندوب</button>
                 )}
               </div>
             </div>
@@ -3485,7 +3489,7 @@ export default function Admin() {
                 {open && (
                   <div className="mt-3 pt-3 border-t border-line">
                     {explicit.length > 0 && (
-                      <p className="text-xs text-sandink mb-2">⚠ المطعم ده حاليًا مقتصر بس على الأماكن المعلّمة تحت، لو عايزه يرجع يوصل بالمسافة القصوى بس، شيل كل التعليمات.</p>
+                      <p className="text-xs text-sandink mb-2"><Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />المطعم ده حاليًا مقتصر بس على الأماكن المعلّمة تحت، لو عايزه يرجع يوصل بالمسافة القصوى بس، شيل كل التعليمات.</p>
                     )}
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-64 overflow-y-auto">
                       {compounds.map(c => {
@@ -3515,12 +3519,12 @@ export default function Admin() {
             <p className="text-sm text-mist mb-1">كلمة السر</p>
             <p className="font-mono text-sm bg-night border border-line rounded-lg p-2.5 mb-4" dir="ltr">{newCreds.password}</p>
             <div className="flex items-center gap-2 mb-4">
-              <p className="text-xs text-sandink flex-1">⚠ ده ظاهر مرة واحدة بس. انسخه وابعته دلوقتي</p>
+              <p className="text-xs text-sandink flex-1"><Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />ده ظاهر مرة واحدة بس. انسخه وابعته دلوقتي</p>
               <button className="btn-sea !py-2 text-xs shrink-0" onClick={() => {
                 navigator.clipboard.writeText(`${newCreds.email}\n${newCreds.password}`)
                 setCredsCopied(true)
                 window.setTimeout(() => setCredsCopied(false), 1500)
-              }}>{credsCopied ? 'اتنسخ ✓' : '📋 نسخ'}</button>
+              }}>{credsCopied ? <>اتنسخ<Icon name="check" size="xs" className="inline-block align-[-0.15em] ms-1" /></> : <><Icon name="clipboardText" size="sm" className="inline-block align-[-0.15em] me-1" />نسخ</>}</button>
             </div>
             <button className="btn-sea w-full" onClick={() => setNewCreds(null)}>تمام</button>
           </div>
@@ -3532,7 +3536,7 @@ export default function Admin() {
           <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
             <h3 id="assign-driver-title" className="font-bold mb-4">اختيار مندوب متاح، طلب #{assigning.id}</h3>
             {assigningNeedsVan && (
-              <p className="text-sandink text-sm mb-3">🚐 الطلب محتاج فان، لسه السعر متأكدش أو الطلب كبير</p>
+              <p className="text-sandink text-sm mb-3"><Icon name="van" size="sm" className="inline-block align-[-0.15em] me-1" />الطلب محتاج فان، لسه السعر متأكدش أو الطلب كبير</p>
             )}
             {/* The refusal has to be readable HERE. The page-level banner sits
                 behind a fixed inset-0 overlay, so a failed assign produced no
@@ -3552,7 +3556,7 @@ export default function Admin() {
                 return (
                   <button key={d.id} className="w-full card !bg-night p-3.5 text-right hover:border-sea/50 transition-colors" onClick={() => assign(assigning, d)}>
                     <p className="font-semibold">{d.name}</p>
-                    <p className="text-sm text-mist mt-0.5">★ {d.rating} · {d.total_deliveries} توصيلة · {vehicleLabel(d.vehicle_type)} · {d.vehicle_plate}</p>
+                    <p className="text-sm text-mist mt-0.5"><Icon name="star" size="sm" className="inline-block align-[-0.15em] me-1" />{d.rating} · {d.total_deliveries} توصيلة · {vehicleLabel(d.vehicle_type)} · {d.vehicle_plate}</p>
                     {driverActiveCount > 0 && (
                       <p className="text-xs text-sandink mt-1">شغال دلوقتي على {driverActiveCount} طلب</p>
                     )}
@@ -3574,7 +3578,7 @@ export default function Admin() {
               دلوقتي مع {reassigning.drivers?.name ?? 'مندوب'} · {assignmentStatusLabel(reassigning.status)}
             </p>
             {reassignNeedsVan && (
-              <p className="text-sandink text-sm mb-3">🚐 الطلب محتاج فان، لسه السعر متأكدش أو الطلب كبير</p>
+              <p className="text-sandink text-sm mb-3"><Icon name="van" size="sm" className="inline-block align-[-0.15em] me-1" />الطلب محتاج فان، لسه السعر متأكدش أو الطلب كبير</p>
             )}
             {modalError && (
               <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3">{modalError}</p>
@@ -3592,7 +3596,7 @@ export default function Admin() {
                     disabled={reassignBusy}
                     onClick={() => reassignOrder(reassigning, d)}>
                     <p className="font-semibold">{d.name}</p>
-                    <p className="text-sm text-mist mt-0.5">★ {d.rating} · {vehicleLabel(d.vehicle_type)} · {d.vehicle_plate}</p>
+                    <p className="text-sm text-mist mt-0.5"><Icon name="star" size="sm" className="inline-block align-[-0.15em] me-1" />{d.rating} · {vehicleLabel(d.vehicle_type)} · {d.vehicle_plate}</p>
                     {driverActiveCount > 0 && (
                       <p className="text-xs text-sandink mt-1">شغال دلوقتي على {driverActiveCount} طلب</p>
                     )}
@@ -3710,7 +3714,7 @@ function DailyReportTab() {
       <div className="flex items-center justify-between gap-2">
         <button className="btn-ghost text-sm" onClick={() => shift(-1)}>اليوم اللي قبله ←</button>
         <span className="font-bold text-sm">{day}</span>
-        <button className="btn-ghost text-sm" onClick={() => shift(1)}>→ اليوم اللي بعده</button>
+        <button className="btn-ghost text-sm" onClick={() => shift(1)}><Icon name="arrowRight" size="sm" className="inline-block align-[-0.15em] me-1" />اليوم اللي بعده</button>
       </div>
 
       {busy && <div className="card p-6 text-center text-mist">بنحسب…</div>}

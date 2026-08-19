@@ -708,7 +708,7 @@ export default function DriverPage() {
   if (deviceLocked) {
     return (
       <div className="max-w-sm mx-auto text-center pt-16">
-        <p className="text-5xl mb-4">📵</p>
+        <Icon name="mobileSlash" size="xl" className="mx-auto mb-4 text-mist" />
         <h1 className="text-xl font-bold mb-2">حسابك مربوط بموبايل تاني</h1>
         <p className="text-sm text-mist leading-relaxed">
           كل حساب مندوب بيشتغل من موبايل واحد بس. لو ده موبايلك الجديد أو غيّرت
@@ -776,8 +776,8 @@ export default function DriverPage() {
     <div className="max-w-lg mx-auto">
       <div className="flex items-center justify-between mb-3">
         <div className="min-w-0">
-          <h1 className="text-xl font-bold truncate">🛵 {driver.name}</h1>
-          <p className="text-sm text-mist">★ {driver.rating} · {driver.total_deliveries} توصيلة{streakDays >= 2 ? ` · 🔥 ${streakDays} أيام متتالية` : ''}</p>
+          <h1 className="text-xl font-bold truncate"><Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />{driver.name}</h1>
+          <p className="text-sm text-mist"><Icon name="star" size="sm" className="inline-block align-[-0.15em] me-1" />{driver.rating} · {driver.total_deliveries} توصيلة{streakDays >= 2 ? ` · 🔥 ${streakDays} أيام متتالية` : ''}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Toggle
@@ -884,7 +884,7 @@ export default function DriverPage() {
                 </p>
               )}
             </div>
-            <button className="btn-sea w-full mt-5" onClick={() => setJustDelivered(null)}>↩ رجوع للرئيسية</button>
+            <button className="btn-sea w-full mt-5" onClick={() => setJustDelivered(null)}><Icon name="arrowUturn" size="sm" className="inline-block align-[-0.15em] me-1" />رجوع للرئيسية</button>
             <p className="text-xs text-mist mt-2">هيرجعلك تلقائي خلال 3 ثواني</p>
           </div>
         </div>
@@ -1008,14 +1008,14 @@ export default function DriverPage() {
                   <h2 className="font-bold truncate">طلب #{o.id}: {o.restaurants?.name}</h2>
                   <p className="text-sm mt-0.5">
                     {o.payment_method === 'instapay' ? (
-                      <span className="inline-flex items-center gap-1 text-sea font-semibold">🔵 مدفوع أونلاين بالكامل، متحصلش فلوس</span>
+                      <span className="inline-flex items-center gap-1 text-sea font-semibold"><span className="w-2 h-2 rounded-full shrink-0 inline-block me-1 bg-current align-[0.05em]" />مدفوع أونلاين بالكامل، متحصلش فلوس</span>
                     ) : o.cod_deposit_amount != null ? (
                       <span className="inline-flex items-center gap-2 flex-wrap">
-                        <span className="text-sea font-semibold">🔵 عربون مدفوع: {o.cod_deposit_amount} ج.م</span>
-                        <span className="text-emerald-700 font-semibold">🟢 حصّل: {Math.round((o.total - o.cod_deposit_amount) * 100) / 100} ج.م</span>
+                        <span className="text-sea font-semibold"><span className="w-2 h-2 rounded-full shrink-0 inline-block me-1 bg-current align-[0.05em]" />عربون مدفوع: {o.cod_deposit_amount} ج.م</span>
+                        <span className="text-emerald-700 font-semibold"><span className="w-2 h-2 rounded-full shrink-0 inline-block me-1 bg-current align-[0.05em]" />حصّل: {Math.round((o.total - o.cod_deposit_amount) * 100) / 100} ج.م</span>
                       </span>
                     ) : (
-                      <span className="text-emerald-700 font-semibold">🟢 حصّل: {o.total} ج.م كاش</span>
+                      <span className="text-emerald-700 font-semibold"><span className="w-2 h-2 rounded-full shrink-0 inline-block me-1 bg-current align-[0.05em]" />حصّل: {o.total} ج.م كاش</span>
                     )}
                   </p>
                 </div>
@@ -1026,7 +1026,7 @@ export default function DriverPage() {
 
               {a.status !== 'Offered' && o.pickup_location_name && (
                 <div className="mt-3 rounded-xl border border-sea/30 bg-sea/10 p-3 text-sm">
-                  <p className="font-bold text-sea">📍 استلم من: {o.pickup_location_name}</p>
+                  <p className="font-bold text-sea"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />استلم من: {o.pickup_location_name}</p>
                   {o.pickup_location_address && <p className="mt-1 text-mist whitespace-pre-wrap">{o.pickup_location_address}</p>}
                 </div>
               )}
@@ -1097,11 +1097,11 @@ export default function DriverPage() {
                   <span>{o.zone}، وحدة {o.unit_number}</span>
                 </p>
                 {o.address_notes && (
-                  <p className="text-sea bg-sea/10 rounded-lg p-2 font-semibold">📝 {o.address_notes}</p>
+                  <p className="text-sea bg-sea/10 rounded-lg p-2 font-semibold"><Icon name="penToSquare" size="sm" className="inline-block align-[-0.15em] me-1" />{o.address_notes}</p>
                 )}
                 {o.customer_note?.trim() && (
                   <div className="border border-sand/40 bg-sand/10 rounded-lg p-2.5">
-                    <p className="text-xs font-bold text-sandink">💬 ملاحظة العميل</p>
+                    <p className="text-xs font-bold text-sandink"><Icon name="chatCircle" size="sm" className="inline-block align-[-0.15em] me-1" />ملاحظة العميل</p>
                     <p className="mt-1 font-semibold whitespace-pre-wrap">{o.customer_note}</p>
                   </div>
                 )}
@@ -1158,7 +1158,7 @@ export default function DriverPage() {
                 )}
                 {a.status === 'Accepted' && !a.arrived_at_restaurant_at && (
                   <button className="btn-sea w-full" disabled={isBusy(`arrived:${a.id}`)} onClick={() => markArrived(a)}>
-                    {isBusy(`arrived:${a.id}`) ? 'لحظة…' : `📍 وصلت ${vendorNoun(a.orders?.restaurants?.vendor_type)}`}
+                    {isBusy(`arrived:${a.id}`) ? 'لحظة…' : <><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{`وصلت ${vendorNoun(a.orders?.restaurants?.vendor_type)}`}</>}
                   </button>
                 )}
                 {a.status === 'Accepted' && a.arrived_at_restaurant_at && (
@@ -1197,17 +1197,17 @@ export default function DriverPage() {
                         </button>
                       )}
                       {cashDue > 0 && a.cash_confirmed_at && (
-                        <p className="text-emerald-800 bg-emerald-500/10 rounded-xl p-3 text-sm font-semibold text-center">✓ استلمت الكاش</p>
+                        <p className="text-emerald-800 bg-emerald-500/10 rounded-xl p-3 text-sm font-semibold text-center"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />استلمت الكاش</p>
                       )}
                       {/* Above the delivery swipe, because it happens before it:
                           arriving is not the same event as handing the bag over,
                           and the customer needs the first one to come outside. */}
                       {a.arrived_at_customer_at ? (
-                        <p className="text-mist text-xs text-center">✓ العميل اتبلّغ إنك وصلت</p>
+                        <p className="text-mist text-xs text-center"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />العميل اتبلّغ إنك وصلت</p>
                       ) : (
                         <button className="btn-ghost w-full text-sm" disabled={isBusy(`arrived:${a.id}`)}
                           onClick={() => markArrivedAtCustomer(a)}>
-                          {isBusy(`arrived:${a.id}`) ? 'لحظة…' : '📍 وصلت. بلّغ العميل'}
+                          {isBusy(`arrived:${a.id}`) ? 'لحظة…' : <><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />وصلت. بلّغ العميل</>}
                         </button>
                       )}
                       <SwipeToConfirm
@@ -1232,12 +1232,12 @@ export default function DriverPage() {
                           </p>
                         ) : !a.called_customer_at ? (
                           <button className="btn-ghost w-full !py-2 text-xs text-mist" disabled={isBusy(`called:${a.id}`)} onClick={() => markCalledCustomer(a)}>
-                            {isBusy(`called:${a.id}`) ? 'لحظة…' : '📞 اتصلت بالعميل ومردش'}
+                            {isBusy(`called:${a.id}`) ? 'لحظة…' : <><Icon name="phone" size="sm" className="inline-block align-[-0.15em] me-1" />اتصلت بالعميل ومردش</>}
                           </button>
                         ) : (a.out_for_delivery_at && (Date.now() - +new Date(a.out_for_delivery_at)) >= 5 * 60000) ? (
                           <button className="btn-danger w-full text-sm" onClick={() => reportNoAnswer(a)}>العميل لسه ما ردش. بلّغ الإدارة</button>
                         ) : (
-                          <p className="text-mist text-xs text-center">✓ اتصلت، لو ما ردش خلال 5 دقايق من خروجك، هيظهر لك زرار الإبلاغ</p>
+                          <p className="text-mist text-xs text-center"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />اتصلت، لو ما ردش خلال 5 دقايق من خروجك، هيظهر لك زرار الإبلاغ</p>
                         )}
                         <button className="btn-ghost w-full !py-2 text-xs text-mist"
                           disabled={isBusy(`problem:${a.id}`)}
@@ -1295,11 +1295,12 @@ export default function DriverPage() {
                   <div className="flex items-start justify-between">
                     <div>
                       <h3 className="font-bold">{o.restaurant_name}</h3>
-                      <p className="text-sm text-mist mt-0.5">📍 {o.zone}</p>
+                      <p className="text-sm text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{o.zone}</p>
                       <p className="text-xs text-mist mt-1">
-                        {notReadyYet ? `🕐 هيبقى جاهز خلال ${minsLeft} د`
-                          : o.kitchen_status === 'ready' ? '✓ جاهز للاستلام'
-                          : o.kitchen_status === 'preparing' ? '👨‍🍳 قيد التحضير' : `🕐 ${vendorNoun(o.vendor_type)} لسه ما بدأش`}
+                        {notReadyYet ? <><Icon name="clock" size="sm" className="inline-block align-[-0.15em] me-1" />{`هيبقى جاهز خلال ${minsLeft} د`}</>
+                          : o.kitchen_status === 'ready' ? <><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />جاهز للاستلام</>
+                          : o.kitchen_status === 'preparing' ? <><Icon name="forkKnife" size="sm" className="inline-block align-[-0.15em] me-1" />قيد التحضير</>
+                          : <><Icon name="clock" size="sm" className="inline-block align-[-0.15em] me-1" />{`${vendorNoun(o.vendor_type)} لسه ما بدأش`}</>}
                       </p>
                     </div>
                     {/* Order value is irrelevant to driver pay under the flat
@@ -1345,7 +1346,7 @@ export default function DriverPage() {
       <details className="mb-5" open={refsOpen}
         onToggle={e => setRefsOpen((e.currentTarget as HTMLDetailsElement).open)}>
         <summary className="card px-4 py-3 cursor-pointer list-none flex items-center justify-between select-none min-h-[44px]">
-          <span className="font-semibold text-sm">💰 الأرباح والورديات</span>
+          <span className="font-semibold text-sm"><Icon name="coins" size="sm" className="inline-block align-[-0.15em] me-1" />الأرباح والورديات</span>
           <span className="text-mist text-xs">{money(todayEarnings)} · اضغط للتفاصيل</span>
         </summary>
         <div className="mt-3">
@@ -1444,7 +1445,7 @@ export default function DriverPage() {
           </div>
         </div>
         {settlementSent ? (
-          <p className="text-emerald-700 text-sm text-center mt-3">✓ طلب التسوية المبكرة وصل للإدارة</p>
+          <p className="text-emerald-700 text-sm text-center mt-3"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />طلب التسوية المبكرة وصل للإدارة</p>
         ) : (
           <button className="btn-ghost w-full mt-3 text-sm" disabled={requestingSettlement || !haveStats || unpaidEarnings === 0} onClick={requestSettlement}>
             {/* disabled:pointer-events-none means a dead button does not even
@@ -1490,7 +1491,7 @@ export default function DriverPage() {
                   )}
                   {requested && myRequestId && (
                     <div className="mt-3">
-                      <p className="text-sandink text-sm">⏳ طلب الاستبدال معروض على باقي المندوبين</p>
+                      <p className="text-sandink text-sm"><Icon name="hourglass" size="sm" className="inline-block align-[-0.15em] me-1" />طلب الاستبدال معروض على باقي المندوبين</p>
                       <button className="btn-danger w-full mt-2 text-sm"
                         onClick={() => escalate(myRequestId)}>
                         محدش وافق. بلّغ الإدارة
@@ -1498,7 +1499,7 @@ export default function DriverPage() {
                     </div>
                   )}
                   {myEscalated.has(sh.id) && (
-                    <p className="text-emerald-700 text-sm mt-3">✓ تم إبلاغ الإدارة، في انتظار تعيين مندوب بديل</p>
+                    <p className="text-emerald-700 text-sm mt-3"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />تم إبلاغ الإدارة، في انتظار تعيين مندوب بديل</p>
                   )}
                 </div>
               )
