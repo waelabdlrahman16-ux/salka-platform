@@ -140,6 +140,12 @@ function BottomNav() {
   const isStaff = isStaffRoute(pathname)
   if (isStaff) return null
 
+  // Not on a restaurant's menu. That page has its own fixed cart bar, so the
+  // two stacked into 120px of permanently occupied screen on a phone, and the
+  // tab bar was inviting the customer to leave the menu they had just opened.
+  // Back is the chevron at the top of that page.
+  if (pathname.startsWith('/restaurant/')) return null
+
   // Pharmacy and supermarket live here rather than as cards on the home
   // screen. As cards they sat below the restaurants competing with them, and
   // they shared that block with a third card, "طلب خاص", whose entire function

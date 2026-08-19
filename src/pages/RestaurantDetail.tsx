@@ -399,34 +399,29 @@ export default function RestaurantDetail() {
         </div>
       )}
 
-      {/* THREE ROWS, not six.
-          Before: back link / logo+name+badge / category / meta / search /
-          chips -- every one a full row, so the first photograph of food began
-          below the fold on a 76-item menu. Status and delivery are short facts
-          and now share the back row; the category folded into the meta line
-          under the name. */}
-      <div className="flex items-center gap-2 mb-2.5">
-        {/* -mr-2 keeps the text where it was while the tappable box grows to the
-            44px minimum. It measured 47x20. */}
-        <Link to="/" className="text-sm text-mist hover:text-foam flex items-center h-11 pl-2 pr-2 -mr-2">
-          {/* The page is RTL, so "back" is to the RIGHT. chevronLeft was
-              rendering a left-pointing arrow next to رجوع, which reads as
-              "forward". Icon.tsx only ships chevronLeft, so it is mirrored
-              rather than adding a near-duplicate glyph. */}
-          <Icon name="chevronLeft" size="xs" className="ml-1 rotate-180" />رجوع
-        </Link>
-        <span className="flex-1" />
-        <span className={restaurant.is_open ? 'badge-open' : 'badge-closed'}>
-          {restaurant.is_open ? 'مفتوح' : 'مغلق'}
-        </span>
-        {deliveryFee !== null && (
-          <span className="text-[11px] font-bold text-coral-700 bg-coral-200 rounded-lg px-2 py-1 shrink-0">
-            {deliveryFee} ج.م توصيل
+      {/* A plain nav bar: one back control, nothing else.
+          «مفتوح» was true of every restaurant whose page you can open -- a
+          closed one cannot be added to at all, and its card on the home screen
+          is already greyed with an opening time -- so the badge asserted
+          nothing. The delivery fee is a property of the COMPOUND, not this
+          vendor: it is the same number on every restaurant and it was already
+          stated in the home header. Repeating it here in coral made the least
+          urgent number on the page the loudest thing on it.
+          The word «رجوع» went with them; a chevron is the standard, and it was
+          the only thing left in an otherwise empty row. */}
+      <div className="flex items-center gap-2 mb-3">
+        {/* Back sits ON the identity row. Alone it needed a 44px row of its
+            own, and that row is why stripping the two badges out of it saved
+            no height at all: the control, not the badges, was setting it. */}
+        <Link to="/" aria-label="رجوع" title="رجوع"
+          className="grid place-items-center min-w-[44px] min-h-[44px] -mr-2.5 shrink-0">
+          {/* The page is RTL, so "back" is to the RIGHT. Icon.tsx only ships
+              chevronLeft, so it is mirrored rather than adding a near-duplicate
+              glyph. */}
+          <span className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 grid place-items-center transition-colors hover:bg-slate-200">
+            <Icon name="chevronLeft" size="sm" className="rotate-180" />
           </span>
-        )}
-      </div>
-
-      <div className="flex items-center gap-3 mb-3">
+        </Link>
         {restaurant.logo_url
           ? <img src={restaurant.logo_url} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0 border border-line" />
           : <div className="w-12 h-12 rounded-xl bg-shellup grid place-items-center shrink-0 text-xl font-bold text-mist">{restaurant.name.charAt(0)}</div>}
@@ -443,8 +438,10 @@ export default function RestaurantDetail() {
               <>
                 <span className="flex items-center gap-1">
                   <Icon name="star" size="xs" className="text-coral-600" />
+                  {/* The count is gone: 3 of 19 vendors have any rating at
+                      all, and telling a customer the 3.5 rests on two opinions
+                      weakens the number rather than backing it. */}
                   <span className="font-bold text-foam">{restaurant.rating_real ?? restaurant.rating}</span>
-                  <span>({restaurant.review_count})</span>
                 </span>
                 <span aria-hidden="true">•</span>
               </>
