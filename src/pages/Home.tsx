@@ -470,8 +470,10 @@ export default function Home() {
           the fee was an 11px pill floating on the far side of the row, 12px
           below the name it belongs to, in a style used nowhere else -- so it
           read as an unrelated alert rather than half of the same fact.
-          Merging them returned 24px at the top of the screen, where 45% of the
-          first viewport was chrome before any food appeared.
+          The label is gone; the fee keeps its own badge, at the far end of the
+          row and vertically centred against the place instead of hanging below
+          it. Note this reclaims no height: min-h-11 was already holding the old
+          two-line button at 44px.
 
           Neutral, not coral. A delivery fee is an ordinary fact, and coral is
           the accent -- it made the one number nobody is worried about the
@@ -479,18 +481,21 @@ export default function Home() {
 
           min-h-11: it measured 42px, two short of the 44px minimum, and this
           is the control that decides which vendors the customer sees at all. */}
-      <button className="text-right w-full min-w-0 min-h-11 flex items-center gap-1.5 mb-3"
-        onClick={() => setPicking(true)}>
-        <Icon name="locationDot" size="sm" className="shrink-0 text-sea" />
-        <span className="font-bold text-[17px] truncate">{selected ? selected.name : 'اختر مكانك'}</span>
-        <Icon name="caretDown" size="xs" className="text-mist shrink-0" />
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <button className="text-right min-w-0 flex-1 min-h-11 flex items-center gap-1.5"
+          onClick={() => setPicking(true)}>
+          <Icon name="locationDot" size="sm" className="shrink-0 text-sea" />
+          <span className="font-bold text-[17px] truncate">{selected ? selected.name : 'اختر مكانك'}</span>
+          <Icon name="caretDown" size="xs" className="text-mist shrink-0" />
+        </button>
+        {/* Its own badge at the far end of the row, centred against the place
+            rather than hung 12px below it. */}
         {deliveryFee !== null && (
-          <>
-            <span aria-hidden="true" className="text-line shrink-0">•</span>
-            <span className="shrink-0 text-[12.5px] text-mist">{deliveryFee} ج.م توصيل</span>
-          </>
+          <span className="shrink-0 text-[11px] font-bold text-mist bg-shellup border border-line rounded-lg px-2.5 py-1">
+            {deliveryFee} ج.م توصيل
+          </span>
         )}
-      </button>
+      </div>
 
       {/* One box, two kinds of answer: vendor names matched locally, dishes
           matched on the server across every vendor delivering here. */}
