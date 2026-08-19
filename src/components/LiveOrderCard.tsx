@@ -20,6 +20,12 @@ function stageOf(status: string): number {
 }
 const STAGE_LABEL = ['استلمنا طلبك', 'بيتجهّز دلوقتي', 'في الطريق إليك', 'تم التوصيل']
 
+// One icon per stage, filled. A coloured dot said "something is live" and
+// nothing else; these say WHICH thing, so the state is readable before the
+// words are. Filled rather than outline because the card reports a state --
+// an outline glyph reads as a control you can press.
+const STAGE_ICON = ['checkCircle', 'storefront', 'motorcycle', 'locationDot'] as const
+
 /**
  * The home screen had no idea an order was in flight. A customer who placed one
  * and closed the tab came back to a catalogue -- the token lived only in the
@@ -61,7 +67,14 @@ export default function LiveOrderCard() {
     <Link to={`/track/${ref?.token ?? ''}`}
       className="card block p-0 overflow-hidden mb-4 border-successline">
       <div className="p-3.5 flex items-center gap-3">
-        <span className="w-2.5 h-2.5 rounded-full bg-sea shrink-0 ring-4 ring-successbg" />
+        {/* A scheduled order is not "at a stage" -- it is waiting for a date, so
+            it gets the calendar rather than a point on a journey it has not
+            started. */}
+        <span className={`w-9 h-9 rounded-xl grid place-items-center shrink-0 ${
+          late ? 'bg-warningbg text-warning' : 'bg-successbg text-success'}`}>
+          <Icon size="md" filled
+            name={live.scheduled_date ? 'calendarCheck' : STAGE_ICON[stage]} />
+        </span>
         <div className="min-w-0 flex-1">
           <p className="font-bold text-[15px] truncate">{STAGE_LABEL[stage]}</p>
           <p className="text-xs text-mist truncate">#{live.id} · {live.restaurant_name}</p>
