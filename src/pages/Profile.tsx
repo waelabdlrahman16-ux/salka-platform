@@ -1,4 +1,5 @@
 import { useEffect, useState, useId } from 'react'
+import EmptyState from '../components/EmptyState'
 import Icon from '../components/Icon'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
@@ -201,7 +202,7 @@ export default function Profile() {
         )}
 
         {addresses.length === 0 && !editing && (
-          <p className="text-mist text-sm text-center py-6">لسه مفيش عناوين محفوظة</p>
+          <EmptyState compact icon="locationDot" title="لسه مفيش عناوين محفوظة" />
         )}
 
         <div className="space-y-2.5">

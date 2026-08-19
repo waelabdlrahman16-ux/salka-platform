@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import EmptyState from '../components/EmptyState'
 import CategoryArt from '../components/CategoryArt'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
@@ -100,13 +101,12 @@ export default function CartPage() {
 
   if (!cart.restaurantId || validLines.length === 0) {
     return (
-      <div className="text-center py-16">
-        {removedNotice && <p className="text-coral-700 text-sm mb-4 bg-coral-100 rounded-xl p-3 mx-4">{removedNotice}</p>}
-        <Icon name="cartShopping" size="xl" className="mx-auto mb-3 text-mist" />
-        <p className="font-bold text-lg mb-1">عربتك فاضية</p>
-        <p className="text-mist text-sm mb-4">لسه ما ضفتش أي حاجة من المطاعم</p>
-        <button className="btn-sea" onClick={() => nav('/')}>تصفح المطاعم</button>
-      </div>
+      <EmptyState icon="cartShopping" title="عربتك فاضية"
+        body="لسه ما ضفتش أي حاجة من المطاعم"
+        action={{ label: 'تصفح المطاعم', onClick: () => nav('/') }}
+        notice={removedNotice
+          ? <p className="text-coral-700 text-sm mb-4 bg-coral-100 rounded-xl p-3">{removedNotice}</p>
+          : null} />
     )
   }
 

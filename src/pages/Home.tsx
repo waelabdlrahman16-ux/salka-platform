@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import EmptyState from '../components/EmptyState'
 import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useDismissable } from '../lib/useDismissable'
@@ -563,14 +564,16 @@ export default function Home() {
             <div className="flex gap-2 overflow-x-auto pb-1 mb-4 -mx-4 px-4 scrollbar-none">
               {availableKinds.map(({ kind: k, emoji }) => {
                 return (
-                  <button key={k} aria-pressed={kind === k}
-                    className={`shrink-0 w-[74px] rounded-xl border px-2 py-2 transition-colors ${
+                  <button key={k} aria-pressed={kind === k} aria-label={k} title={k}
+                    className={`shrink-0 w-[58px] rounded-xl border px-2 py-2.5 transition-colors ${
                       kind === k
                         ? 'bg-foam text-night border-foam'
                         : 'bg-shell border-line text-foam hover:border-sea/40'}`}
                     onClick={() => setKind(kind === k ? null : k)}>
-                    <span className="block text-xl leading-none" aria-hidden="true">{emoji}</span>
-                    <span className="block text-[11px] font-bold mt-1 truncate">{k}</span>
+                    {/* Icon only. The label lives in aria-label rather than on
+                        screen, so the rail stays a row of recognisable shapes and
+                        a screen reader still hears the category name. */}
+                    <span className="block text-2xl leading-none" aria-hidden="true">{emoji}</span>
                   </button>
                 )
               })}
@@ -656,11 +659,10 @@ export default function Home() {
                 catalogue, so an empty one means the filter matched nothing, not
                 that nowhere delivers to them. */}
             {!restaurantsFailed && shownRestaurants.length === 0 && (
-              <p className="text-mist py-6">
-                {compoundId
-                  ? (kind ? `مفيش مطاعم ${kind} بتوصل لمكانك حاليًا` : 'لا يوجد مطاعم بتوصل لمكانك حاليًا')
-                  : (kind ? `مفيش مطاعم ${kind} متاحة حاليًا` : 'مفيش مطاعم متاحة حاليًا')}
-              </p>
+              <EmptyState compact icon="forkKnife"
+                title={kind ? `مفيش مطاعم ${kind} دلوقتي` : 'مفيش مطاعم متاحة دلوقتي'}
+                body={compoundId ? 'جرب قسم تاني أو شوف اللي هيفتحوا بعدين' : undefined}
+                action={kind ? { label: 'شوف كل المطاعم', onClick: () => setKind(null) } : undefined} />
             )}
             {restaurantFeed}
 
