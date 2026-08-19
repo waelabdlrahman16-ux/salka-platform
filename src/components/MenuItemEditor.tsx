@@ -419,7 +419,7 @@ export default function MenuItemEditor({ item, onClose, onSaved, onDeleted, canM
             <h2 id="menu-item-editor-title" className="font-bold text-lg text-foam">تعديل الصنف</h2>
             {restaurantName && <p className="text-xs text-mist truncate"><Icon name="storefront" size="xs" className="inline-block align-[-0.15em] me-1" />{restaurantName}</p>}
           </div>
-          <button className="text-mist text-sm bg-shell rounded-full px-3 py-1 shrink-0" onClick={onClose}>✗ إغلاق</button>
+          <button className="text-mist text-sm bg-shell rounded-full px-3 py-1 shrink-0" onClick={onClose}><Icon name="x" size="sm" className="inline-block align-[-0.15em] me-1" />إغلاق</button>
         </div>
 
         <BasicInfoCard

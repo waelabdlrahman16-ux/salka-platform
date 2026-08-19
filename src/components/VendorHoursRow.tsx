@@ -152,7 +152,7 @@ export default function VendorHoursRow({ restaurant, onSaved }: {
 
       <div className="flex gap-2 mt-3 pt-2.5 border-t border-line">
         <button className="btn-sea !py-2 !px-5 text-sm" disabled={saving || loading} onClick={save}>
-          {saving ? '…' : saved ? '✓ اتحفظ' : 'حفظ المواعيد'}
+          {saving ? '…' : saved ? <><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />اتحفظ</> : 'حفظ المواعيد'}
         </button>
         <button className="btn-ghost !py-2 !px-3 text-xs" disabled={saving || loading} onClick={load}>
           رجّع الأصلي

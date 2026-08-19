@@ -110,8 +110,8 @@ export default function PhoneOrderForm({ onCreated }: { onCreated: () => void })
   return (
     <div className="card p-4 mb-3">
       <div className="flex items-center justify-between mb-1">
-        <p className="font-bold text-sm">☎️ طلب بالتليفون</p>
-        <button className="text-mist text-xs" onClick={() => { setOpen(false); setDone(null); setError('') }}>إغلاق ✕</button>
+        <p className="font-bold text-sm"><Icon name="phone" size="sm" className="inline-block align-[-0.15em] me-1" />طلب بالتليفون</p>
+        <button className="text-mist text-xs" onClick={() => { setOpen(false); setDone(null); setError('') }}>إغلاق<Icon name="x" size="xs" className="inline-block align-[-0.15em] ms-1" /></button>
       </div>
       <p className="text-xs text-mist mb-3">
         للمطعم اللي أخد الطلب بنفسه وعايز مندوب يوصّله. المندوب هيحصّل فلوس الأكل للمطعم + التوصيل لينا.

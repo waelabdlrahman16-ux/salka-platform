@@ -908,7 +908,7 @@ export default function DriverPage() {
       {/* pool.length guard: this used to print "كل الطلبات اتسلمت ✓" directly
           above a list of unclaimed orders waiting to be taken. */}
       {activeTab === 'active' && liveAssignments.length === 0 && pool.length === 0 && doneAssignments.length > 0 && (
-        <p className="card p-5 text-center text-mist text-sm mb-3">مفيش شغل دلوقتي، كل الطلبات اتسلمت ✓</p>
+        <p className="card p-5 text-center text-mist text-sm mb-3">مفيش شغل دلوقتي، كل الطلبات اتسلمت<Icon name="check" size="xs" className="inline-block align-[-0.15em] ms-1" /></p>
       )}
 
       <div className="space-y-3" ref={orderListRef}>
@@ -1189,7 +1189,7 @@ export default function DriverPage() {
                           disabled={isBusy(`cash:${a.id}`) || cashConfirmed.has(a.id)}
                           onClick={() => confirmCash(a, cashDue)}>
                           <span className={`w-5 h-5 rounded border-2 shrink-0 grid place-items-center ${cashConfirmed.has(a.id) ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-emerald-600'}`}>
-                            {cashConfirmed.has(a.id) ? '✓' : ''}
+                            {cashConfirmed.has(a.id) && <Icon name="check" size="xs" />}
                           </span>
                           <span className="text-emerald-800 font-semibold">
                             {isBusy(`cash:${a.id}`) ? 'جاري التأكيد…' : `أكدت إني استلمت ${cashDue} ج.م كاش من العميل`}
@@ -1212,7 +1212,7 @@ export default function DriverPage() {
                       )}
                       <SwipeToConfirm
                         label={isBusy(`deliver:${a.id}`) ? 'جاري التأكيد…'
-                          : !confirmed ? 'أكد استلام الكاش الأول ☝️'
+                          : !confirmed ? <>أكد استلام الكاش الأول<Icon name="arrowUp" size="xs" className="inline-block align-[-0.15em] ms-1" /></>
                           : 'اسحب لتأكيد التسليم'}
                         disabled={!confirmed || isBusy(`deliver:${a.id}`)}
                         onConfirm={() => setStatus(a, 'Delivered')} />
@@ -1409,7 +1409,7 @@ export default function DriverPage() {
               return (
                 <div key={t.orders} className={`text-center ${i === 0 ? 'text-right' : i === bonus.tiers.length - 1 ? 'text-left' : ''}`}>
                   <p className={`text-[11px] font-bold ${reached ? 'text-sea' : 'text-mist'}`}>
-                    {reached ? '✓ ' : ''}{t.amount} ج.م
+                    {reached && <Icon name="check" size="xs" className="inline-block align-[-0.15em] me-1" />}{t.amount} ج.م
                   </p>
                   <p className="text-[10px] text-mist">{t.orders} طلب</p>
                 </div>

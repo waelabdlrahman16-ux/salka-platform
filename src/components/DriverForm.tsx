@@ -1,4 +1,5 @@
 import { useId, useState } from 'react'
+import Icon from './Icon'
 import { adminAccountDriverAction } from '../lib/adminAccountDriverActions'
 import type { Driver } from '../lib/types'
 import Toggle from './Toggle'
@@ -71,7 +72,7 @@ export default function DriverForm({ initial, onDone, onCancel }: {
     <div className="card p-4 mb-3">
       <div className="flex items-center justify-between mb-3">
         <p className="font-bold text-sm">{f.id ? 'تعديل مندوب' : 'مندوب جديد'}</p>
-        <button className="text-mist text-xs" onClick={onCancel}>إغلاق ✕</button>
+        <button className="text-mist text-xs" onClick={onCancel}>إغلاق<Icon name="x" size="xs" className="inline-block align-[-0.15em] ms-1" /></button>
       </div>
       {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3" role="alert">{error}</p>}
 
