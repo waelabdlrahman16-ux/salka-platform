@@ -138,7 +138,13 @@ export default function BannerRail({ onBanners }: { onBanners?: (has: boolean) =
                 // complete=false, naturalWidth=0 forever, while `new Image()`
                 // on the exact same URL loaded it at 704x704 immediately. The
                 // customer saw a flat colour block where the advert should be.
-                <img src={sized(b.image_url, IMG.wide)} alt={b.title ?? ''} loading="eager" fetchPriority="high"
+                // fetchpriority lowercase, spread past the typings: React 18 does
+                // not know the camelCase form and warns on every home-screen
+                // render, then drops the attribute -- so the hint never reached
+                // the browser anyway. React 19 accepts fetchPriority; until then
+                // this is the spelling that actually works.
+                <img src={sized(b.image_url, IMG.wide)} alt={b.title ?? ''} loading="eager"
+                  {...({ fetchpriority: 'high' } as Record<string, string>)}
                   onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
                   className="absolute inset-0 w-full h-full object-cover" />
               )}
