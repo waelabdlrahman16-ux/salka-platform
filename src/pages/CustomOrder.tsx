@@ -426,12 +426,12 @@ export default function CustomOrder() {
             plain heading over a list of logos had nothing carrying it -- so the
             surface does the work instead of a bigger typeface.
 
-            coral-100 to transparent, not a new colour: the ramp already exists
+            cream to transparent, not a new colour: the token already exists
             and the band has to end in the page's own white or it reads as a
             block with a hard edge rather than a header. The van glyph is the
             same one the tab bar uses for this destination. */}
-        <div className="-mx-4 -mt-6 mb-4 px-4 pt-8 pb-5 bg-gradient-to-b from-coral-100 to-night">
-          <span className="w-11 h-11 rounded-2xl bg-white/70 text-coral-700 grid place-items-center mb-2.5">
+        <div className="-mx-4 -mt-6 mb-4 px-4 pt-8 pb-5 bg-gradient-to-b from-cream to-night">
+          <span className="w-11 h-11 rounded-2xl bg-white/70 text-[#6B4A18] grid place-items-center mb-2.5">
             <Icon name="van" size="lg" />
           </span>
           <h1 className="text-xl font-bold leading-tight">
@@ -597,7 +597,7 @@ export default function CustomOrder() {
           read as one place. Back is the app's icon button rather than a word,
           the vendor's mark identifies where you are, and the fee sits with the
           name instead of on a line of its own. */}
-      <div className="-mx-4 -mt-6 mb-4 px-4 pt-4 pb-5 bg-gradient-to-b from-coral-100 to-night">
+      <div className="-mx-4 -mt-6 mb-4 px-4 pt-4 pb-5 bg-gradient-to-b from-cream to-night">
         <button aria-label="رجوع" title="رجوع"
           className="grid place-items-center min-w-[44px] min-h-[44px] -mr-2.5 mb-1"
           onClick={() => {
@@ -612,7 +612,7 @@ export default function CustomOrder() {
           <span className="w-12 h-12 rounded-xl overflow-hidden grid place-items-center shrink-0 bg-white/70 border border-line">
             {vendor.vendor_type === 'pharmacy' || vendor.vendor_type === 'supermarket'
               ? <Icon name={VENDOR_TYPE_ART[vendor.vendor_type].icon} size="lg"
-                  className={vendor.vendor_type === 'pharmacy' ? 'text-coral-800' : 'text-[#6B4A18]'} />
+                  className="text-[#6B4A18]" />
               : vendor.logo_url
                   ? <img src={vendor.logo_url} alt="" className="w-full h-full object-cover" />
                   : <Icon name="storefront" size="lg" className="text-mist" />}

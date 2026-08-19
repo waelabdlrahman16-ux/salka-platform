@@ -107,6 +107,10 @@ export default {
         // storefront's own". They moved together once; a token each means the
         // next change to one does not silently drag the other.
         warm: '#F5F5F5',
+        // The actual warm cream, kept apart from `warm` once that became a
+        // neutral. This is the accent surface -- gradient headers, errand
+        // tiles -- not a block tint. #6B4A18 on it is 6.95:1.
+        cream: '#F4EEE3',
         sea: '#00625F',       // brand primary = teal-600. Was #0A5F5E, whose comment claimed it
                               // matched the logo exactly; Wael confirmed the logo is #00625F.
                               // 14/765 in RGB, invisible, and both pass AA -- but only one is right.
