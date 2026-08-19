@@ -145,7 +145,7 @@ export default function Profile() {
                 {customer.email && <p className="text-xs text-mist mt-0.5 truncate" dir="ltr">{customer.email}</p>}
                 {customer.phone
                   ? <p className="text-xs text-mist mt-0.5" dir="ltr">{displayEgyptPhone(customer.phone)}</p>
-                  : <p className="text-xs text-sandink mt-0.5">لسه ما ضفتش رقم موبايل</p>}
+                  : <p className="text-xs text-coral-700 mt-0.5">لسه ما ضفتش رقم موبايل</p>}
               </>
             )}
           </div>

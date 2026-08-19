@@ -573,7 +573,7 @@ export default function Track() {
       {/* Polling stopped succeeding but we keep the last known order on screen
           rather than replacing it with a not-found card. */}
       {staleSince !== null && (
-        <div className="bg-sand/15 border border-sand/40 rounded-xl p-3 mb-4 flex items-center justify-between gap-3">
+        <div className="bg-coral-100 border border-coral-300 rounded-xl p-3 mb-4 flex items-center justify-between gap-3">
           <p className="text-sm font-semibold text-foam"><Icon name="broadcast" size="sm" className="inline-block align-[-0.15em] me-1" />مش قادرين نحدّث الحالة، ممكن تكون قديمة</p>
           <button className="btn-ghost !py-2 text-sm shrink-0" onClick={() => load(true)}>حدّث</button>
         </div>
@@ -608,7 +608,7 @@ export default function Track() {
               paid, the order was gone, and the page said nothing about the money
               -- while an admin was looking at the same row in a refunds queue. */}
           {o.refund_status === 'pending' && (
-            <p className="text-sm text-sandink bg-sand/10 rounded-xl p-3 mt-3">
+            <p className="text-sm text-coral-700 bg-coral-100 rounded-xl p-3 mt-3">
               <Icon name="coins" size="sm" className="inline-block align-[-0.15em] me-1" />فلوسك في طريقها ليك، هنحوّلها على نفس الرقم اللي حوّلت منه.
               لو اتأخرت، كلّمنا.
             </p>
@@ -654,7 +654,7 @@ export default function Track() {
               const late = Date.now() > new Date(o.created_at).getTime() + o.sla_minutes * 60000
               return (
                 <span className={`shrink-0 text-[11px] font-bold rounded-full px-2.5 py-1 ${
-                  late ? 'bg-sand/20 text-sandink' : 'bg-emerald-500/12 text-emerald-700'}`}>
+                  late ? 'bg-coral-200 text-coral-700' : 'bg-emerald-500/12 text-emerald-700'}`}>
                   {late ? 'متأخر شوية' : 'في الميعاد'}
                 </span>
               )
@@ -667,7 +667,7 @@ export default function Track() {
             <p className="text-sm text-mist">بندوّر على مندوب قريب منك</p>
           )}
           {o.status === 'No_Driver_Found' && (
-            <p className="text-sm text-sandink">الزحمة عالية دلوقتي، الإدارة بتظبط لك مندوب</p>
+            <p className="text-sm text-coral-700">الزحمة عالية دلوقتي، الإدارة بتظبط لك مندوب</p>
           )}
           {/* Failed_Delivery was a genuine dead end. It appears in no branch of
               this screen, so the stage bar pinned it at «في الطريق إليك» -- for
@@ -681,7 +681,7 @@ export default function Track() {
               the copy says a second attempt is being arranged rather than
               implying it is over. */}
           {o.status === 'Failed_Delivery' && (
-            <p className="text-sm text-sandink">
+            <p className="text-sm text-coral-700">
               التوصيلة ما اكتملتش، الإدارة بتراجع الطلب وهنكلّمك حالًا
             </p>
           )}
@@ -701,7 +701,7 @@ export default function Track() {
             const target = new Date(new Date(o.created_at).getTime() + o.sla_minutes * 60000)
             const isLate = Date.now() > target.getTime()
             return (
-              <p className={`text-sm mt-1 flex items-center gap-1 ${isLate ? 'text-sandink' : 'text-mist'}`}>
+              <p className={`text-sm mt-1 flex items-center gap-1 ${isLate ? 'text-coral-700' : 'text-mist'}`}>
                 <Icon name="clock" size="xs" />
                 {isLate ? 'اتأخر شوية عن الوقت المستهدف' : `الهدف: يوصلك قبل ${fmtTime(target.toISOString())}`}
               </p>
@@ -1023,7 +1023,7 @@ export default function Track() {
               <div className="flex gap-1">
                 {[1,2,3,4,5].map(n => (
                   <button key={n} onClick={() => setDriverRating(n)} aria-label={`${n} من 5`}
-                    className={`grid place-items-center min-w-[44px] min-h-[44px] ${n <= driverRating ? 'text-sand' : 'text-mist/40'}`}>
+                    className={`grid place-items-center min-w-[44px] min-h-[44px] ${n <= driverRating ? 'text-coral-600' : 'text-mist/40'}`}>
                     <Icon name="star" size="md" />
                   </button>
                 ))}
@@ -1034,7 +1034,7 @@ export default function Track() {
               <div className="flex gap-1">
                 {[1,2,3,4,5].map(n => (
                   <button key={n} onClick={() => setRestaurantRating(n)} aria-label={`${n} من 5`}
-                    className={`grid place-items-center min-w-[44px] min-h-[44px] ${n <= restaurantRating ? 'text-sand' : 'text-mist/40'}`}>
+                    className={`grid place-items-center min-w-[44px] min-h-[44px] ${n <= restaurantRating ? 'text-coral-600' : 'text-mist/40'}`}>
                     <Icon name="star" size="md" />
                   </button>
                 ))}
@@ -1097,7 +1097,7 @@ export default function Track() {
       <InAppLoginPrompt className="mb-4" />
 
       {complaintSent ? (
-        <p className="text-sandink text-sm text-center mb-4"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />تم إرسال الشكوى، هنراجعها قريب</p>
+        <p className="text-coral-700 text-sm text-center mb-4"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />تم إرسال الشكوى، هنراجعها قريب</p>
       ) : complaining ? (
         <div className="card p-4 mb-4">
           <p className="text-sm font-semibold mb-2">إيه المشكلة؟</p>

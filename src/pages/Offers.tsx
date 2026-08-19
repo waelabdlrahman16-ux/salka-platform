@@ -172,7 +172,7 @@ export default function Offers() {
                 <h2 className="font-bold truncate">{restaurant.name}</h2>
                 <div className="space-y-0.5 mt-1">
                   {discounts.slice(0, 2).map(d => (
-                    <p key={d.id} className="text-xs text-sandink font-semibold">{describe(d)}</p>
+                    <p key={d.id} className="text-xs text-coral-700 font-semibold">{describe(d)}</p>
                   ))}
                   {discounts.length > 2 && <p className="text-xs text-mist">+{discounts.length - 2} عروض تانية</p>}
                 </div>

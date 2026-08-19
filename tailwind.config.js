@@ -82,13 +82,12 @@ export default {
                               // matched the logo exactly; Wael confirmed the logo is #00625F.
                               // 14/765 in RGB, invisible, and both pass AA -- but only one is right.
         seadeep: '#063A39',   // primary hover/pressed — unchanged
-        sand: '#B8934A',      // secondary/accent — DECORATIVE ONLY: star icons, tinted backgrounds.
-                              // 2.69:1 on night and 2.87:1 on shell, so it must never carry text.
-        sandink: '#6E572B',   // the same hue and saturation, darker — this is the one for gold TEXT.
-                              // 6.43:1 on night, 6.86:1 on shell, 5.94:1 on shellup. All pass AA.
-        linestrong: '#A3875C',// form-control borders only. `line` is 1.30:1 against a card, which is
-                              // fine for decorative card edges but fails WCAG 1.4.11's 3:1 for the
-                              // boundary of an input. This is 3.40:1 on shell, 3.19:1 on night.
+        // sand / sandink / linestrong were removed once the last call site moved to
+        // coral. Not for bytes -- Tailwind only emits CSS for classes that appear in
+        // source, so an unused token already costs nothing. They are gone so nobody
+        // reaches for them again: sand measured 2.87 / 2.69 / 2.49 against the three
+        // grounds and fails WCAG 1.4.11's 3:1 on all of them, which is exactly the
+        // failure this migration existed to fix.
         foam: '#231F1A',      // primary text — warm near-black (was #17302E, cool teal-black)
         mist: '#6E655C'       // secondary/muted text — warm grey (was #64716F, cool silver-gray)
       },

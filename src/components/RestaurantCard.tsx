@@ -67,7 +67,7 @@ export default function RestaurantCard({
       {rated && (
         <>
           <span className="flex items-center gap-1">
-            <Icon name="star" size="xs" className="text-sand" />
+            <Icon name="star" size="xs" className="text-coral-600" />
             <span className="font-bold text-foam">{r.rating}</span>
             <span>({r.review_count})</span>
           </span>
@@ -148,11 +148,12 @@ export default function RestaurantCard({
           onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
 
         {discountLabel && !closed && (
-          // Was bg-sand carrying white text: 2.87:1, and tailwind.config.js says
-          // in as many words that sand "must never carry text". This badge is
-          // the one element whose whole job is to be legible at a glance, in
-          // sunlight, on a coast, in August. sandink is the same hue at 6.4:1.
-          <span className="absolute top-2 right-2 bg-sandink text-white text-[11px] font-bold rounded-md px-2 py-0.5 shadow-sm">
+          // This badge is the one element whose whole job is to be legible at a
+          // glance, in sunlight, on a coast, in August. It carried white text on
+          // gold at 2.87:1, against the palette file's own rule that the
+          // decorative gold "must never carry text". It is coral-700 now:
+          // 5.75:1 on white, and the same warm family as the accent.
+          <span className="absolute top-2 right-2 bg-coral-700 text-white text-[11px] font-bold rounded-md px-2 py-0.5 shadow-sm">
             {discountLabel}
           </span>
         )}

@@ -829,7 +829,7 @@ export default function DriverPage() {
       <EnableSoundButton />
 
       {(syncFailed || (lastSyncAt !== null && Date.now() - lastSyncAt > STALE_AFTER_MS)) && (
-        <div className="bg-sand/15 border border-sand/40 rounded-xl p-3 mb-4 flex items-center justify-between gap-3">
+        <div className="bg-coral-100 border border-coral-300 rounded-xl p-3 mb-4 flex items-center justify-between gap-3">
           <p className="text-sm font-semibold text-foam">
             <Icon name="broadcast" size="sm" className="inline-block align-[-0.15em] me-1" />الاتصال ضعيف، اللي ظاهر قدامك ممكن يكون قديم
           </p>
@@ -959,7 +959,7 @@ export default function DriverPage() {
                       : 'الطلب اتلغى'}
                   </p>
                   {dead.held && (
-                    <p className="text-xs text-sandink font-semibold mt-1">
+                    <p className="text-xs text-coral-700 font-semibold mt-1">
                       الأكل معاك؟ كلّم الإدارة قبل ما تتحرك
                     </p>
                   )}
@@ -995,7 +995,7 @@ export default function DriverPage() {
             ? stages.findIndex(s => s.key === 'Cash_Confirmed')
             : stages.findIndex(s => s.key === a.status)
           // No Delivered case: those returned above as a compact row.
-          const statusColor = a.status === 'Offered' ? 'bg-sand/15 text-sandink' : 'bg-sea/10 text-sea'
+          const statusColor = a.status === 'Offered' ? 'bg-coral-100 text-coral-700' : 'bg-sea/10 text-sea'
           const destLat = o.compounds?.latitude ?? null
           const destLng = o.compounds?.longitude ?? null
           const etaMin = (myPos && destLat != null && destLng != null && a.status === 'Out_for_Delivery')
@@ -1041,9 +1041,9 @@ export default function DriverPage() {
                       const done = i < stageIndex
                       const current = i === stageIndex
                       const dotColor = !done && !current ? 'bg-line'
-                        : isCashStage && current ? 'bg-sand' : 'bg-sea'
+                        : isCashStage && current ? 'bg-coral-600' : 'bg-sea'
                       const labelColor = !done && !current ? 'text-mist'
-                        : isCashStage && current ? 'text-sandink' : 'text-sea'
+                        : isCashStage && current ? 'text-coral-700' : 'text-sea'
                       return (
                         <div key={s.key} className="flex flex-col items-center gap-1" style={{ width: `${100 / stages.length}%` }}>
                           <div className={`w-2.5 h-2.5 rounded-full ${dotColor}`} />
@@ -1100,8 +1100,8 @@ export default function DriverPage() {
                   <p className="text-sea bg-sea/10 rounded-lg p-2 font-semibold"><Icon name="penToSquare" size="sm" className="inline-block align-[-0.15em] me-1" />{o.address_notes}</p>
                 )}
                 {o.customer_note?.trim() && (
-                  <div className="border border-sand/40 bg-sand/10 rounded-lg p-2.5">
-                    <p className="text-xs font-bold text-sandink"><Icon name="chatCircle" size="sm" className="inline-block align-[-0.15em] me-1" />ملاحظة العميل</p>
+                  <div className="border border-coral-300 bg-coral-100 rounded-lg p-2.5">
+                    <p className="text-xs font-bold text-coral-700"><Icon name="chatCircle" size="sm" className="inline-block align-[-0.15em] me-1" />ملاحظة العميل</p>
                     <p className="mt-1 font-semibold whitespace-pre-wrap">{o.customer_note}</p>
                   </div>
                 )}
@@ -1126,7 +1126,7 @@ export default function DriverPage() {
                   told only "حصّل: 465" -- the sum of both halves -- with no
                   hint that 400 of it leaves their pocket first. */}
               {o.order_type === 'pickup_request' && o.payment_mode === 'driver_pays' && o.collect_amount != null && (
-                <p className="mt-3 text-sm text-sandink bg-sandink/10 rounded-xl p-3 font-semibold">
+                <p className="mt-3 text-sm text-coral-700 bg-coral-100 rounded-xl p-3 font-semibold">
                   <Icon name="moneyBill" size="sm" className="inline-block align-[-0.15em] me-1" />هتدفع {o.collect_amount} ج.م للمحل من فلوسك، وتحصّلها من العميل مع التوصيل
                 </p>
               )}
@@ -1226,7 +1226,7 @@ export default function DriverPage() {
                           part of the primary arrived-then-deliver sequence. */}
                       <div className="pt-2 mt-1 border-t border-line/60 space-y-1.5">
                         {a.no_answer_reported_at ? (
-                          <p className="text-sandink text-xs text-center">
+                          <p className="text-coral-700 text-xs text-center">
                             <Icon name="hourglass" size="sm" className="inline-block align-[-0.15em] me-1" />اتبلّغت الإدارة، مستنيين قرارهم
                             {a.delivery_problem_reason ? `، "${a.delivery_problem_reason}"` : ''}
                           </p>
@@ -1438,7 +1438,7 @@ export default function DriverPage() {
           </div>
           <div>
             <p className="text-xs text-mist">كاش معاك دلوقتي</p>
-            {/* text-sandink is ~2.7:1 on white -- below WCAG AA, and this is read
+            {/* text-coral-700 is ~2.7:1 on white -- below WCAG AA, and this is read
                 in direct sunlight. seadeep carries the same "money you owe"
                 meaning at a legible contrast. */}
             <p className="text-lg font-bold text-seadeep mt-0.5">{driver.cash_held ?? 0} ج.م</p>
@@ -1491,7 +1491,7 @@ export default function DriverPage() {
                   )}
                   {requested && myRequestId && (
                     <div className="mt-3">
-                      <p className="text-sandink text-sm"><Icon name="hourglass" size="sm" className="inline-block align-[-0.15em] me-1" />طلب الاستبدال معروض على باقي المندوبين</p>
+                      <p className="text-coral-700 text-sm"><Icon name="hourglass" size="sm" className="inline-block align-[-0.15em] me-1" />طلب الاستبدال معروض على باقي المندوبين</p>
                       <button className="btn-danger w-full mt-2 text-sm"
                         onClick={() => escalate(myRequestId)}>
                         محدش وافق. بلّغ الإدارة
@@ -1513,7 +1513,7 @@ export default function DriverPage() {
           <h2 className="font-bold text-mist mb-3">ورديات محتاجة مندوب بديل</h2>
           <div className="space-y-3">
             {swaps.filter(s => !myOpenRequests.has(s.shift_id)).map(sw => (
-              <div key={sw.request_id} className="card p-4 border-sand/40">
+              <div key={sw.request_id} className="card p-4 border-coral-300">
                 <p className="font-semibold">
                   {new Date(sw.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', weekday: 'long', day: 'numeric', month: 'numeric' })}
                   {' '}· {sw.start_time.slice(0,5)}–{sw.end_time.slice(0,5)}

@@ -297,7 +297,7 @@ export default function Supervisor() {
                   <Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />{a.drivers?.name} · <Icon name="user" size="xs" className="inline-block align-[-0.15em] me-1" />{a.orders?.customer_name} ·{' '}
                   <a className="text-sea" dir="ltr" href={`tel:${a.orders?.customer_phone}`}>{a.orders?.customer_phone}</a>
                 </p>
-                <p className="text-xs text-sandink mt-1">
+                <p className="text-xs text-coral-700 mt-1">
                   {a.delivery_problem_reason ? `بلّغ: ${a.delivery_problem_reason}` : 'اتصل بالعميل ومردش'}
                 </p>
                 <div className="flex gap-2 mt-2.5 flex-wrap">
@@ -530,8 +530,8 @@ function CustomerNote({ order }: { order: Order }) {
   const note = order.customer_note?.trim()
   if (!note) return null
   return (
-    <div className="mt-3 border border-sand/40 bg-sand/10 rounded-xl p-3">
-      <p className="text-xs font-bold text-sandink"><Icon name="chatCircle" size="sm" className="inline-block align-[-0.15em] me-1" />ملاحظة العميل</p>
+    <div className="mt-3 border border-coral-300 bg-coral-100 rounded-xl p-3">
+      <p className="text-xs font-bold text-coral-700"><Icon name="chatCircle" size="sm" className="inline-block align-[-0.15em] me-1" />ملاحظة العميل</p>
       <p className="text-sm mt-1 font-semibold whitespace-pre-wrap">{note}</p>
     </div>
   )
@@ -588,14 +588,14 @@ function QuoteCard({ order, addr, busy, onConfirm, onCancel }: {
           <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{addr}</p>
         </div>
         <span className={`text-xs font-semibold rounded-full px-2.5 py-1 shrink-0 ${
-          late ? 'bg-red-500/15 text-red-700' : urgent ? 'bg-sand/20 text-sandink' : 'bg-shellup text-mist'
+          late ? 'bg-red-500/15 text-red-700' : urgent ? 'bg-coral-200 text-coral-700' : 'bg-shellup text-mist'
         }`}>
           {late ? `متأخر ${elapsedMinutes} د` : `مستني ${elapsedMinutes} د`}
         </span>
       </div>
 
       {urgent && (
-        <p className={`mt-2 text-xs font-bold ${late ? 'text-red-700' : 'text-sandink'}`}>
+        <p className={`mt-2 text-xs font-bold ${late ? 'text-red-700' : 'text-coral-700'}`}>
           {late ? 'عدّى وعد الـ10 دقايق. سعّره فورًا' : 'اتصل وسعّر دلوقتي قبل ما يعدّي 10 دقايق'}
         </p>
       )}
@@ -608,8 +608,8 @@ function QuoteCard({ order, addr, busy, onConfirm, onCancel }: {
       </div>
       <PaymentSummary order={order} />
 
-      <div className="mt-3 border border-linestrong rounded-xl p-3 bg-shellup">
-        <label className="block text-[11px] font-bold text-sandink mb-2" htmlFor={`p${order.id}`}>
+      <div className="mt-3 border border-slate-500 rounded-xl p-3 bg-shellup">
+        <label className="block text-[11px] font-bold text-coral-700 mb-2" htmlFor={`p${order.id}`}>
           اكتب إجمالي الفاتورة بعد ما تشتري
         </label>
         <div className="flex gap-2 items-stretch">
@@ -623,7 +623,7 @@ function QuoteCard({ order, addr, busy, onConfirm, onCancel }: {
             {busy ? '…' : 'أكّد السعر'}
           </button>
         </div>
-        <p className="text-[11px] text-mist mt-2 pt-2 border-t border-dashed border-linestrong">
+        <p className="text-[11px] text-mist mt-2 pt-2 border-t border-dashed border-slate-500">
           بعد التأكيد هيظهر اللي العميل هيدفعه، محسوب من السيرفر.
         </p>
       </div>

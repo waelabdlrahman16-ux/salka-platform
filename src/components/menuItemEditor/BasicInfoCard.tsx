@@ -63,7 +63,7 @@ export default function BasicInfoCard({
             ? <><Icon name="image" size="sm" className="inline-block align-[-0.15em] me-1" />تغيير الصورة</>
             : <><Icon name="image" size="sm" className="inline-block align-[-0.15em] me-1" />إضافة صورة</>)}
       </label>
-      {imageError && <p className="text-xs text-sandink mb-2">{imageError}</p>}
+      {imageError && <p className="text-xs text-coral-700 mb-2">{imageError}</p>}
       {imageUrl && <div className="mb-2.5"><ImageCropPreview url={imageUrl} /></div>}
 
       <div className="grid grid-cols-2 gap-2.5 mb-2.5">

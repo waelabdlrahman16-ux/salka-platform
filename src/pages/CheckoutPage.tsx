@@ -432,7 +432,7 @@ export default function CheckoutPage() {
   if (!cart.restaurantId || lines.length === 0) {
     return (
       <div className="text-center py-16">
-        {removedNotice && <p className="text-sandink text-sm mb-4 bg-sand/10 rounded-xl p-3 mx-4">{removedNotice}</p>}
+        {removedNotice && <p className="text-coral-700 text-sm mb-4 bg-coral-100 rounded-xl p-3 mx-4">{removedNotice}</p>}
         <p className="font-bold text-lg mb-1">مفيش حاجة في العربة</p>
         <button className="btn-sea mt-4" onClick={() => nav('/')}>تصفح المطاعم</button>
       </div>
@@ -444,11 +444,11 @@ export default function CheckoutPage() {
       <h1 className="text-2xl font-bold mb-4">تأكيد الطلب</h1>
 
       {removedNotice && (
-        <p className="text-sandink text-sm mb-4 bg-sand/10 rounded-xl p-3">{removedNotice}</p>
+        <p className="text-coral-700 text-sm mb-4 bg-coral-100 rounded-xl p-3">{removedNotice}</p>
       )}
 
       {hasRx && (
-        <p className="text-sandink text-sm mb-4 bg-sand/10 rounded-xl p-3">
+        <p className="text-coral-700 text-sm mb-4 bg-coral-100 rounded-xl p-3">
           <Icon name="pill" size="sm" className="inline-block align-[-0.15em] me-1" />في صنف محتاج روشتة طبية، الصيدلية هتتواصل معاك تليفونيًا للتأكيد قبل التجهيز
         </p>
       )}
@@ -456,7 +456,7 @@ export default function CheckoutPage() {
       {scheduled && (
         <div className="mb-4">
           <h2 className="font-bold mb-2">فترة التوصيل</h2>
-          {slots.length === 0 && <p className="text-sm text-sandink">لا توجد فترات متاحة حالياً</p>}
+          {slots.length === 0 && <p className="text-sm text-coral-700">لا توجد فترات متاحة حالياً</p>}
           <div className="grid grid-cols-2 gap-2">
             {slots.map(sl => {
               const on = slot?.id === sl.id && slot?.scheduled_date === sl.scheduled_date
@@ -684,7 +684,7 @@ export default function CheckoutPage() {
           </label>
           {paymentMethod === 'cod' && serviceFee !== null && deliveryFee !== null
             && codDepositThreshold !== null && finalTotal > codDepositThreshold && (
-            <p className="text-xs text-sandink -mt-1 px-1">
+            <p className="text-xs text-coral-700 -mt-1 px-1">
               {/* Must equal place_order's `ceil(v_net_total * 0.5)` exactly. It
                   previously read Math.round(finalTotal * 50) / 100, which on a
                   1361 ج.م order quoted 680.5 -- half a pound nobody can transfer
@@ -708,7 +708,7 @@ export default function CheckoutPage() {
 
               Says the whole amount, not half: InstaPay is prepaid in full. */}
           {paymentMethod === 'instapay' && serviceFee !== null && deliveryFee !== null && (
-            <p className="text-xs text-sandink -mt-1 px-1">
+            <p className="text-xs text-coral-700 -mt-1 px-1">
               هتحوّل {finalTotal} ج.م كاملة على InstaPay قبل ما المطعم يبدأ التحضير، هنوريك الـ QR والرقم بعد التأكيد، ولو غيّرت رأيك تقدر ترجع كاش من نفس الشاشة
             </p>
           )}
@@ -776,7 +776,7 @@ export default function CheckoutPage() {
       {/* Only shown to someone whose wallet we have previously seen carrying
           credit -- see the lookup above. */}
       {walletFailed && (
-        <p className="text-sm text-sandink bg-sand/10 rounded-xl p-3 mb-4">
+        <p className="text-sm text-coral-700 bg-coral-100 rounded-xl p-3 mb-4">
           مش قادرين نشوف رصيد محفظتك دلوقتي، رصيدك مش هيتخصم من الطلب ده
         </p>
       )}
@@ -796,7 +796,7 @@ export default function CheckoutPage() {
       )}
 
       {codThresholdFailed && paymentMethod === 'cod' && (
-        <p className="text-sm text-sandink bg-sandink/10 rounded-xl p-3 mb-4">
+        <p className="text-sm text-coral-700 bg-coral-100 rounded-xl p-3 mb-4">
           مش قادرين نتأكد من شروط الدفع دلوقتي. جرب تحدّث الصفحة، أو اختار إنستاباي.
         </p>
       )}
@@ -837,7 +837,7 @@ export default function CheckoutPage() {
             ? { text: 'مش قادرين نتأكد من شروط الدفع كاش. جرب تاني أو اختار InstaPay' }
           : null
         if (!m) return null
-        const cls = 'w-full text-sm text-sandink bg-sand/10 rounded-xl p-3 mb-3 text-center'
+        const cls = 'w-full text-sm text-coral-700 bg-coral-100 rounded-xl p-3 mb-3 text-center'
         return m.field ? (
           <button className={cls} onClick={() => {
             if (m.touch) setTouched(t => ({ ...t, [m.touch!]: true }))

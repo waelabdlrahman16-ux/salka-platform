@@ -418,8 +418,8 @@ export default function CustomOrder() {
         <p className="text-mist text-sm mb-4">قول لنا اللي محتاجه، وإحنا هنجهزه معاك</p>
 
         {loadFailed && (
-          <div className="card p-4 mb-4 border-sand/60 bg-sand/10">
-            <p className="text-sm text-sandink font-semibold"><Icon name="broadcast" size="sm" className="inline-block align-[-0.15em] me-1" />مش قادرين نحمّل المحلات دلوقتي</p>
+          <div className="card p-4 mb-4 border-coral-300 bg-coral-100">
+            <p className="text-sm text-coral-700 font-semibold"><Icon name="broadcast" size="sm" className="inline-block align-[-0.15em] me-1" />مش قادرين نحمّل المحلات دلوقتي</p>
             <p className="text-xs text-mist mt-1">اتأكد إن النت شغال، ده مش معناه إن كله مقفول.</p>
           </div>
         )}
@@ -460,7 +460,7 @@ export default function CustomOrder() {
                   <span className="flex items-center gap-2">
                     <span className="font-bold text-[15px] truncate">{v.name}</span>
                     {usesSlots
-                      ? <span className="shrink-0 text-[10px] font-bold text-sandink bg-sand/20 rounded px-1.5 py-0.5">فترات محددة</span>
+                      ? <span className="shrink-0 text-[10px] font-bold text-coral-700 bg-coral-200 rounded px-1.5 py-0.5">فترات محددة</span>
                       : <span className="shrink-0 text-[10px] font-bold text-sea bg-sea/10 rounded px-1.5 py-0.5">مفتوحة</span>}
                   </span>
                   {v.description && (
@@ -613,8 +613,8 @@ export default function CustomOrder() {
           the first slot tomorrow, or go to the pharmacy, which is usually open
           and is the nearest thing to what they came for -- so offer both. */}
       {scheduled && slots.length === 0 && (
-        <div className="card p-4 mb-4 border-sand/50 bg-sand/10">
-          <p className="font-bold text-sm text-sandink">الماركت مقفول دلوقتي</p>
+        <div className="card p-4 mb-4 border-coral-300 bg-coral-100">
+          <p className="font-bold text-sm text-coral-700">الماركت مقفول دلوقتي</p>
           <p className="text-xs text-mist mt-1 mb-3">
             الماركت بيوصل في فترات محددة ومفيش فترة متاحة دلوقتي. جرب بكرة الصبح،
             أو الصيدلية شغالة دلوقتي.
@@ -633,7 +633,7 @@ export default function CustomOrder() {
             الماركت بيوصل في فترات محددة، فاختار فترة الأول عشان نعرف نجهّزلك.
           </p>
           {slots.length === 0 && (
-            <p className="text-sm text-sandink">
+            <p className="text-sm text-coral-700">
               مفيش فترات متاحة دلوقتي. جرب بكرة الصبح.
             </p>
           )}
@@ -787,7 +787,7 @@ export default function CustomOrder() {
                 <span className="block text-[11px] mt-0.5">
                   {price !== null
                     ? <span className="text-sea font-semibold">{price} ج.م</span>
-                    : <span className="text-sandink">السعر بالمكالمة</span>}
+                    : <span className="text-coral-700">السعر بالمكالمة</span>}
                 </span>
               </span>
               <div className="flex items-center gap-1 bg-shellup rounded-lg p-1 shrink-0">
@@ -828,7 +828,7 @@ export default function CustomOrder() {
               </span>
             </div>
             {unpricedCount > 0 && (
-              <div className="flex justify-between text-sm py-0.5 text-sandink">
+              <div className="flex justify-between text-sm py-0.5 text-coral-700">
                 <span>{unpricedCount === 1 ? 'صنف واحد لسه بالمكالمة' : `${unpricedCount} أصناف لسه بالمكالمة`}</span>
                 <span>؟</span>
               </div>
@@ -993,7 +993,7 @@ export default function CustomOrder() {
           'إرسال الطلب' whose only explanation was several sections further up
           the page, unconnected to it. */}
       {scheduled && slots.length === 0 && (
-        <p className="text-sm text-sandink bg-sandink/10 rounded-xl p-3 mb-3">
+        <p className="text-sm text-coral-700 bg-coral-100 rounded-xl p-3 mb-3">
           مفيش فترات توصيل متاحة دلوقتي، فمش هينفع نستقبل الطلب. جرب بكرة الصبح.
         </p>
       )}

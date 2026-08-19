@@ -20,7 +20,7 @@ export default function EnableSoundButton() {
 
   return (
     <button
-      className="w-full mb-3 rounded-xl border border-sand/50 bg-sand/15 px-3.5 py-3 text-right text-sm font-semibold text-sandink"
+      className="w-full mb-3 rounded-xl border border-coral-300 bg-coral-100 px-3.5 py-3 text-right text-sm font-semibold text-coral-700"
       onClick={() => { unlockAudio(); setBlocked(audioBlocked()) }}>
       <Icon name="speakerSlash" size="sm" className="inline-block align-[-0.15em] me-1" />فعّل صوت التنبيهات على الجهاز ده
     </button>

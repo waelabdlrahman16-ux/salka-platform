@@ -132,7 +132,7 @@ export default function EnablePushButton({
   const iosBlock = iosPushBlocker()
   if (support !== 'native' && iosBlock) {
     return (
-      <p className="text-xs text-sandink bg-sand/10 rounded-xl p-3 mb-3 leading-relaxed">
+      <p className="text-xs text-coral-700 bg-coral-100 rounded-xl p-3 mb-3 leading-relaxed">
         {iosBlock === 'not-safari'
           ? <>التنبيهات على الآيفون بتشتغل من <b>سفاري</b> بس. افتح سالكة في سفاري، وبعدين
               اضغط <b>زر المشاركة ⬆️</b> واختار <b>«إضافة إلى الشاشة الرئيسية»</b>. وافتحها
@@ -149,14 +149,14 @@ export default function EnablePushButton({
   // one, which is worse than a clear limitation.
   if (support === 'unsupported' && isIOS()) {
     return (
-      <p className="text-xs text-sandink bg-sand/10 rounded-xl p-3 mb-3 leading-relaxed">
+      <p className="text-xs text-coral-700 bg-coral-100 rounded-xl p-3 mb-3 leading-relaxed">
         التنبيهات محتاجة iOS 16.4 أو أحدث. حدّث الآيفون، وبعدها افتح سالكة من أيقونة الشاشة الرئيسية وفعّل التنبيهات.
       </p>
     )
   }
   if (support === 'unsupported' || support === 'unconfigured') return null
   if (checking) return (
-    <div className={`mb-3 rounded-xl p-3 text-sm ${required ? 'border border-sand/50 bg-sand/10' : 'bg-shellup/60'}`}>
+    <div className={`mb-3 rounded-xl p-3 text-sm ${required ? 'border border-coral-300 bg-coral-100' : 'bg-shellup/60'}`}>
       <p className="font-semibold">جاري التأكد إن الجهاز مسجل للتنبيهات…</p>
     </div>
   )
@@ -167,17 +167,17 @@ export default function EnablePushButton({
   // anything -- a second click would not even produce a dialog.
   if (permission === 'denied') {
     return (
-      <p className="text-xs text-sandink bg-sand/10 rounded-xl p-3 mb-3">
+      <p className="text-xs text-coral-700 bg-coral-100 rounded-xl p-3 mb-3">
         التنبيهات متمنوعة من إعدادات المتصفح. لازم تسمح بيها من إعدادات الموقع عشان توصلك الطلبات وانت مقفل الشاشة.
       </p>
     )
   }
 
   return (
-    <div className={`mb-3 ${required ? 'rounded-xl border border-sand/50 bg-sand/10 p-3' : ''}`}>
+    <div className={`mb-3 ${required ? 'rounded-xl border border-coral-300 bg-coral-100 p-3' : ''}`}>
       {required && (
         <div className="mb-2">
-          <p className="text-sm font-bold text-sandink">لازم تفعّل التنبيهات قبل ما تعتمد على الشاشة دي</p>
+          <p className="text-sm font-bold text-coral-700">لازم تفعّل التنبيهات قبل ما تعتمد على الشاشة دي</p>
           <p className="text-xs text-mist mt-0.5">من غيرها ممكن طلب جديد يوصل للنظام من غير ما جهازك ينبهك.</p>
         </div>
       )}
