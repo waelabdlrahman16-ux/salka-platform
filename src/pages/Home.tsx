@@ -5,7 +5,7 @@ import { useDismissable } from '../lib/useDismissable'
 import { haversineKm } from '../lib/geo'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { openLabel } from '../lib/vendorHours'
-import { BROWSE_KINDS, vendorKind, normaliseArabic, type VendorKind } from '../lib/categoryArt'
+import { BROWSE_KINDS, vendorKind, normaliseArabic, VENDOR_TYPE_ART, type VendorKind } from '../lib/categoryArt'
 import Icon from '../components/Icon'
 import BannerRail from '../components/BannerRail'
 import RestaurantCard from '../components/RestaurantCard'
@@ -397,14 +397,19 @@ export default function Home() {
   // perfectly able to ask when it actually needs to know.
   const quickAccessTiles = (
     <div className="grid grid-cols-2 gap-2.5 mb-4">
-      <Link to="/custom-order?type=supermarket" className="card p-2.5 flex items-center gap-2 hover:border-sea/50 transition-colors">
-        <span className="w-8 h-8 rounded-lg grid place-items-center text-base shrink-0" style={{ background: 'rgba(212,163,42,.12)' }}><Icon name="cartShopping" size="sm" className="text-ink" /></span>
-        <span className="font-bold text-sm truncate">سوبر ماركت</span>
-      </Link>
-      <Link to="/custom-order?type=pharmacy" className="card p-2.5 flex items-center gap-2 hover:border-sea/50 transition-colors">
-        <span className="w-8 h-8 rounded-lg grid place-items-center text-base shrink-0" style={{ background: 'rgba(200,60,60,.1)' }}><Icon name="pill" size="sm" className="text-ink" /></span>
-        <span className="font-bold text-sm truncate">صيدلية</span>
-      </Link>
+      {([['supermarket', 'جروسري'], ['pharmacy', 'صيدلية']] as const).map(([type, label]) => {
+        const art = VENDOR_TYPE_ART[type]
+        return (
+          <Link key={type} to={`/custom-order?type=${type}`}
+            className="card p-2.5 flex items-center gap-2 hover:border-sea/50 transition-colors">
+            <span className="w-9 h-9 rounded-lg grid place-items-center shrink-0"
+              style={{ background: art.tint }}>
+              <Icon name={art.icon} size="md" className="text-foam" />
+            </span>
+            <span className="font-bold text-sm truncate">{label}</span>
+          </Link>
+        )
+      })}
     </div>
   )
 

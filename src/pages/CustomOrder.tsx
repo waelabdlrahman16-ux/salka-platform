@@ -5,7 +5,7 @@ import { customerOrderCreation } from '../lib/customerOrderCreation'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
 import { displayEgyptPhone, isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
-import { artFor } from '../lib/categoryArt'
+import { artFor, VENDOR_TYPE_ART } from '../lib/categoryArt'
 import Icon from '../components/Icon'
 import { getSessionToken, useCustomerAuth } from '../lib/customerAuth'
 import type { Compound, MenuItem, Restaurant, Slot } from '../lib/types'
@@ -446,14 +446,21 @@ export default function CustomOrder() {
               <button key={v.id}
                 className="card p-3 w-full text-right flex items-center gap-3 hover:border-sea/40 transition-colors"
                 onClick={() => setVendor(v)}>
-                {/* An ICON, not the shop's logo. The home tiles for these same two
-                    destinations use icons, and a row of brand marks here made the
-                    list look like a different product from the one that sent you.
-                    These are errands, not brands you are browsing. */}
-                <span className="w-12 h-12 rounded-lg grid place-items-center shrink-0"
-                  style={{ background: art.tint }}>
-                  <Icon name={v.vendor_type === 'pharmacy' ? 'pill' : 'cartShopping'}
-                    size="lg" className="text-foam" />
+                {/* Salka's OWN two errand destinations get an icon; every other
+                    vendor in this list is a real brand and keeps its logo.
+                    «صيدلية» and «سوبرماركت» are categories we operate, not shops a
+                    customer recognises by their mark -- Krispy Kreme, Costa and KFC
+                    are the opposite, and stripping their logos made them harder to
+                    find, not more consistent. */}
+                <span className="w-12 h-12 rounded-lg overflow-hidden grid place-items-center shrink-0"
+                  style={{ background: (v.vendor_type === 'pharmacy' || v.vendor_type === 'supermarket')
+                    ? VENDOR_TYPE_ART[v.vendor_type].tint : art.tint }}>
+                  {v.vendor_type === 'pharmacy' || v.vendor_type === 'supermarket'
+                    ? <Icon name={VENDOR_TYPE_ART[v.vendor_type].icon} size="lg" className="text-foam" />
+                    : v.logo_url
+                        ? <img src={v.logo_url} alt="" loading="eager" className="w-full h-full object-cover"
+                            onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
+                        : <Icon name="storefront" size="lg" className="text-mist" />}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-2">

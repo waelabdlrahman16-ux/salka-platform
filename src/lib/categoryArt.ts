@@ -222,6 +222,18 @@ export function vendorKind(category: string | null | undefined): VendorKind {
 
 /** Display order and icon for the browse row. 'أخرى' is deliberately absent:
  *  it is a fallback for matching, never something to offer as a filter. */
+// Salka's own two errand destinations, defined ONCE. They render on the home
+// tiles and again in the هنجبلك list, and until now each place drew them its own
+// way: home hard-coded rgba(212,163,42,.12) and rgba(200,60,60,.1) -- gold and
+// red left over from before the coral migration, which never reached them
+// because they were raw rgba rather than tokens -- while هنجبلك used the
+// category tints. Same destination, two different looks, on two screens one tap
+// apart.
+export const VENDOR_TYPE_ART: Record<'pharmacy' | 'supermarket', { icon: IconName; tint: string }> = {
+  pharmacy:    { icon: 'asclepius', tint: TINT.green },
+  supermarket: { icon: 'basket',    tint: TINT.neutral },
+}
+
 export const BROWSE_KINDS: Array<{ kind: VendorKind; emoji: string }> = [
   { kind: 'فاست فود', emoji: '🍔' },
   { kind: 'بيتزا', emoji: '🍕' },
