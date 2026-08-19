@@ -22,13 +22,17 @@ export default function FeaturedProductsRail({ items }: { items: FeaturedProduct
   if (items.length === 0) return null
 
   return (
-    <div className="mb-4">
-      <h2 className="font-bold text-base mb-2">أصناف مميزة</h2>
+    // Full-bleed band on its own surface. It used to sit on the page background
+    // with no edge of its own, between two restaurant cards that DID have one --
+    // so a shelf of dishes read as a third, oddly-shaped restaurant. The band
+    // says "this is a different kind of thing" before the heading does.
+    <div className="-mx-4 px-4 py-4 mb-4 bg-shellup border-y border-line">
+      <h2 className="font-bold text-base mb-2.5">أصناف مميزة</h2>
       <div className="flex gap-3 overflow-x-auto pb-1 snap-x snap-mandatory scrollbar-none">
         {items.map(it => (
           <Link key={it.menu_item_id} to={`/restaurant/${it.restaurant_id}?item=${it.menu_item_id}`}
             className="shrink-0 snap-start w-28 text-right">
-            <div className="rounded-xl aspect-square grid place-items-center text-2xl mb-1.5 overflow-hidden bg-shellup">
+            <div className="rounded-xl aspect-square grid place-items-center text-2xl mb-1.5 overflow-hidden bg-shell border border-line">
               {it.image_url ? <img src={sized(it.image_url, IMG.square)} alt="" className="w-full h-full object-cover" /> : '🍽️'}
             </div>
             <p className="text-xs font-semibold line-clamp-2 leading-snug">{it.name}</p>

@@ -47,6 +47,9 @@ export default function RestaurantCard({
   discountLabel?: string
 }) {
   const art = artFor(r.category)
+  // The COUNT is no longer printed, but it still decides whether a score is
+  // printed at all. That guard is the important half: «★ 3.0» on a vendor
+  // nobody has rated is a false signal, not a weak one.
   const rated = (r.review_count ?? 0) > 0
   const closed = !r.is_open
   // «مقفول دلوقتي» on its own gives the customer nothing to act on -- there is
@@ -69,7 +72,6 @@ export default function RestaurantCard({
           <span className="flex items-center gap-1">
             <Icon name="star" size="xs" className="text-coral-600" />
             <span className="font-bold text-foam">{r.rating}</span>
-            <span>({r.review_count})</span>
           </span>
           <span aria-hidden="true">·</span>
         </>

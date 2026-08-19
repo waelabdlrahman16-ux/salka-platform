@@ -1,11 +1,12 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import EmptyState from '../components/EmptyState'
 import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useDismissable } from '../lib/useDismissable'
 import { haversineKm } from '../lib/geo'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { openLabel } from '../lib/vendorHours'
-import { BROWSE_KINDS, vendorKind, normaliseArabic, type VendorKind } from '../lib/categoryArt'
+import { BROWSE_KINDS, vendorKind, normaliseArabic, VENDOR_TYPE_ART, type VendorKind } from '../lib/categoryArt'
 import Icon from '../components/Icon'
 import BannerRail from '../components/BannerRail'
 import RestaurantCard from '../components/RestaurantCard'
@@ -15,6 +16,17 @@ import type { Compound, Discount, Restaurant } from '../lib/types'
 import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
 import { publicCatalog } from '../lib/publicCatalog'
 
+
+// Off until the category art exists. The chips currently carry the food emoji,
+// which is fine as an appetite cue at 20px next to a word -- but with the label
+// removed they became five emoji in five boxes and read as decoration rather
+// than a filter. Wael is drawing a dish illustration per category; this comes
+// back on when they land.
+//
+// A flag rather than deleting the block: everything downstream still works --
+// `kind` filtering, the filtered-empty state, «شوف كل المطاعم» -- so switching
+// this to true is the whole re-enable.
+const SHOW_CATEGORY_CHIPS = false
 
 export default function Home() {
   const [compounds, setCompounds] = useState<Compound[]>([])
@@ -397,14 +409,21 @@ export default function Home() {
   // perfectly able to ask when it actually needs to know.
   const quickAccessTiles = (
     <div className="grid grid-cols-2 gap-2.5 mb-4">
-      <Link to="/custom-order?type=supermarket" className="card p-2.5 flex items-center gap-2 hover:border-sea/50 transition-colors">
-        <span className="w-8 h-8 rounded-lg grid place-items-center text-base shrink-0" style={{ background: 'rgba(212,163,42,.12)' }}><Icon name="cartShopping" size="sm" className="text-ink" /></span>
-        <span className="font-bold text-sm truncate">سوبر ماركت</span>
-      </Link>
-      <Link to="/custom-order?type=pharmacy" className="card p-2.5 flex items-center gap-2 hover:border-sea/50 transition-colors">
-        <span className="w-8 h-8 rounded-lg grid place-items-center text-base shrink-0" style={{ background: 'rgba(200,60,60,.1)' }}><Icon name="pill" size="sm" className="text-ink" /></span>
-        <span className="font-bold text-sm truncate">صيدلية</span>
-      </Link>
+      {([['supermarket', 'سوبر ماركت'], ['pharmacy', 'صيدلية']] as const).map(([type, label]) => {
+        const art = VENDOR_TYPE_ART[type]
+        return (
+          <Link key={type} to={`/custom-order?type=${type}`}
+            className="card p-2.5 flex items-center gap-2 hover:border-sea/50 transition-colors">
+            {/* colour on the TILE, not the icon: Icon paints with currentColor,
+                so the tile owns both halves of the pairing. */}
+            <span className="w-9 h-9 rounded-lg grid place-items-center shrink-0"
+              style={{ background: art.tint, color: art.ink }}>
+              <Icon name={art.icon} size="md" />
+            </span>
+            <span className="font-bold text-sm truncate">{label}</span>
+          </Link>
+        )
+      })}
     </div>
   )
 
@@ -446,20 +465,14 @@ export default function Home() {
           <span className="flex items-center gap-1 min-w-0">
             <Icon name="locationDot" size="sm" className="shrink-0 text-sea" />
             <span className="font-bold text-[17px] truncate">{selected ? selected.name : 'اختر مكانك'}</span>
-            <span className="text-mist text-xs shrink-0">▾</span>
+            <Icon name="caretDown" size="xs" className="text-mist shrink-0" />
           </span>
-          {/* The reason, but only while there is no answer yet. Once a compound
-              is set the name above says everything and this would be noise on
-              every subsequent visit. This replaced a separate full-width card
-              that repeated the question a second time, lower down the page. */}
-          {!selected && (
-            <span className="block text-[11px] text-mist mt-0.5">
-              عشان نعرفك سعر التوصيل والمطاعم اللي بتوصلك
-            </span>
-          )}
         </button>
+        {/* Neutral, not coral. A delivery fee is an ordinary fact, and coral is
+            the accent colour -- it made the one number nobody is worried about
+            the loudest thing in the header. */}
         {deliveryFee !== null && (
-          <span className="shrink-0 text-[11px] font-bold text-coral-700 bg-coral-200 rounded-lg px-2.5 py-1 mt-3">
+          <span className="shrink-0 text-[11px] font-bold text-mist bg-shellup border border-line rounded-lg px-2.5 py-1 mt-3">
             {deliveryFee} ج.م توصيل
           </span>
         )}
@@ -541,28 +554,37 @@ export default function Home() {
 
       {!loading && (
         <div id="restaurants">
-          {kind && (
-            <div className="flex justify-end mb-2">
-              <button className="text-sm text-seadeep font-semibold" onClick={() => setKind(null)}>
-                إلغاء الفلتر
-              </button>
-            </div>
-          )}
-
           {/* Browse by kind. Until now the only way to find food was to already
               know which restaurant sold it -- there was no way to ask "who does
               seafood?". Only kinds that actually have a vendor delivering here
               are offered, so tapping one can never land on an empty list. */}
-          {availableKinds.length > 1 && (
+          {/* Two lines, icon over label. On one line the emoji and the word
+              competed for the same horizontal space and the rail read as a run of
+              similar-width pills. Stacked, the icon is what you scan and the word
+              confirms it.
+
+              The idle state was bg-shellup/60 -- a 60% wash of an already pale
+              surface, so a chip barely separated from the page. Solid surface with
+              a real border now, and the active state is ink rather than a tint, so
+              which one is on is unmistakable.
+
+              There is no «إلغاء الفلتر» button any more: onClick already does
+              setKind(kind === k ? null : k), so tapping the active chip clears it.
+              The button was a second control for behaviour the chip already had. */}
+          {SHOW_CATEGORY_CHIPS && availableKinds.length > 1 && (
             <div className="flex gap-2 overflow-x-auto pb-1 mb-4 -mx-4 px-4 scrollbar-none">
               {availableKinds.map(({ kind: k, emoji }) => {
                 return (
-                  <button key={k}
-                    className={`tab shrink-0 ${kind === k ? 'tab-active' : 'bg-shellup/60'}`}
+                  <button key={k} aria-pressed={kind === k} aria-label={k} title={k}
+                    className={`shrink-0 w-[58px] rounded-xl border px-2 py-2.5 transition-colors ${
+                      kind === k
+                        ? 'bg-foam text-night border-foam'
+                        : 'bg-shell border-line text-foam hover:border-sea/40'}`}
                     onClick={() => setKind(kind === k ? null : k)}>
-                    <span className="flex items-center gap-1.5">
-                      <span aria-hidden="true">{emoji}</span>{k}
-                    </span>
+                    {/* Icon only. The label lives in aria-label rather than on
+                        screen, so the rail stays a row of recognisable shapes and
+                        a screen reader still hears the category name. */}
+                    <span className="block text-2xl leading-none" aria-hidden="true">{emoji}</span>
                   </button>
                 )
               })}
@@ -648,11 +670,10 @@ export default function Home() {
                 catalogue, so an empty one means the filter matched nothing, not
                 that nowhere delivers to them. */}
             {!restaurantsFailed && shownRestaurants.length === 0 && (
-              <p className="text-mist py-6">
-                {compoundId
-                  ? (kind ? `مفيش مطاعم ${kind} بتوصل لمكانك حاليًا` : 'لا يوجد مطاعم بتوصل لمكانك حاليًا')
-                  : (kind ? `مفيش مطاعم ${kind} متاحة حاليًا` : 'مفيش مطاعم متاحة حاليًا')}
-              </p>
+              <EmptyState compact icon="forkKnife"
+                title={kind ? `مفيش مطاعم ${kind} دلوقتي` : 'مفيش مطاعم متاحة دلوقتي'}
+                body={compoundId ? 'جرب قسم تاني أو شوف اللي هيفتحوا بعدين' : undefined}
+                action={kind ? { label: 'شوف كل المطاعم', onClick: () => setKind(null) } : undefined} />
             )}
             {restaurantFeed}
 

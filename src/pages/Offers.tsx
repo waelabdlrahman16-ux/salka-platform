@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import EmptyState from '../components/EmptyState'
 import CategoryArt from '../components/CategoryArt'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
@@ -147,7 +148,8 @@ export default function Offers() {
       )}
 
       {!failed && offers?.length === 0 && (
-        <p className="text-mist text-center py-10">مفيش عروض شغالة دلوقتي. تابعنا هيكون في عروض قريب</p>
+        <EmptyState icon="tag" title="مفيش عروض دلوقتي"
+          body="تابعنا، هيكون في عروض قريب" />
       )}
 
       <div className="space-y-3">
