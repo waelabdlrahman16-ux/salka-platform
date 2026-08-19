@@ -180,8 +180,8 @@ export default function RestaurantCard({
           carrying any information, which is most of what the shorter cover
           would otherwise have handed straight back. The mark is 40px: the same
           height as the two lines beside it, so the row squares off. */}
-      <div className="flex items-center gap-2.5 px-2.5 py-2.5">
-        <span className="w-10 h-10 rounded-lg overflow-hidden grid place-items-center text-base shrink-0 border border-line"
+      <div className={`flex items-center gap-2.5 px-2.5 py-2.5 ${closed ? 'bg-imgbg' : ''}`}>
+        <span className={`w-10 h-10 rounded-lg overflow-hidden grid place-items-center text-base shrink-0 border border-line ${closed ? 'grayscale' : ''}`}
           style={{ background: art.tint }}>
           {r.logo_url
             ? <img src={sized(r.logo_url, IMG.icon)} alt="" loading="eager" className="w-full h-full object-cover" />
@@ -190,8 +190,10 @@ export default function RestaurantCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-1.5 min-w-0">
             <h2 className={`font-bold text-[15px] truncate leading-tight ${closed ? 'text-mist' : ''}`}>{r.name}</h2>
+            {/* ms-auto: the opening time goes to the far end of the row, where a
+                status belongs, instead of interrupting the name. */}
             {closed && (
-              <span className="shrink-0 text-[10px] font-bold text-mist bg-shellup rounded px-1.5 py-0.5">
+              <span className="ms-auto shrink-0 text-[10px] font-bold text-mist bg-shellup border border-line rounded-full px-2 py-0.5">
                 {status.text}
               </span>
             )}

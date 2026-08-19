@@ -76,9 +76,6 @@ export default function ProductDetailSheet({
             swipes down to close" -- it does not itself carry a gesture,
             useDismissable's backdrop tap/Back-button handling already does
             that job. */}
-        <div className="flex justify-center pt-2.5 pb-1.5">
-          <div className="w-9 h-1 rounded-full bg-line" />
-        </div>
 
         {/* aspect-square on a phone is a full-width square, so the name, the
             price and the add button all started below the fold -- the customer
@@ -94,9 +91,8 @@ export default function ProductDetailSheet({
 
             Inset with side/top padding and rounded corners, not full-bleed
             against the sheet edges -- matches the redesign Wael supplied. */}
-        <div className="px-4">
-        <div className={`relative grid place-items-center text-5xl overflow-hidden rounded-xl bg-imgbg ${
-            active.image_url && !imgFailed ? 'aspect-[4/3] max-h-[22vh]' : 'h-28'}`}
+        <div className={`relative grid place-items-center text-5xl overflow-hidden bg-imgbg rounded-t-3xl ${
+            active.image_url && !imgFailed ? 'aspect-[4/3] max-h-[26vh]' : 'h-28'}`}
           // Same fix as ProductCard: the photo's frame is an image container,
           // so it takes the token rather than a literal that the palette change
           // could not reach.
@@ -123,7 +119,11 @@ export default function ProductDetailSheet({
               <Icon name="pill" size="xs" className="inline-block align-[-0.15em] me-1" />يحتاج روشتة
             </span>
           )}
-        </div>
+          {/* Handle and close ON the photo: the sheet opens with the dish
+              filling the top edge, and the two controls float over it. */}
+          <span className="absolute inset-x-0 top-2 flex justify-center pointer-events-none">
+            <span className="w-9 h-1 rounded-full bg-white/70" />
+          </span>
         </div>
 
         {/* The image was taking 38vh and the item itself got whatever was left.
@@ -131,12 +131,17 @@ export default function ProductDetailSheet({
             which hands roughly a fifth of the sheet back to the name, the price
             and the button -- the three things the customer opened it for. */}
         <div className="p-5">
-          <h2 id="product-detail-title" className="font-bold text-xl leading-snug">{active.name}</h2>
-          {active.description && <p className="text-sm text-mist mt-2 leading-relaxed">{active.description}</p>}
-          <p className="text-xl mt-3">
-            {activeDiscount && <span className="text-mist text-sm line-through ml-2">{baseActivePrice}</span>}
-            <span className="text-sea font-bold">{itemSizes.length > 0 ? `من ${activeDisplayPrice}` : activeDisplayPrice} ج.م</span>
-          </p>
+          {/* Name and price on one line: they are the two facts the customer
+              opened this for, and stacking them pushed the button further down
+              for no gain. The description tucks under the name. */}
+          <div className="flex items-baseline gap-3">
+            <h2 id="product-detail-title" className="font-bold text-xl leading-snug min-w-0 flex-1">{active.name}</h2>
+            <span className="shrink-0 text-lg">
+              {activeDiscount && <span className="text-mist text-sm line-through ml-2">{baseActivePrice}</span>}
+              <span className="text-sea font-bold">{itemSizes.length > 0 ? `من ${activeDisplayPrice}` : activeDisplayPrice} ج.م</span>
+            </span>
+          </div>
+          {active.description && <p className="text-sm text-mist mt-1 leading-relaxed">{active.description}</p>}
 
           <div className="mt-5">
             {hasOptions ? (
@@ -176,7 +181,9 @@ export default function ProductDetailSheet({
               different KIND of thing from the item you opened, and the surface
               says so before the heading does. */}
           {related.length > 0 && (
-            <div className="-mx-5 mt-6 px-5 py-6 bg-shellup border-t border-line">
+            <div className="relative -mx-5 mt-6 px-5 py-7 bg-shellup overflow-hidden">
+              <span aria-hidden="true" className="absolute inset-x-0 top-0 h-3 pointer-events-none"
+                style={{ background: 'radial-gradient(circle at 12px 0, #FFFFFF 11px, transparent 12px) 0 0 / 24px 24px repeat-x' }} />
               <h3 className="font-semibold text-sm text-mist mb-3">منتجات تانية ممكن تعجبك</h3>
               <div className="flex gap-3 overflow-x-auto pb-1 -mx-5 px-5 scrollbar-none">
                 {related.map(r => {

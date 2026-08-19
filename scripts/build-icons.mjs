@@ -63,7 +63,7 @@ const MAP = [
 // The nav five, plus the five the live-order card uses for its stages.
 // Filled is the right weight there: the card REPORTS a state, and an
 // outline glyph reads as something you can press.
-const FILLED = ['house', 'van', 'tag', 'cartShopping', 'circleUser',
+const FILLED = ['house', 'van', 'tag', 'cartShopping', 'circleUser', 'user',
   'checkCircle', 'storefront', 'motorcycle', 'locationDot', 'calendarCheck']
 
 if (!existsSync(A)) {
