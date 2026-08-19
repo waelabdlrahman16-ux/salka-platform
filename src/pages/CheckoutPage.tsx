@@ -467,7 +467,7 @@ export default function CheckoutPage() {
               const today = sl.scheduled_date === cairoToday()
               return (
                 <button key={`${sl.id}-${sl.scheduled_date}`} className={`card p-3 text-right ${on ? 'border-sea' : ''}`} onClick={() => setSlot(sl)}>
-                  <p className="text-sm font-semibold">{sl.start_time.slice(0, 5)}–{sl.end_time.slice(0, 5)}</p>
+                  <p className="text-sm font-semibold"><bdi dir="ltr">{sl.start_time.slice(0, 5)}–{sl.end_time.slice(0, 5)}</bdi></p>
                   <p className="text-xs text-mist mt-0.5">{today ? 'النهاردة' : 'بكرة'} • باقي {sl.remaining}</p>
                 </button>
               )
@@ -621,7 +621,7 @@ export default function CheckoutPage() {
             <div>
               <p className="font-bold text-sm">التوصيل</p>
               <p className="text-xs text-mist">
-                يوصلك خلال {quote.sla_minutes}–{quote.sla_max_minutes ?? quote.sla_minutes + 10} دقيقة
+                يوصلك خلال <bdi dir="ltr">{quote.sla_minutes}–{quote.sla_max_minutes ?? quote.sla_minutes + 10}</bdi> دقيقة
               </p>
             </div>
           </div>

@@ -1474,7 +1474,7 @@ export default function DriverPage() {
                       <p className="font-semibold">
                         {new Date(sh.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', weekday: 'long', day: 'numeric', month: 'numeric' })}
                       </p>
-                      <p className="text-sm text-mist mt-0.5">{sh.start_time.slice(0,5)}–{sh.end_time.slice(0,5)}</p>
+                      <p className="text-sm text-mist mt-0.5"><bdi dir="ltr">{sh.start_time.slice(0,5)}–{sh.end_time.slice(0,5)}</bdi></p>
                     </div>
                     {sh.status === 'swapped' && <span className="bg-shellup text-mist text-xs font-semibold rounded-full px-2.5 py-1">اتبدلت</span>}
                   </div>
@@ -1516,7 +1516,7 @@ export default function DriverPage() {
               <div key={sw.request_id} className="card p-4 border-coral-300">
                 <p className="font-semibold">
                   {new Date(sw.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', weekday: 'long', day: 'numeric', month: 'numeric' })}
-                  {' '}• {sw.start_time.slice(0,5)}–{sw.end_time.slice(0,5)}
+                  {' '}• <bdi dir="ltr">{sw.start_time.slice(0,5)}–{sw.end_time.slice(0,5)}</bdi>
                 </p>
                 <p className="text-sm text-mist mt-1">مطلوبة من {sw.requested_by_name}</p>
                 {sw.reason && <p className="text-sm text-mist mt-0.5">"{sw.reason}"</p>}

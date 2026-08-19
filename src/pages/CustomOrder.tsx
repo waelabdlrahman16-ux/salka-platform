@@ -668,7 +668,7 @@ export default function CustomOrder() {
                   aria-pressed={on}
                   className={`card p-3 text-right ${on ? 'border-sea' : ''}`}
                   onClick={() => setSlot(sl)}>
-                  <p className="text-sm font-semibold">{sl.start_time.slice(0, 5)}–{sl.end_time.slice(0, 5)}</p>
+                  <p className="text-sm font-semibold"><bdi dir="ltr">{sl.start_time.slice(0, 5)}–{sl.end_time.slice(0, 5)}</bdi></p>
                   <p className="text-xs text-mist mt-0.5">{today ? 'النهاردة' : 'بكرة'} • باقي {sl.remaining}</p>
                 </button>
               )

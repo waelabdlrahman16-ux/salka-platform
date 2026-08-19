@@ -3049,7 +3049,7 @@ export default function Admin() {
                     <p className="font-semibold">{e.requester?.name}</p>
                     <p className="text-sm text-mist mt-0.5">
                       {e.shifts && new Date(e.shifts.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', weekday: 'long', day: 'numeric', month: 'numeric' })}
-                      {' '}• {e.shifts?.start_time?.slice(0,5)}–{e.shifts?.end_time?.slice(0,5)}
+                      {' '}• <bdi dir="ltr">{e.shifts?.start_time?.slice(0,5)}–{e.shifts?.end_time?.slice(0,5)}</bdi>
                     </p>
                     {e.reason && <p className="text-sm text-mist mt-1">"{e.reason}"</p>}
                     <p className="text-xs text-warning mt-2">محدش من المندوبين وافق يستلم الوردية</p>
@@ -3104,7 +3104,7 @@ export default function Admin() {
                 <div key={sh.id} className="card p-3.5 flex items-center justify-between text-sm">
                   <div>
                     <span className="font-semibold">{d?.name}</span>
-                    <span className="text-mist"> • {new Date(sh.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo' })} • {sh.start_time.slice(0,5)}–{sh.end_time.slice(0,5)}</span>
+                    <span className="text-mist"> • {new Date(sh.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo' })} • <bdi dir="ltr">{sh.start_time.slice(0,5)}–{sh.end_time.slice(0,5)}</bdi></span>
                   </div>
                   {sh.status === 'swapped' && <span className="badge-closed">اتبدلت</span>}
                 </div>
