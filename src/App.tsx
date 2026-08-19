@@ -168,36 +168,49 @@ function BottomNav() {
   // meaning are worth noting: the trolley now belongs to عربتي, where a trolley
   // actually means a basket, and الضروريات took the truck -- a pharmacy and a
   // supermarket run is an errand being delivered, not a shop you browse.
+  // العروض no longer carries its own accent colour. It used to render gold
+  // while the other four rendered teal, which meant the bar had two different
+  // "active" colours and the idle gold sat at 3.41:1 on white -- under the
+  // 4.5:1 that 10-11px text needs. One active colour for all five now.
   const items = [
     { to: '/', label: 'الرئيسية', icon: 'house' as const },
     { to: '/custom-order', label: 'هنجبلك', icon: 'truck' as const },
-    { to: '/offers', label: 'العروض', icon: 'tag' as const, accent: true },
+    { to: '/offers', label: 'العروض', icon: 'tag' as const },
     { to: '/cart', label: 'عربتي', icon: 'cartShopping' as const, badge: cart.count },
     { to: '/profile', label: 'حسابي', icon: 'circleUser' as const },
   ]
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-40 bg-shell/95 backdrop-blur border-t border-line" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+    // bg-shell/90, not /95: at 95% the backdrop-blur behind it was doing almost
+    // nothing, so the bar was paying for a filter it could not show.
+    <nav className="fixed bottom-0 inset-x-0 z-40 bg-shell/90 backdrop-blur border-t border-line"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div className="max-w-5xl mx-auto grid grid-cols-5">
         {items.map(it => {
           const active = it.to === '/' ? pathname === '/' : pathname.startsWith(it.to)
           return (
-            <Link key={it.to} to={it.to}
-              className={`relative flex flex-col items-center gap-0.5 py-2.5 text-[10px] font-semibold ${
-                it.accent
-                  ? (active ? 'text-sandink' : 'text-sandink/70')
-                  : (active ? 'text-sea' : 'text-mist')
-              }`}>
+            <Link key={it.to} to={it.to} aria-current={active ? 'page' : undefined}
+              className={`relative flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-semibold
+                transition-colors ${active ? 'text-sea' : 'text-mist'}`}>
               <span className="relative leading-none">
-                <Icon name={it.icon} size="md" />
+                {/* SHAPE carries the active state, not just colour: solid when
+                    you are on the tab, outline when you are not. Colour alone
+                    fails WCAG 1.4.1 and, more practically, teal and warm grey
+                    sit close together for a red-green colour-blind customer.
+                    `filled` only type-checks for the five icons that ship a
+                    fill variant, which is exactly these five. */}
+                <Icon name={it.icon} size="md" filled={active} />
                 {!!it.badge && (
-                  <span className="absolute -top-1.5 -left-2.5 bg-sea text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 grid place-items-center px-1">
+                  // -end-2.5, not -left-2.5. The app is dir="rtl", so a physical
+                  // `left` put the count on the inside of the icon instead of
+                  // trailing it.
+                  <span className="absolute -top-1.5 -end-2.5 bg-sea text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 grid place-items-center px-1">
                     {it.badge}
                   </span>
                 )}
               </span>
-              {/* Every label is now one word, so nothing wraps in the ~70px a
-                  five-column bar leaves on a 360px phone. */}
+              {/* Every label is one word, so nothing wraps in the ~70px a
+                  five-column bar leaves on a 360px phone -- 11px included. */}
               <span className="block text-center leading-tight px-0.5 whitespace-nowrap">{it.label}</span>
             </Link>
           )

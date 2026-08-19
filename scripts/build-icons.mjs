@@ -53,6 +53,12 @@ const MAP = [
   ['baby', 'baby'], ['carrot', 'carrot'], ['cheese', 'cheese'],
 ]
 
+// Icons that also ship a FILLED variant. Deliberately a short list, not all 80:
+// the fill weight is a second full copy of every path, so generating it for the
+// whole set would add ~12kB gzip to carry five nav icons. Add a name here only
+// when something actually renders a filled state.
+const FILLED = ['house', 'truck', 'tag', 'cartShopping', 'circleUser']
+
 if (!existsSync(A)) {
   console.error(`${A} not found. Run:  npm i -D @phosphor-icons/core`)
   process.exit(2)
@@ -98,6 +104,18 @@ for (const [weight, konst, suffix] of [['bold', 'BOLD', '-bold']]) {
   }
   lines.push('}')
 }
+lines.push('')
+lines.push('export type FilledIconName =')
+lines.push('  ' + FILLED.map(n => `'${n}'`).join(' | '))
+lines.push('')
+lines.push('const FILL: Record<FilledIconName, string> = {')
+for (const our of FILLED) {
+  const ph = MAP.find(([o]) => o === our)?.[1]
+  if (!ph) { console.error(`FILLED lists ${our}, which is not in MAP`); process.exit(2) }
+  lines.push(`  ${our}: '${pathOf(`${A}/fill/${ph}-fill.svg`, `${our} (fill)`)}',`)
+}
+lines.push('}')
+
 lines.push(`
 // Bold weight, not regular: at the sizes these render at, regular's hairlines
 // go muddy next to IBM Plex Sans Arabic's stems. Bold matches the text colour
@@ -125,13 +143,20 @@ const SIZE = {
 
 export type IconSize = keyof typeof SIZE
 
-export default function Icon({ name, size = 'sm', className = '' }: {
-  name: IconName; size?: IconSize; className?: string
-}) {
+// \`filled\` is typed against FilledIconName, so passing it to an icon with no
+// fill variant is a compile error rather than a silent fall back to the bold
+// path -- same reasoning as the size tokens.
+type IconProps = { size?: IconSize; className?: string } & (
+  | { name: IconName; filled?: false }
+  | { name: FilledIconName; filled: true }
+)
+
+export default function Icon({ name, size = 'sm', filled = false, className = '' }: IconProps) {
+  const d = filled ? FILL[name as FilledIconName] : BOLD[name]
   return (
     <svg viewBox="0 0 256 256" aria-hidden="true"
       className={\`\${SIZE[size]} \${className}\`}>
-      <path d={BOLD[name]} fill="currentColor" />
+      <path d={d} fill="currentColor" />
     </svg>
   )
 }`)
