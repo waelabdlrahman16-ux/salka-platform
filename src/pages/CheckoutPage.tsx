@@ -445,7 +445,9 @@ export default function CheckoutPage() {
 
   return (
     <div className="pb-6">
-      <h1 className="text-2xl font-bold mb-4">تأكيد الطلب</h1>
+      {/* lg, like every other page header. 2xl on the money screen pushed the
+          first field further down than any other screen in the app. */}
+      <h1 className="text-lg font-bold mb-4">تأكيد الطلب</h1>
 
       {removedNotice && (
         <p className="text-coral-700 text-sm mb-4 bg-coral-100 rounded-xl p-3">{removedNotice}</p>
@@ -476,6 +478,11 @@ export default function CheckoutPage() {
         </div>
       )}
 
+      {/* Group headings OUTSIDE the cards. Eight sibling cards each with their
+          own bold heading read as one long undifferentiated form; the customer
+          is making three decisions here -- where, how to pay, and whether the
+          total is right -- and the page should say so. */}
+      <h2 className="text-[13px] font-bold text-mist mb-2 mt-1">التوصيل</h2>
       <div className="card p-4 mb-4 space-y-3">
         <h2 className="font-bold">عنوان التوصيل</h2>
 
@@ -679,8 +686,8 @@ export default function CheckoutPage() {
         )}
       </div>
 
+      <h2 className="text-[13px] font-bold text-mist mb-2 mt-5">طريقة الدفع</h2>
       <div className="card p-4 mb-4">
-        <h2 className="font-bold mb-3">الدفع</h2>
         <div className="space-y-2.5">
           <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${paymentMethod === 'cod' ? 'border-sea bg-sea/5' : 'border-line'}`}>
             <span className="font-semibold flex-1">كاش عند الاستلام</span>
@@ -719,8 +726,8 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      <div className="card p-4 mb-5 space-y-2">
-        <h2 className="font-bold mb-1">ملخص الطلب</h2>
+      <h2 className="text-[13px] font-bold text-mist mb-2 mt-5">الملخص</h2>
+      <div className="card !bg-warm p-4 mb-5 space-y-2">
         {lines.map(l => {
           const { unit, original, item, sizeName, comboName, addonNames } = priceFor(l)
           return (
@@ -738,9 +745,9 @@ export default function CheckoutPage() {
             </div>
           )
         })}
-        <div className="flex justify-between text-sm text-mist">
-          <span>التوصيل{quote ? ` لـ ${quote.compound_name}` : ''}</span>
-          <span>
+        <div className="flex justify-between text-sm">
+          <span className="text-mist">التوصيل{quote ? ` لـ ${quote.compound_name}` : ''}</span>
+          <span className="text-foam font-semibold">
             {deliveryFee !== null ? `${deliveryFee} ج.م`
               : feeLoading ? '…'
               : compoundId ? <button className="text-sea underline" onClick={retryFee}>إعادة المحاولة</button>
@@ -750,9 +757,9 @@ export default function CheckoutPage() {
         {promoDiscount > 0 && (
           <div className="flex justify-between text-sm text-success"><span>كود خصم {promoCode.trim().toUpperCase()} • {PROMO_SCOPE_LABEL[promoQuote?.applies_to ?? 'all']}</span><span>-{promoDiscount} ج.م</span></div>
         )}
-        <div className="flex justify-between text-sm text-mist">
-          <span>رسوم الخدمة</span>
-          <span>
+        <div className="flex justify-between text-sm">
+          <span className="text-mist">رسوم الخدمة</span>
+          <span className="text-foam font-semibold">
             {serviceFee !== null ? `${serviceFee} ج.م`
               : serviceFeeLoading ? '…'
               : <button className="text-sea underline" onClick={retryServiceFee}>إعادة المحاولة</button>}
@@ -766,7 +773,7 @@ export default function CheckoutPage() {
           {/* optionsLoaded belongs here too: a combo line prices from the base
               item price until menu_item_combos lands, so this figure could read
               284 for an order the server charges 410 for. */}
-          <span className="text-sea">{optionsLoaded && deliveryFee !== null && serviceFee !== null ? `${finalTotal} ج.م` : '…'}</span>
+          <span className="text-foam">{optionsLoaded && deliveryFee !== null && serviceFee !== null ? `${finalTotal} ج.م` : '…'}</span>
         </div>
       </div>
 
