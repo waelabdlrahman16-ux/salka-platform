@@ -95,7 +95,7 @@ export default function ProductDetailSheet({
             Inset with side/top padding and rounded corners, not full-bleed
             against the sheet edges -- matches the redesign Wael supplied. */}
         <div className="px-4">
-        <div className={`relative grid place-items-center text-5xl overflow-hidden rounded-xl bg-shellup ${
+        <div className={`relative grid place-items-center text-5xl overflow-hidden rounded-xl bg-imgbg ${
             active.image_url && !imgFailed ? 'aspect-[4/3] max-h-[22vh]' : 'h-28'}`}
           // Same fix as ProductCard: the photo's frame is an image container,
           // so it takes the token rather than a literal that the palette change
@@ -150,7 +150,7 @@ export default function ProductDetailSheet({
               // same job -- and once it appeared there was no «إضافة» left to
               // press, only a counter.
               <div className="flex items-center gap-2.5">
-                <div className="flex items-center gap-1 bg-shellup rounded-full px-1.5 py-1.5 shrink-0">
+                <div className="flex items-center gap-1 bg-imgbg rounded-full px-1.5 py-1.5 shrink-0">
                   <button className="w-9 h-9 rounded-full grid place-items-center hover:bg-white disabled:opacity-40"
                     aria-label="أقل" disabled={qty <= 0} onClick={() => onRemove(active)}>
                     <Icon name="minus" size="sm" />

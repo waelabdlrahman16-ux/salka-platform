@@ -727,7 +727,7 @@ export default function CheckoutPage() {
       </div>
 
       <h2 className="text-[13px] font-bold text-mist mb-2 mt-5">الملخص</h2>
-      <div className="card !bg-warm p-4 mb-5 space-y-2">
+      <div className="card !bg-shellup p-4 mb-5 space-y-2">
         {lines.map(l => {
           const { unit, original, item, sizeName, comboName, addonNames } = priceFor(l)
           return (

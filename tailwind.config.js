@@ -93,24 +93,18 @@ export default {
         // undertone. Kept the teal brand color exactly as-is; warmed every neutral around
         // it instead, so teal now stands out as the one cool-toned element rather than
         // blending into a cool-grey family.
-        // 2026-08-19, Wael: the warm-ivory ground is retired for a neutral one.
-        // Page and card are BOTH white now, so the border is the only thing
-        // separating a card from the page -- which is why `line` moved with
-        // them rather than staying warm.
+        // 2026-08-19, Wael: the ground goes white. THREE jobs only -- page
+        // background, image-container background, image-container border. The
+        // rest of the palette stays warm; an earlier pass spread the neutral
+        // across cards, shelves and headers, which is not what was asked.
         night: '#FFFFFF',     // page background — white (was #FBF7F1, warm ivory)
         shell: '#FFFFFF',     // card background
-        shellup: '#F5F5F5',   // elevated surface: image containers, thumbnails,
-                              // active tab, headers (was #F4EEE3, warm tint)
-        line: '#E5E5E5',      // borders, incl. image containers (was #E8E1D6, warm)
-        // Kept as a separate NAME from shellup even though the value now
-        // matches: shellup means "image container", warm means "a block of the
-        // storefront's own". They moved together once; a token each means the
-        // next change to one does not silently drag the other.
-        warm: '#F5F5F5',
-        // The actual warm cream, kept apart from `warm` once that became a
-        // neutral. This is the accent surface -- gradient headers, errand
-        // tiles -- not a block tint. #6B4A18 on it is 6.95:1.
-        cream: '#F4EEE3',
+        shellup: '#F4EEE3',   // elevated surface (header, active tab, tints) — warm
+        line: '#E8E1D6',      // borders — warm light grey
+        // The image container, and ONLY the image container: a surface that
+        // sits behind a photograph, where a warm tint casts onto the food.
+        imgbg: '#F5F5F5',
+        imgline: '#E5E5E5',
         sea: '#00625F',       // brand primary = teal-600. Was #0A5F5E, whose comment claimed it
                               // matched the logo exactly; Wael confirmed the logo is #00625F.
                               // 14/765 in RGB, invisible, and both pass AA -- but only one is right.

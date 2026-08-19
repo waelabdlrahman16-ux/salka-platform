@@ -79,11 +79,11 @@ export default function ProductCard({
             warned against a tint behind photos; that was `art.tint`, a
             saturated category colour, not this.)
 
-            bg-shellup, not a literal: this was hardcoded #F4EEE3, so the
+            bg-imgbg, not a literal: this was hardcoded #F4EEE3, so the
             palette change went straight past it and every dish still sat on
             the old cream. An image container is exactly what that token
             means. */}
-        <div className="relative rounded-md aspect-[4/3] grid place-items-center text-3xl overflow-hidden bg-shellup"
+        <div className="relative rounded-md aspect-[4/3] grid place-items-center text-3xl overflow-hidden bg-imgbg"
           style={item.image_url ? undefined : { background: art.tint }}>
           {item.image_url
             // COVER, not contain -- Wael's call on 2026-08-07 and the right one.

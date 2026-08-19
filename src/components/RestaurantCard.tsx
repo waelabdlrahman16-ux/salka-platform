@@ -135,7 +135,7 @@ export default function RestaurantCard({
       // bottom of the list on its own. Greyscale plus the reopening time beside
       // the name says it once and still lets someone see the food and decide to
       // come back at nine.
-      className="block card !bg-warm overflow-hidden !rounded-3xl"
+      className="block card overflow-hidden !rounded-3xl"
     >
       {/* 5:2, trimmed again on 2026-08-07 at Wael's request after seeing it
           rendered at real phone width. On a 390px screen (minus the app's 16px

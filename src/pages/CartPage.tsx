@@ -181,7 +181,7 @@ export default function CartPage() {
         })}
       </div>
 
-      <div className="card !bg-warm p-3.5 mb-24 space-y-1.5">
+      <div className="card !bg-shellup p-3.5 mb-24 space-y-1.5">
         {/* Labels stay muted, VALUES do not. These are the numbers the
             customer is about to pay; grey made them read as small print. */}
         <div className="flex justify-between text-sm"><span className="text-mist">المنتجات</span><span className="text-foam font-semibold">{subtotal} ج.م</span></div>

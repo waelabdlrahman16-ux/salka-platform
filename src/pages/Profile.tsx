@@ -138,12 +138,12 @@ export default function Profile() {
         {/* The same cream band as هنجبلك, bleeding to the screen edges and
             fading into the page. This screen has no photography either, so the
             surface carries it rather than a bigger typeface. */}
-        <div className="-mx-4 -mt-6 mb-7 px-4 pt-8 pb-6 bg-gradient-to-b from-cream to-night text-center">
+        <div className="-mx-4 -mt-6 mb-7 px-4 pt-8 pb-6 bg-gradient-to-b from-shellup to-night text-center">
           <span className="w-14 h-14 rounded-2xl bg-white/70 text-[#6B4A18] grid place-items-center mx-auto mb-3">
             <Icon name="circleUser" size="xl" />
           </span>
           <h1 className="font-bold text-xl mb-1">اعمل حساب في ثانية</h1>
-          <p className="text-mist text-sm">من غير كلمة سر — بإيميلك أو بحساب جوجل</p>
+          <p className="text-mist text-sm">من غير كلمة سر، بإيميلك أو بحساب جوجل</p>
         </div>
 
         <ul className="space-y-3 mb-7">
@@ -158,7 +158,7 @@ export default function Profile() {
                   collapses to 20x42, because a flex item cannot take its width
                   from a height it only gets by stretching. If the copy ever
                   wraps to a third line, re-measure. */}
-              <span className="w-[42px] h-[42px] rounded-lg bg-cream text-[#6B4A18] grid place-items-center shrink-0">
+              <span className="w-[42px] h-[42px] rounded-lg bg-shellup text-[#6B4A18] grid place-items-center shrink-0">
                 <Icon name={p.icon} size="md" />
               </span>
               <span className="min-w-0">

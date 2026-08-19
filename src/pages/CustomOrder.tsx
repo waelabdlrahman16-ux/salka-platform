@@ -430,7 +430,7 @@ export default function CustomOrder() {
             and the band has to end in the page's own white or it reads as a
             block with a hard edge rather than a header. The van glyph is the
             same one the tab bar uses for this destination. */}
-        <div className="-mx-4 -mt-6 mb-4 px-4 pt-8 pb-5 bg-gradient-to-b from-cream to-night">
+        <div className="-mx-4 -mt-6 mb-4 px-4 pt-8 pb-5 bg-gradient-to-b from-shellup to-night">
           <span className="w-11 h-11 rounded-2xl bg-white/70 text-[#6B4A18] grid place-items-center mb-2.5">
             <Icon name="van" size="lg" />
           </span>
@@ -597,7 +597,7 @@ export default function CustomOrder() {
           read as one place. Back is the app's icon button rather than a word,
           the vendor's mark identifies where you are, and the fee sits with the
           name instead of on a line of its own. */}
-      <div className="-mx-4 -mt-6 mb-4 px-4 pt-4 pb-5 bg-gradient-to-b from-cream to-night">
+      <div className="-mx-4 -mt-6 mb-4 px-4 pt-4 pb-5 bg-gradient-to-b from-shellup to-night">
         <button aria-label="رجوع" title="رجوع"
           className="grid place-items-center min-w-[44px] min-h-[44px] -mr-2.5 mb-1"
           onClick={() => {
@@ -630,7 +630,7 @@ export default function CustomOrder() {
           link buried in it. The four-step explainer that used to open this
           screen is still behind «إزاي بيشتغل؟» -- someone who wants paracetamol
           should not have to read an explainer to reach a text box. */}
-      <div className="card !bg-warm p-3.5 mb-4 flex items-start gap-2.5">
+      <div className="card !bg-shellup p-3.5 mb-4 flex items-start gap-2.5">
         <Icon name="phone" size="sm" className="text-sea shrink-0 mt-0.5" />
         <div className="min-w-0">
           <p className="text-[13px] font-semibold">هنتصل بيك بالسعر قبل ما نجهّز</p>
