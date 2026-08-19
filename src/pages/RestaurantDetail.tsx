@@ -760,15 +760,24 @@ export default function RestaurantDetail() {
           // 68px used to clear the bottom tab bar; that bar no longer renders
           // on this page, so the gap was empty space.
           style={{ bottom: 'calc(env(safe-area-inset-bottom) + 28px)' }}>
-          <button className="max-w-lg mx-auto w-full bg-sea text-white rounded-2xl shadow-lg px-4 py-3.5 flex items-center justify-between gap-3"
+          <button className="max-w-lg mx-auto w-full bg-sea text-white rounded-full shadow-lg px-4 py-3.5 flex items-center justify-between gap-3"
             onClick={() => nav('/cart')}>
             {/* The count is the badge now, rather than a bare «3» sitting
                 beside the same number spelled out. */}
             <span className="bg-white/20 rounded-full px-3 py-1 font-bold text-sm truncate min-w-0">
               {cart.count === 1 ? 'صنف واحد' : `${cart.count} أصناف`}
             </span>
-            <span className="font-bold text-sm shrink-0">
-              {optionsLoaded ? `${Math.round(cartSubtotal * 100) / 100} ج.م • ` : ''}شوف العربة
+            {/* The bullet was inside the template string, so it carried the
+                full weight of the label either side of it. Its own span at 50%
+                now, like every other separator. */}
+            <span className="font-bold text-sm shrink-0 flex items-center gap-1.5">
+              {optionsLoaded && (
+                <>
+                  <span>{Math.round(cartSubtotal * 100) / 100} ج.م</span>
+                  <span aria-hidden="true" className="opacity-50">•</span>
+                </>
+              )}
+              <span>شوف العربة</span>
             </span>
           </button>
         </div>

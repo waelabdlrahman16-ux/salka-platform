@@ -144,7 +144,7 @@ export default function CartPage() {
           const { unit, original, sizeName, comboName, addonNames } = priceFor(l)
           const art = artFor(item.category)
           return (
-            <div key={l.key} className="card !bg-warm p-3.5 flex items-center gap-3">
+            <div key={l.key} className="card p-3.5 flex items-center gap-3">
               {/* The menu shows a photograph and the cart showed a generic
                   emoji tile for the same item, which reads as a loading failure
                   right at the moment the customer is deciding to pay. */}
@@ -182,22 +182,24 @@ export default function CartPage() {
       </div>
 
       <div className="card !bg-warm p-3.5 mb-24 space-y-1.5">
-        <div className="flex justify-between text-sm text-mist"><span>المنتجات</span><span>{subtotal} ج.م</span></div>
-        <div className="flex justify-between text-sm text-mist">
-          <span>التوصيل</span>
-          <span>
+        {/* Labels stay muted, VALUES do not. These are the numbers the
+            customer is about to pay; grey made them read as small print. */}
+        <div className="flex justify-between text-sm"><span className="text-mist">المنتجات</span><span className="text-foam font-semibold">{subtotal} ج.م</span></div>
+        <div className="flex justify-between text-sm">
+          <span className="text-mist">التوصيل</span>
+          <span className="text-foam font-semibold">
             {deliveryFee !== null ? `${deliveryFee} ج.م`
               : feeLoading ? '…'
               : 'يتحدد بعد اختيار مكانك'}
           </span>
         </div>
-        <div className="flex justify-between text-sm text-mist">
-          <span>رسوم الخدمة</span>
-          <span>{serviceFee !== null ? `${serviceFee} ج.م` : serviceFeeLoading ? '…' : '—'}</span>
+        <div className="flex justify-between text-sm">
+          <span className="text-mist">رسوم الخدمة</span>
+          <span className="text-foam font-semibold">{serviceFee !== null ? `${serviceFee} ج.م` : serviceFeeLoading ? '…' : '—'}</span>
         </div>
         <div className="flex justify-between font-bold border-t border-line pt-2">
           <span>{grandTotal !== null ? 'الإجمالي' : 'الإجمالي قبل التوصيل'}</span>
-          <span className="text-sea">
+          <span className="text-foam">
             {!optionsLoaded ? '…'
               : grandTotal !== null ? `${grandTotal} ج.م`
               : partialTotal !== null ? `${partialTotal} ج.م`

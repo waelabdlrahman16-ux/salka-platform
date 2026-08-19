@@ -453,6 +453,12 @@ export default function CustomOrder() {
             const vSlots = vendorSlots[v.id] ?? []
             const next = vSlots[0]
             const today = next?.scheduled_date === cairoToday()
+            // Same arithmetic as the home card: prep plus the compound's own
+            // travel window, never a constant.
+            const eta = selectedCompound
+              ? { min: v.prep_minutes + selectedCompound.est_travel_minutes_min,
+                  max: v.prep_minutes + selectedCompound.est_travel_minutes_max }
+              : null
             return (
               <button key={v.id}
                 className="card px-2.5 py-2.5 w-full text-right flex items-center gap-2.5 hover:border-sea/40 transition-colors"
@@ -489,22 +495,49 @@ export default function CustomOrder() {
                   {v.description && (
                     <span className="block text-xs text-mist mt-0.5 truncate">{v.description}</span>
                   )}
-                  <span className="block text-xs text-mist mt-0.5">
-                    {/* The fee already waited for a compound; the TIME did not, and
-                        it should have. prep_minutes + 20 treats the drive as a
-                        constant, on a coast that runs 31km -- so an unlocated
-                        customer was being quoted a delivery time we cannot know.
-                        Both halves wait for the same answer now. A fixed slot is
-                        different: it is the vendor's own schedule and holds
-                        wherever you are. */}
-                    {deliveryFee === null
-                      ? 'التوصيل والوقت حسب مكانك'
-                      : `التوصيل ${deliveryFee} ج.م • خلال ${v.prep_minutes + 20} دقيقة تقريبًا`}
-                    {/* Slots are the vendor's own schedule, so they hold wherever
-                        you are and print either way. */}
-                    {usesSlots && (next
-                      ? ` • أقرب فترة ${today ? '' : 'بكرة '}${next.start_time.slice(0, 5)}`
-                      : ' • مفيش فترات دلوقتي')}
+                  {/* The same meta row as the home card: rating, time, category,
+                      one weight, bullets between. The fee is gone from here for
+                      the reason it left the home card -- it belongs to the
+                      compound, is identical on every row, and is already stated
+                      in the header above.
+
+                      The TIME still waits for a compound. prep_minutes + a
+                      constant treats the drive as fixed on a coast that runs
+                      31km, so an unlocated customer was quoted a time we cannot
+                      know. A fixed slot is different: it is the vendor's own
+                      schedule and holds wherever you are. */}
+                  <span className="flex items-center gap-1.5 text-[13px] text-mist flex-wrap mt-0.5">
+                    {(v.review_count ?? 0) > 0 && (
+                      <>
+                        <span className="flex items-center gap-1">
+                          <Icon name="star" size="xs" className="text-coral-600" />
+                          <span className="text-foam">{v.rating_real ?? v.rating}</span>
+                        </span>
+                        <span aria-hidden="true" className="text-slate-300">•</span>
+                      </>
+                    )}
+                    {eta ? (
+                      <span className="flex items-center gap-1">
+                        <Icon name="clock" size="xs" className="text-mist" />
+                        <span className="text-seadeep"><bdi dir="ltr">{eta.min} – {eta.max}</bdi> د</span>
+                      </span>
+                    ) : (
+                      <span>الوقت حسب مكانك</span>
+                    )}
+                    {v.category && (
+                      <>
+                        <span aria-hidden="true" className="text-slate-300">•</span>
+                        <span className="truncate">{v.category}</span>
+                      </>
+                    )}
+                    {usesSlots && (
+                      <>
+                        <span aria-hidden="true" className="text-slate-300">•</span>
+                        <span>{next
+                          ? `أقرب فترة ${today ? '' : 'بكرة '}${next.start_time.slice(0, 5)}`
+                          : 'مفيش فترات دلوقتي'}</span>
+                      </>
+                    )}
                   </span>
                 </span>
               </button>
