@@ -75,11 +75,16 @@ export default function ProductCard({
             packaged goods shot square -- أرابياتا has items whose photo is
             effectively a brand tile -- and against a white card a contained
             square image bleeds edge to edge and reads as the product being a
-            red rectangle. A warm neutral frames it instead. (The old note here
+            red rectangle. A neutral frames it instead. (The old note here
             warned against a tint behind photos; that was `art.tint`, a
-            saturated category colour, not this.) */}
-        <div className="relative rounded-md aspect-[4/3] grid place-items-center text-3xl overflow-hidden"
-          style={{ background: item.image_url ? '#F4EEE3' : art.tint }}>
+            saturated category colour, not this.)
+
+            bg-shellup, not a literal: this was hardcoded #F4EEE3, so the
+            palette change went straight past it and every dish still sat on
+            the old cream. An image container is exactly what that token
+            means. */}
+        <div className="relative rounded-md aspect-[4/3] grid place-items-center text-3xl overflow-hidden bg-shellup"
+          style={item.image_url ? undefined : { background: art.tint }}>
           {item.image_url
             // COVER, not contain -- Wael's call on 2026-08-07 and the right one.
             //

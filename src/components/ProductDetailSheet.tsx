@@ -95,9 +95,12 @@ export default function ProductDetailSheet({
             Inset with side/top padding and rounded corners, not full-bleed
             against the sheet edges -- matches the redesign Wael supplied. */}
         <div className="px-4">
-        <div className={`relative grid place-items-center text-5xl overflow-hidden rounded-xl ${
+        <div className={`relative grid place-items-center text-5xl overflow-hidden rounded-xl bg-shellup ${
             active.image_url && !imgFailed ? 'aspect-[4/3] max-h-[22vh]' : 'h-28'}`}
-          style={{ background: active.image_url && !imgFailed ? '#F4EEE3' : art.tint }}>
+          // Same fix as ProductCard: the photo's frame is an image container,
+          // so it takes the token rather than a literal that the palette change
+          // could not reach.
+          style={active.image_url && !imgFailed ? undefined : { background: art.tint }}>
           {active.image_url && !imgFailed
             // Fills the frame, always. Same reasoning as the grid card: with
             // `contain`, every photo was a different shape inside the same box

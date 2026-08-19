@@ -426,12 +426,12 @@ export default function CustomOrder() {
             plain heading over a list of logos had nothing carrying it -- so the
             surface does the work instead of a bigger typeface.
 
-            teal-100 to transparent, not a new colour: the ramp already exists
+            coral-100 to transparent, not a new colour: the ramp already exists
             and the band has to end in the page's own white or it reads as a
             block with a hard edge rather than a header. The van glyph is the
             same one the tab bar uses for this destination. */}
-        <div className="-mx-4 -mt-6 mb-4 px-4 pt-8 pb-5 bg-gradient-to-b from-teal-100 to-night">
-          <span className="w-11 h-11 rounded-2xl bg-white/70 text-sea grid place-items-center mb-2.5">
+        <div className="-mx-4 -mt-6 mb-4 px-4 pt-8 pb-5 bg-gradient-to-b from-coral-100 to-night">
+          <span className="w-11 h-11 rounded-2xl bg-white/70 text-coral-700 grid place-items-center mb-2.5">
             <Icon name="van" size="lg" />
           </span>
           <h1 className="text-xl font-bold leading-tight">
