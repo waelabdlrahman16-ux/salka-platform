@@ -352,7 +352,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
             )}
           </div>
           {sizes.length > 0 && !priceLocked && (
-            <p className="text-[11px] text-sandink">
+            <p className="text-[11px] text-coral-700">
               ⓘ الأحجام تحت لسه من غير سعر. اكتب سعر لأي حجم عشان سعر الصنف يتحسب منه.
             </p>
           )}

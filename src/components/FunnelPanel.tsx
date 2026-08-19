@@ -164,7 +164,7 @@ export default function FunnelPanel() {
               <p className="text-[10px] text-mist">أجهزة</p>
             </div>
             <div className="bg-shellup rounded-xl p-2.5">
-              <p className="text-lg font-bold text-sandink">{data?.totals.paid_devices ?? 0}</p>
+              <p className="text-lg font-bold text-coral-700">{data?.totals.paid_devices ?? 0}</p>
               <p className="text-[10px] text-mist">من الإعلان</p>
             </div>
             <div className="bg-shellup rounded-xl p-2.5">

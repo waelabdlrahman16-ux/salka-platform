@@ -205,7 +205,7 @@ export default function CustomersTab() {
 
   return (
     <div className="space-y-4">
-      {recoveries.length > 0 && <div className="card p-4 border-sand/60 bg-sand/10">
+      {recoveries.length > 0 && <div className="card p-4 border-coral-300 bg-coral-100">
         <p className="font-bold text-sm">طلبات استرجاع الحساب ({recoveries.length})</p>
         <p className="text-xs text-mist mt-1">اتصل بالرقم المسجل الأول، وبعد التأكد وافق لربط الحساب.</p>
         <div className="space-y-2 mt-3">{recoveries.map(r => <div key={r.id} className="bg-white rounded-lg p-3 flex items-center justify-between gap-2">
@@ -301,7 +301,7 @@ export default function CustomersTab() {
 
 function Stat({ label, value, tone = 'plain' }: { label: string; value: string; tone?: 'plain' | 'warn' }) {
   return (
-    <div className={`card p-3 ${tone === 'warn' ? 'border-sand/60 bg-sand/10' : ''}`}>
+    <div className={`card p-3 ${tone === 'warn' ? 'border-coral-300 bg-coral-100' : ''}`}>
       <p className="text-[11px] text-mist">{label}</p>
       <p className="font-bold text-[15px] mt-0.5">{value}</p>
     </div>
@@ -310,7 +310,7 @@ function Stat({ label, value, tone = 'plain' }: { label: string; value: string; 
 
 function Tag({ children, tone }: { children: React.ReactNode; tone: 'good' | 'warn' | 'bad' }) {
   const cls = tone === 'good' ? 'bg-sea/10 text-sea'
-    : tone === 'warn' ? 'bg-sand/20 text-sandink'
+    : tone === 'warn' ? 'bg-coral-200 text-coral-700'
     : 'bg-red-500/10 text-red-700'
   return <span className={`${cls} text-[10px] font-bold rounded px-1.5 py-0.5 shrink-0`}>{children}</span>
 }
@@ -513,7 +513,7 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
                     <p className="text-xs text-red-700 mt-1">سبب الإلغاء: {o.cancel_reason}</p>
                   )}
                   {o.rating && (o.rating.driver || o.rating.restaurant) && (
-                    <p className="text-xs text-sandink mt-1">
+                    <p className="text-xs text-coral-700 mt-1">
                       قيّم المندوب {o.rating.driver ?? '—'}★ والمطعم {o.rating.restaurant ?? '—'}★
                       {o.rating.comment ? `، ${o.rating.comment}` : ''}
                     </p>

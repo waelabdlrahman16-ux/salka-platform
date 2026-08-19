@@ -105,7 +105,7 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
         {writeError && (
           <p className="text-xs text-red-600 bg-red-500/10 rounded-lg p-2.5 mb-2" role="alert">{writeError}</p>
         )}
-      <div className="flex items-center justify-between bg-sand/10 rounded-lg px-3 py-2 text-sm">
+      <div className="flex items-center justify-between bg-coral-100 rounded-lg px-3 py-2 text-sm">
         <span>
           <Icon name="tag" size="sm" className="inline-block align-[-0.15em] me-1" />خصم {existing.discount_type === 'percent' ? `${existing.value}%` : `${existing.value} ج.م`}
           {existing.ends_at && `، لحد ${new Date(existing.ends_at).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo' })}`}
@@ -130,7 +130,7 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
         <p className="text-xs text-red-600 bg-red-500/10 rounded-lg p-2.5" role="alert">{writeError}</p>
       )}
       {conflicts && conflicts.length > 0 && (
-        <div className="bg-sand/15 rounded-lg p-2.5 text-xs">
+        <div className="bg-coral-100 rounded-lg p-2.5 text-xs">
           <p className="font-semibold mb-1.5">
             <Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />في {scope === 'item' ? 'خصم على القسم ده' : 'أصناف ليها خصم خاص'} شغال دلوقتي وهيتعارض:
           </p>

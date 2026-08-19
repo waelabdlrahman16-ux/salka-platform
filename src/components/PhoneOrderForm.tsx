@@ -197,8 +197,8 @@ export default function PhoneOrderForm({ onCreated }: { onCreated: () => void })
         </div>
 
         {needsDeposit && (
-          <div className="bg-sand/15 border border-sand rounded-xl p-3 text-sm" role="alert">
-            <p className="font-semibold text-sandink">
+          <div className="bg-coral-100 border border-coral-300 rounded-xl p-3 text-sm" role="alert">
+            <p className="font-semibold text-coral-700">
               ده فوق {depositThreshold} ج.م، اطلب عربون قبل ما تبعت المندوب
             </p>
             <p className="text-xs text-mist mt-1">
