@@ -97,8 +97,8 @@ export default function Vendor() {
         <EnablePushButton required onToken={persistPushToken} label="فعّل تنبيهات طلبات المندوب" />
         <EnableSoundButton />
         <div className="flex gap-2 mb-4">
-          <button className={`tab ${view !== 'history' ? 'tab-active' : 'bg-shellup/60'}`} onClick={() => setView('main')}>🛵 طلب مندوب</button>
-          <button className={`tab ${view === 'history' ? 'tab-active' : 'bg-shellup/60'}`} onClick={() => setView('history')}>🧾 السجل</button>
+          <button className={`tab ${view !== 'history' ? 'tab-active' : 'bg-shellup/60'}`} onClick={() => setView('main')}><Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />طلب مندوب</button>
+          <button className={`tab ${view === 'history' ? 'tab-active' : 'bg-shellup/60'}`} onClick={() => setView('history')}><Icon name="receipt" size="sm" className="inline-block align-[-0.15em] me-1" />السجل</button>
         </div>
         {view === 'history'
           ? <RideHistoryPanel restaurantId={restaurant.id} />
@@ -132,13 +132,13 @@ export default function Vendor() {
         <>
           <div className="flex flex-wrap items-center gap-2 mb-4">
             <button className="btn-ghost text-sm" onClick={() => setView('menu')}>
-              <Icon name="clipboardText" className="w-4 h-4 inline-block align-[-0.15em] me-1" />إدارة المنيو
+              <Icon name="clipboardText" size="sm" className="inline-block align-[-0.15em] me-1" />إدارة المنيو
             </button>
             <button className="btn-ghost text-sm" onClick={() => setView('request')}>
-              <Icon name="moped" className="w-4 h-4 inline-block align-[-0.15em] me-1" />طلب مندوب
+              <Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />طلب مندوب
             </button>
             <button className="btn-ghost text-sm" onClick={() => setView('history')}>
-              <Icon name="receipt" className="w-4 h-4 inline-block align-[-0.15em] me-1" />سجل طلبات المندوب
+              <Icon name="receipt" size="sm" className="inline-block align-[-0.15em] me-1" />سجل طلبات المندوب
             </button>
           </div>
           <KitchenVendor rid={rid} />
@@ -148,7 +148,7 @@ export default function Vendor() {
       {view === 'request' && <DriverRequestPanel restaurant={restaurant} onClose={() => setView('main')} />}
       {view === 'history' && (
         <div>
-          <button className="text-sm text-mist hover:text-foam mb-4" onClick={() => setView('main')}><Icon name="chevronLeft" className="w-3 h-3 inline-block align-middle ml-1 rotate-180" />رجوع</button>
+          <button className="text-sm text-mist hover:text-foam mb-4" onClick={() => setView('main')}><Icon name="chevronLeft" size="xs" className="inline-block align-middle ml-1 rotate-180" />رجوع</button>
           <RideHistoryPanel restaurantId={restaurant.id} />
         </div>
       )}
@@ -282,7 +282,7 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
   return (
     <div className="max-w-lg mx-auto pb-6">
       <div className="flex items-center justify-between mb-1">
-        <h1 className="text-xl font-bold">🛵 {restaurant.name}، طلب مندوب</h1>
+        <h1 className="text-xl font-bold"><Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />{restaurant.name}، طلب مندوب</h1>
         {!standalone && <button className="text-sm text-mist hover:text-foam" onClick={onClose}>إغلاق ✕</button>}
       </div>
       <p className="text-mist text-sm mb-4">
@@ -293,7 +293,7 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
 
       {sent && (
         <div className="bg-emerald-50 text-emerald-800 rounded-xl p-3.5 text-sm mb-4 space-y-2">
-          <p className="font-semibold text-center">✓ تم إرسال الطلب للمندوبين، طلب #{sent.id}</p>
+          <p className="font-semibold text-center"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />تم إرسال الطلب للمندوبين، طلب #{sent.id}</p>
           <p className="text-xs">ابعت اللينك ده للعميل عشان يتابع المندوب:</p>
           <div className="flex gap-2">
             <input readOnly dir="ltr" className="field !py-1.5 text-xs flex-1"
@@ -801,7 +801,7 @@ function KitchenVendor({ rid }: { rid: number }) {
               <span className={`inline-flex items-center gap-1 text-sm font-bold rounded-xl px-3 py-1.5 border ${
                 late ? 'border-red-400/50 bg-red-500/10 text-red-600'
                      : 'border-line bg-shell text-foam'}`}>
-                <Icon name="clock" className="w-4 h-4 inline-block align-[-0.15em] me-1" />{waitedMin < 1 ? 'دلوقتي' : `${waitedMin} د`}
+                <Icon name="clock" size="sm" className="inline-block align-[-0.15em] me-1" />{waitedMin < 1 ? 'دلوقتي' : `${waitedMin} د`}
               </span>
             ) : (
               <span className="text-xs text-mist">{completed ?? stage.label}</span>
@@ -811,7 +811,7 @@ function KitchenVendor({ rid }: { rid: number }) {
 
         {o.customer_note?.trim() && (
           <div className="mt-3 border border-sand/40 bg-sand/10 rounded-xl p-3">
-            <p className="text-xs font-bold text-sandink">💬 ملاحظة العميل</p>
+            <p className="text-xs font-bold text-sandink"><Icon name="chatCircle" size="sm" className="inline-block align-[-0.15em] me-1" />ملاحظة العميل</p>
             <p className="text-sm mt-1 font-semibold whitespace-pre-wrap">{o.customer_note}</p>
           </div>
         )}
@@ -826,7 +826,7 @@ function KitchenVendor({ rid }: { rid: number }) {
           <div className="mt-3 bg-night border border-line !rounded-2xl p-3.5 text-sm space-y-1.5">
             {o.pricing_status === 'pending_quote' && (
               <p className="text-sandink text-xs font-semibold pb-1.5 border-b border-line">
-                <Icon name="receipt" className="w-4 h-4 inline-block align-[-0.15em] me-1" />طلب لسه ما اتسعّرش، الإدارة هتتصل بالعميل وتحط السعر
+                <Icon name="receipt" size="sm" className="inline-block align-[-0.15em] me-1" />طلب لسه ما اتسعّرش، الإدارة هتتصل بالعميل وتحط السعر
               </p>
             )}
             {(o.request_items ?? []).length === 0 && (
@@ -839,13 +839,13 @@ function KitchenVendor({ rid }: { rid: number }) {
               </div>
             ))}
             {o.request_notes && (
-              <p className="text-sandink pt-1.5 border-t border-line">📝 {o.request_notes}</p>
+              <p className="text-sandink pt-1.5 border-t border-line"><Icon name="penToSquare" size="sm" className="inline-block align-[-0.15em] me-1" />{o.request_notes}</p>
             )}
             {o.prescription_path && (
               <div className="pt-1.5 border-t border-line"><PrescriptionLink path={o.prescription_path} /></div>
             )}
             {o.slot_id && o.scheduled_date && (
-              <p className="text-mist pt-1.5 border-t border-line">🕐 فترة التوصيل: {o.scheduled_date}</p>
+              <p className="text-mist pt-1.5 border-t border-line"><Icon name="clock" size="sm" className="inline-block align-[-0.15em] me-1" />فترة التوصيل: {o.scheduled_date}</p>
             )}
           </div>
         )}
@@ -860,7 +860,7 @@ function KitchenVendor({ rid }: { rid: number }) {
           {(items[o.id] ?? []).map(it => (
             <div key={it.id} className="flex justify-between py-2.5 border-b border-line">
               <span className="font-semibold">
-                {it.name} × {it.qty}{it.requires_prescription ? ' 💊' : ''}
+                {it.name} × {it.qty}{it.requires_prescription && <Icon name="pill" size="xs" className="inline-block align-[-0.15em] ms-1" />}
                 {(it.size_name || it.combo_name || (it.addon_names && it.addon_names.length > 0)) && (
                   <span className="block text-xs text-mist mt-0.5">
                     {/* The combo goes first and is marked: it changes what the
@@ -875,7 +875,7 @@ function KitchenVendor({ rid }: { rid: number }) {
         </div>
 
         {(items[o.id] ?? []).some(it => it.requires_prescription) && (
-          <p className="text-sandink text-sm mt-2">💊 الطلب فيه صنف يحتاج روشتة. أكّد مع العميل قبل التجهيز</p>
+          <p className="text-sandink text-sm mt-2"><Icon name="pill" size="sm" className="inline-block align-[-0.15em] me-1" />الطلب فيه صنف يحتاج روشتة. أكّد مع العميل قبل التجهيز</p>
         )}
 
         {/* No money on this ticket beyond the per-item prices.
@@ -892,7 +892,7 @@ function KitchenVendor({ rid }: { rid: number }) {
             <p className={`font-bold leading-none ${remaining(o)! <= 2 ? 'text-red-600 text-3xl' : 'text-sea text-3xl'}`}>
               {remaining(o)! < 0 ? `متأخر ${Math.abs(remaining(o)!)} د` : `${remaining(o)} د`}
             </p>
-            <p className="text-xs text-mist mt-1">{remaining(o)! < 0 ? '⏰ متأخر عن الوقت المتوقع' : 'متبقي للتجهيز'}</p>
+            <p className="text-xs text-mist mt-1">{remaining(o)! < 0 ? <><Icon name="clock" size="sm" className="inline-block align-[-0.15em] me-1" />متأخر عن الوقت المتوقع</> : 'متبقي للتجهيز'}</p>
           </div>
         )}
 
@@ -964,10 +964,10 @@ function KitchenVendor({ rid }: { rid: number }) {
                 )
               }
               const label =
-                d.status === 'Accepted' && d.arrived_at_restaurant_at ? '📍 وصل المطعم'
-                : d.status === 'Accepted' ? '🛵 في الطريق للمطعم'
-                : d.status === 'Picked_Up' ? '📦 استلم الطلب'
-                : d.status === 'Out_for_Delivery' ? `🚗 في الطريق للعميل${minsSince(d.out_for_delivery_at) !== null ? `، من ${minsSince(d.out_for_delivery_at)} دقيقة` : ''}`
+                d.status === 'Accepted' && d.arrived_at_restaurant_at ? <><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />وصل المطعم</>
+                : d.status === 'Accepted' ? <><Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />في الطريق للمطعم</>
+                : d.status === 'Picked_Up' ? <><Icon name="boxOpen" size="sm" className="inline-block align-[-0.15em] me-1" />استلم الطلب</>
+                : d.status === 'Out_for_Delivery' ? <><Icon name="car" size="sm" className="inline-block align-[-0.15em] me-1" />{`في الطريق للعميل${minsSince(d.out_for_delivery_at) !== null ? `، من ${minsSince(d.out_for_delivery_at)} دقيقة` : ''}`}</>
                 : d.status === 'Delivered' ? '✓ تم التوصيل'
                 : '✓ في انتظار المندوب'
               return (
@@ -977,7 +977,7 @@ function KitchenVendor({ rid }: { rid: number }) {
                     <p className="text-sea text-sm font-semibold mt-0.5">{label}</p>
                   </div>
                   {d.driver_phone && d.status !== 'Delivered' && (
-                    <a href={`tel:${d.driver_phone}`} className="shrink-0 w-11 h-11 rounded-full bg-emerald-500/15 text-emerald-800 grid place-items-center" aria-label="اتصال بالمندوب">📞</a>
+                    <a href={`tel:${d.driver_phone}`} className="shrink-0 w-11 h-11 rounded-full bg-emerald-500/15 text-emerald-800 grid place-items-center" aria-label="اتصال بالمندوب"><Icon name="phone" size="md" /></a>
                   )}
                 </div>
               )
@@ -1008,7 +1008,7 @@ function KitchenVendor({ rid }: { rid: number }) {
       {(loadError || nameFailed || openStateFailed) && (
         <div className="card p-3 mb-3 border-sand/60 bg-sand/10 flex items-center justify-between gap-3">
           <p className="text-sm text-sandink font-semibold">
-            <Icon name="broadcast" className="w-4 h-4 inline-block align-[-0.15em] me-1" />{loadError
+            <Icon name="broadcast" size="sm" className="inline-block align-[-0.15em] me-1" />{loadError
               || (openStateFailed
                 ? 'مش قادرين نتأكد إذا كنت فاتح ولا مقفول، الحالة تحت ممكن تكون قديمة'
                 : 'مش قادرين نحمّل بيانات المطعم. اتأكد من النت')}
@@ -1032,12 +1032,12 @@ function KitchenVendor({ rid }: { rid: number }) {
           <Toggle on={isOpen} onChange={toggleOpen} label="مفتوح" labelOff="مقفول" />
           {(usesSlots || vendorType === 'supermarket') && (
             <button className="btn-ghost !py-1.5 !px-2.5 text-xs" onClick={() => setSlotsOpen(v => !v)}>
-              <Icon name="clock" className="w-4 h-4 inline-block align-[-0.15em] me-1" />فترات التوصيل
+              <Icon name="clock" size="sm" className="inline-block align-[-0.15em] me-1" />فترات التوصيل
             </button>
           )}
           <div className="relative" ref={stockRef}>
             <button className="btn-ghost !py-1.5 !px-2.5 text-xs" onClick={() => setStockOpen(v => !v)}>
-              <Icon name="clipboardText" className="w-4 h-4 inline-block align-[-0.15em] me-1" />الأصناف {menu.filter(m => !m.available).length > 0 && `(${menu.filter(m => !m.available).length} خلص)`}
+              <Icon name="clipboardText" size="sm" className="inline-block align-[-0.15em] me-1" />الأصناف {menu.filter(m => !m.available).length > 0 && `(${menu.filter(m => !m.available).length} خلص)`}
             </button>
             {stockOpen && (
               <div className="absolute left-0 mt-1 z-20 bg-shell border border-line rounded-xl shadow-lg py-2 w-72 max-h-[60vh] overflow-y-auto">
@@ -1118,7 +1118,7 @@ function KitchenVendor({ rid }: { rid: number }) {
 
           {newOrders.length > 0 && (
             <div className="mb-5 space-y-3">
-              <p className="text-sandink font-bold animate-pulse">🔔 محتاج ردّك: {newOrders.length}</p>
+              <p className="text-sandink font-bold animate-pulse"><Icon name="bell" size="sm" className="inline-block align-[-0.15em] me-1" />محتاج ردّك: {newOrders.length}</p>
               {newOrders.map(o => card(o, true))}
             </div>
           )}
@@ -1143,9 +1143,9 @@ function KitchenVendor({ rid }: { rid: number }) {
             <div className="flex items-center justify-between mb-3">
               <div className="flex gap-1.5">
                 <button className={`tab !text-sm ${completedView === 'delivered' ? 'tab-active' : 'bg-shellup/60'}`}
-                  onClick={() => setCompletedView('delivered')}>✓ تم التوصيل ({deliveredToday.length})</button>
+                  onClick={() => setCompletedView('delivered')}><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />تم التوصيل ({deliveredToday.length})</button>
                 <button className={`tab !text-sm ${completedView === 'rejected' ? 'tab-active' : 'bg-shellup/60'}`}
-                  onClick={() => setCompletedView('rejected')}>✗ ملغي/مرفوض ({rejectedToday.length})</button>
+                  onClick={() => setCompletedView('rejected')}><Icon name="x" size="sm" className="inline-block align-[-0.15em] me-1" />ملغي/مرفوض ({rejectedToday.length})</button>
               </div>
               {completedView === 'delivered' && (
                 <span className="text-mist text-sm shrink-0">{deliveredToday.length} طلب</span>

@@ -97,10 +97,10 @@ export default function ProductCard({
             // smaller price than a grid that never looks finished.
             ? <img src={sized(item.image_url, IMG.photo)} alt={item.name} loading="lazy" decoding="async"
                 className="w-full h-full object-cover" />
-            : <CategoryArt art={art} className="w-8 h-8 text-mist" />}
+            : <CategoryArt art={art} size="xl" className="text-mist" />}
           {item.requires_prescription && (
             <span className="absolute top-1.5 right-1.5 bg-white/90 rounded-full px-2 py-0.5 text-[10px] font-bold text-seadeep">
-              <Icon name="pill" className="w-3 h-3 inline-block align-[-0.15em] me-0.5" />روشتة
+              <Icon name="pill" size="xs" className="inline-block align-[-0.15em] me-0.5" />روشتة
             </span>
           )}
           {discountPct != null && (
@@ -174,13 +174,13 @@ export default function ProductCard({
             className="h-8 px-3 rounded-full bg-sea text-white font-bold text-[12px] shrink-0 hover:bg-seadeep transition-colors disabled:opacity-40 disabled:pointer-events-none"
             disabled={disabled} onClick={onCustomize}
             aria-label={`اختيارات ${item.name}`}>
-            {qty > 0 ? <>{qty}<Icon name="check" className="w-3 h-3 inline-block align-[-0.15em] ms-1" /></> : 'اختار'}
+            {qty > 0 ? <>{qty}<Icon name="check" size="xs" className="inline-block align-[-0.15em] ms-1" /></> : 'اختار'}
           </button>
         ) : qty === 0 ? (
           <button
             className="w-8 h-8 rounded-full bg-sea text-white grid place-items-center shrink-0 hover:bg-seadeep transition-colors disabled:opacity-40 disabled:pointer-events-none"
             disabled={disabled} onClick={onAdd} aria-label={`إضافة ${item.name}`}>
-            <Icon name="plus" className="w-4 h-4" />
+            <Icon name="plus" size="sm" />
           </button>
         ) : (
           // 36px tall rather than 44. The whole row is a touch target 36px high
@@ -189,10 +189,10 @@ export default function ProductCard({
           // 360px phone. The 44px version forced the price to wrap.
           <div className="h-8 rounded-full bg-sea text-white flex items-center shrink-0 px-0.5">
             <button className="w-[28px] h-7 rounded-full grid place-items-center hover:bg-white/15 transition-colors"
-              onClick={onRemove} aria-label={`تقليل ${item.name}`}><Icon name="minus" className="w-3.5 h-3.5" /></button>
+              onClick={onRemove} aria-label={`تقليل ${item.name}`}><Icon name="minus" size="xs" /></button>
             <span className="font-bold text-sm min-w-[1.1rem] text-center">{qty}</span>
             <button className="w-[28px] h-7 rounded-full grid place-items-center hover:bg-white/15 transition-colors"
-              onClick={onAdd} aria-label={`زيادة ${item.name}`}><Icon name="plus" className="w-3.5 h-3.5" /></button>
+              onClick={onAdd} aria-label={`زيادة ${item.name}`}><Icon name="plus" size="xs" /></button>
           </div>
         )}
       </div>

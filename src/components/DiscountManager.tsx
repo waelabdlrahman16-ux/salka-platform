@@ -107,7 +107,7 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
         )}
       <div className="flex items-center justify-between bg-sand/10 rounded-lg px-3 py-2 text-sm">
         <span>
-          <Icon name="tag" className="w-4 h-4 inline-block align-[-0.15em] me-1" />خصم {existing.discount_type === 'percent' ? `${existing.value}%` : `${existing.value} ج.م`}
+          <Icon name="tag" size="sm" className="inline-block align-[-0.15em] me-1" />خصم {existing.discount_type === 'percent' ? `${existing.value}%` : `${existing.value} ج.م`}
           {existing.ends_at && `، لحد ${new Date(existing.ends_at).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo' })}`}
         </span>
         <div className="flex gap-2">
@@ -132,7 +132,7 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
       {conflicts && conflicts.length > 0 && (
         <div className="bg-sand/15 rounded-lg p-2.5 text-xs">
           <p className="font-semibold mb-1.5">
-            <Icon name="warning" className="w-4 h-4 inline-block align-[-0.15em] me-1" />في {scope === 'item' ? 'خصم على القسم ده' : 'أصناف ليها خصم خاص'} شغال دلوقتي وهيتعارض:
+            <Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />في {scope === 'item' ? 'خصم على القسم ده' : 'أصناف ليها خصم خاص'} شغال دلوقتي وهيتعارض:
           </p>
           <ul className="list-disc pr-4 mb-2">
             {conflicts.map(c => (

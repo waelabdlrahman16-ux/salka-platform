@@ -84,7 +84,7 @@ export default function OrderAdjust({ orderId, onDone }: {
         </button>
         <button className="text-xs text-sandink hover:text-foam underline" disabled={saving}
           onClick={markAsAuditTest}>
-          <Icon name="flask" className="w-4 h-4 inline-block align-[-0.15em] me-1" />تسجيل كاختبار تدقيق
+          <Icon name="flask" size="sm" className="inline-block align-[-0.15em] me-1" />تسجيل كاختبار تدقيق
         </button>
         {error && <p className="text-xs text-red-600 font-semibold">{error}</p>}
       </div>
@@ -95,12 +95,12 @@ export default function OrderAdjust({ orderId, onDone }: {
     <div className="mt-2.5 bg-shellup/60 border border-line rounded-xl p-3">
       <div className="flex items-center justify-between mb-2">
         <p className="text-sm font-bold">تعديل مبلغ الطلب</p>
-        <button className="text-mist text-sm" onClick={() => setOpen(false)} aria-label="إغلاق"><Icon name="x" className="w-4 h-4" /></button>
+        <button className="text-mist text-sm" onClick={() => setOpen(false)} aria-label="إغلاق"><Icon name="x" size="sm" /></button>
       </div>
 
       {result && (
         <div className="bg-emerald-500/10 text-emerald-800 rounded-lg p-2.5 mb-2.5 text-xs font-semibold">
-          <Icon name="check" className="w-4 h-4 inline-block align-[-0.15em] me-1" />اتعدّل، الإجمالي من {result.old_total} لـ {result.new_total} ج.م
+          <Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />اتعدّل، الإجمالي من {result.old_total} لـ {result.new_total} ج.م
           {result.service_fee_waived
             ? ` · معفي من ${result.service_fee_waived} ج.م رسوم` : ''}
         </div>

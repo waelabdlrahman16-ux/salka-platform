@@ -110,11 +110,11 @@ export default function ProductDetailSheet({
             // a FAILED one.
             ? <img src={sized(active.image_url, IMG.photo)} alt={active.name} className="w-full h-full object-cover"
                 onError={() => setImgFailed(true)} />
-            : <CategoryArt art={art} className="w-10 h-10 text-mist" />}
-          <button aria-label="إغلاق" className="absolute top-3 left-3 bg-white/80 rounded-full w-7 h-7 grid place-items-center text-mist text-sm" onClick={onClose}><Icon name="x" className="w-4 h-4" /></button>
+            : <CategoryArt art={art} size="xl" className="text-mist" />}
+          <button aria-label="إغلاق" className="absolute top-3 left-3 bg-white/80 rounded-full w-7 h-7 grid place-items-center text-mist text-sm" onClick={onClose}><Icon name="x" size="sm" /></button>
           {active.requires_prescription && (
             <span className="absolute top-3 right-3 bg-white/90 rounded-full px-2.5 py-1 text-xs font-bold text-seadeep">
-              <Icon name="pill" className="w-3.5 h-3.5 inline-block align-[-0.15em] me-1" />يحتاج روشتة
+              <Icon name="pill" size="xs" className="inline-block align-[-0.15em] me-1" />يحتاج روشتة
             </span>
           )}
         </div>
@@ -144,11 +144,11 @@ export default function ProductDetailSheet({
             ) : (
               <div className="w-full h-11 rounded-xl bg-shellup flex items-center justify-between px-1.5">
                 <button className="w-9 h-9 rounded-lg grid place-items-center hover:bg-white" onClick={() => onRemove(active)}>
-                  <Icon name="minus" className="w-3.5 h-3.5" />
+                  <Icon name="minus" size="xs" />
                 </button>
                 <span className="font-bold">{qty}</span>
                 <button className="w-9 h-9 rounded-lg grid place-items-center bg-sea text-white" onClick={() => onAdd(active)}>
-                  <Icon name="plus" className="w-3.5 h-3.5" />
+                  <Icon name="plus" size="xs" />
                 </button>
               </div>
             )}
@@ -179,7 +179,7 @@ export default function ProductDetailSheet({
                           grid tile elsewhere in the app. */}
                       <div className="rounded-xl aspect-square grid place-items-center text-2xl mb-1.5 overflow-hidden border border-line"
                         style={{ background: r.image_url ? '#fff' : rArt.tint }}>
-                        {r.image_url ? <img src={sized(r.image_url, IMG.square)} alt={r.name} className="w-full h-full object-cover" /> : <CategoryArt art={rArt} className="w-6 h-6 text-mist" />}
+                        {r.image_url ? <img src={sized(r.image_url, IMG.square)} alt={r.name} className="w-full h-full object-cover" /> : <CategoryArt art={rArt} size="lg" className="text-mist" />}
                       </div>
                       <p className="text-xs font-semibold line-clamp-2 leading-snug">{r.name}</p>
                       <p className="text-xs mt-0.5">

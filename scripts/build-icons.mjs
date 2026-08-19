@@ -99,30 +99,42 @@ for (const [weight, konst, suffix] of [['bold', 'BOLD', '-bold']]) {
   lines.push('}')
 }
 lines.push(`
-// Bold weight, not regular: at the 16-20px these render at, regular's hairlines
+// Bold weight, not regular: at the sizes these render at, regular's hairlines
 // go muddy next to IBM Plex Sans Arabic's stems. Bold matches the text colour
 // weight so an icon reads as part of the sentence, not a lighter artefact.
 //
-// The 2px inset is baked in here rather than left to call sites, because a
-// frame that is only sometimes applied is worse than none -- icons would sit
-// at two different optical sizes across screens. className sets the OUTER box;
-// box-border keeps w-4 h-4 meaning 16px total, glyph 12px inside it.
-// Only the bold weight is generated. Phosphor ships six, and an earlier pass
-// emitted 'fill' too -- but nothing ever set variant="fill", so it was ~7kB of
-// dead paths in every bundle. Adding a weight back is one entry in the loop in
-// scripts/build-icons.mjs, so this is cheap to undo the day a filled state is
-// actually wanted.
-export default function Icon({ name, className = '' }: {
-  name: IconName; className?: string
+// SIZE IS A CLOSED SET, not a className. Sizing used to be passed as
+// "w-4 h-4" per call site and drifted to eight different values, one of which
+// (w-4.5) Tailwind does not generate at all -- it emitted no CSS, so Track's
+// star ratings rendered with no width for months without anyone noticing.
+// A token cannot silently produce nothing: pass a bad one and tsc fails.
+//
+// className is for COLOUR and layout only. Passing w-/h- through it still
+// works if something genuinely needs an odd size, but it is now the exception
+// that has to be argued for rather than the default path.
+//
+// The steps are tied to what they sit next to:
+//   xs 14  inline with text-xs / [11px] micro labels
+//   sm 16  inline with text-sm and base -- the default, ~85% of uses
+//   md 20  standalone controls, bottom nav
+//   lg 24  section headings, list avatars
+//   xl 40  empty-state hero
+const SIZE = {
+  xs: 'w-3.5 h-3.5', sm: 'w-4 h-4', md: 'w-5 h-5', lg: 'w-6 h-6', xl: 'w-10 h-10',
+} as const
+
+export type IconSize = keyof typeof SIZE
+
+export default function Icon({ name, size = 'sm', className = '' }: {
+  name: IconName; size?: IconSize; className?: string
 }) {
-  const d = BOLD[name]
   return (
     <svg viewBox="0 0 256 256" aria-hidden="true"
-      className={\`box-border p-[2px] \${className}\`}>
-      <path d={d} fill="currentColor" />
+      className={\`\${SIZE[size]} \${className}\`}>
+      <path d={BOLD[name]} fill="currentColor" />
     </svg>
   )
 }`)
 
 writeFileSync(OUT, lines.join('\n') + '\n')
-console.log(`${OUT}: ${MAP.length} icons x bold only, 2px inset`)
+console.log(`${OUT}: ${MAP.length} icons x bold only, tokenised sizes`)

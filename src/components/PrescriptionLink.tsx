@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import Icon from './Icon'
 import { supabase } from '../lib/supabase'
 
 /**
@@ -33,7 +34,7 @@ export default function PrescriptionLink({ path }: { path: string | null | undef
   return (
     <span className="inline-flex items-center gap-2">
       <button className="btn-ghost !py-1.5 !px-3 text-xs" onClick={open} disabled={busy}>
-        {busy ? 'جاري الفتح…' : '📷 شوف الروشتة'}
+        {busy ? 'جاري الفتح…' : <><Icon name="camera" size="sm" className="inline-block align-[-0.15em] me-1" />شوف الروشتة</>}
       </button>
       {error && <span className="text-xs text-red-600">{error}</span>}
     </span>

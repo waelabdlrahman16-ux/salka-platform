@@ -92,7 +92,7 @@ export default function CompoundsTab() {
     <div className="space-y-3">
       {!editing ? (
         <button className="btn-sea w-full text-sm" onClick={() => { setF(EMPTY); setEditing(true); setError('') }}>
-          <Icon name="plus" className="w-4 h-4 inline-block align-[-0.15em] me-1" />إضافة كومباوند
+          <Icon name="plus" size="sm" className="inline-block align-[-0.15em] me-1" />إضافة كومباوند
         </button>
       ) : (
         <div className="card p-4">
@@ -167,7 +167,7 @@ export default function CompoundsTab() {
 
       {missingCoords > 0 && (
         <p className="text-xs text-sandink bg-sand/10 rounded-xl p-3">
-          <Icon name="warning" className="w-4 h-4 inline-block align-[-0.15em] me-1" />{missingCoords} كومباوند شغّال من غير إحداثيات، خريطة تتبع المندوب مش هتشتغل فيهم.
+          <Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />{missingCoords} كومباوند شغّال من غير إحداثيات، خريطة تتبع المندوب مش هتشتغل فيهم.
         </p>
       )}
 

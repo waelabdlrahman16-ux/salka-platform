@@ -102,7 +102,7 @@ export default function CartPage() {
     return (
       <div className="text-center py-16">
         {removedNotice && <p className="text-sandink text-sm mb-4 bg-sand/10 rounded-xl p-3 mx-4">{removedNotice}</p>}
-        <Icon name="cartShopping" className="w-10 h-10 mx-auto mb-3 text-mist" />
+        <Icon name="cartShopping" size="xl" className="mx-auto mb-3 text-mist" />
         <p className="font-bold text-lg mb-1">عربتك فاضية</p>
         <p className="text-mist text-sm mb-4">لسه ما ضفتش أي حاجة من المطاعم</p>
         <button className="btn-sea" onClick={() => nav('/')}>تصفح المطاعم</button>
@@ -152,7 +152,7 @@ export default function CartPage() {
                 style={{ background: art.tint }}>
                 {item.image_url
                   ? <img src={sized(item.image_url, IMG.square)} alt="" className="w-full h-full object-cover" />
-                  : <CategoryArt art={art} className="w-6 h-6 text-mist" />}
+                  : <CategoryArt art={art} size="lg" className="text-mist" />}
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm truncate">{item.name}</h3>
@@ -172,9 +172,9 @@ export default function CartPage() {
                 </p>
               </div>
               <div className="flex items-center gap-2 bg-shellup rounded-lg px-1 py-1 shrink-0">
-                <button className="w-7 h-7 rounded-md grid place-items-center hover:bg-white" onClick={() => cart.updateLineQty(l.key, -1)}><Icon name="minus" className="w-3 h-3" /></button>
+                <button className="w-7 h-7 rounded-md grid place-items-center hover:bg-white" onClick={() => cart.updateLineQty(l.key, -1)}><Icon name="minus" size="xs" /></button>
                 <span className="font-bold text-sm w-4 text-center">{l.qty}</span>
-                <button className="w-7 h-7 rounded-md grid place-items-center bg-sea text-white" onClick={() => cart.updateLineQty(l.key, 1)}><Icon name="plus" className="w-3 h-3" /></button>
+                <button className="w-7 h-7 rounded-md grid place-items-center bg-sea text-white" onClick={() => cart.updateLineQty(l.key, 1)}><Icon name="plus" size="xs" /></button>
               </div>
             </div>
           )

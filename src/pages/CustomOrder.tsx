@@ -419,7 +419,7 @@ export default function CustomOrder() {
 
         {loadFailed && (
           <div className="card p-4 mb-4 border-sand/60 bg-sand/10">
-            <p className="text-sm text-sandink font-semibold"><Icon name="broadcast" className="w-4 h-4 inline-block align-[-0.15em] me-1" />مش قادرين نحمّل المحلات دلوقتي</p>
+            <p className="text-sm text-sandink font-semibold"><Icon name="broadcast" size="sm" className="inline-block align-[-0.15em] me-1" />مش قادرين نحمّل المحلات دلوقتي</p>
             <p className="text-xs text-mist mt-1">اتأكد إن النت شغال، ده مش معناه إن كله مقفول.</p>
           </div>
         )}
@@ -454,7 +454,7 @@ export default function CustomOrder() {
                   {v.logo_url
                     ? <img src={v.logo_url} alt="" loading="eager" className="w-full h-full object-cover"
                         onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
-                    : <Icon name={v.vendor_type === 'pharmacy' ? 'pill' : 'cartShopping'} className="w-5 h-5 text-mist" />}
+                    : <Icon name={v.vendor_type === 'pharmacy' ? 'pill' : 'cartShopping'} size="md" className="text-mist" />}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-2">
@@ -473,7 +473,7 @@ export default function CustomOrder() {
                       : ` · خلال ${v.prep_minutes + 20} دقيقة تقريبًا`}
                   </span>
                 </span>
-                <Icon name="chevronLeft" className="w-3 h-3 text-mist shrink-0" />
+                <Icon name="chevronLeft" size="xs" className="text-mist shrink-0" />
               </button>
             )
           })}
@@ -519,7 +519,7 @@ export default function CustomOrder() {
       <button className="text-sm text-mist hover:text-foam mb-3" onClick={() => {
         const siblings = typeFilter ? vendors.filter(v => v.vendor_type === typeFilter) : vendors
         if (siblings.length > 1) setVendor(null); else nav('/')
-      }}><Icon name="chevronLeft" className="w-3 h-3 inline-block align-middle ml-1" />رجوع</button>
+      }}><Icon name="chevronLeft" size="xs" className="inline-block align-middle ml-1" />رجوع</button>
       <div className="flex items-center gap-2 mb-1 flex-wrap">
         <h1 className="text-2xl font-bold">{vendor.name}</h1>
         <span className="text-[11px] font-bold text-sea bg-sea/10 rounded px-2 py-0.5">
@@ -579,7 +579,7 @@ export default function CustomOrder() {
             <div className="flex items-center gap-3">
               <img src={rxPreview} alt="الروشتة" className="w-14 h-14 rounded-xl object-cover border border-line shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-emerald-700">الروشتة اترفعت<Icon name="check" className="w-3.5 h-3.5 inline-block align-[-0.15em] ms-1" /></p>
+                <p className="text-sm font-bold text-emerald-700">الروشتة اترفعت<Icon name="check" size="xs" className="inline-block align-[-0.15em] ms-1" /></p>
                 <p className="text-xs text-mist mt-0.5">الصيدلي هيقراها ويتصل بيك بالسعر</p>
               </div>
               <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0"
@@ -587,7 +587,7 @@ export default function CustomOrder() {
             </div>
           ) : (
             <>
-              <p className="font-bold text-sm"><Icon name="camera" className="w-4 h-4 inline-block align-[-0.15em] me-1" />عندك روشتة؟</p>
+              <p className="font-bold text-sm"><Icon name="camera" size="sm" className="inline-block align-[-0.15em] me-1" />عندك روشتة؟</p>
               <p className="text-xs text-mist mt-1 mb-3">
                 صوّرها وابعتها، مش محتاج تكتب أي حاجة تانية.
               </p>
@@ -685,7 +685,7 @@ export default function CustomOrder() {
               setSearch('')
             }}
             placeholder={vendor.vendor_type === 'pharmacy' ? 'دوّر على دوا أو منتج…' : 'دوّر على منتج…'} />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mist pointer-events-none"><Icon name="magnifyingGlass" className="w-4 h-4" /></span>
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mist pointer-events-none"><Icon name="magnifyingGlass" size="sm" /></span>
         </div>
 
         {searchQ && (
@@ -698,7 +698,7 @@ export default function CustomOrder() {
                   <span className="flex-1 min-w-0 text-sm truncate">{it.name}</span>
                   {it.price > 0 && <span className="text-xs font-bold text-sea shrink-0">{it.price} ج.م</span>}
                   <span className={`w-7 h-7 rounded-lg grid place-items-center shrink-0 text-sm ${
-                    added ? 'bg-sea/10 text-sea' : 'bg-sea text-white'}`}><Icon name={added ? 'check' : 'plus'} className="w-4 h-4" /></span>
+                    added ? 'bg-sea/10 text-sea' : 'bg-sea text-white'}`}><Icon name={added ? 'check' : 'plus'} size="sm" /></span>
                 </button>
               )
             })}
@@ -732,7 +732,7 @@ export default function CustomOrder() {
                     className={`rounded-full border px-3 min-h-[36px] text-xs font-semibold transition-colors ${
                       added ? 'border-sea bg-sea/10 text-sea' : 'border-line bg-shell text-foam'}`}
                     onClick={() => addNamed(nm)}>
-                    <Icon name={added ? 'check' : 'plus'} className="w-3 h-3 inline-block align-[-0.15em] me-1" />{nm}
+                    <Icon name={added ? 'check' : 'plus'} size="xs" className="inline-block align-[-0.15em] me-1" />{nm}
                   </button>
                 )
               })}
@@ -749,7 +749,7 @@ export default function CustomOrder() {
             onClick={() => lastRequest.request_items.forEach(it => {
               for (let n = 0; n < Math.max(1, it.qty); n++) addNamed(it.name)
             })}>
-            <Icon name="arrowCounterClockwise" className="w-5 h-5 shrink-0" />
+            <Icon name="arrowCounterClockwise" size="md" className="shrink-0" />
             <span className="flex-1 min-w-0">
               <span className="block text-sm font-bold">اطلب زي المرة اللي فاتت</span>
               <span className="block text-xs text-mist truncate mt-0.5">
@@ -798,7 +798,7 @@ export default function CustomOrder() {
                   onClick={() => setQty(i, +1)}>+</button>
               </div>
               <button className="w-9 h-9 grid place-items-center text-mist shrink-0" aria-label="حذف"
-                onClick={() => setLines(ls => ls.filter((_, j) => j !== i))}><Icon name="x" className="w-4 h-4" /></button>
+                onClick={() => setLines(ls => ls.filter((_, j) => j !== i))}><Icon name="x" size="sm" /></button>
             </div>
           )
         })}
@@ -873,7 +873,7 @@ export default function CustomOrder() {
       ) : (
         <>
           <button className="text-sm text-mist hover:text-foam mb-3" onClick={() => setStep('items')}>
-            <Icon name="chevronLeft" className="w-3 h-3 inline-block align-middle ml-1" />رجوع للقايمة
+            <Icon name="chevronLeft" size="xs" className="inline-block align-middle ml-1" />رجوع للقايمة
           </button>
 
           {/* A short recap, so the second step is not a form with no memory of
@@ -895,12 +895,12 @@ export default function CustomOrder() {
       {collapsedAddress ? (
         <button type="button" className="w-full card p-4 mb-4 text-right flex items-start gap-3 border-sea/40"
           onClick={() => setAddressExpanded(true)}>
-          <Icon name="locationDot" className="w-5 h-5 shrink-0 mt-0.5" />
+          <Icon name="locationDot" size="md" className="shrink-0 mt-0.5" />
           <span className="flex-1 min-w-0">
             <span className="block font-bold text-sm">{selectedCompound?.name} · {unit}</span>
             <span className="block text-xs text-mist mt-0.5 truncate">{name} · <span dir="ltr">{phone}</span></span>
           </span>
-          <span className="text-sea text-xs font-semibold shrink-0 mt-1"><Icon name="pencilSimple" className="w-3.5 h-3.5 inline-block align-[-0.15em] me-0.5" />تغيير</span>
+          <span className="text-sea text-xs font-semibold shrink-0 mt-1"><Icon name="pencilSimple" size="xs" className="inline-block align-[-0.15em] me-0.5" />تغيير</span>
         </button>
       ) : (
         <div className="card p-4 mb-4 space-y-3">
@@ -976,7 +976,7 @@ export default function CustomOrder() {
       )}
 
       <p className="text-sm text-mist bg-shellup/60 rounded-xl p-3 mb-4">
-        <Icon name="chatCircle" className="w-4 h-4 inline-block align-[-0.15em] me-1" />لسه مش هتدفع حاجة دلوقتي. هنتصل بيك بسعر الأصناف وتقرر وقتها.
+        <Icon name="chatCircle" size="sm" className="inline-block align-[-0.15em] me-1" />لسه مش هتدفع حاجة دلوقتي. هنتصل بيك بسعر الأصناف وتقرر وقتها.
       </p>
 
       {feeFailed && compoundId && (

@@ -329,7 +329,7 @@ export default function RestaurantDetail() {
           <div className="max-w-5xl mx-auto px-4 h-12 flex items-center gap-2">
             <button className="text-mist shrink-0" aria-label="لفوق"
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-              <Icon name="chevronLeft" className="w-3 h-3 rotate-90" />
+              <Icon name="chevronLeft" size="xs" className="rotate-90" />
             </button>
             {/* The full header carries the logo; the sticky bar that replaces it
                 on scroll dropped it, so the one strip that stays on screen was
@@ -351,7 +351,7 @@ export default function RestaurantDetail() {
                   window.scrollTo({ top: 0, behavior: 'smooth' })
                   setTimeout(() => document.getElementById('menu-search')?.focus(), 350)
                 }}>
-                <Icon name="magnifyingGlass" className="w-4 h-4" />
+                <Icon name="magnifyingGlass" size="sm" />
               </button>
             )}
           </div>
@@ -372,7 +372,7 @@ export default function RestaurantDetail() {
               rendering a left-pointing arrow next to رجوع, which reads as
               "forward". Icon.tsx only ships chevronLeft, so it is mirrored
               rather than adding a near-duplicate glyph. */}
-          <Icon name="chevronLeft" className="w-3 h-3 ml-1 rotate-180" />رجوع
+          <Icon name="chevronLeft" size="xs" className="ml-1 rotate-180" />رجوع
         </Link>
         <span className="flex-1" />
         <span className={restaurant.is_open ? 'badge-open' : 'badge-closed'}>
@@ -401,7 +401,7 @@ export default function RestaurantDetail() {
             {(restaurant.review_count ?? 0) > 0 && (
               <>
                 <span className="flex items-center gap-1">
-                  <Icon name="star" className="w-3.5 h-3.5 text-sand" />
+                  <Icon name="star" size="xs" className="text-sand" />
                   <span className="font-bold text-foam">{restaurant.rating_real ?? restaurant.rating}</span>
                   <span>({restaurant.review_count})</span>
                 </span>
@@ -426,7 +426,7 @@ export default function RestaurantDetail() {
 
       {restaurant.order_mode === 'pickup_request' && (
         <p className="text-sm bg-shellup/60 rounded-xl p-3 mb-4">
-          <Icon name="clipboardText" className="w-4 h-4 inline-block align-[-0.15em] me-1" />القايمة دي للعرض بس، اطلب من {restaurant.name} على طول (تطبيقهم أو التليفون)، وهما هيتصرفوا في التوصيل
+          <Icon name="clipboardText" size="sm" className="inline-block align-[-0.15em] me-1" />القايمة دي للعرض بس، اطلب من {restaurant.name} على طول (تطبيقهم أو التليفون)، وهما هيتصرفوا في التوصيل
         </p>
       )}
 
@@ -479,11 +479,11 @@ export default function RestaurantDetail() {
                 aria-label={`دوّر في قايمة ${restaurant.name}`}
                 placeholder={`دوّر في قايمة ${restaurant.name}…`} />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mist pointer-events-none">
-                <Icon name="magnifyingGlass" className="w-4 h-4" />
+                <Icon name="magnifyingGlass" size="sm" />
               </span>
               {menuQ.trim() && (
                 <button className="absolute left-3 top-1/2 -translate-y-1/2 text-mist text-sm"
-                  aria-label="مسح" onClick={() => setMenuQ('')}><Icon name="x" className="w-4 h-4" /></button>
+                  aria-label="مسح" onClick={() => setMenuQ('')}><Icon name="x" size="sm" /></button>
               )}
             </div>
           )}

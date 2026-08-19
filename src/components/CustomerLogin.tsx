@@ -155,7 +155,7 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
             className="absolute top-2 left-2 w-11 h-11 grid place-items-center text-mist hover:text-foam text-xl"
             aria-label="إغلاق"
             onClick={onSkip}>
-            <Icon name="x" className="w-5 h-5" />
+            <Icon name="x" size="md" />
           </button>
         )}
         {mode === 'main' && (
@@ -180,7 +180,7 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
 
             <button className="w-full !py-3 mb-4 rounded-xl border-2 border-line font-semibold hover:bg-shellup/60 transition-colors"
               onClick={() => goTo('email')}>
-              <Icon name="envelope" className="w-4 h-4 inline-block align-[-0.15em] me-1" />المتابعة بالإيميل
+              <Icon name="envelope" size="sm" className="inline-block align-[-0.15em] me-1" />المتابعة بالإيميل
             </button>
 
             {/* Only shown where Google was removed, so it explains the gap
@@ -205,13 +205,13 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
 
         {mode === 'email' && (
           <>
-            <Icon name="envelope" className="w-10 h-10 mx-auto mb-3 text-mist" />
+            <Icon name="envelope" size="xl" className="mx-auto mb-3 text-mist" />
             <h1 className="text-xl font-bold mb-1">الدخول بالإيميل</h1>
             <p className="text-mist text-sm mb-5">هنبعتلك رابط دخول على إيميلك</p>
 
             {emailLinkSent ? (
               <p className="text-sm bg-emerald-500/10 text-emerald-700 rounded-xl p-3 mb-4">
-                <Icon name="check" className="w-4 h-4 inline-block align-[-0.15em] me-1" />بعتنالك رابط على {email}، افتح الإيميل واضغط عليه عشان تدخل
+                <Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />بعتنالك رابط على {email}، افتح الإيميل واضغط عليه عشان تدخل
               </p>
             ) : (
               <>
@@ -230,7 +230,7 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
 
         {mode === 'phone' && (
           <>
-            <Icon name="mobileScreen" className="w-10 h-10 mx-auto mb-3 text-mist" />
+            <Icon name="mobileScreen" size="xl" className="mx-auto mb-3 text-mist" />
             <h1 className="text-xl font-bold mb-1">الدخول برقم الموبايل</h1>
             <p className="text-mist text-sm mb-5">هنبعتلك كود تأكيد بالرسائل (SMS)</p>
 
@@ -258,7 +258,7 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
 
         {mode === 'code' && (
           <>
-            <Icon name="chatCircle" className="w-10 h-10 mx-auto mb-3 text-mist" />
+            <Icon name="chatCircle" size="xl" className="mx-auto mb-3 text-mist" />
             <h1 className="text-xl font-bold mb-1">اكتب الكود</h1>
             <p className="text-mist text-sm mb-5">بعتنالك كود من 6 أرقام برسالة نصية على {phone}</p>
 

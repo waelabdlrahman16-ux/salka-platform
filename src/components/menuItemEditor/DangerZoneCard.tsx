@@ -1,3 +1,5 @@
+import Icon from '../Icon'
+
 export default function DangerZoneCard({
   deleting, deleteBlockedReason, onDelete
 }: {
@@ -16,7 +18,7 @@ export default function DangerZoneCard({
       )}
       <button className="w-full py-2.5 rounded-xl text-sm font-semibold border-2 border-red-400/40 text-red-600 bg-red-500/5 disabled:opacity-50"
         disabled={deleting} onClick={onDelete}>
-        {deleting ? 'جاري الحذف…' : '🗑️ حذف الصنف نهائيًا'}
+        {deleting ? 'جاري الحذف…' : <><Icon name="trash" size="sm" className="inline-block align-[-0.15em] me-1" />حذف الصنف نهائيًا</>}
       </button>
     </div>
   )

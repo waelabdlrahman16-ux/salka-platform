@@ -93,7 +93,7 @@ export default function FunnelPanel() {
   return (
     <div className="card p-4">
       <div className="flex items-center justify-between gap-2 mb-1">
-        <h3 className="font-bold">📉 رحلة الزبون</h3>
+        <h3 className="font-bold"><Icon name="chartLineDown" size="sm" className="inline-block align-[-0.15em] me-1" />رحلة الزبون</h3>
         <div className="flex gap-1.5">
           {RANGES.map(d => (
             <button key={d}
@@ -150,7 +150,7 @@ export default function FunnelPanel() {
                       two bars. */}
                   {prev && dropped > 0 && (
                     <p className="text-[10px] text-red-600 mr-20 mt-0.5">
-                      <Icon name="arrowDown" className="w-4 h-4 inline-block align-[-0.15em] me-1" />خسرنا {dropped} هنا
+                      <Icon name="arrowDown" size="sm" className="inline-block align-[-0.15em] me-1" />خسرنا {dropped} هنا
                     </p>
                   )}
                 </div>

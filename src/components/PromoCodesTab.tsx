@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import Icon from './Icon'
 import { supabase } from '../lib/supabase'
 import type { Compound, Restaurant } from '../lib/types'
 import { PROMO_SCOPES, PROMO_SCOPE_ADMIN_LABEL as SCOPE_LABEL, type PromoScope } from '../lib/promoScope'
@@ -66,7 +67,7 @@ export default function PromoCodesTab({ restaurants, compounds }: { restaurants:
 
   return <div className="space-y-5">
     <div className="card p-4">
-      <div className="flex items-start justify-between gap-3 mb-4"><div><h2 className="font-bold">🏷️ {editing ? 'تعديل كود خصم' : 'كود خصم جديد'}</h2><p className="text-xs text-mist mt-1">اختار الخصم يتحسب من إيه، ويظهر واضحًا للعميل في الدفع والفاتورة.</p></div>{editing && <button className="btn-ghost text-sm" onClick={reset}>إلغاء التعديل</button>}</div>
+      <div className="flex items-start justify-between gap-3 mb-4"><div><h2 className="font-bold"><Icon name="tag" size="sm" className="inline-block align-[-0.15em] me-1" />{editing ? 'تعديل كود خصم' : 'كود خصم جديد'}</h2><p className="text-xs text-mist mt-1">اختار الخصم يتحسب من إيه، ويظهر واضحًا للعميل في الدفع والفاتورة.</p></div>{editing && <button className="btn-ghost text-sm" onClick={reset}>إلغاء التعديل</button>}</div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {input('code', 'الكود', 'text', 'مثال: SOKHNA10')}
         <label className="block text-xs text-mist"><span className="block mb-1">نوع الخصم</span><select className="field" value={draft.discount_type} onChange={e => setDraft(d => ({ ...d, discount_type: e.target.value as Draft['discount_type'] }))}><option value="percent">نسبة مئوية</option><option value="fixed">مبلغ ثابت</option></select></label>

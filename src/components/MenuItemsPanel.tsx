@@ -338,7 +338,7 @@ export default function MenuItemsPanel({
               of each other. This is where that stops. */}
           {dupWarning && (
             <p className="text-xs text-sandink bg-sandink/10 rounded-lg p-2">
-              <Icon name="warning" className="w-4 h-4 inline-block align-[-0.15em] me-1" />في قسم اسمه «{dupWarning}» عندك:{' '}
+              <Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />في قسم اسمه «{dupWarning}» عندك:{' '}
               <button className="underline font-semibold" onClick={() => { setActive(dupWarning); setAdding(false); setNewCat('') }}>
                 استخدمه
               </button>
@@ -432,7 +432,7 @@ export default function MenuItemsPanel({
                         {it.available_from && it.available_until && (
                           <>
                             {(current === ALL || sz || !it.image_url) ? ' · ' : ''}
-                            {'⏰ '}
+                            <Icon name="clock" size="xs" className="inline-block align-[-0.15em] me-1" />
                             <bdi dir="ltr">{it.available_from.slice(0, 5)}–{it.available_until.slice(0, 5)}</bdi>
                           </>
                         )}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Icon from './Icon'
 import { enablePush, lastPushError, pushDiag, pushPermission, pushSupport, registerPush, resetPushDiag } from '../lib/push'
 import type { PushTokenSink } from '../lib/push'
 import { iosPushBlocker, isIOS } from '../lib/platform'
@@ -191,7 +192,7 @@ export default function EnablePushButton({
           if (ok) setGranted(true)
           else { setReason(lastPushError); setFailed(true) }
         }}>
-        {busy ? 'جاري التفعيل…' : `🔔 ${label}`}
+        {busy ? 'جاري التفعيل…' : <><Icon name="bell" size="sm" className="inline-block align-[-0.15em] me-1" />{label}</>}
       </button>
       <p className="text-xs text-mist mt-1.5 text-center">
         من غير التنبيهات لازم تسيب الصفحة مفتوحة عشان تعرف إن في طلب جديد
