@@ -421,13 +421,24 @@ export default function CustomOrder() {
 
     return (
       <div>
-        {/* A page header, not a poster. 2xl over a full-width sentence took
-            three lines before the first vendor on a 375px phone, for a screen
-            whose whole content is a list. */}
-        <h1 className="text-lg font-bold">
-          {typeFilter === 'pharmacy' ? 'الصيدلية' : typeFilter === 'supermarket' ? 'السوبر ماركت' : 'محتاج إيه دلوقتي؟'}
-        </h1>
-        <p className="text-mist text-[13px] mb-4">قول لنا اللي محتاجه، وإحنا هنجهزه معاك</p>
+        {/* A gradient band, bleeding to the screen edges and fading into the
+            page. This tab is the one screen with no photography at all -- a
+            plain heading over a list of logos had nothing carrying it -- so the
+            surface does the work instead of a bigger typeface.
+
+            teal-100 to transparent, not a new colour: the ramp already exists
+            and the band has to end in the page's own white or it reads as a
+            block with a hard edge rather than a header. The van glyph is the
+            same one the tab bar uses for this destination. */}
+        <div className="-mx-4 -mt-6 mb-4 px-4 pt-8 pb-5 bg-gradient-to-b from-teal-100 to-night">
+          <span className="w-11 h-11 rounded-2xl bg-white/70 text-sea grid place-items-center mb-2.5">
+            <Icon name="van" size="lg" />
+          </span>
+          <h1 className="text-xl font-bold leading-tight">
+            {typeFilter === 'pharmacy' ? 'الصيدلية' : typeFilter === 'supermarket' ? 'السوبر ماركت' : 'محتاج إيه دلوقتي؟'}
+          </h1>
+          <p className="text-mist text-[13px] mt-1">قول لنا اللي محتاجه، وإحنا هنجهزه معاك</p>
+        </div>
 
         {loadFailed && (
           <div className="card p-4 mb-4 border-coral-300 bg-coral-100">
