@@ -91,8 +91,13 @@ export default function ProductDetailSheet({
 
             Inset with side/top padding and rounded corners, not full-bleed
             against the sheet edges -- matches the redesign Wael supplied. */}
-        <div className={`relative grid place-items-center text-5xl overflow-hidden bg-imgbg rounded-t-3xl ${
-            active.image_url && !imgFailed ? 'aspect-[4/3] max-h-[26vh]' : 'h-28'}`}
+        {/* A HEIGHT, not an aspect ratio. aspect-[4/3] with max-h-[26vh] made
+            the browser hold the ratio by shrinking the WIDTH once the cap bit,
+            so the photo sat inset and right-aligned instead of filling the
+            sheet. Fixing the height and letting object-cover crop is the only
+            way a full-bleed image stays full-bleed. */}
+        <div className={`relative w-full grid place-items-center text-5xl overflow-hidden bg-imgbg rounded-t-3xl ${
+            active.image_url && !imgFailed ? 'w-full h-[26vh]' : 'h-28'}`}
           // Same fix as ProductCard: the photo's frame is an image container,
           // so it takes the token rather than a literal that the palette change
           // could not reach.
