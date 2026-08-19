@@ -6,6 +6,7 @@ import ProductCard from '../components/ProductCard'
 import ProductDetailSheet from '../components/ProductDetailSheet'
 import CustomizeSheet from '../components/CustomizeSheet'
 import Icon from '../components/Icon'
+import { sized, IMG } from '../lib/imageUrl'
 import { isItemAvailableNow } from '../lib/itemAvailability'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { applyDiscount, effectiveDiscount } from '../lib/discounts'
@@ -112,6 +113,10 @@ export default function RestaurantDetail() {
       ?.querySelector(`[data-chip="${CSS.escape(cat)}"]`)
       ?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest', inline: 'center' })
   }
+
+  // Same rule as the home card: the vendor's own cover when set, otherwise
+  // the best-ranked photographed dish, computed server-side.
+  const cover = restaurant?.cover_image_url || restaurant?.hero_image_url || null
 
   const [loadFailed, setLoadFailed] = useState(false)
   const [catalogRevision, setCatalogRevision] = useState(0)
@@ -343,7 +348,9 @@ export default function RestaurantDetail() {
   const totalEta = restaurant && selectedCompound
     ? { min: restaurant.prep_minutes + selectedCompound.est_travel_minutes_min, max: restaurant.prep_minutes + selectedCompound.est_travel_minutes_max }
     : null
-  const { fee: deliveryFee } = useDeliveryQuote(compoundId, restaurant?.id)
+  // The fee is no longer printed on this page -- it belongs to the compound and
+  // the home header already states it -- but the quote still drives totalEta.
+  useDeliveryQuote(compoundId, restaurant?.id)
 
   if (loadFailed) return (
     <div className="card p-6 text-center max-w-sm mx-auto mt-6">
@@ -403,66 +410,90 @@ export default function RestaurantDetail() {
         </div>
       )}
 
-      {/* A plain nav bar: one back control, nothing else.
-          «مفتوح» was true of every restaurant whose page you can open -- a
-          closed one cannot be added to at all, and its card on the home screen
-          is already greyed with an opening time -- so the badge asserted
-          nothing. The delivery fee is a property of the COMPOUND, not this
-          vendor: it is the same number on every restaurant and it was already
-          stated in the home header. Repeating it here in coral made the least
-          urgent number on the page the loudest thing on it.
-          The word «رجوع» went with them; a chevron is the standard, and it was
-          the only thing left in an otherwise empty row. */}
-      {/* Back on its own row, above the logo. It costs the ~44px that folding
-          it onto the identity row had saved, so the page starts lower again --
-          a deliberate trade for a conventional nav position. */}
-      <div className="flex items-center">
-        <Link to="/" aria-label="رجوع" title="رجوع"
-          className="grid place-items-center min-w-[44px] min-h-[44px] -mr-2.5 shrink-0">
-          {/* The page is RTL, so "back" is to the RIGHT. Icon.tsx only ships
-              chevronLeft, so it is mirrored rather than adding a near-duplicate
-              glyph. */}
-          <span className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 grid place-items-center transition-colors hover:bg-slate-200">
-            <Icon name="chevronLeft" size="sm" className="rotate-180" />
-          </span>
-        </Link>
-      </div>
-
-      <div className="flex items-center gap-3 mb-3">
-        {restaurant.logo_url
-          ? <img src={restaurant.logo_url} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0 border border-line" />
-          : <div className="w-12 h-12 rounded-xl bg-shellup grid place-items-center shrink-0 text-xl font-bold text-mist">{restaurant.name.charAt(0)}</div>}
-        <div className="min-w-0 flex-1">
-          <h1 className="text-xl font-bold truncate">{restaurant.name}</h1>
-          <div className="flex items-center gap-1.5 text-[13px] text-mist flex-wrap mt-0.5">
-            {/* ONLY when somebody has actually rated them.
-                restaurants.rating is hand-typed and unconnected to
-                order_ratings -- 8 of 9 vendors have zero reviews and every one
-                displayed a score. A number with no count behind it is not a
-                weak signal, it is a false one, and "★ 3.0" on an unrated
-                restaurant actively damages that vendor. */}
-            {(restaurant.review_count ?? 0) > 0 && (
-              <>
-                <span className="flex items-center gap-1">
-                  <Icon name="star" size="xs" className="text-coral-600" />
-                  {/* The count is gone: 3 of 19 vendors have any rating at
-                      all, and telling a customer the 3.5 rests on two opinions
-                      weakens the number rather than backing it. */}
-                  <span className="font-bold text-foam">{restaurant.rating_real ?? restaurant.rating}</span>
+      {/* A cover photo, controls floating on it, and the identity card lifted
+          over its bottom edge -- the shape Talabat, Waffarha and Deliveroo all
+          use, because it answers "where am I" with a picture before it answers
+          it with words.
+          Two things are deliberately NOT here. «مفتوح» was true of every
+          restaurant whose page you can open -- a closed one cannot be added to,
+          and its home card is already greyed with an opening time -- so it
+          asserted nothing. The delivery fee belongs to the compound, not the
+          vendor: the same number on every restaurant, already stated in the
+          home header, and in coral it was the loudest thing on the page. */}
+      <div className="-mx-4">
+        <div className="relative h-40 bg-shellup">
+          {cover && (
+            <img src={sized(cover, IMG.wide)} alt="" loading="eager" decoding="async"
+              className={`absolute inset-0 w-full h-full object-cover ${restaurant.is_open ? '' : 'grayscale'}`}
+              // A broken cover must not leave a grey rectangle where the food
+              // should be; hiding it reveals the tint, which reads as a plain
+              // header rather than a failure.
+              onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
+          )}
+          {/* A scrim only under the controls. A full-cover overlay would dull
+              the photograph, which is the one thing on this screen doing the
+              selling. */}
+          <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/35 to-transparent" />
+          <div className="absolute inset-x-0 top-0 flex items-center justify-between px-3 pt-3">
+            <Link to="/" aria-label="رجوع" title="رجوع"
+              className="grid place-items-center min-w-[44px] min-h-[44px] -mr-2.5">
+              {/* The page is RTL, so "back" is to the RIGHT. Icon.tsx only ships
+                  chevronLeft, so it is mirrored rather than adding a glyph. */}
+              <span className="w-9 h-9 rounded-full bg-white/95 text-slate-700 grid place-items-center shadow-sm">
+                <Icon name="chevronLeft" size="sm" className="rotate-180" />
+              </span>
+            </Link>
+            {items.length > 8 && (
+              <button aria-label="بحث في القايمة" title="بحث في القايمة"
+                className="grid place-items-center min-w-[44px] min-h-[44px] -ml-2.5"
+                onClick={() => document.getElementById('menu-search')?.focus()}>
+                <span className="w-9 h-9 rounded-full bg-white/95 text-slate-700 grid place-items-center shadow-sm">
+                  <Icon name="magnifyingGlass" size="sm" />
                 </span>
-                <span aria-hidden="true">•</span>
-              </>
+              </button>
             )}
-            {/* A range, not a single number. "16 دقيقة تقريبًا" reads as a
-                promise; the home card already says 20–30 for the same vendor,
-                so the two screens disagreed about the same restaurant. */}
-            {totalEta && <span>يوصلك <bdi dir="ltr">{totalEta.min} – {totalEta.max}</bdi> دقيقة</span>}
-            {restaurant.category && (
-              <>
-                {totalEta && <span aria-hidden="true">•</span>}
-                <span className="truncate">{restaurant.category}</span>
-              </>
-            )}
+          </div>
+        </div>
+
+        {/* Lifted over the photo's bottom edge, so the two read as one object
+            rather than a picture with a paragraph under it. */}
+        <div className="card mx-4 -mt-9 relative z-10 p-3 flex items-center gap-3">
+          {restaurant.logo_url
+            ? <img src={sized(restaurant.logo_url, IMG.icon)} alt="" className="w-14 h-14 rounded-xl object-cover shrink-0 border border-line bg-white" />
+            : <div className="w-14 h-14 rounded-xl bg-shellup grid place-items-center shrink-0 text-xl font-bold text-mist">{restaurant.name.charAt(0)}</div>}
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg font-bold truncate leading-tight">{restaurant.name}</h1>
+            <div className="flex items-center gap-1.5 text-[13px] text-mist flex-wrap mt-1">
+              {/* ONLY when somebody has actually rated them. restaurants.rating
+                  is hand-typed and unconnected to order_ratings, and a number
+                  with no count behind it is not a weak signal but a false one.
+                  The count itself is gone: 3 of 19 vendors have any rating, and
+                  saying the 3.5 rests on two opinions weakens it. */}
+              {(restaurant.review_count ?? 0) > 0 && (
+                <>
+                  <span className="flex items-center gap-1">
+                    <Icon name="star" size="xs" className="text-coral-600" />
+                    <span className="text-foam">{restaurant.rating_real ?? restaurant.rating}</span>
+                  </span>
+                  <span aria-hidden="true">•</span>
+                </>
+              )}
+              {/* A range, not a single number. "16 دقيقة تقريبًا" reads as a
+                  promise; the home card already says 20-30 for the same vendor,
+                  so the two screens disagreed about the same restaurant. */}
+              {totalEta && (
+                <span className="flex items-center gap-1">
+                  <Icon name="clock" size="xs" className="text-mist" />
+                  <bdi dir="ltr">{totalEta.min} – {totalEta.max}</bdi> د
+                </span>
+              )}
+              {restaurant.category && (
+                <>
+                  {totalEta && <span aria-hidden="true">•</span>}
+                  <span className="truncate">{restaurant.category}</span>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
