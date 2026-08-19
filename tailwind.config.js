@@ -102,6 +102,12 @@ export default {
         shellup: '#F5F5F5',   // elevated surface: image containers, thumbnails,
                               // active tab, headers (was #F4EEE3, warm tint)
         line: '#E5E5E5',      // borders, incl. image containers (was #E8E1D6, warm)
+        // The one warm surface kept from the old palette. Neutral greys are
+        // right for image containers, where a tint would cast onto the
+        // photograph; they are wrong for the storefront's own blocks, which
+        // lost all warmth when the ground went white. Vendor cards and the
+        // featured shelf use this; thumbnails and inputs do not.
+        warm: '#F4EEE3',
         sea: '#00625F',       // brand primary = teal-600. Was #0A5F5E, whose comment claimed it
                               // matched the logo exactly; Wael confirmed the logo is #00625F.
                               // 14/765 in RGB, invisible, and both pass AA -- but only one is right.

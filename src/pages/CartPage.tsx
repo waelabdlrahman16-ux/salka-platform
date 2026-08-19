@@ -219,7 +219,7 @@ export default function CartPage() {
               sizes/combos land, because it is the number being waited for. */}
           {optionsLoaded && grandTotal !== null && (
             <>
-              <span aria-hidden="true" className="opacity-60">•</span>
+              <span aria-hidden="true" className="opacity-60 text-slate-300">•</span>
               <span className="font-bold">{grandTotal} ج.م</span>
             </>
           )}

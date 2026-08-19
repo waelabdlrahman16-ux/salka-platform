@@ -529,7 +529,7 @@ export default function RestaurantDetail() {
                     <Icon name="star" size="xs" className="text-coral-600" />
                     <span className="text-foam">{restaurant.rating_real ?? restaurant.rating}</span>
                   </span>
-                  <span aria-hidden="true">•</span>
+                  <span aria-hidden="true" className="text-slate-300">•</span>
                 </>
               )}
               {/* A range, not a single number. "16 دقيقة تقريبًا" reads as a
@@ -543,7 +543,7 @@ export default function RestaurantDetail() {
               )}
               {restaurant.category && (
                 <>
-                  {totalEta && <span aria-hidden="true">•</span>}
+                  {totalEta && <span aria-hidden="true" className="text-slate-300">•</span>}
                   <span className="truncate">{restaurant.category}</span>
                 </>
               )}
@@ -762,13 +762,9 @@ export default function RestaurantDetail() {
           style={{ bottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}>
           <button className="max-w-lg mx-auto w-full bg-sea text-white rounded-2xl shadow-lg px-4 py-3.5 flex items-center justify-between gap-3"
             onClick={() => nav('/cart')}>
-            <span className="flex items-center gap-2 min-w-0">
-              <span className="bg-white/20 rounded-lg min-w-[26px] h-[26px] grid place-items-center text-sm font-bold px-1.5">
-                {cart.count}
-              </span>
-              <span className="font-bold text-sm truncate">
-                {cart.count === 1 ? 'صنف واحد' : `${cart.count} أصناف`}
-              </span>
+            {/* The count chip said «3» directly beside «3 أصناف». */}
+            <span className="font-bold text-sm truncate min-w-0">
+              {cart.count === 1 ? 'صنف واحد' : `${cart.count} أصناف`}
             </span>
             <span className="font-bold text-sm shrink-0">
               {optionsLoaded ? `${Math.round(cartSubtotal * 100) / 100} ج.م • ` : ''}شوف العربة

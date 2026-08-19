@@ -78,7 +78,7 @@ export default function RestaurantCard({
 
   const metaRow = (withRating: boolean) => (
     <div className="flex items-center gap-1.5 text-[13px] text-mist flex-wrap">
-      {withRating && rated && (<>{ratingChip}<span aria-hidden="true">•</span></>)}
+      {withRating && rated && (<>{ratingChip}<span aria-hidden="true" className="text-slate-300">•</span></>)}
       {/* The delivery TIME is the only thing on this card that separates one
           vendor from another -- the delivery fee is per-compound, so it is the
           same number on every card in the list and putting it here would be
@@ -91,7 +91,7 @@ export default function RestaurantCard({
             <Icon name="clock" size="xs" className="text-mist" />
             <span className="text-seadeep"><bdi dir="ltr">{etaMinutes.min} – {etaMinutes.max}</bdi> د</span>
           </span>
-          {r.category && <><span aria-hidden="true">•</span><span className="truncate">{r.category}</span></>}
+          {r.category && <><span aria-hidden="true" className="text-slate-300">•</span><span className="truncate">{r.category}</span></>}
         </>
       ) : (
         <span className="truncate">{r.category}</span>
@@ -135,7 +135,7 @@ export default function RestaurantCard({
       // bottom of the list on its own. Greyscale plus the reopening time beside
       // the name says it once and still lets someone see the food and decide to
       // come back at nine.
-      className="block card !bg-shellup overflow-hidden !rounded-2xl"
+      className="block card !bg-warm overflow-hidden !rounded-3xl"
     >
       {/* 5:2, trimmed again on 2026-08-07 at Wael's request after seeing it
           rendered at real phone width. On a 390px screen (minus the app's 16px
