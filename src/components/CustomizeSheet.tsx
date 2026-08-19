@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type MutableRefObject } from 'react'
 import { useDismissable } from '../lib/useDismissable'
+import Icon from './Icon'
 import { applyDiscount, effectiveDiscount } from '../lib/discounts'
 import type { Discount, MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemCombo, MenuItemSize } from '../lib/types'
 import { sized, IMG } from '../lib/imageUrl'
@@ -116,6 +117,27 @@ export default function CustomizeSheet({
   return (
     <div ref={overlayRef} role="dialog" aria-labelledby="customize-sheet-title" aria-modal="true" className="fixed inset-0 z-50 bg-black/60" onClick={onClose}>
       <div className="card fixed inset-x-0 bottom-0 w-full p-5 rounded-b-none max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        {/* The dish, before the radio buttons. This sheet opened straight onto
+            «ساندوتش لوحده ولا كومبو؟» -- a form about a thing the customer
+            could no longer see, even though the card they tapped was showing
+            its photograph. Every delivery app in the market opens the sheet
+            with the food. */}
+        {item.image_url && (
+          <div className="-mx-5 -mt-5 mb-4 relative">
+            <img src={sized(item.image_url, IMG.wide)} alt="" loading="eager" decoding="async"
+              className="w-full h-44 object-cover"
+              onError={e => { (e.currentTarget.closest('div') as HTMLElement).style.display = 'none' }} />
+            {/* Closing was backdrop-tap or «إلغاء» at the very bottom of a
+                scrolling sheet -- so on a long list of add-ons there was no way
+                out without scrolling back down. */}
+            <button type="button" onClick={onClose} aria-label="إغلاق" title="إغلاق"
+              className="absolute top-3 right-3 grid place-items-center min-w-[44px] min-h-[44px]">
+              <span className="w-9 h-9 rounded-full bg-white/95 text-slate-700 grid place-items-center shadow-sm">
+                <Icon name="x" size="sm" />
+              </span>
+            </button>
+          </div>
+        )}
         <h2 id="customize-sheet-title" className="font-bold text-lg mb-1">{item.name}</h2>
         {item.description && <p className="text-sm text-mist mb-4">{item.description}</p>}
 
