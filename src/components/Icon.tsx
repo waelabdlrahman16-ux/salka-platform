@@ -117,6 +117,17 @@ const BOLD: Record<IconName, string> = {
   cheese: 'M184,28a11.86,11.86,0,0,0-3.45.51l-160,48h0A12,12,0,0,0,12,88v24a12,12,0,0,0,12,12h8a12.07,12.07,0,0,1,12,11.76,11.6,11.6,0,0,1-3.43,8.38A12.88,12.88,0,0,1,31.46,148H24a12,12,0,0,0-12,12v32a12,12,0,0,0,12,12H224a20,20,0,0,0,20-20V88A60.07,60.07,0,0,0,184,28Zm1.64,24a36.06,36.06,0,0,1,32.3,24H105.76ZM152,100h32v4a16,16,0,0,1-32,0ZM96,180a16,16,0,0,1,32,0Zm124,0H152a40,40,0,0,0-80,0H36v-8.29A37.09,37.09,0,0,0,57.7,161,35.39,35.39,0,0,0,68,135.31a36.21,36.21,0,0,0-32-35.09V100h92v4a40,40,0,0,0,80,0v-4h12Z',
 }
 
+export type FilledIconName =
+  'house' | 'truck' | 'tag' | 'cartShopping' | 'circleUser'
+
+const FILL: Record<FilledIconName, string> = {
+  house: 'M224,120v96a8,8,0,0,1-8,8H160a8,8,0,0,1-8-8V164a4,4,0,0,0-4-4H108a4,4,0,0,0-4,4v52a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V120a16,16,0,0,1,4.69-11.31l80-80a16,16,0,0,1,22.62,0l80,80A16,16,0,0,1,224,120Z',
+  truck: 'M255.43,117l-14-35A15.93,15.93,0,0,0,226.58,72H192V64a8,8,0,0,0-8-8H32A16,16,0,0,0,16,72V184a16,16,0,0,0,16,16H49a32,32,0,0,0,62,0h50a32,32,0,0,0,62,0h17a16,16,0,0,0,16-16V120A8.13,8.13,0,0,0,255.43,117ZM80,208a16,16,0,1,1,16-16A16,16,0,0,1,80,208ZM32,136V72H176v64Zm160,72a16,16,0,1,1,16-16A16,16,0,0,1,192,208Zm0-96V88h34.58l9.6,24Z',
+  tag: 'M243.31,136,144,36.69A15.86,15.86,0,0,0,132.69,32H40a8,8,0,0,0-8,8v92.69A15.86,15.86,0,0,0,36.69,144L136,243.31a16,16,0,0,0,22.63,0l84.68-84.68a16,16,0,0,0,0-22.63ZM84,96A12,12,0,1,1,96,84,12,12,0,0,1,84,96Z',
+  cartShopping: 'M230.14,58.87A8,8,0,0,0,224,56H62.68L56.6,22.57A8,8,0,0,0,48.73,16H24a8,8,0,0,0,0,16h18L67.56,172.29a24,24,0,0,0,5.33,11.27,28,28,0,1,0,44.4,8.44h45.42A27.75,27.75,0,0,0,160,204a28,28,0,1,0,28-28H91.17a8,8,0,0,1-7.87-6.57L80.13,152h116a24,24,0,0,0,23.61-19.71l12.16-66.86A8,8,0,0,0,230.14,58.87ZM104,204a12,12,0,1,1-12-12A12,12,0,0,1,104,204Zm96,0a12,12,0,1,1-12-12A12,12,0,0,1,200,204Z',
+  circleUser: 'M172,120a44,44,0,1,1-44-44A44.05,44.05,0,0,1,172,120Zm60,8A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88.09,88.09,0,0,0-91.47-87.93C77.43,41.89,39.87,81.12,40,128.25a87.65,87.65,0,0,0,22.24,58.16A79.71,79.71,0,0,1,84,165.1a4,4,0,0,1,4.83.32,59.83,59.83,0,0,0,78.28,0,4,4,0,0,1,4.83-.32,79.71,79.71,0,0,1,21.79,21.31A87.62,87.62,0,0,0,216,128Z',
+}
+
 // Bold weight, not regular: at the sizes these render at, regular's hairlines
 // go muddy next to IBM Plex Sans Arabic's stems. Bold matches the text colour
 // weight so an icon reads as part of the sentence, not a lighter artefact.
@@ -143,13 +154,20 @@ const SIZE = {
 
 export type IconSize = keyof typeof SIZE
 
-export default function Icon({ name, size = 'sm', className = '' }: {
-  name: IconName; size?: IconSize; className?: string
-}) {
+// `filled` is typed against FilledIconName, so passing it to an icon with no
+// fill variant is a compile error rather than a silent fall back to the bold
+// path -- same reasoning as the size tokens.
+type IconProps = { size?: IconSize; className?: string } & (
+  | { name: IconName; filled?: false }
+  | { name: FilledIconName; filled: true }
+)
+
+export default function Icon({ name, size = 'sm', filled = false, className = '' }: IconProps) {
+  const d = filled ? FILL[name as FilledIconName] : BOLD[name]
   return (
     <svg viewBox="0 0 256 256" aria-hidden="true"
       className={`${SIZE[size]} ${className}`}>
-      <path d={BOLD[name]} fill="currentColor" />
+      <path d={d} fill="currentColor" />
     </svg>
   )
 }
