@@ -47,6 +47,11 @@ export default function RestaurantDetail() {
   // أرابياتا has 85 items across 8 categories. Categories are a filing system,
   // not a way to find one specific dish, and there was nothing else.
   const [menuQ, setMenuQ] = useState('')
+  // The box is closed by default. It sat permanently above the chips saying
+  // «دوّر في قايمة ماكدونالدز» -- a whole 40px row asking a question most
+  // people do not have, on a screen whose job is to show food. The magnifier
+  // on the cover opens it, which is the same control Talabat uses.
+  const [searchOpen, setSearchOpen] = useState(false)
   // Which section the customer is currently looking at, tracked so the sticky
   // bar can say where they are. Every section is rendered at once now -- the
   // chips scroll to a heading rather than filtering the page down to one.
@@ -420,7 +425,7 @@ export default function RestaurantDetail() {
           asserted nothing. The delivery fee belongs to the compound, not the
           vendor: the same number on every restaurant, already stated in the
           home header, and in coral it was the loudest thing on the page. */}
-      <div className="-mx-4">
+      <div className="-mx-4 -mt-6">
         <div className="relative h-40 bg-shellup">
           {cover && (
             <img src={sized(cover, IMG.wide)} alt="" loading="eager" decoding="async"
@@ -446,7 +451,10 @@ export default function RestaurantDetail() {
             {items.length > 8 && (
               <button aria-label="بحث في القايمة" title="بحث في القايمة"
                 className="grid place-items-center min-w-[44px] min-h-[44px] -ml-2.5"
-                onClick={() => document.getElementById('menu-search')?.focus()}>
+                onClick={() => {
+                  setSearchOpen(true)
+                  setTimeout(() => document.getElementById('menu-search')?.focus(), 60)
+                }}>
                 <span className="w-9 h-9 rounded-full bg-white/95 text-slate-700 grid place-items-center shadow-sm">
                   <Icon name="magnifyingGlass" size="sm" />
                 </span>
@@ -549,18 +557,21 @@ export default function RestaurantDetail() {
           {/* Search before the category pills, because it answers a different
               and more common question: "do they have X?" rather than "show me
               everything under Y". */}
-          {items.length > 8 && (
+          {items.length > 8 && searchOpen && (
             <div className="relative mb-3">
-              <input id="menu-search" className="field !pr-10" value={menuQ} onChange={e => setMenuQ(e.target.value)}
+              <input id="menu-search" className="field !bg-white !pr-10" value={menuQ} onChange={e => setMenuQ(e.target.value)}
                 aria-label={`دوّر في قايمة ${restaurant.name}`}
                 placeholder={`دوّر في قايمة ${restaurant.name}…`} />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mist pointer-events-none">
                 <Icon name="magnifyingGlass" size="sm" />
               </span>
-              {menuQ.trim() && (
-                <button className="absolute left-3 top-1/2 -translate-y-1/2 text-mist text-sm"
-                  aria-label="مسح" onClick={() => setMenuQ('')}><Icon name="x" size="sm" /></button>
-              )}
+              {/* Clearing an empty box closes it: otherwise the only way back
+                  out of search is to leave the page. */}
+              <button className="absolute left-3 top-1/2 -translate-y-1/2 text-mist"
+                aria-label={menuQ.trim() ? 'مسح' : 'إغلاق البحث'}
+                onClick={() => { if (menuQ.trim()) setMenuQ(''); else setSearchOpen(false) }}>
+                <Icon name="x" size="sm" />
+              </button>
             </div>
           )}
 
