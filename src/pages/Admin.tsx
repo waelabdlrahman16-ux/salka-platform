@@ -2508,9 +2508,17 @@ export default function Admin() {
                     )
                   })()}
                 </div>
-                <div className="col-span-2">
+                <div>
                   <p className="text-[10px] uppercase tracking-wider text-mist font-bold">العنوان</p>
                   <p className="text-sm">{addr(o)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-mist font-bold">الدفع</p>
+                  <p className="text-sm font-semibold">{o.payment_method === 'cod'
+                    ? (o.cod_deposit_amount != null
+                        ? `كاش ${Math.round((o.total - o.cod_deposit_amount) * 100) / 100} + عربون ${o.cod_deposit_amount}`
+                        : `كاش · ${o.total} ج.م`)
+                    : o.payment_method === 'instapay' ? `InstaPay · ${o.total} ج.م` : `أونلاين · ${o.total} ج.م`}</p>
                 </div>
                 {o.customer_note && (
                   <div className="col-span-2">
@@ -2518,66 +2526,62 @@ export default function Admin() {
                     <p className="text-sm text-coral-700">{o.customer_note}</p>
                   </div>
                 )}
-              </div>
-
-              {/* BAND 5 — the money, itemised. This lived behind «عرض التفاصيل
-                  الكاملة» before; a customer querying their bill is asking about
-                  these four numbers, and it is four lines. */}
-              <div className="px-4 py-3 border-t border-line text-sm">
-                <p className="text-[10px] uppercase tracking-wider text-mist font-bold mb-1.5">الحساب</p>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 tabular-nums">
-                  <span className="text-mist">المنتجات</span><span className="text-left">{o.subtotal} ج.م</span>
-                  <span className="text-mist">التوصيل</span><span className="text-left">{o.delivery_fee} ج.م</span>
-                  {Number(o.service_fee ?? 0) > 0 && (
-                    <><span className="text-mist">رسوم الخدمة</span><span className="text-left">{o.service_fee} ج.م</span></>
-                  )}
-                  {Number(o.wallet_used ?? 0) > 0 && (
-                    <><span className="text-sea">من المحفظة</span><span className="text-left text-sea">−{o.wallet_used} ج.م</span></>
-                  )}
-                  <span className="font-bold">الإجمالي</span><span className="text-left font-bold">{o.total} ج.م</span>
-                  <span className="text-mist">طريقة الدفع</span>
-                  <span className="text-left">{o.payment_method === 'cod'
-                    ? (o.cod_deposit_amount != null
-                        ? `كاش ${Math.round((o.total - o.cod_deposit_amount) * 100) / 100} + عربون ${o.cod_deposit_amount}`
-                        : 'كاش')
-                    : o.payment_method === 'instapay' ? 'InstaPay' : 'أونلاين'}</span>
-                </div>
-                {!o.is_test && <div className="mt-2"><OrderAdjust orderId={o.id} onDone={() => load(true)} /></div>}
-              </div>
-
-              {/* BAND 6 — what happened, in order. Also previously collapsed. */}
-              <div className="px-4 py-3 border-t border-line text-xs space-y-1">
-                <p className="text-[10px] uppercase tracking-wider text-mist font-bold mb-1">السجل</p>
-                <p><Icon name="clock" size="xs" className="inline-block align-[-0.15em] me-1" />الطلب اتعمل: {fmtTime(o.created_at)}</p>
-                {assignments.filter(a => a.order_id === o.id).map(a => (
-                  <div key={a.id} className="border-t border-line pt-1 mt-1">
-                    <p className="font-semibold">محاولة {a.attempt_number}: {a.drivers?.name} ({assignmentStatusLabel(a.status)})</p>
-                    {a.offered_at && <p className="text-mist">عُرض: {fmtTime(a.offered_at)}</p>}
-                    {a.responded_at && <p className="text-mist">رد: {fmtTime(a.responded_at)}</p>}
-                    {a.picked_up_at && <p className="text-mist">استلم: {fmtTime(a.picked_up_at)}</p>}
-                    {a.delivered_at && <p className="text-mist">سلّم: {fmtTime(a.delivered_at)}</p>}
-                    {a.rejection_reason && <p className="text-warning">سبب: {a.rejection_reason}</p>}
-                  </div>
-                ))}
-                {assignments.filter(a => a.order_id === o.id).length === 0 && (
-                  <p className="text-mist">محدش اتعين على الطلب ده لسه</p>
-                )}
                 {o.status === 'Cancelled' && (o.cancel_reason || o.cancelled_at) && (
-                  <p className="text-danger font-semibold pt-1">
-                    <Icon name="x" size="xs" className="inline-block align-[-0.15em] me-1" />{cancelReasonLabel(o.cancel_reason)}
-                    {o.cancelled_at && ` · اتلغى ${fmtTime(o.cancelled_at)}`}
-                    {o.cancelled_at && o.created_at &&
-                      ` · بعد ${Math.max(0, Math.round(
-                        (new Date(o.cancelled_at).getTime() - new Date(o.created_at).getTime()) / 60000))} دقيقة`}
-                  </p>
+                  <div className="col-span-2">
+                    <p className="text-[10px] uppercase tracking-wider text-mist font-bold">سبب الإلغاء</p>
+                    <p className="text-sm text-danger font-semibold">{cancelReasonLabel(o.cancel_reason)}
+                      {o.cancelled_at && ` · بعد ${Math.max(0, Math.round(
+                        (new Date(o.cancelled_at).getTime() - new Date(o.created_at).getTime()) / 60000))} دقيقة`}</p>
+                  </div>
                 )}
               </div>
 
-              {/* BAND 7 — every action, in one strip. They used to sit in three
+              {/* The itemised bill and the attempt-by-attempt log. D deliberately
+                  does NOT put these on the card -- they are depth, not summary,
+                  and they were behind a disclosure long before this redesign.
+                  What changed is what sits ABOVE the fold: the items, the
+                  driver, the timing and the payment are on the card now, so
+                  this only holds the two things you open when someone queries a
+                  bill or asks what happened. */}
+              <details className="border-t border-line group">
+                <summary className="px-4 py-2.5 text-xs text-sea font-semibold cursor-pointer list-none marker:hidden">
+                  الحساب التفصيلي والسجل
+                  <Icon name="chevronLeft" size="xs" className="inline-block align-[-0.15em] ms-1 -rotate-90 group-open:rotate-90 transition-transform" />
+                </summary>
+                <div className="px-4 pb-3 text-xs">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 tabular-nums pb-2 mb-2 border-b border-line">
+                    <span className="text-mist">المنتجات</span><span className="text-left">{o.subtotal} ج.م</span>
+                    <span className="text-mist">التوصيل</span><span className="text-left">{o.delivery_fee} ج.م</span>
+                    {Number(o.service_fee ?? 0) > 0 && (
+                      <><span className="text-mist">رسوم الخدمة</span><span className="text-left">{o.service_fee} ج.م</span></>
+                    )}
+                    {Number(o.wallet_used ?? 0) > 0 && (
+                      <><span className="text-sea">من المحفظة</span><span className="text-left text-sea">−{o.wallet_used} ج.م</span></>
+                    )}
+                    <span className="font-bold">الإجمالي</span><span className="text-left font-bold">{o.total} ج.م</span>
+                  </div>
+                  <p className="text-mist">الطلب اتعمل: {fmtTime(o.created_at)}</p>
+                  {assignments.filter(a => a.order_id === o.id).map(a => (
+                    <div key={a.id} className="border-t border-line pt-1 mt-1">
+                      <p className="font-semibold">محاولة {a.attempt_number}: {a.drivers?.name} ({assignmentStatusLabel(a.status)})</p>
+                      {a.offered_at && <p className="text-mist">عُرض: {fmtTime(a.offered_at)}</p>}
+                      {a.picked_up_at && <p className="text-mist">استلم: {fmtTime(a.picked_up_at)}</p>}
+                      {a.delivered_at && <p className="text-mist">سلّم: {fmtTime(a.delivered_at)}</p>}
+                      {a.rejection_reason && <p className="text-warning">سبب: {a.rejection_reason}</p>}
+                    </div>
+                  ))}
+                  {assignments.filter(a => a.order_id === o.id).length === 0 && (
+                    <p className="text-mist mt-1">محدش اتعين على الطلب ده لسه</p>
+                  )}
+                </div>
+              </details>
+
+              {/* BAND 5 — every action, in one strip. They used to sit in three
                   separate places on the card, so finding one meant scanning the
                   whole thing. Archive is no longer the most prominent control on
                   a delivered order; it is the least urgent thing you can do. */}
-              <div className="px-4 py-3 border-t border-line bg-night flex flex-wrap gap-2">
+              <div className="px-4 py-3 border-t border-line bg-night flex flex-wrap items-center gap-2">
+                {!o.is_test && <OrderAdjust orderId={o.id} onDone={() => load(true)} />}
                 {!CLOSED_ORDER_STATUSES.includes(o.status as OrderStatus) && (
                   <button className="btn-danger !py-1.5 text-xs" onClick={() => cancelOrder(o)}>إلغاء الطلب</button>
                 )}
