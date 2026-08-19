@@ -331,7 +331,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
                   e.target.value = ''
                   if (f) upload(f)
                 }} />
-              {uploading ? 'جاري الرفع…' : (form.imageUrl ? 'تغيير الصورة' : '🖼️ صورة (اختياري)')}
+              {uploading ? 'جاري الرفع…' : (form.imageUrl ? 'تغيير الصورة' : <><Icon name="image" size="sm" className="inline-block align-[-0.15em] me-1" />صورة (اختياري)</>)}
             </label>
           </div>
           {form.imageUrl && <ImageCropPreview url={form.imageUrl} />}
@@ -544,7 +544,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
             type="button"
             className="text-xs text-mist underline underline-offset-2"
             onClick={() => setShowAdvancedModifierSettings(open => !open)}
-          >{showAdvancedModifierSettings ? 'إخفاء الإعدادات المتقدمة' : '⚙️ إعدادات متقدمة'}</button>
+          >{showAdvancedModifierSettings ? 'إخفاء الإعدادات المتقدمة' : <><Icon name="gear" size="sm" className="inline-block align-[-0.15em] me-1" />إعدادات متقدمة</>}</button>
         </section>
 
         <div className="flex flex-wrap gap-2 mt-3">

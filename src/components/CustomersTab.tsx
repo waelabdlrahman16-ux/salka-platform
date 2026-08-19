@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import Icon from './Icon'
 import { adminAccountDriverAction } from '../lib/adminAccountDriverActions'
 import { adminReport } from '../lib/adminReports'
 import { orderStatusLabel } from '../lib/statusLabels'
@@ -414,7 +415,7 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
 
         <div className="p-4 space-y-4">
           <div className="flex gap-2">
-            <a className="btn-sea flex-1 text-center !py-2.5" href={`tel:${dial(c.phone)}`}>📞 اتصل</a>
+            <a className="btn-sea flex-1 text-center !py-2.5" href={`tel:${dial(c.phone)}`}><Icon name="phone" size="sm" className="inline-block align-[-0.15em] me-1" />اتصل</a>
             <a className="btn-ghost flex-1 text-center !py-2.5"
               href={`https://wa.me/2${dial(c.phone)}`} target="_blank" rel="noreferrer">واتساب</a>
           </div>
@@ -506,8 +507,8 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
                     {o.driver_name && <><span>·</span><span>{o.driver_name}</span></>}
                   </div>
                   {o.items && <p className="text-xs text-mist mt-1.5">{o.items}</p>}
-                  {o.request_notes && <p className="text-xs text-mist mt-1">📝 {o.request_notes}</p>}
-                  {o.customer_note && <p className="text-xs text-mist mt-1">💬 {o.customer_note}</p>}
+                  {o.request_notes && <p className="text-xs text-mist mt-1"><Icon name="penToSquare" size="xs" className="inline-block align-[-0.15em] me-1" />{o.request_notes}</p>}
+                  {o.customer_note && <p className="text-xs text-mist mt-1"><Icon name="chatCircle" size="xs" className="inline-block align-[-0.15em] me-1" />{o.customer_note}</p>}
                   {o.cancel_reason && (
                     <p className="text-xs text-red-700 mt-1">سبب الإلغاء: {o.cancel_reason}</p>
                   )}

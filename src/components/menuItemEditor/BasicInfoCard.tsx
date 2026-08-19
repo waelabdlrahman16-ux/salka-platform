@@ -1,4 +1,5 @@
 import { useId } from 'react'
+import Icon from '../Icon'
 import ImageCropPreview from '../ImageCropPreview'
 export default function BasicInfoCard({
   name, setName, description, setDescription, category, setCategory, price, setPrice,
@@ -58,7 +59,9 @@ export default function BasicInfoCard({
             e.target.value = ''   // so the same photo can be picked again
             if (f) onUpload(f)
           }} />
-        {uploading ? 'جاري الرفع…' : (imageUrl ? '🖼️ تغيير الصورة' : '🖼️ إضافة صورة')}
+        {uploading ? 'جاري الرفع…' : (imageUrl
+            ? <><Icon name="image" size="sm" className="inline-block align-[-0.15em] me-1" />تغيير الصورة</>
+            : <><Icon name="image" size="sm" className="inline-block align-[-0.15em] me-1" />إضافة صورة</>)}
       </label>
       {imageError && <p className="text-xs text-sandink mb-2">{imageError}</p>}
       {imageUrl && <div className="mb-2.5"><ImageCropPreview url={imageUrl} /></div>}

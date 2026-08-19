@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import Icon from './Icon'
 import { supabase } from '../lib/supabase'
 import { useCatalogSync } from '../lib/useCatalogSync'
 import { vendorOperation } from '../lib/vendorOperations'
@@ -117,7 +118,7 @@ export default function VendorMenuManager({ restaurant, onClose }: {
     <div>
       <div className="flex items-center justify-between gap-3 mb-4">
         <div className="min-w-0">
-          <h1 className="text-xl font-bold truncate">📋 إدارة المنيو</h1>
+          <h1 className="text-xl font-bold truncate"><Icon name="clipboardText" size="md" className="inline-block align-[-0.15em] me-1" />إدارة المنيو</h1>
           <p className="text-xs text-mist mt-0.5 truncate">{restaurant.name} · {items.length} صنف</p>
         </div>
         <button className="btn-ghost !py-2 !px-3 text-sm shrink-0" onClick={onClose}>رجوع للطلبات</button>

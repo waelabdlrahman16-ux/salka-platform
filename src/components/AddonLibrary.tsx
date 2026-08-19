@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Icon from './Icon'
 import { supabase } from '../lib/supabase'
 import { uploadVendorImage } from '../lib/upload'
 import { catalogCheck } from '../lib/catalogChecks'
@@ -183,7 +184,7 @@ export default function AddonLibrary({ restaurantId, items }: {
           <label className="text-xs text-sea cursor-pointer">
             <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
               onChange={e => e.target.files?.[0] && uploadImage(e.target.files[0])} />
-            {uploading ? 'جاري الرفع…' : (draft.imageUrl ? 'تغيير الصورة' : '🖼️ صورة (اختياري)')}
+            {uploading ? 'جاري الرفع…' : (draft.imageUrl ? 'تغيير الصورة' : <><Icon name="image" size="sm" className="inline-block align-[-0.15em] me-1" />صورة (اختياري)</>)}
           </label>
         </div>
         <div className="flex gap-2">

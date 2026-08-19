@@ -432,7 +432,7 @@ export default function MenuItemsPanel({
                         {it.available_from && it.available_until && (
                           <>
                             {(current === ALL || sz || !it.image_url) ? ' · ' : ''}
-                            {'⏰ '}
+                            <Icon name="clock" size="xs" className="inline-block align-[-0.15em] me-1" />
                             <bdi dir="ltr">{it.available_from.slice(0, 5)}–{it.available_until.slice(0, 5)}</bdi>
                           </>
                         )}

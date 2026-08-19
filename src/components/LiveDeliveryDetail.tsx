@@ -1,4 +1,5 @@
 import LiveMap from './LiveMap'
+import Icon from './Icon'
 import type { LiveDelivery } from '../lib/types'
 
 // The contents of one in-flight delivery, shared by the admin's "توصيلات جارية"
@@ -71,7 +72,7 @@ export default function LiveDeliveryDetail({ live }: { live?: LiveDelivery }) {
           </div>
         )}
         {live.request_notes && (
-          <p className="text-xs text-sandink mt-2">📝 {live.request_notes}</p>
+          <p className="text-xs text-sandink mt-2"><Icon name="penToSquare" size="xs" className="inline-block align-[-0.15em] me-1" />{live.request_notes}</p>
         )}
       </div>
 

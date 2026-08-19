@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import Icon from './Icon'
 import { supabase } from '../lib/supabase'
 import type { Compound, Restaurant } from '../lib/types'
 import Toggle from './Toggle'
@@ -75,7 +76,7 @@ export default function RestaurantDeliverySettings({ restaurant, compounds }: { 
   return (
     <section className="mt-3 pt-3 border-t border-line">
       <button className="w-full flex items-center justify-between text-right" onClick={() => setOpen(v => !v)}>
-        <span className="font-semibold text-sm">📍 مواقع التحضير ورسوم التوصيل</span>
+        <span className="font-semibold text-sm"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />مواقع التحضير ورسوم التوصيل</span>
         <span className="text-xs text-sea">{open ? 'إخفاء' : activeDefault ? 'تعديل' : 'إضافة موقع'}</span>
       </button>
       {open && <div className="mt-3 space-y-3">
