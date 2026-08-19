@@ -465,26 +465,32 @@ export default function Home() {
           title. Now it IS the title, and the delivery fee sits next to it:
           stated once, because it is a property of the compound and is identical
           on every card, so printing it nine times implied it varied. */}
-      <div className="flex items-start justify-between mb-3 gap-3">
-        {/* min-h-11: it measured 42px, two short of the 44px minimum, and this
-            is the control that decides which vendors the customer sees at all. */}
-        <button className="text-right min-w-0 flex-1 min-h-11" onClick={() => setPicking(true)}>
-          <span className="block text-[11px] text-mist">التوصيل لـ</span>
-          <span className="flex items-center gap-1 min-w-0">
-            <Icon name="locationDot" size="sm" className="shrink-0 text-sea" />
-            <span className="font-bold text-[17px] truncate">{selected ? selected.name : 'اختر مكانك'}</span>
-            <Icon name="caretDown" size="xs" className="text-mist shrink-0" />
-          </span>
-        </button>
-        {/* Neutral, not coral. A delivery fee is an ordinary fact, and coral is
-            the accent colour -- it made the one number nobody is worried about
-            the loudest thing in the header. */}
+      {/* One line, one sentence: «delivering to X, 65 ج.م». The «التوصيل لـ»
+          label repeated what the pin and the name below it already said, and
+          the fee was an 11px pill floating on the far side of the row, 12px
+          below the name it belongs to, in a style used nowhere else -- so it
+          read as an unrelated alert rather than half of the same fact.
+          Merging them returned 24px at the top of the screen, where 45% of the
+          first viewport was chrome before any food appeared.
+
+          Neutral, not coral. A delivery fee is an ordinary fact, and coral is
+          the accent -- it made the one number nobody is worried about the
+          loudest thing in the header.
+
+          min-h-11: it measured 42px, two short of the 44px minimum, and this
+          is the control that decides which vendors the customer sees at all. */}
+      <button className="text-right w-full min-w-0 min-h-11 flex items-center gap-1.5 mb-3"
+        onClick={() => setPicking(true)}>
+        <Icon name="locationDot" size="sm" className="shrink-0 text-sea" />
+        <span className="font-bold text-[17px] truncate">{selected ? selected.name : 'اختر مكانك'}</span>
+        <Icon name="caretDown" size="xs" className="text-mist shrink-0" />
         {deliveryFee !== null && (
-          <span className="shrink-0 text-[11px] font-bold text-mist bg-shellup border border-line rounded-lg px-2.5 py-1 mt-3">
-            {deliveryFee} ج.م توصيل
-          </span>
+          <>
+            <span aria-hidden="true" className="text-line shrink-0">•</span>
+            <span className="shrink-0 text-[12.5px] text-mist">{deliveryFee} ج.م توصيل</span>
+          </>
         )}
-      </div>
+      </button>
 
       {/* One box, two kinds of answer: vendor names matched locally, dishes
           matched on the server across every vendor delivering here. */}
@@ -498,7 +504,7 @@ export default function Home() {
           Rather than hide the whole control for the half it cannot do, say so
           when someone types without a place set. */}
       <div className="relative mb-3">
-        <input className="field !pr-10" value={foodQ} onChange={e => setFoodQ(e.target.value)}
+        <input className="field !bg-white !pr-10" value={foodQ} onChange={e => setFoodQ(e.target.value)}
           aria-label="دوّر على مطعم أو أكلة"
           placeholder={compoundId ? 'دوّر على مطعم أو أكلة…' : 'دوّر على مطعم…'} />
         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mist pointer-events-none">
