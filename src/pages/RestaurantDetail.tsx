@@ -6,6 +6,7 @@ import ProductCard from '../components/ProductCard'
 import ProductDetailSheet from '../components/ProductDetailSheet'
 import CustomizeSheet from '../components/CustomizeSheet'
 import Icon from '../components/Icon'
+import { useDismissable } from '../lib/useDismissable'
 import { sized, IMG } from '../lib/imageUrl'
 import { isItemAvailableNow } from '../lib/itemAvailability'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
@@ -52,6 +53,9 @@ export default function RestaurantDetail() {
   // people do not have, on a screen whose job is to show food. The magnifier
   // on the cover opens it, which is the same control Talabat uses.
   const [searchOpen, setSearchOpen] = useState(false)
+  // An add that would replace a basket belonging to another restaurant waits
+  // here until the customer says yes.
+  const [pendingAdd, setPendingAdd] = useState<(() => void) | null>(null)
   // Which section the customer is currently looking at, tracked so the sticky
   // bar can say where they are. Every section is rendered at once now -- the
   // chips scroll to a heading rather than filtering the page down to one.
@@ -137,6 +141,16 @@ export default function RestaurantDetail() {
   // Same rule as the home card: the vendor's own cover when set, otherwise
   // the best-ranked photographed dish, computed server-side.
   const cover = restaurant?.cover_image_url || restaurant?.hero_image_url || null
+
+  // One order is tied to one vendor, so adding here empties a basket built
+  // somewhere else. That is the customer's call, not ours -- it used to happen
+  // silently the moment this page loaded.
+  const otherVendorInCart =
+    cart.count > 0 && cart.restaurantId != null && cart.restaurantId !== Number(id)
+  const guardAdd = (run: () => void) => {
+    if (otherVendorInCart) setPendingAdd(() => run)
+    else run()
+  }
 
   const [loadFailed, setLoadFailed] = useState(false)
   const [catalogRevision, setCatalogRevision] = useState(0)
@@ -659,9 +673,9 @@ export default function RestaurantDetail() {
                       // so the plain price is a starting point there too -- not
                       // only when there are sizes.
                       isFromPrice={itemSizes.length > 0 || itemCombos.length > 0}
-                      onAdd={() => cart.add(it, 1)}
+                      onAdd={() => guardAdd(() => cart.add(it, 1))}
                       onRemove={() => cart.add(it, -1)}
-                      onCustomize={() => openCustomization(it)}
+                      onCustomize={() => guardAdd(() => openCustomization(it))}
                       onOpenDetail={() => setDetailItem(it)}
                     />
                   )
@@ -689,6 +703,12 @@ export default function RestaurantDetail() {
           onCustomize={it => { setDetailItem(null); openCustomization(it) }}
           onClose={() => setDetailItem(null)}
         />
+      )}
+
+      {pendingAdd && (
+        <SwitchVendorDialog
+          onCancel={() => setPendingAdd(null)}
+          onConfirm={() => { const run = pendingAdd; cart.clear(); setPendingAdd(null); run() }} />
       )}
 
       {customizing && (
@@ -745,6 +765,31 @@ export default function RestaurantDetail() {
         </div>
       )}
 
+    </div>
+  )
+}
+
+/**
+ * Asked before an add replaces a basket from another restaurant. Previously
+ * the basket was emptied the moment this page opened, so a customer comparing
+ * two places lost the first one with no warning and no way back.
+ */
+function SwitchVendorDialog({ onCancel, onConfirm }: { onCancel: () => void; onConfirm: () => void }) {
+  const ref = useDismissable<HTMLDivElement>(onCancel)
+  return (
+    <div ref={ref} role="dialog" aria-modal="true" aria-labelledby="switch-vendor-title"
+      className="fixed inset-0 z-50 bg-black/60 grid place-items-center px-6" onClick={onCancel}>
+      <div className="card w-full max-w-sm p-5 rounded-2xl" onClick={e => e.stopPropagation()}>
+        <h2 id="switch-vendor-title" className="font-bold text-lg mb-1">تبدأ عربية جديدة؟</h2>
+        <p className="text-sm text-mist mb-5">
+          عندك أصناف من مطعم تاني في عربيتك. الطلب الواحد بيبقى من مطعم واحد، فلو
+          كمّلت هنا هنفضّي العربية القديمة.
+        </p>
+        <div className="flex gap-2.5">
+          <button className="btn-ghost flex-1" onClick={onCancel}>إلغاء</button>
+          <button className="btn-sea flex-1" onClick={onConfirm}>فضّي وابدأ</button>
+        </div>
+      </div>
     </div>
   )
 }

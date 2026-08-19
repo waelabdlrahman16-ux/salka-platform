@@ -64,9 +64,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [state])
 
   function setForRestaurant(restaurant: Restaurant) {
-    // switching to a different restaurant's menu clears any in-progress cart
-    // from a different vendor -- one order is tied to one vendor.
-    setState(s => s.restaurantId === restaurant.id ? s : { restaurantId: restaurant.id, lines: [] })
+    // One order is tied to one vendor, but LOOKING at another menu is not a
+    // decision to abandon a basket. This used to empty the cart the moment the
+    // other restaurant's page opened -- so a customer comparing two places
+    // lost the first basket without being asked, and without being told. The
+    // cart now survives the visit; RestaurantDetail asks before replacing it,
+    // at the point where the customer actually adds something.
+    setState(s => (s.lines.length === 0 ? { restaurantId: restaurant.id, lines: [] } : s))
   }
 
   function add(item: MenuItem, delta: number) {

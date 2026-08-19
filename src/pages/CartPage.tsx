@@ -171,10 +171,10 @@ export default function CartPage() {
                   <span className="text-sea font-bold">{l.qty * unit} ج.م</span>
                 </p>
               </div>
-              <div className="flex items-center gap-2 bg-shellup rounded-lg px-1 py-1 shrink-0">
-                <button className="w-7 h-7 rounded-md grid place-items-center hover:bg-white" onClick={() => cart.updateLineQty(l.key, -1)}><Icon name="minus" size="xs" /></button>
+              <div className="flex items-center gap-2 bg-shellup rounded-full px-1 py-1 shrink-0">
+                <button className="w-7 h-7 rounded-full grid place-items-center hover:bg-white" onClick={() => cart.updateLineQty(l.key, -1)}><Icon name="minus" size="xs" /></button>
                 <span className="font-bold text-sm w-4 text-center">{l.qty}</span>
-                <button className="w-7 h-7 rounded-md grid place-items-center bg-sea text-white" onClick={() => cart.updateLineQty(l.key, 1)}><Icon name="plus" size="xs" /></button>
+                <button className="w-7 h-7 rounded-full grid place-items-center bg-sea text-white" onClick={() => cart.updateLineQty(l.key, 1)}><Icon name="plus" size="xs" /></button>
               </div>
             </div>
           )

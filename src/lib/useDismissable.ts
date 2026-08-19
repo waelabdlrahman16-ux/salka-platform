@@ -43,6 +43,22 @@ export function useDismissable<T extends HTMLElement = HTMLDivElement>(
     if (!active) return
     const previouslyFocused = document.activeElement as HTMLElement | null
 
+    // The page behind an overlay kept scrolling: opening a sheet and dragging
+    // moved the menu underneath it, so closing the sheet left you somewhere
+    // else entirely. Every overlay in the app runs this hook, so locking here
+    // fixes all of them rather than one sheet.
+    //
+    // Restore the exact previous value rather than clearing: nested overlays
+    // each run this, and the inner one's cleanup must not unlock the page
+    // while the outer one is still open.
+    // html AND body: html carries overflow-x:clip, which makes the VIEWPORT
+    // the scroller, so locking body alone left the page behind still moving.
+    const root = document.documentElement
+    const previousOverflow = document.body.style.overflow
+    const previousRootOverflow = root.style.overflow
+    document.body.style.overflow = 'hidden'
+    root.style.overflow = 'hidden'
+
     // Focus the container, not its first field. Focusing an input here would
     // raise the on-screen keyboard the instant any sheet opens, which on a
     // phone hides most of the sheet the user was trying to read.
@@ -138,6 +154,8 @@ export function useDismissable<T extends HTMLElement = HTMLDivElement>(
     }
 
     return () => {
+      document.body.style.overflow = previousOverflow
+      root.style.overflow = previousRootOverflow
       document.removeEventListener('keydown', onKey, true)
       if (marker) {
         window.removeEventListener('popstate', onPop)

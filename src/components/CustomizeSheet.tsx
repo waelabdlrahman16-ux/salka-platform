@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type MutableRefObject } from 'react'
 import { useDismissable } from '../lib/useDismissable'
 import Icon from './Icon'
+import IconButton from './IconButton'
 import { applyDiscount, effectiveDiscount } from '../lib/discounts'
 import type { Discount, MenuItem, MenuItemAddon, MenuItemAddonGroup, MenuItemCombo, MenuItemSize } from '../lib/types'
 import { sized, IMG } from '../lib/imageUrl'
@@ -116,26 +117,27 @@ export default function CustomizeSheet({
   // see the note in ProductDetailSheet.
   return (
     <div ref={overlayRef} role="dialog" aria-labelledby="customize-sheet-title" aria-modal="true" className="fixed inset-0 z-50 bg-black/60" onClick={onClose}>
-      <div className="card fixed inset-x-0 bottom-0 w-full p-5 rounded-b-none max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="card fixed inset-x-0 bottom-0 w-full p-5 rounded-t-[28px] rounded-b-none max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         {/* The dish, before the radio buttons. This sheet opened straight onto
             «ساندوتش لوحده ولا كومبو؟» -- a form about a thing the customer
             could no longer see, even though the card they tapped was showing
             its photograph. Every delivery app in the market opens the sheet
             with the food. */}
+        {/* overflow-hidden + the same top radius, or the photo squares off the
+            corners the sheet just rounded. */}
         {item.image_url && (
-          <div className="-mx-5 -mt-5 mb-4 relative">
+          <div className="-mx-5 -mt-5 mb-4 relative overflow-hidden rounded-t-[28px]">
             <img src={sized(item.image_url, IMG.wide)} alt="" loading="eager" decoding="async"
               className="w-full h-60 object-cover"
               onError={e => { (e.currentTarget.closest('div') as HTMLElement).style.display = 'none' }} />
             {/* Closing was backdrop-tap or «إلغاء» at the very bottom of a
                 scrolling sheet -- so on a long list of add-ons there was no way
                 out without scrolling back down. */}
-            <button type="button" onClick={onClose} aria-label="إغلاق" title="إغلاق"
-              className="absolute top-3 right-3 grid place-items-center min-w-[44px] min-h-[44px]">
-              <span className="w-9 h-9 rounded-full bg-white/95 text-slate-700 grid place-items-center shadow-sm">
-                <Icon name="x" size="sm" />
-              </span>
-            </button>
+            {/* Left, and the app's own close control rather than a one-off
+                white disc -- this is the same button as every other close. */}
+            <span className="absolute top-2 left-2">
+              <IconButton icon="x" label="إغلاق" onClick={onClose} />
+            </span>
           </div>
         )}
         <h2 id="customize-sheet-title" className="font-bold text-lg mb-1">{item.name}</h2>
@@ -236,13 +238,13 @@ export default function CustomizeSheet({
             backdrop tap already do -- and quantity, which people actually
             change, was a separate row above it. */}
         <div className="flex items-center gap-2.5 mt-2">
-          <div className="flex items-center gap-1 bg-shellup rounded-xl px-1.5 py-1.5 shrink-0">
-            <button className="w-9 h-9 rounded-lg grid place-items-center hover:bg-white disabled:opacity-40"
+          <div className="flex items-center gap-1 bg-shellup rounded-full px-1.5 py-1.5 shrink-0">
+            <button className="w-9 h-9 rounded-full grid place-items-center hover:bg-white disabled:opacity-40"
               aria-label="أقل" disabled={qty <= 1} onClick={() => setQty(q => Math.max(1, q - 1))}>
               <Icon name="minus" size="sm" />
             </button>
             <span className="font-bold text-sm min-w-[1.4rem] text-center">{qty}</span>
-            <button className="w-9 h-9 rounded-lg grid place-items-center bg-sea text-white"
+            <button className="w-9 h-9 rounded-full grid place-items-center bg-sea text-white"
               aria-label="أكتر" onClick={() => setQty(q => q + 1)}>
               <Icon name="plus" size="sm" />
             </button>
