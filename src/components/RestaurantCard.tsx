@@ -71,7 +71,7 @@ export default function RestaurantCard({
         <>
           <span className="flex items-center gap-1">
             <Icon name="star" size="xs" className="text-coral-600" />
-            <span className="font-bold text-foam">{r.rating}</span>
+            <span className="text-foam">{r.rating}</span>
           </span>
           <span aria-hidden="true">•</span>
         </>
@@ -79,14 +79,14 @@ export default function RestaurantCard({
       {/* The delivery TIME is the only thing on this card that separates one
           vendor from another -- the delivery fee is per-compound, so it is the
           same number on every card in the list and putting it here would be
-          noise. It was rendering in `mist`, the same weight as the category
-          beside it. The word «يوصلك» is now a clock glyph: the icon carries the
+          noise. Rating, time and category now share one weight -- they are
+          three peers you scan across, not a hierarchy. The word «يوصلك» is now a clock glyph: the icon carries the
           meaning in less space and matches the star beside it. */}
       {etaMinutes !== null && !closed ? (
         <>
           <span className="flex items-center gap-1">
             <Icon name="clock" size="xs" className="text-mist" />
-            <span className="font-semibold text-seadeep"><bdi dir="ltr">{etaMinutes.min}–{etaMinutes.max}</bdi> د</span>
+            <span className="text-seadeep"><bdi dir="ltr">{etaMinutes.min}–{etaMinutes.max}</bdi> د</span>
           </span>
           {r.category && <><span aria-hidden="true">•</span><span className="truncate">{r.category}</span></>}
         </>
