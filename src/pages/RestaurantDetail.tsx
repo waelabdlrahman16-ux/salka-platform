@@ -409,10 +409,10 @@ export default function RestaurantDetail() {
           urgent number on the page the loudest thing on it.
           The word «رجوع» went with them; a chevron is the standard, and it was
           the only thing left in an otherwise empty row. */}
-      <div className="flex items-center gap-2 mb-3">
-        {/* Back sits ON the identity row. Alone it needed a 44px row of its
-            own, and that row is why stripping the two badges out of it saved
-            no height at all: the control, not the badges, was setting it. */}
+      {/* Back on its own row, above the logo. It costs the ~44px that folding
+          it onto the identity row had saved, so the page starts lower again --
+          a deliberate trade for a conventional nav position. */}
+      <div className="flex items-center">
         <Link to="/" aria-label="رجوع" title="رجوع"
           className="grid place-items-center min-w-[44px] min-h-[44px] -mr-2.5 shrink-0">
           {/* The page is RTL, so "back" is to the RIGHT. Icon.tsx only ships
@@ -422,6 +422,9 @@ export default function RestaurantDetail() {
             <Icon name="chevronLeft" size="sm" className="rotate-180" />
           </span>
         </Link>
+      </div>
+
+      <div className="flex items-center gap-3 mb-3">
         {restaurant.logo_url
           ? <img src={restaurant.logo_url} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0 border border-line" />
           : <div className="w-12 h-12 rounded-xl bg-shellup grid place-items-center shrink-0 text-xl font-bold text-mist">{restaurant.name.charAt(0)}</div>}
