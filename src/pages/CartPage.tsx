@@ -158,7 +158,7 @@ export default function CartPage() {
                 <h3 className="font-semibold text-sm truncate">{item.name}</h3>
                 {(sizeName || comboName || addonNames.length > 0) && (
                   <p className="text-xs text-mist mt-0.5 truncate">
-                    {[comboName && `🍟 ${comboName}`, sizeName, ...addonNames].filter(Boolean).join(' · ')}
+                    {[comboName && `🍟 ${comboName}`, sizeName, ...addonNames].filter(Boolean).join(' • ')}
                   </p>
                 )}
                 <p className="text-sm mt-0.5">
@@ -171,33 +171,35 @@ export default function CartPage() {
                   <span className="text-sea font-bold">{l.qty * unit} ج.م</span>
                 </p>
               </div>
-              <div className="flex items-center gap-2 bg-shellup rounded-lg px-1 py-1 shrink-0">
-                <button className="w-7 h-7 rounded-md grid place-items-center hover:bg-white" onClick={() => cart.updateLineQty(l.key, -1)}><Icon name="minus" size="xs" /></button>
+              <div className="flex items-center gap-2 bg-shellup rounded-full px-1 py-1 shrink-0">
+                <button className="w-7 h-7 rounded-full grid place-items-center hover:bg-white" onClick={() => cart.updateLineQty(l.key, -1)}><Icon name="minus" size="xs" /></button>
                 <span className="font-bold text-sm w-4 text-center">{l.qty}</span>
-                <button className="w-7 h-7 rounded-md grid place-items-center bg-sea text-white" onClick={() => cart.updateLineQty(l.key, 1)}><Icon name="plus" size="xs" /></button>
+                <button className="w-7 h-7 rounded-full grid place-items-center bg-sea text-white" onClick={() => cart.updateLineQty(l.key, 1)}><Icon name="plus" size="xs" /></button>
               </div>
             </div>
           )
         })}
       </div>
 
-      <div className="card p-3.5 mb-24 space-y-1.5">
-        <div className="flex justify-between text-sm text-mist"><span>المنتجات</span><span>{subtotal} ج.م</span></div>
-        <div className="flex justify-between text-sm text-mist">
-          <span>التوصيل</span>
-          <span>
+      <div className="card !bg-shellup p-3.5 mb-24 space-y-1.5">
+        {/* Labels stay muted, VALUES do not. These are the numbers the
+            customer is about to pay; grey made them read as small print. */}
+        <div className="flex justify-between text-sm"><span className="text-mist">المنتجات</span><span className="text-foam font-semibold">{subtotal} ج.م</span></div>
+        <div className="flex justify-between text-sm">
+          <span className="text-mist">التوصيل</span>
+          <span className="text-foam font-semibold">
             {deliveryFee !== null ? `${deliveryFee} ج.م`
               : feeLoading ? '…'
               : 'يتحدد بعد اختيار مكانك'}
           </span>
         </div>
-        <div className="flex justify-between text-sm text-mist">
-          <span>رسوم الخدمة</span>
-          <span>{serviceFee !== null ? `${serviceFee} ج.م` : serviceFeeLoading ? '…' : '—'}</span>
+        <div className="flex justify-between text-sm">
+          <span className="text-mist">رسوم الخدمة</span>
+          <span className="text-foam font-semibold">{serviceFee !== null ? `${serviceFee} ج.م` : serviceFeeLoading ? '…' : '-'}</span>
         </div>
         <div className="flex justify-between font-bold border-t border-line pt-2">
           <span>{grandTotal !== null ? 'الإجمالي' : 'الإجمالي قبل التوصيل'}</span>
-          <span className="text-sea">
+          <span className="text-foam">
             {!optionsLoaded ? '…'
               : grandTotal !== null ? `${grandTotal} ج.م`
               : partialTotal !== null ? `${partialTotal} ج.م`
@@ -210,12 +212,19 @@ export default function CartPage() {
         {/* Held until sizes/combos/add-ons land. Before that the total on this
             button is understated for any combo line, and it is the number the
             customer taps. */}
-        <button className="btn-sea w-full !rounded-xl !py-4 shadow-lg shadow-sea/20 flex items-center justify-between px-4"
+        <button className="btn-sea w-full !py-4"
           disabled={!optionsLoaded} onClick={() => nav('/checkout')}>
           <span>{optionsLoaded ? 'روح للدفع' : 'لحظة…'}</span>
-          {/* The number was still printed next to 'لحظة…', which is the number
-              being waited for. */}
-          {optionsLoaded && grandTotal !== null && <span className="font-bold">{grandTotal} ج.م</span>}
+          {/* One phrase with a bullet, like every other action in the app --
+              «إضافة • 335 ج.م». Pushed to opposite ends of the button it read
+              as two separate controls. The number is still withheld until
+              sizes/combos land, because it is the number being waited for. */}
+          {optionsLoaded && grandTotal !== null && (
+            <>
+              <span aria-hidden="true" className="opacity-60 text-slate-300">•</span>
+              <span className="font-bold">{grandTotal} ج.م</span>
+            </>
+          )}
         </button>
       </div>
     </div>

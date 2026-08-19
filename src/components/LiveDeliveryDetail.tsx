@@ -38,7 +38,7 @@ export default function LiveDeliveryDetail({ live }: { live?: LiveDelivery }) {
       ? (live.items ?? []).map(it => ({
           label: it.name,
           qty: it.qty,
-          extra: [it.size_name, it.combo_name, ...(it.addon_names ?? [])].filter(Boolean).join(' · ') || undefined,
+          extra: [it.size_name, it.combo_name, ...(it.addon_names ?? [])].filter(Boolean).join(' • ') || undefined,
         }))
       : (live.request_items ?? []).map(it => ({ label: it.name, qty: it.qty }))
 
@@ -57,7 +57,7 @@ export default function LiveDeliveryDetail({ live }: { live?: LiveDelivery }) {
     <div className="mt-3 space-y-3">
       <div className="rounded-2xl bg-night border border-line p-3">
         <p className="text-xs text-mist mb-1.5">
-          الطلب ({lines.length} صنف){live.total != null ? ` · ${live.total} ج.م` : ''}
+          الطلب ({lines.length} صنف){live.total != null ? ` • ${live.total} ج.م` : ''}
         </p>
         {lines.length === 0 ? (
           <p className="text-xs text-mist">مفيش أصناف مسجلة على الطلب ده</p>

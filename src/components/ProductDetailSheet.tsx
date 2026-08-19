@@ -71,14 +71,11 @@ export default function ProductDetailSheet({
   // removes the whole failure mode instead of chasing why it misfires.
   return (
     <div ref={overlayRef} role="dialog" aria-labelledby="product-detail-title" aria-modal="true" className="fixed inset-0 z-50 bg-black/60" onClick={onClose}>
-      <div className="fixed inset-x-0 bottom-0 w-full max-h-[90vh] overflow-y-auto bg-shell rounded-t-2xl" onClick={e => e.stopPropagation()}>
+      <div className="fixed inset-x-0 bottom-0 w-full max-h-[90vh] overflow-y-auto bg-shell rounded-t-3xl" onClick={e => e.stopPropagation()}>
         {/* Drag handle: a purely visual affordance signalling "this sheet
             swipes down to close" -- it does not itself carry a gesture,
             useDismissable's backdrop tap/Back-button handling already does
             that job. */}
-        <div className="flex justify-center pt-2.5 pb-1.5">
-          <div className="w-9 h-1 rounded-full bg-line" />
-        </div>
 
         {/* aspect-square on a phone is a full-width square, so the name, the
             price and the add button all started below the fold -- the customer
@@ -94,10 +91,17 @@ export default function ProductDetailSheet({
 
             Inset with side/top padding and rounded corners, not full-bleed
             against the sheet edges -- matches the redesign Wael supplied. */}
-        <div className="px-4">
-        <div className={`relative grid place-items-center text-5xl overflow-hidden rounded-xl ${
-            active.image_url && !imgFailed ? 'aspect-[4/3] max-h-[22vh]' : 'h-28'}`}
-          style={{ background: active.image_url && !imgFailed ? '#F4EEE3' : art.tint }}>
+        {/* A HEIGHT, not an aspect ratio. aspect-[4/3] with max-h-[26vh] made
+            the browser hold the ratio by shrinking the WIDTH once the cap bit,
+            so the photo sat inset and right-aligned instead of filling the
+            sheet. Fixing the height and letting object-cover crop is the only
+            way a full-bleed image stays full-bleed. */}
+        <div className={`relative w-full grid place-items-center text-5xl overflow-hidden bg-imgbg rounded-t-3xl ${
+            active.image_url && !imgFailed ? 'w-full h-[26vh]' : 'h-28'}`}
+          // Same fix as ProductCard: the photo's frame is an image container,
+          // so it takes the token rather than a literal that the palette change
+          // could not reach.
+          style={active.image_url && !imgFailed ? undefined : { background: art.tint }}>
           {active.image_url && !imgFailed
             // Fills the frame, always. Same reasoning as the grid card: with
             // `contain`, every photo was a different shape inside the same box
@@ -112,15 +116,19 @@ export default function ProductDetailSheet({
             ? <img src={sized(active.image_url, IMG.photo)} alt={active.name} className="w-full h-full object-cover"
                 onError={() => setImgFailed(true)} />
             : <CategoryArt art={art} size="xl" className="text-mist" />}
-          <span className="absolute top-1.5 left-1.5">
-            <IconButton icon="x" label="إغلاق" variant="onPhoto" onClick={onClose} />
+          <span className="absolute top-2 left-2">
+            <IconButton icon="x" label="إغلاق" onClick={onClose} />
           </span>
           {active.requires_prescription && (
             <span className="absolute top-3 right-3 bg-white/90 rounded-full px-2.5 py-1 text-xs font-bold text-seadeep">
               <Icon name="pill" size="xs" className="inline-block align-[-0.15em] me-1" />يحتاج روشتة
             </span>
           )}
-        </div>
+          {/* Handle and close ON the photo: the sheet opens with the dish
+              filling the top edge, and the two controls float over it. */}
+          <span className="absolute inset-x-0 top-2 flex justify-center pointer-events-none">
+            <span className="w-9 h-1 rounded-full bg-white/70" />
+          </span>
         </div>
 
         {/* The image was taking 38vh and the item itself got whatever was left.
@@ -128,39 +136,66 @@ export default function ProductDetailSheet({
             which hands roughly a fifth of the sheet back to the name, the price
             and the button -- the three things the customer opened it for. */}
         <div className="p-5">
+          {/* Name and price on one line: they are the two facts the customer
+              opened this for, and stacking them pushed the button further down
+              for no gain. The description tucks under the name. */}
           <h2 id="product-detail-title" className="font-bold text-xl leading-snug">{active.name}</h2>
-          {active.description && <p className="text-sm text-mist mt-2 leading-relaxed">{active.description}</p>}
-          <p className="text-xl mt-3">
-            {activeDiscount && <span className="text-mist text-sm line-through ml-2">{baseActivePrice}</span>}
-            <span className="text-sea font-bold">{itemSizes.length > 0 ? `من ${activeDisplayPrice}` : activeDisplayPrice} ج.م</span>
-          </p>
+          {active.description && <p className="text-sm text-mist mt-1 leading-relaxed">{active.description}</p>}
 
-          <div className="mt-5">
+          {/* The action bar, Talabat's shape: the price holds the start of the
+              row and the control at the end SWAPS -- «إضافة للعربة» while the
+              cart is empty of this item, a stepper once it is not. One row that
+              answers "how much" and "how many" without stacking them.
+
+              The discount is a struck price plus what you save, not a quieter
+              number. «وفّر ١٥ ج.م» is the reason to act; a smaller figure on its
+              own is just a price. */}
+          <div className="mt-5 flex items-center gap-3">
+            <div className="min-w-0">
+              {activeDiscount && (
+                <div className="flex items-center gap-2">
+                  <span className="text-mist text-xs line-through">{baseActivePrice} ج.م</span>
+                  <span className="bg-coral-100 text-coral-700 text-[11px] font-bold rounded-md px-2 py-0.5">
+                    وفّر {Math.round((baseActivePrice - activeDisplayPrice) * 100) / 100} ج.م
+                  </span>
+                </div>
+              )}
+              <p className="text-xl font-bold">
+                {itemSizes.length > 0 ? `من ${activeDisplayPrice}` : activeDisplayPrice} ج.م
+              </p>
+            </div>
+
+            <div className="flex-1" />
+
             {hasOptions ? (
-              <button className="btn-sea w-full !py-3 !rounded-full" disabled={disabled} onClick={() => onCustomize(active)}>
+              <button className="btn-sea !px-7" disabled={disabled} onClick={() => onCustomize(active)}>
                 اختيار
               </button>
             ) : qty === 0 ? (
-              <button className="btn-sea w-full !py-3 !rounded-full" disabled={disabled} onClick={() => onAdd(active)}>
-                إضافة
+              <button className="btn-sea !px-7" disabled={disabled} onClick={() => onAdd(active)}>
+                إضافة للعربة
               </button>
             ) : (
-              <div className="w-full h-11 rounded-xl bg-shellup flex items-center justify-between px-1.5">
-                <button className="w-9 h-9 rounded-lg grid place-items-center hover:bg-white" onClick={() => onRemove(active)}>
-                  <Icon name="minus" size="xs" />
+              <div className="flex items-center gap-1 bg-shellup rounded-full px-1.5 py-1.5 shrink-0">
+                <button className="w-9 h-9 rounded-full grid place-items-center hover:bg-white"
+                  aria-label="أقل" onClick={() => onRemove(active)}>
+                  <Icon name="minus" size="sm" />
                 </button>
-                <span className="font-bold">{qty}</span>
-                <button className="w-9 h-9 rounded-lg grid place-items-center bg-sea text-white" onClick={() => onAdd(active)}>
-                  <Icon name="plus" size="xs" />
+                <span className="font-bold text-sm min-w-[1.4rem] text-center">{qty}</span>
+                <button className="w-9 h-9 rounded-full grid place-items-center bg-sea text-white"
+                  aria-label="أكتر" onClick={() => onAdd(active)}>
+                  <Icon name="plus" size="sm" />
                 </button>
               </div>
             )}
           </div>
 
           {related.length > 0 && (
-            <div>
-              <h3 className="font-semibold text-sm text-mist mb-3 pt-4 border-t border-line">منتجات تانية ممكن تعجبك</h3>
-              <div className="flex gap-3 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-none">
+            <div className="relative -mx-5 mt-6 px-5 py-7 bg-shellup overflow-hidden">
+              <span aria-hidden="true" className="absolute inset-x-0 top-0 h-3 pointer-events-none"
+                style={{ background: 'radial-gradient(circle at 12px 0, #FFFFFF 11px, transparent 12px) 0 0 / 24px 24px repeat-x' }} />
+              <h3 className="font-semibold text-sm text-mist mb-3">منتجات تانية ممكن تعجبك</h3>
+              <div className="flex gap-3 overflow-x-auto pb-1 -mx-5 px-5 scrollbar-none">
                 {related.map(r => {
                   const rArt = artFor(r.category)
                   const rSizes = sizes.filter(s => s.menu_item_id === r.id)

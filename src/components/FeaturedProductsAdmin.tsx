@@ -156,7 +156,7 @@ export default function FeaturedProductsAdmin({ restaurants }: { restaurants: Re
             <select id={`${fid}-i`} className="field" value={pickItemId} disabled={!pickRestaurant || itemsLoading}
               onChange={e => setPickItemId(e.target.value)}>
               <option value="">{itemsLoading ? 'جاري التحميل…' : 'اختار صنف'}</option>
-              {pickItems.map(it => <option key={it.id} value={it.id}>{it.name} · {it.price} ج.م</option>)}
+              {pickItems.map(it => <option key={it.id} value={it.id}>{it.name} • {it.price} ج.م</option>)}
             </select></div>
         </div>
         <button className="btn-sea !py-2 text-sm" onClick={add} disabled={!pickItemId || saving}>
@@ -200,7 +200,7 @@ export default function FeaturedProductsAdmin({ restaurants }: { restaurants: Re
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-sm truncate">{r.menu_items?.name ?? 'صنف محذوف'}</p>
               <p className="text-xs text-mist truncate">
-                {restaurantName ?? ''}{r.menu_items ? ` · ${r.menu_items.price} ج.م` : ''}{note ? ` · ${note}` : ''}
+                {restaurantName ?? ''}{r.menu_items ? ` • ${r.menu_items.price} ج.م` : ''}{note ? ` • ${note}` : ''}
               </p>
             </div>
             <div className="flex items-center gap-1 shrink-0">

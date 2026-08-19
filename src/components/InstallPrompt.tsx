@@ -59,7 +59,7 @@ export default function InstallPrompt() {
           حطّ سالكة على شاشتك الرئيسية
           {showIOSHelp && (
             <>
-              {' · '}
+              {' • '}
               <button className="text-sea font-bold underline" onClick={() => setStepsOpen(o => !o)}>
                 {stepsOpen ? 'إخفاء' : 'إزاي؟'}
               </button>

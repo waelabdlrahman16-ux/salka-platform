@@ -11,10 +11,19 @@
    `position: fixed` bottom sheet opened during or right after that bounce
    can render offset from the true viewport edge on iOS WebKit, which is the
    most likely explanation for a full-height gap down one side of a sheet
-   that measures as a perfect 0-to-100%-width box in every other engine. */
-html { font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif; overflow-x: hidden; }
-body { @apply bg-night text-foam antialiased; overflow-x: hidden; }
+   that measures as a perfect 0-to-100%-width box in every other engine.
 
+   `clip` rather than `hidden`: hidden forces overflow-y to compute to `auto`,
+   which makes the element a scroll container and silently breaks every
+   `position: sticky` descendant -- that is why the menu category bar would not
+   pin. `clip` does the same guarding job without creating one. `hidden` stays
+   first as the fallback for engines older than Safari 16. */
+html { font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif; overflow-x: hidden; overflow-x: clip; }
+body { @apply bg-night text-foam antialiased; overflow-x: hidden; overflow-x: clip; }
+
+/* 12px is the base card: quick tiles and product cards. The vendor card and
+   the promo banner override to 16px -- they carry a photograph, and a larger
+   corner reads on a big surface where it would look sloppy on a small one. */
 .card { @apply bg-shell border border-line rounded-xl; }
 
 /* min-h-[44px] is the floor Apple asks for and Google exceeds at 48. The padding
@@ -22,7 +31,7 @@ body { @apply bg-night text-foam antialiased; overflow-x: hidden; }
    inline-flex + centring is what makes the floor actually raise the box instead
    of leaving the label stuck to the top edge; every .btn in this codebase wraps
    a single run of text or an emoji, so nothing reflows. */
-.btn { @apply inline-flex items-center justify-center gap-1.5 min-h-[44px] rounded-xl px-4 py-2.5 font-semibold transition-colors disabled:opacity-40 disabled:pointer-events-none; }
+.btn { @apply inline-flex items-center justify-center gap-1.5 min-h-[44px] rounded-full px-5 py-2.5 font-semibold transition-colors disabled:opacity-40 disabled:pointer-events-none; }
 .btn-sea { @apply btn bg-sea text-white hover:bg-seadeep; }
 .btn-ghost { @apply btn bg-shellup text-foam hover:bg-line; }
 .btn-danger { @apply btn bg-dangerbg text-danger hover:bg-dangerbg; }
@@ -31,8 +40,13 @@ body { @apply bg-night text-foam antialiased; overflow-x: hidden; }
    the boundary that identifies a control. `slate-500` is 3.83:1 on a card and
    3.59:1 on the page, replacing `linestrong` at 3.40:1. The placeholder
    was mist at 60% opacity, which composites to #A69F98 for 2.45:1; full-opacity
-   mist is 5.35:1 and still reads as secondary next to foam at 15.34:1. */
-.field { @apply w-full h-10 rounded-xl bg-night border border-slate-500 px-3.5 text-foam placeholder:text-mist focus:outline-none focus:border-sea focus:ring-1 focus:ring-sea; }
+   mist is 5.35:1 and still reads as secondary next to foam at 15.34:1.
+
+   2026-08-19: mist (#6E655C) read as entered TEXT rather than a prompt, and
+   slate-500 (#867E76) drew the box harder than the content inside it. Both
+   step back one rung -- placeholder slate-400, border slate-300 -- which on a
+   white ground still separates the field without competing with it. */
+.field { @apply w-full h-10 rounded-lg bg-night border border-slate-300 px-3.5 text-foam placeholder:text-slate-300 focus:outline-none focus:border-sea focus:ring-1 focus:ring-sea; }
 select.field {
   @apply appearance-none bg-no-repeat pr-3.5;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%236E655C'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z' clip-rule='evenodd'/%3E%3C/svg%3E");

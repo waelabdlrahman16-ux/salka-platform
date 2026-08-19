@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase'
 import { useDismissable } from '../lib/useDismissable'
 import { haversineKm } from '../lib/geo'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
-import { openLabel } from '../lib/vendorHours'
+
 import { BROWSE_KINDS, vendorKind, normaliseArabic, VENDOR_TYPE_ART, type VendorKind } from '../lib/categoryArt'
 import Icon from '../components/Icon'
 import BannerRail from '../components/BannerRail'
@@ -17,7 +17,6 @@ import FeaturedProductsRail, { type FeaturedProductCard } from '../components/Fe
 import type { Compound, Discount, Restaurant } from '../lib/types'
 import { getCompoundId, setCompoundId as setStoredCompoundId } from '../lib/place'
 import { publicCatalog } from '../lib/publicCatalog'
-
 
 // Off until the category art exists. The chips currently carry the food emoji,
 // which is fine as an appetite cue at 20px next to a word -- but with the label
@@ -465,23 +464,39 @@ export default function Home() {
           title. Now it IS the title, and the delivery fee sits next to it:
           stated once, because it is a property of the compound and is identical
           on every card, so printing it nine times implied it varied. */}
-      <div className="flex items-start justify-between mb-3 gap-3">
-        {/* min-h-11: it measured 42px, two short of the 44px minimum, and this
-            is the control that decides which vendors the customer sees at all. */}
-        <button className="text-right min-w-0 flex-1 min-h-11" onClick={() => setPicking(true)}>
-          <span className="block text-[11px] text-mist">التوصيل لـ</span>
-          <span className="flex items-center gap-1 min-w-0">
-            <Icon name="locationDot" size="sm" className="shrink-0 text-sea" />
-            <span className="font-bold text-[17px] truncate">{selected ? selected.name : 'اختر مكانك'}</span>
-            <Icon name="caretDown" size="xs" className="text-mist shrink-0" />
-          </span>
+      {/* One line, one sentence: «delivering to X, 65 ج.م». The «التوصيل لـ»
+          label repeated what the pin and the name below it already said, and
+          the fee was an 11px pill floating on the far side of the row, 12px
+          below the name it belongs to, in a style used nowhere else -- so it
+          read as an unrelated alert rather than half of the same fact.
+          The label is gone; the fee keeps its own badge, at the far end of the
+          row and vertically centred against the place instead of hanging below
+          it. Note this reclaims no height: min-h-11 was already holding the old
+          two-line button at 44px.
+
+          Neutral, not coral. A delivery fee is an ordinary fact, and coral is
+          the accent -- it made the one number nobody is worried about the
+          loudest thing in the header.
+
+          min-h-11: it measured 42px, two short of the 44px minimum, and this
+          is the control that decides which vendors the customer sees at all. */}
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <button className="text-right min-w-0 flex-1 min-h-11 flex items-center gap-1.5"
+          onClick={() => setPicking(true)}>
+          <Icon name="locationDot" size="sm" className="shrink-0 text-sea" />
+          <span className="font-bold text-[17px] truncate">{selected ? selected.name : 'اختر مكانك'}</span>
+          <Icon name="caretDown" size="xs" className="text-mist shrink-0" />
         </button>
-        {/* Neutral, not coral. A delivery fee is an ordinary fact, and coral is
-            the accent colour -- it made the one number nobody is worried about
-            the loudest thing in the header. */}
+        {/* Matched to what the eye sees, not to the box. The place control is a
+            44px tap target but paints no background, so its visible ink is
+            25.5px; a badge filled to the full 44px read as a much taller object
+            beside it. The pill is 26px and centred on the same line. The word
+            «توصيل» is the motorcycle glyph -- it says delivery in less width
+            than the word. */}
         {deliveryFee !== null && (
-          <span className="shrink-0 text-[11px] font-bold text-mist bg-shellup border border-line rounded-lg px-2.5 py-1 mt-3">
-            {deliveryFee} ج.م توصيل
+          <span className="shrink-0 h-[26px] flex items-center gap-1.5 text-[12px] font-bold text-mist bg-shellup border border-line rounded-lg px-2.5">
+            <Icon name="motorcycle" size="sm" className="text-mist" />
+            {deliveryFee} ج.م
           </span>
         )}
       </div>
@@ -498,7 +513,7 @@ export default function Home() {
           Rather than hide the whole control for the half it cannot do, say so
           when someone types without a place set. */}
       <div className="relative mb-3">
-        <input className="field !pr-10" value={foodQ} onChange={e => setFoodQ(e.target.value)}
+        <input className="field !bg-white !pr-10" value={foodQ} onChange={e => setFoodQ(e.target.value)}
           aria-label="دوّر على مطعم أو أكلة"
           placeholder={compoundId ? 'دوّر على مطعم أو أكلة…' : 'دوّر على مطعم…'} />
         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mist pointer-events-none">
@@ -646,7 +661,7 @@ export default function Home() {
                         <span className="min-w-0 flex-1">
                           <span className="block text-sm font-semibold truncate">{h.name}</span>
                           <span className="block text-xs text-mist truncate">
-                            {h.restaurant_name}{h.is_open ? '' : ' · مقفول'}
+                            {h.restaurant_name}{h.is_open ? '' : ' • مقفول'}
                           </span>
                         </span>
                         {/* "من" when the number is a starting point, exactly as
@@ -691,42 +706,25 @@ export default function Home() {
             )}
             {restaurantFeed}
 
-            {/* Closed vendors, collected. Still reachable -- people browse a
-                menu before a place opens -- but no longer taking up half the
-                scroll between things that can actually be ordered. */}
+            {/* Closed vendors, as FULL CARDS -- the same card as everything
+                above, greyed, with the opening time beside the name. Agreed
+                with Wael, and then quietly not done: they were rendering as a
+                row of little pills under a «هيفتحوا بعدين» heading, which is a
+                second, smaller design for a thing we already have a design for.
+                A closed restaurant is still a restaurant; it is just shut. */}
             {closedRestaurants.length > 0 && (
-              <div className="pt-2">
-                <p className="text-xs text-mist mb-2 pt-3 border-t border-line">هيفتحوا بعدين</p>
-                <div className="flex flex-wrap gap-2">
-                  {closedRestaurants.map(r => (
-                    <Link key={r.id} to={`/restaurant/${r.id}`}
-                      className="flex items-center gap-2 rounded-full border border-line bg-shell px-3 py-1.5 min-h-[40px]">
-                      <span className="w-6 h-6 rounded-md overflow-hidden bg-shellup grid place-items-center text-[11px] shrink-0">
-                        {r.logo_url
-                          ? <img src={r.logo_url} alt="" loading="lazy" className="w-full h-full object-cover" />
-                          : '🍽️'}
-                      </span>
-                      <span className="min-w-0">
-                        <span className="text-xs font-semibold truncate max-w-[130px] block">{r.name}</span>
-                        {/* «هيفتحوا بعدين» says they open later; it does not say
-                            WHEN, and without that there is no reason to come
-                            back. The card variant has carried the opening time
-                            since vendorHours landed -- this chip is a second,
-                            older rendering of the same fact and was missed. */}
-                        {openLabel(r).text !== 'مقفول' && (
-                          <span className="text-[10px] text-coral-700 block">{openLabel(r).text}</span>
-                        )}
-                      </span>
-                    </Link>
-                  ))}
-                </div>
+              <div className="pt-2 space-y-3">
+                {closedRestaurants.map(r => (
+                  <RestaurantCard key={r.id} restaurant={r}
+                    etaMinutes={selected ? eta(r) : null}
+                    discountLabel={discountLabels.get(r.id)} />
+                ))}
               </div>
             )}
           </div>
           )}
         </div>
       )}
-
 
       {picking && (
         <div ref={pickerRef} className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true"
@@ -768,7 +766,7 @@ export default function Home() {
                 86 rows -- so a thing you type into looked exactly like a thing
                 you tap to choose. Same tone, different jobs. */}
             <div className="flex items-center gap-2 mb-4">
-              <div className="field !bg-shell !border-slate-500 flex-1 min-w-0 flex items-center gap-2 !px-3.5">
+              <div className="field !bg-shell !border-slate-300 flex-1 min-w-0 flex items-center gap-2 !px-3.5">
                 <Icon name="magnifyingGlass" size="sm" className="shrink-0 text-mist" />
                 <input className="flex-1 min-w-0 bg-transparent focus:outline-none placeholder:text-mist/60" value={search}
                   onChange={e => { setSearch(e.target.value); if (e.target.value.trim()) setNearby(null) }}

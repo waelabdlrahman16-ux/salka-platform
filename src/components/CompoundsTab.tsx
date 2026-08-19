@@ -130,7 +130,7 @@ export default function CompoundsTab() {
               <label className="label" htmlFor={`${fid}-dir`}>الاتجاه</label>
               <select id={`${fid}-dir`} className="field !h-9 text-sm" value={f.direction}
                 onChange={e => setF({ ...f, direction: e.target.value })}>
-                <option value="">—</option>
+                <option value="">-</option>
                 <option value="north">شمال</option>
                 <option value="south">جنوب</option>
               </select>
@@ -182,10 +182,10 @@ export default function CompoundsTab() {
                 {r.name} {!r.active && <span className="text-xs text-danger">(موقوف)</span>}
               </p>
               <p className="text-xs text-mist">
-                {regions.find(g => g.id === r.region_id)?.name ?? '—'}
-                {r.distance_km != null && ` · ${r.distance_km} كم`}
-                {r.direction && ` · ${r.direction === 'north' ? 'شمال' : 'جنوب'}`}
-                {(r.latitude == null || r.longitude == null) && <> · <Icon name="warning" size="xs" className="inline-block align-[-0.15em] me-1" />مفيش إحداثيات</>}
+                {regions.find(g => g.id === r.region_id)?.name ?? '-'}
+                {r.distance_km != null && ` • ${r.distance_km} كم`}
+                {r.direction && ` • ${r.direction === 'north' ? 'شمال' : 'جنوب'}`}
+                {(r.latitude == null || r.longitude == null) && <> • <Icon name="warning" size="xs" className="inline-block align-[-0.15em] me-1" />مفيش إحداثيات</>}
               </p>
             </div>
             <span className="font-bold text-sea text-sm shrink-0">{r.delivery_fee} ج.م</span>

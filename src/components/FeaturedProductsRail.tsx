@@ -22,12 +22,27 @@ export default function FeaturedProductsRail({ items }: { items: FeaturedProduct
   if (items.length === 0) return null
 
   return (
-    // Full-bleed band on its own surface. It used to sit on the page background
-    // with no edge of its own, between two restaurant cards that DID have one --
-    // so a shelf of dishes read as a third, oddly-shaped restaurant. The band
-    // says "this is a different kind of thing" before the heading does.
-    <div className="-mx-4 px-4 py-4 mb-4 bg-shellup border-y border-line">
-      <h2 className="font-bold text-base mb-2.5">أصناف مميزة</h2>
+    // A TICKET, not a band. It used to sit on the page background with no edge
+    // of its own, between two restaurant cards that DID have one -- so a shelf
+    // of dishes read as a third, oddly-shaped restaurant.
+    //
+    // The notched top and bottom edges are the shape a coupon has, and they say
+    // "this is an offer" before any word does -- which is why the «أصناف مميزة»
+    // heading could go: it named a category nobody can act on.
+    //
+    // The notches are drawn, not cut: a repeating radial-gradient in the PAGE's
+    // own white punches half-circles along each edge. That keeps it one element
+    // with no masks, and it survives the page scrolling under it because the
+    // gradient colour is the ground it sits on.
+    <div className="relative -mx-4 mb-4 bg-shellup border-y border-line overflow-hidden">
+      <span aria-hidden="true" className="absolute inset-x-0 top-0 h-3 pointer-events-none"
+        style={{ background: 'radial-gradient(circle at 12px 0, #FFFFFF 11px, transparent 12px) 0 0 / 24px 24px repeat-x' }} />
+      <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-3 pointer-events-none"
+        style={{ background: 'radial-gradient(circle at 12px 12px, #FFFFFF 11px, transparent 12px) 0 0 / 24px 24px repeat-x' }} />
+
+      {/* The perforation a ticket tears along. Dashed, faint, and inset so it
+          reads as part of the shape rather than a divider between two things. */}
+      <div className="px-4 pt-7 pb-6">
       <div className="flex gap-3 overflow-x-auto pb-1 snap-x snap-mandatory scrollbar-none">
         {items.map(it => (
           <Link key={it.menu_item_id} to={`/restaurant/${it.restaurant_id}?item=${it.menu_item_id}`}
@@ -40,6 +55,7 @@ export default function FeaturedProductsRail({ items }: { items: FeaturedProduct
             <p className="text-xs mt-0.5 text-sea font-bold">{it.price} ج.م</p>
           </Link>
         ))}
+        </div>
       </div>
     </div>
   )

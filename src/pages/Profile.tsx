@@ -134,19 +134,31 @@ export default function Profile() {
         body: 'اسمك ورقمك بيتحطوا لوحدهم في الأوردر' },
     ]
     return (
-      <div className="max-w-sm mx-auto py-8">
-        <div className="text-center mb-7">
-          <span className="w-14 h-14 rounded-2xl bg-successbg text-success grid place-items-center mx-auto mb-3">
+      <div className="max-w-sm mx-auto pb-8">
+        {/* The same cream band as هنجبلك, bleeding to the screen edges and
+            fading into the page. This screen has no photography either, so the
+            surface carries it rather than a bigger typeface. */}
+        <div className="-mx-4 -mt-6 mb-7 px-4 pt-8 pb-6 bg-gradient-to-b from-shellup to-night text-center">
+          <span className="w-14 h-14 rounded-2xl bg-white/70 text-[#6B4A18] grid place-items-center mx-auto mb-3">
             <Icon name="circleUser" size="xl" />
           </span>
           <h1 className="font-bold text-xl mb-1">اعمل حساب في ثانية</h1>
-          <p className="text-mist text-sm">من غير كلمة سر — بإيميلك أو بحساب جوجل</p>
+          <p className="text-mist text-sm">من غير كلمة سر، بإيميلك أو بحساب جوجل</p>
         </div>
 
         <ul className="space-y-3 mb-7">
           {perks.map(p => (
-            <li key={p.title} className="card p-3.5 flex items-start gap-3">
-              <span className="w-9 h-9 rounded-xl bg-shellup text-mist grid place-items-center shrink-0">
+            <li key={p.title} className="card p-3.5 flex items-stretch gap-3">
+              {/* The same pair as the pharmacy and supermarket tiles: cream with
+                  #6B4A18 at 6.95:1. coral read as an error colour on a screen
+                  that is selling something. */}
+              {/* 42x42: the measured height of the title and subtitle stacked, so the
+                  tile squares off against the text instead of floating at 36px.
+                  Stated rather than derived -- `self-stretch` + `aspect-square`
+                  collapses to 20x42, because a flex item cannot take its width
+                  from a height it only gets by stretching. If the copy ever
+                  wraps to a third line, re-measure. */}
+              <span className="w-[42px] h-[42px] rounded-lg bg-shellup text-[#6B4A18] grid place-items-center shrink-0">
                 <Icon name={p.icon} size="md" />
               </span>
               <span className="min-w-0">
@@ -283,7 +295,7 @@ export default function Profile() {
 
       <div className="card p-4">
         <p className="text-sm text-mist">رصيدك في المحفظة</p>
-        <p className="text-2xl font-bold text-sea mt-1">{walletBalance ?? '—'} ج.م</p>
+        <p className="text-2xl font-bold text-sea mt-1">{walletBalance ?? '-'} ج.م</p>
       </div>
 
       {orders.length > 0 && (
@@ -293,7 +305,7 @@ export default function Profile() {
             {orders.slice(0, 5).map(o => (
               <Link key={o.id} to={`/track/${o.public_token}`} className="card p-3.5 flex items-center justify-between hover:border-sea/50 transition-colors">
                 <div className="min-w-0">
-                  <p className="font-semibold text-sm truncate">#{o.id} · {o.restaurant_name}</p>
+                  <p className="font-semibold text-sm truncate">#{o.id} • {o.restaurant_name}</p>
                   <p className="text-xs text-mist mt-0.5">{orderStatusLabel(o.status)}</p>
                 </div>
                 <span className="text-sea font-bold text-sm shrink-0">

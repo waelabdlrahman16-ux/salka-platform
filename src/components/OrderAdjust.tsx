@@ -102,7 +102,7 @@ export default function OrderAdjust({ orderId, onDone }: {
         <div className="bg-successbg text-success rounded-lg p-2.5 mb-2.5 text-xs font-semibold">
           <Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />اتعدّل، الإجمالي من {result.old_total} لـ {result.new_total} ج.م
           {result.service_fee_waived
-            ? ` · معفي من ${result.service_fee_waived} ج.م رسوم` : ''}
+            ? ` • معفي من ${result.service_fee_waived} ج.م رسوم` : ''}
         </div>
       )}
 
@@ -145,7 +145,7 @@ export default function OrderAdjust({ orderId, onDone }: {
           <input type="checkbox" className="w-4 h-4" checked={chargeFee}
             onChange={e => setChargeFee(e.target.checked)} />
           احسب رسوم الخدمة على الزيادة كمان
-          {!chargeFee && <span className="text-coral-700 font-semibold"> · الرسوم هتفضل زي ما هي</span>}
+          {!chargeFee && <span className="text-coral-700 font-semibold"> • الرسوم هتفضل زي ما هي</span>}
         </label>
       )}
 

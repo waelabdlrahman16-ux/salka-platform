@@ -204,11 +204,11 @@ export default function MyOrders() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-semibold">#{order.id} · {order.restaurant_name}</p>
+                  <p className="font-semibold">#{order.id} • {order.restaurant_name}</p>
                   <p className="text-xs text-mist mt-0.5">
                     {new Date(order.created_at).toLocaleDateString('ar-EG-u-nu-latn', {
                       timeZone: 'Africa/Cairo',
-                    })} · {orderStatusLabel(order.status)}
+                    })} • {orderStatusLabel(order.status)}
                   </p>
                 </div>
                 <span className={`font-bold shrink-0 ${

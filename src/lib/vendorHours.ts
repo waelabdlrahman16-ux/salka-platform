@@ -124,5 +124,5 @@ export function openLabel(v: OpenState, now: Date = new Date()): { open: boolean
     : dayOf(next) === dayOf(tomorrow) ? 'بكرة '
     : `${next.toLocaleDateString('ar-EG', { timeZone: 'Africa/Cairo', weekday: 'long' })} `
 
-  return { open: false, text: `${temporarily ? 'مقفول مؤقتاً' : 'مقفول'} · بيفتح ${when}${at}` }
+  return { open: false, text: `${temporarily ? 'مقفول مؤقتاً' : 'مقفول'} • بيفتح ${when}${at}` }
 }

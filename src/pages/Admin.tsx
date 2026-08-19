@@ -1758,7 +1758,7 @@ export default function Admin() {
   const addr = (o: Order) => `${o.zone}، وحدة ${o.unit_number}${o.address_notes ? `: ${o.address_notes}` : ''}`
   const customer = (o: Order) => (
     <div className="mt-2.5 bg-night border border-line rounded-xl p-3 text-sm space-y-1">
-      <p><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
+      <p><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
       <p><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{addr(o)}</p>
       {o.customer_note && <p className="text-coral-700"><Icon name="penToSquare" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_note}</p>}
     </div>
@@ -1848,9 +1848,9 @@ export default function Admin() {
                     <div className="min-w-0">
                       <p className="font-semibold text-sm">طلب #{o.id}: {o.vendor_name}: {o.total} ج.م</p>
                       <p className="text-xs text-mist mt-0.5">
-                        <Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a>
+                        <Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a>
                       </p>
-                      <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{o.compound_name ?? '—'}</p>
+                      <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{o.compound_name ?? '-'}</p>
                     </div>
                     <span className="text-xs font-semibold bg-dangerbg text-danger rounded-full px-2.5 py-1 shrink-0">
                       {orderStatusLabel(o.status)}
@@ -1869,7 +1869,7 @@ export default function Admin() {
                   )}
                   <p className="text-xs text-warning font-semibold mt-1.5">
                     واقف من {since} (الحد {o.threshold_minutes} دقيقة)
-                    {o.payment_method === 'cod' ? ' · كاش' : o.payment_method === 'instapay' ? ' · إنستاباي' : ''}
+                    {o.payment_method === 'cod' ? ' • كاش' : o.payment_method === 'instapay' ? ' • إنستاباي' : ''}
                   </p>
                   {/* This banner is the one screen an admin looks at when
                       something is wrong, and it used to offer four actions --
@@ -1952,7 +1952,7 @@ export default function Admin() {
               return (
                 <div key={a.id} className="bg-night border border-line rounded-xl p-3">
                   <p className="font-semibold text-sm">طلب #{o.id}: {o.restaurants?.name}: {o.total} ج.م</p>
-                  <p className="text-xs text-mist mt-0.5"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
+                  <p className="text-xs text-mist mt-0.5"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
                   <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{addr(o)}</p>
                   <p className="text-xs text-coral-700 mt-1">
                     {a.delivery_problem_reason
@@ -1981,7 +1981,7 @@ export default function Admin() {
               <div key={o.id} className="bg-night border border-line rounded-xl p-3 flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-semibold text-sm">
-                    #{o.id} · {o.restaurants?.name} ·{' '}
+                    #{o.id} • {o.restaurants?.name} •{' '}
                     {o.cod_deposit_amount != null ? `عربون ${o.cod_deposit_amount} ج.م (من ${o.total})` : `${o.total} ج.م`}
                   </p>
                   <p className="text-xs text-mist" dir="ltr">{o.customer_phone}</p>
@@ -1990,7 +1990,7 @@ export default function Admin() {
                       they said it instead -- that is the number that decides
                       whether this is fresh or has been sitting. */}
                   <p className="text-xs mt-0.5 text-success">
-                    <Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />قال إنه حوّل{o.instapay_claimed_at ? ` · ${new Date(o.instapay_claimed_at).toLocaleTimeString('ar-EG', { timeZone: 'Africa/Cairo', hour: 'numeric', minute: '2-digit' })}` : ''}
+                    <Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />قال إنه حوّل{o.instapay_claimed_at ? ` • ${new Date(o.instapay_claimed_at).toLocaleTimeString('ar-EG', { timeZone: 'Africa/Cairo', hour: 'numeric', minute: '2-digit' })}` : ''}
                   </p>
                 </div>
                 <button className="btn-sea !py-1.5 !px-3.5 text-sm shrink-0" disabled={accountBusy === `instapay-${o.id}`}
@@ -2065,7 +2065,7 @@ export default function Admin() {
           {unassigned.map(o => (
             <div key={o.id} className={`card p-4 ${isLate(o) ? 'border-warningline' : ''}`}>
               <div className="flex items-start justify-between">
-                <h2 className="font-bold">#{o.id} · {o.restaurants?.name}</h2>
+                <h2 className="font-bold">#{o.id} • {o.restaurants?.name}</h2>
                 <span className="font-bold text-sea">
                   {o.pricing_status === 'pending_quote' ? 'قيد التسعير' : `${o.total} ج.م`}
                 </span>
@@ -2121,8 +2121,8 @@ export default function Admin() {
                     <div key={a.id} className="card p-4">
                       <div className="flex items-start justify-between">
                         <div>
-                          <h2 className="font-bold">#{a.order_id} · {a.orders?.restaurants?.name}</h2>
-                          <p className="text-sm text-mist mt-0.5"><Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />{a.drivers?.name} · محاولة {a.attempt_number}</p>
+                          <h2 className="font-bold">#{a.order_id} • {a.orders?.restaurants?.name}</h2>
+                          <p className="text-sm text-mist mt-0.5"><Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />{a.drivers?.name} • محاولة {a.attempt_number}</p>
                         </div>
                         <span className="text-xs font-semibold bg-shellup rounded-full px-2.5 py-1">{assignmentStatusLabel(a.status)}</span>
                       </div>
@@ -2181,7 +2181,7 @@ export default function Admin() {
               <div className="flex items-start justify-between">
                 <div>
                   <h2 className="font-bold">{d.name}</h2>
-                  <p className="text-sm text-mist mt-0.5"><Icon name="star" size="sm" className="inline-block align-[-0.15em] me-1" />{d.rating} · {d.total_deliveries} توصيلة · {vehicleLabel(d.vehicle_type)} · {d.vehicle_plate}</p>
+                  <p className="text-sm text-mist mt-0.5"><Icon name="star" size="sm" className="inline-block align-[-0.15em] me-1" />{d.rating} • {d.total_deliveries} توصيلة • {vehicleLabel(d.vehicle_type)} • {d.vehicle_plate}</p>
                   <p className="text-sm text-mist mt-0.5" dir="ltr">{d.phone}</p>
                   <p className="text-xs text-mist mt-1">إنستاباي: {d.instapay_number || d.phone}</p>
                   {/* So you can match the binding against the phone in the
@@ -2368,7 +2368,7 @@ export default function Admin() {
               : 'card p-4'}>
               <div className="flex items-start justify-between">
                 <h2 className="font-bold">
-                  #{o.id} · {o.restaurants?.name}
+                  #{o.id} • {o.restaurants?.name}
                   {o.is_test && (
                     <span className="mr-2 align-middle text-[10px] font-bold bg-coral-700 text-white rounded-full px-2 py-0.5">
                       <Icon name="flask" size="sm" className="inline-block align-[-0.15em] me-1" />تجربة
@@ -2512,9 +2512,9 @@ export default function Admin() {
                     {o.status === 'Cancelled' && (o.cancel_reason || o.cancelled_at) && (
                       <span className="bg-dangerbg border border-dangerline text-danger rounded-lg px-2 py-1">
                         <Icon name="x" size="sm" className="inline-block align-[-0.15em] me-1" />{cancelReasonLabel(o.cancel_reason)}
-                        {o.cancelled_at && ` · اتلغى ${fmtTime(o.cancelled_at)}`}
+                        {o.cancelled_at && ` • اتلغى ${fmtTime(o.cancelled_at)}`}
                         {o.cancelled_at && o.created_at &&
-                          ` · بعد ${Math.max(0, Math.round(
+                          ` • بعد ${Math.max(0, Math.round(
                             (new Date(o.cancelled_at).getTime() - new Date(o.created_at).getTime()) / 60000))} دقيقة`}
                       </span>
                     )}
@@ -2543,9 +2543,9 @@ export default function Admin() {
                         <p key={i}>
                           <span className="font-semibold">{it.qty}×</span> {it.name}
                           {[it.size_name, it.combo_name, ...(it.addon_names ?? [])].filter(Boolean).length > 0 && (
-                            <span className="text-mist"> · {[it.size_name, it.combo_name, ...(it.addon_names ?? [])].filter(Boolean).join(' · ')}</span>
+                            <span className="text-mist"> • {[it.size_name, it.combo_name, ...(it.addon_names ?? [])].filter(Boolean).join(' • ')}</span>
                           )}
-                          <span className="text-mist"> · {it.total} ج.م</span>
+                          <span className="text-mist"> • {it.total} ج.م</span>
                         </p>
                       ))}
                     </div>
@@ -2609,7 +2609,7 @@ export default function Admin() {
             {earnings.map(e => (
               <div key={e.id} className="card p-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-sm">
                 <span className="font-semibold">{e.drivers?.name}، طلب #{e.order_id}</span>
-                <span className="text-mist">رسوم: {e.delivery_fee} · <span className="text-sea">مندوب: {e.driver_earning}</span> · <span className="text-coral-700">إدارة: {e.admin_amount}</span></span>
+                <span className="text-mist">رسوم: {e.delivery_fee} • <span className="text-sea">مندوب: {e.driver_earning}</span> • <span className="text-coral-700">إدارة: {e.admin_amount}</span></span>
               </div>
             ))}
           </div>
@@ -2673,7 +2673,7 @@ export default function Admin() {
                         {r.featured && <Icon name="star" size="xs" className="align-middle ms-1" />}
                         {r.archived ? ' (متوقف)' : ''}
                       </h2>
-                      <p className="text-sm text-mist mt-0.5">{its.length} صنف · اضغط للتعديل والترتيب</p>
+                      <p className="text-sm text-mist mt-0.5">{its.length} صنف • اضغط للتعديل والترتيب</p>
                     </div>
                   </button>
                   {/* Two actions, not three. The red «إيقاف» pill used to sit
@@ -2694,7 +2694,7 @@ export default function Admin() {
                     Before this existed the sort fell through to the vendor's
                     NAME -- order_ratings is empty, so the review and rating
                     tiebreakers both collapse, and the customer list for الحجاز ٣
-                    read أرابياتا · ديڤادو · ستوديو مصر · سينابون · ماكدونالدز ·
+                    read أرابياتا • ديڤادو • ستوديو مصر • سينابون • ماكدونالدز •
                     هارت أتاك. That is the Arabic alphabet, not a decision.
 
                     No badge is shown to the customer for either control. */}
@@ -2711,7 +2711,7 @@ export default function Admin() {
                       <input
                         type="number" min={1} inputMode="numeric"
                         className="field !w-20 text-center"
-                        placeholder="—"
+                        placeholder="-"
                         value={rankDraft[r.id] ?? (r.display_order == null ? '' : String(r.display_order))}
                         onChange={e => setRankDraft(d => ({ ...d, [r.id]: e.target.value }))}
                         onBlur={() => commitRank(r)} />
@@ -2820,7 +2820,7 @@ export default function Admin() {
 
                 {reliability[r.id] && reliability[r.id].total_orders > 0 && (
                   <p className="text-xs text-mist mt-2">
-                    <Icon name="clock" size="sm" className="inline-block align-[-0.15em] me-1" />متوسط وقت القبول: <bdi dir="ltr">{reliability[r.id].avg_accept_minutes ?? '—'}</bdi> د ·
+                    <Icon name="clock" size="sm" className="inline-block align-[-0.15em] me-1" />متوسط وقت القبول: <bdi dir="ltr">{reliability[r.id].avg_accept_minutes ?? '-'}</bdi> د •
                     {' '}<span className={reliability[r.id].slow_accepts > 2 ? 'text-warning' : 'text-mist'}>
                       <bdi dir="ltr">{reliability[r.id].slow_accepts}</bdi> طلب اتأخر قبوله (٣٠ يوم)
                     </span>
@@ -2890,7 +2890,7 @@ export default function Admin() {
                     <div className="space-y-2">
                       {slots.filter(sl => sl.restaurant_id === r.id).map(sl => (
                         <div key={sl.id} className="flex items-center justify-between bg-night border border-line rounded-xl p-2.5 text-sm">
-                          <span><bdi dir="ltr">{sl.start_time.slice(0,5)} – {sl.end_time.slice(0,5)}</bdi> · سعة {sl.capacity}</span>
+                          <span><bdi dir="ltr">{sl.start_time.slice(0,5)} – {sl.end_time.slice(0,5)}</bdi> • سعة {sl.capacity}</span>
                           <Toggle on={!!sl.active} onChange={() => toggleSlot(sl)} label="فعّالة" labelOff="موقوفة" />
                         </div>
                       ))}
@@ -3049,7 +3049,7 @@ export default function Admin() {
                     <p className="font-semibold">{e.requester?.name}</p>
                     <p className="text-sm text-mist mt-0.5">
                       {e.shifts && new Date(e.shifts.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', weekday: 'long', day: 'numeric', month: 'numeric' })}
-                      {' '}· {e.shifts?.start_time?.slice(0,5)}–{e.shifts?.end_time?.slice(0,5)}
+                      {' '}• <bdi dir="ltr">{e.shifts?.start_time?.slice(0,5)}–{e.shifts?.end_time?.slice(0,5)}</bdi>
                     </p>
                     {e.reason && <p className="text-sm text-mist mt-1">"{e.reason}"</p>}
                     <p className="text-xs text-warning mt-2">محدش من المندوبين وافق يستلم الوردية</p>
@@ -3104,7 +3104,7 @@ export default function Admin() {
                 <div key={sh.id} className="card p-3.5 flex items-center justify-between text-sm">
                   <div>
                     <span className="font-semibold">{d?.name}</span>
-                    <span className="text-mist"> · {new Date(sh.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo' })} · {sh.start_time.slice(0,5)}–{sh.end_time.slice(0,5)}</span>
+                    <span className="text-mist"> • {new Date(sh.shift_date).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo' })} • <bdi dir="ltr">{sh.start_time.slice(0,5)}–{sh.end_time.slice(0,5)}</bdi></span>
                   </div>
                   {sh.status === 'swapped' && <span className="badge-closed">اتبدلت</span>}
                 </div>
@@ -3205,14 +3205,14 @@ export default function Admin() {
                 <div key={o.id} className="card p-4 border-coral-300">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="font-semibold text-sm truncate">طلب #{o.id}: {o.vendor_name ?? '—'}</p>
+                      <p className="font-semibold text-sm truncate">طلب #{o.id}: {o.vendor_name ?? '-'}</p>
                       <p className="text-xs text-mist mt-0.5">
-                        <Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a>
+                        <Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a>
                       </p>
                       {o.cancel_reason && <p className="text-xs text-mist mt-0.5"><Icon name="penToSquare" size="sm" className="inline-block align-[-0.15em] me-1" />{o.cancel_reason}</p>}
                       <p className="text-xs text-mist mt-0.5">
                         {o.payment_method === 'cod' ? 'عربون كاش أونلاين' : o.payment_method === 'instapay' ? 'إنستاباي' : o.payment_method}
-                        {o.cancelled_at ? ` · اتلغى ${fmtTime(o.cancelled_at)}` : ''}
+                        {o.cancelled_at ? ` • اتلغى ${fmtTime(o.cancelled_at)}` : ''}
                       </p>
                     </div>
                     <div className="text-left shrink-0">
@@ -3249,9 +3249,9 @@ export default function Admin() {
                   <div className="min-w-0">
                     <p className="font-semibold text-sm truncate">طلب #{rt.order_id}: {rt.orders?.restaurants?.name}</p>
                     <p className="text-xs text-mist truncate flex items-center gap-1 flex-wrap">
-                      <span>{rt.orders?.customer_name} · <bdi dir="ltr">{rt.orders?.customer_phone}</bdi></span>
-                      {rt.driver_rating != null && <span className="flex items-center gap-1">· المندوب <StarRow n={rt.driver_rating} /></span>}
-                      {rt.restaurant_rating != null && <span className="flex items-center gap-1">· المطعم <StarRow n={rt.restaurant_rating} /></span>}
+                      <span>{rt.orders?.customer_name} • <bdi dir="ltr">{rt.orders?.customer_phone}</bdi></span>
+                      {rt.driver_rating != null && <span className="flex items-center gap-1">• المندوب <StarRow n={rt.driver_rating} /></span>}
+                      {rt.restaurant_rating != null && <span className="flex items-center gap-1">• المطعم <StarRow n={rt.restaurant_rating} /></span>}
                     </p>
                   </div>
                   {compensatedOrderIds.has(rt.order_id)
@@ -3297,7 +3297,7 @@ export default function Admin() {
               </div>
               <p className="text-sm mt-2">{c.description}</p>
               {c.orders && (
-                <p className="text-sm text-mist mt-2"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{c.orders.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${c.orders.customer_phone}`}>{c.orders.customer_phone}</a></p>
+                <p className="text-sm text-mist mt-2"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{c.orders.customer_name} • <a className="text-sea" dir="ltr" href={`tel:${c.orders.customer_phone}`}>{c.orders.customer_phone}</a></p>
               )}
               <div className="flex gap-2.5 mt-3 flex-wrap">
                 {c.status !== 'reviewed' && <button className="btn-ghost flex-1 text-sm" onClick={() => updateComplaintStatus(c, 'reviewed')}>قيد المراجعة</button>}
@@ -3558,7 +3558,7 @@ export default function Admin() {
                 return (
                   <button key={d.id} className="w-full card !bg-night p-3.5 text-right hover:border-sea/50 transition-colors" onClick={() => assign(assigning, d)}>
                     <p className="font-semibold">{d.name}</p>
-                    <p className="text-sm text-mist mt-0.5"><Icon name="star" size="sm" className="inline-block align-[-0.15em] me-1" />{d.rating} · {d.total_deliveries} توصيلة · {vehicleLabel(d.vehicle_type)} · {d.vehicle_plate}</p>
+                    <p className="text-sm text-mist mt-0.5"><Icon name="star" size="sm" className="inline-block align-[-0.15em] me-1" />{d.rating} • {d.total_deliveries} توصيلة • {vehicleLabel(d.vehicle_type)} • {d.vehicle_plate}</p>
                     {driverActiveCount > 0 && (
                       <p className="text-xs text-coral-700 mt-1">شغال دلوقتي على {driverActiveCount} طلب</p>
                     )}
@@ -3577,7 +3577,7 @@ export default function Admin() {
           <div className="card w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
             <h3 id="reassign-driver-title" className="font-bold mb-1">تغيير المندوب، طلب #{reassigning.order_id}</h3>
             <p className="text-sm text-mist mb-4">
-              دلوقتي مع {reassigning.drivers?.name ?? 'مندوب'} · {assignmentStatusLabel(reassigning.status)}
+              دلوقتي مع {reassigning.drivers?.name ?? 'مندوب'} • {assignmentStatusLabel(reassigning.status)}
             </p>
             {reassignNeedsVan && (
               <p className="text-coral-700 text-sm mb-3"><Icon name="van" size="sm" className="inline-block align-[-0.15em] me-1" />الطلب محتاج فان، لسه السعر متأكدش أو الطلب كبير</p>
@@ -3598,7 +3598,7 @@ export default function Admin() {
                     disabled={reassignBusy}
                     onClick={() => reassignOrder(reassigning, d)}>
                     <p className="font-semibold">{d.name}</p>
-                    <p className="text-sm text-mist mt-0.5"><Icon name="star" size="sm" className="inline-block align-[-0.15em] me-1" />{d.rating} · {vehicleLabel(d.vehicle_type)} · {d.vehicle_plate}</p>
+                    <p className="text-sm text-mist mt-0.5"><Icon name="star" size="sm" className="inline-block align-[-0.15em] me-1" />{d.rating} • {vehicleLabel(d.vehicle_type)} • {d.vehicle_plate}</p>
                     {driverActiveCount > 0 && (
                       <p className="text-xs text-coral-700 mt-1">شغال دلوقتي على {driverActiveCount} طلب</p>
                     )}
@@ -3764,7 +3764,7 @@ function DailyReportTab() {
                 <div className="flex items-center justify-between text-xs mb-1">
                   <span className={i === 0 ? 'font-semibold' : 'text-mist'}>{label}</span>
                   <span className="font-bold">
-                    {n(val)}{i > 0 && <span className="text-mist font-normal"> · {Math.round(val / top * 100)}٪</span>}
+                    {n(val)}{i > 0 && <span className="text-mist font-normal"> • {Math.round(val / top * 100)}٪</span>}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-shellup overflow-hidden">
@@ -3785,12 +3785,12 @@ function DailyReportTab() {
                 <div className="rounded-xl bg-shellup p-3">
                   <p className="text-xs text-mist">جوه فيسبوك</p>
                   <p className="font-bold">{n(inApp.devices)} جهاز</p>
-                  <p className="text-xs text-mist">{n(inApp.chose_place)} اختاروا مكانهم · {n(inApp.ordered)} طلبوا</p>
+                  <p className="text-xs text-mist">{n(inApp.chose_place)} اختاروا مكانهم • {n(inApp.ordered)} طلبوا</p>
                 </div>
                 <div className="rounded-xl bg-shellup p-3">
                   <p className="text-xs text-mist">متصفح عادي</p>
                   <p className="font-bold">{n(normal?.devices)} جهاز</p>
-                  <p className="text-xs text-mist">{n(normal?.chose_place)} اختاروا مكانهم · {n(normal?.ordered)} طلبوا</p>
+                  <p className="text-xs text-mist">{n(normal?.chose_place)} اختاروا مكانهم • {n(normal?.ordered)} طلبوا</p>
                 </div>
               </div>
             </div>

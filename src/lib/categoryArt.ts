@@ -245,7 +245,11 @@ export function vendorKind(category: string | null | undefined): VendorKind {
 // 43 away and keeps the warm-brown family.
 export const VENDOR_TYPE_ART: Record<'pharmacy' | 'supermarket',
   { icon: IconName; tint: string; ink: string }> = {
-  pharmacy:    { icon: 'asclepius', tint: TINT.green,   ink: '#007020' },
+  // Both on the same warm cream, 6.95:1. coral-100 was tried for the pharmacy
+  // and read as pink rather than warm. They are told apart by their glyphs --
+  // an asclepius and a basket -- not by tint, which is the more reliable
+  // signal anyway at 44px.
+  pharmacy:    { icon: 'asclepius', tint: TINT.neutral, ink: '#6B4A18' },
   supermarket: { icon: 'basket',    tint: TINT.neutral, ink: '#6B4A18' },
 }
 

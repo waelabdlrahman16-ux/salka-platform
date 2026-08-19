@@ -290,7 +290,7 @@ export default function BannersAdmin({ restaurants }: { restaurants: Restaurant[
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-sm truncate">{r.title || <span className="text-mist font-normal">من غير عنوان</span>}</p>
               <p className="text-xs text-mist truncate">
-                {r.link_url || 'من غير لينك'}{note ? ` · ${note}` : ''}
+                {r.link_url || 'من غير لينك'}{note ? ` • ${note}` : ''}
               </p>
             </div>
             <div className="flex items-center gap-1 shrink-0">

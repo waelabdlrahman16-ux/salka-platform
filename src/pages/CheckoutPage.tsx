@@ -204,7 +204,7 @@ export default function CheckoutPage() {
       .then(({ data }) => setDiscounts(data ?? []))
     // A failed read, a missing row or a value of "0" all left this null, and
     // the deposit warning is gated on it being non-null -- so the customer was
-    // shown no payment terms at all, tapped 'تأكيد الطلب · 1215 ج.م' believing
+    // shown no payment terms at all, tapped 'تأكيد الطلب • 1215 ج.م' believing
     // it was cash on delivery, and landed on a full-screen InstaPay wall. The
     // old bug quoted the WRONG terms; this one quoted none. Both are the same
     // shape: a server-owned number the screen guesses at.
@@ -445,7 +445,9 @@ export default function CheckoutPage() {
 
   return (
     <div className="pb-6">
-      <h1 className="text-2xl font-bold mb-4">تأكيد الطلب</h1>
+      {/* lg, like every other page header. 2xl on the money screen pushed the
+          first field further down than any other screen in the app. */}
+      <h1 className="text-lg font-bold mb-4">تأكيد الطلب</h1>
 
       {removedNotice && (
         <p className="text-coral-700 text-sm mb-4 bg-coral-100 rounded-xl p-3">{removedNotice}</p>
@@ -467,8 +469,8 @@ export default function CheckoutPage() {
               const today = sl.scheduled_date === cairoToday()
               return (
                 <button key={`${sl.id}-${sl.scheduled_date}`} className={`card p-3 text-right ${on ? 'border-sea' : ''}`} onClick={() => setSlot(sl)}>
-                  <p className="text-sm font-semibold">{sl.start_time.slice(0, 5)}–{sl.end_time.slice(0, 5)}</p>
-                  <p className="text-xs text-mist mt-0.5">{today ? 'النهاردة' : 'بكرة'} · باقي {sl.remaining}</p>
+                  <p className="text-sm font-semibold"><bdi dir="ltr">{sl.start_time.slice(0, 5)}–{sl.end_time.slice(0, 5)}</bdi></p>
+                  <p className="text-xs text-mist mt-0.5">{today ? 'النهاردة' : 'بكرة'} • باقي {sl.remaining}</p>
                 </button>
               )
             })}
@@ -476,6 +478,11 @@ export default function CheckoutPage() {
         </div>
       )}
 
+      {/* Group headings OUTSIDE the cards. Eight sibling cards each with their
+          own bold heading read as one long undifferentiated form; the customer
+          is making three decisions here -- where, how to pay, and whether the
+          total is right -- and the page should say so. */}
+      <h2 className="text-[13px] font-bold text-mist mb-2 mt-1">التوصيل</h2>
       <div className="card p-4 mb-4 space-y-3">
         <h2 className="font-bold">عنوان التوصيل</h2>
 
@@ -621,7 +628,7 @@ export default function CheckoutPage() {
             <div>
               <p className="font-bold text-sm">التوصيل</p>
               <p className="text-xs text-mist">
-                يوصلك خلال {quote.sla_minutes}–{quote.sla_max_minutes ?? quote.sla_minutes + 10} دقيقة
+                يوصلك خلال <bdi dir="ltr">{quote.sla_minutes} – {quote.sla_max_minutes ?? quote.sla_minutes + 10}</bdi> دقيقة
               </p>
             </div>
           </div>
@@ -679,8 +686,8 @@ export default function CheckoutPage() {
         )}
       </div>
 
+      <h2 className="text-[13px] font-bold text-mist mb-2 mt-5">طريقة الدفع</h2>
       <div className="card p-4 mb-4">
-        <h2 className="font-bold mb-3">الدفع</h2>
         <div className="space-y-2.5">
           <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${paymentMethod === 'cod' ? 'border-sea bg-sea/5' : 'border-line'}`}>
             <span className="font-semibold flex-1">كاش عند الاستلام</span>
@@ -704,7 +711,7 @@ export default function CheckoutPage() {
           </label>
           {/* The same disclosure the cash path already gets, for the same
               reason. An InstaPay order is BORN at awaiting_payment: the button
-              says «تأكيد الطلب · {finalTotal} ج.م», the basket is emptied, and
+              says «تأكيد الطلب • {finalTotal} ج.م», the basket is emptied, and
               the customer lands on a full-screen transfer wall they were never
               warned about -- and nothing is cooked until they pay. That exact
               complaint was fixed for the cash-deposit path and left open here,
@@ -719,8 +726,8 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      <div className="card p-4 mb-5 space-y-2">
-        <h2 className="font-bold mb-1">ملخص الطلب</h2>
+      <h2 className="text-[13px] font-bold text-mist mb-2 mt-5">الملخص</h2>
+      <div className="card !bg-shellup p-4 mb-5 space-y-2">
         {lines.map(l => {
           const { unit, original, item, sizeName, comboName, addonNames } = priceFor(l)
           return (
@@ -728,7 +735,7 @@ export default function CheckoutPage() {
               <span>
                 {item?.name} × {l.qty}
                 {(sizeName || comboName || addonNames.length > 0) && (
-                  <span className="text-mist"> ({[comboName && `🍟 ${comboName}`, sizeName, ...addonNames].filter(Boolean).join(' · ')})</span>
+                  <span className="text-mist"> ({[comboName && `🍟 ${comboName}`, sizeName, ...addonNames].filter(Boolean).join(' • ')})</span>
                 )}
               </span>
               <span>
@@ -738,21 +745,21 @@ export default function CheckoutPage() {
             </div>
           )
         })}
-        <div className="flex justify-between text-sm text-mist">
-          <span>التوصيل{quote ? ` لـ ${quote.compound_name}` : ''}</span>
-          <span>
+        <div className="flex justify-between text-sm">
+          <span className="text-mist">التوصيل{quote ? ` لـ ${quote.compound_name}` : ''}</span>
+          <span className="text-foam font-semibold">
             {deliveryFee !== null ? `${deliveryFee} ج.م`
               : feeLoading ? '…'
               : compoundId ? <button className="text-sea underline" onClick={retryFee}>إعادة المحاولة</button>
-              : '—'}
+              : '-'}
           </span>
         </div>
         {promoDiscount > 0 && (
-          <div className="flex justify-between text-sm text-success"><span>كود خصم {promoCode.trim().toUpperCase()} · {PROMO_SCOPE_LABEL[promoQuote?.applies_to ?? 'all']}</span><span>-{promoDiscount} ج.م</span></div>
+          <div className="flex justify-between text-sm text-success"><span>كود خصم {promoCode.trim().toUpperCase()} • {PROMO_SCOPE_LABEL[promoQuote?.applies_to ?? 'all']}</span><span>-{promoDiscount} ج.م</span></div>
         )}
-        <div className="flex justify-between text-sm text-mist">
-          <span>رسوم الخدمة</span>
-          <span>
+        <div className="flex justify-between text-sm">
+          <span className="text-mist">رسوم الخدمة</span>
+          <span className="text-foam font-semibold">
             {serviceFee !== null ? `${serviceFee} ج.م`
               : serviceFeeLoading ? '…'
               : <button className="text-sea underline" onClick={retryServiceFee}>إعادة المحاولة</button>}
@@ -766,7 +773,7 @@ export default function CheckoutPage() {
           {/* optionsLoaded belongs here too: a combo line prices from the base
               item price until menu_item_combos lands, so this figure could read
               284 for an order the server charges 410 for. */}
-          <span className="text-sea">{optionsLoaded && deliveryFee !== null && serviceFee !== null ? `${finalTotal} ج.م` : '…'}</span>
+          <span className="text-foam">{optionsLoaded && deliveryFee !== null && serviceFee !== null ? `${finalTotal} ج.م` : '…'}</span>
         </div>
       </div>
 
@@ -856,7 +863,7 @@ export default function CheckoutPage() {
         {saving ? 'جاري التجهيز…'
           : deliveryFee === null ? (feeLoading ? 'بنحسب التوصيل…' : 'تأكيد الطلب')
           : serviceFee === null ? (serviceFeeLoading ? 'بنحسب رسوم الخدمة…' : 'تأكيد الطلب')
-          : `تأكيد الطلب · ${finalTotal} ج.م`}
+          : `تأكيد الطلب • ${finalTotal} ج.م`}
       </button>
 
       <p className="text-xs text-mist text-center mt-3">

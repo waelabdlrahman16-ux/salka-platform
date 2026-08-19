@@ -65,26 +65,33 @@ export default function RestaurantCard({
   // أرابياتا a plain foul sandwich as its cover.
   const cover = r.hero_image_url
 
-  const meta = (
+  // The rating lives on the cover when there is one -- a white badge on a
+  // photo outranks grey text, and it buys the meta row back so the card can
+  // lose 22px of cover instead of gaining a line. Without a cover there is
+  // nowhere to put it, so the compact row still carries it inline.
+  const ratingChip = (
+    <span className="flex items-center gap-1">
+      <Icon name="star" size="xs" className="text-coral-600" />
+      <span className="font-medium text-foam">{r.rating}</span>
+    </span>
+  )
+
+  const metaRow = (withRating: boolean) => (
     <div className="flex items-center gap-1.5 text-[13px] text-mist flex-wrap">
-      {rated && (
-        <>
-          <span className="flex items-center gap-1">
-            <Icon name="star" size="xs" className="text-coral-600" />
-            <span className="font-bold text-foam">{r.rating}</span>
-          </span>
-          <span aria-hidden="true">·</span>
-        </>
-      )}
+      {withRating && rated && (<>{ratingChip}<span aria-hidden="true" className="text-slate-300">•</span></>)}
       {/* The delivery TIME is the only thing on this card that separates one
           vendor from another -- the delivery fee is per-compound, so it is the
           same number on every card in the list and putting it here would be
-          noise. It was rendering in `mist`, the same weight as the category
-          beside it. */}
+          noise. Rating, time and category share one weight: three peers you
+          scan across, not a hierarchy. «يوصلك» is a clock glyph now -- the icon
+          carries the meaning in less space and matches the star. */}
       {etaMinutes !== null && !closed ? (
         <>
-          <span className="font-semibold text-seadeep">يوصلك {etaMinutes.min}–{etaMinutes.max} د</span>
-          {r.category && <><span aria-hidden="true">·</span><span className="truncate">{r.category}</span></>}
+          <span className="flex items-center gap-1">
+            <Icon name="clock" size="xs" className="text-mist" />
+            <span><bdi dir="ltr">{etaMinutes.min} – {etaMinutes.max}</bdi> د</span>
+          </span>
+          {r.category && <><span aria-hidden="true" className="text-slate-300">•</span><span className="truncate">{r.category}</span></>}
         </>
       ) : (
         <span className="truncate">{r.category}</span>
@@ -113,7 +120,7 @@ export default function RestaurantCard({
               <span className="shrink-0 text-[10px] font-bold text-mist bg-shellup rounded px-1.5 py-0.5">{status.text}</span>
             )}
           </div>
-          <div className="mt-1">{meta}</div>
+          <div className="mt-1">{metaRow(true)}</div>
         </div>
       </Link>
     )
@@ -128,7 +135,7 @@ export default function RestaurantCard({
       // bottom of the list on its own. Greyscale plus the reopening time beside
       // the name says it once and still lets someone see the food and decide to
       // come back at nine.
-      className="block card overflow-hidden !rounded-2xl"
+      className="block card !bg-shellup overflow-hidden !rounded-2xl"
     >
       {/* 5:2, trimmed again on 2026-08-07 at Wael's request after seeing it
           rendered at real phone width. On a 390px screen (minus the app's 16px
@@ -138,7 +145,7 @@ export default function RestaurantCard({
           NOT shorter than this. Past 5:2 the cover stops reading as food and
           starts reading as a banner, which is the exact complaint that got the
           item grid rebuilt the same day. */}
-      <div className={`relative aspect-[5/2] bg-shellup ${closed ? 'grayscale' : ''}`}>
+      <div className={`relative aspect-[3/1] bg-shellup ${closed ? 'grayscale' : ''}`}>
         {/* loading="lazy" here, unlike the ad banner: that one is a single
             image above the fold and lazy actively broke it, while this is a
             list that can run to nine cards. */}
@@ -159,13 +166,22 @@ export default function RestaurantCard({
             {discountLabel}
           </span>
         )}
+
+        {/* right-2.5, not right-2: the card body is px-2.5, so the badge shares
+            a right edge with the logo tile directly beneath it. */}
+        {rated && !closed && (
+          <span className="absolute bottom-2 right-2.5 bg-white/95 text-[12px] rounded-md px-2 py-0.5 shadow-sm">
+            {ratingChip}
+          </span>
+        )}
       </div>
 
       {/* Tightened from p-3 and a 36px logo. ~15px of padding that was not
           carrying any information, which is most of what the shorter cover
-          would otherwise have handed straight back. */}
-      <div className="flex items-center gap-2.5 px-2.5 py-2.5">
-        <span className="w-8 h-8 rounded-lg overflow-hidden grid place-items-center text-base shrink-0 border border-line"
+          would otherwise have handed straight back. The mark is 40px: the same
+          height as the two lines beside it, so the row squares off. */}
+      <div className={`flex items-center gap-2.5 px-2.5 py-2.5 ${closed ? 'bg-imgbg' : ''}`}>
+        <span className={`w-10 h-10 rounded-lg overflow-hidden grid place-items-center text-base shrink-0 border border-line ${closed ? 'grayscale' : ''}`}
           style={{ background: art.tint }}>
           {r.logo_url
             ? <img src={sized(r.logo_url, IMG.icon)} alt="" loading="eager" className="w-full h-full object-cover" />
@@ -174,13 +190,15 @@ export default function RestaurantCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-1.5 min-w-0">
             <h2 className={`font-bold text-[15px] truncate leading-tight ${closed ? 'text-mist' : ''}`}>{r.name}</h2>
+            {/* ms-auto: the opening time goes to the far end of the row, where a
+                status belongs, instead of interrupting the name. */}
             {closed && (
-              <span className="shrink-0 text-[10px] font-bold text-mist bg-shellup rounded px-1.5 py-0.5">
+              <span className="ms-auto shrink-0 text-[10px] font-bold text-mist bg-shellup border border-line rounded-full px-2 py-0.5">
                 {status.text}
               </span>
             )}
           </div>
-          <div className="mt-0.5">{meta}</div>
+          <div className="mt-0.5">{metaRow(false)}</div>
         </div>
       </div>
     </Link>

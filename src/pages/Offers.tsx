@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import EmptyState from '../components/EmptyState'
 import CategoryArt from '../components/CategoryArt'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { artFor } from '../lib/categoryArt'
 import type { Discount, Restaurant } from '../lib/types'
@@ -26,6 +26,7 @@ export default function Offers() {
   // restaurant and reading every price on the menu.
   const [itemNames, setItemNames] = useState<Map<number, string>>(new Map())
   const [compoundId] = useState(() => getCompoundId())
+  const navigate = useNavigate()
 
   useEffect(() => {
     (async () => {
@@ -107,15 +108,9 @@ export default function Offers() {
   // and could tap straight into a restaurant nowhere near them.
   if (!compoundId) {
     return (
-      <div>
-        <div className="card p-6 text-center mt-4">
-          <p className="font-semibold">اختار مكانك الأول</p>
-          <p className="text-sm text-mist mt-1.5 mb-4">
-            عشان نوريك العروض اللي بتوصل لمكانك بس
-          </p>
-          <Link to="/" className="btn-sea !py-2 !px-5 text-sm inline-block">اختار مكانك</Link>
-        </div>
-      </div>
+      <EmptyState icon="locationDot" title="اختار مكانك الأول"
+        body="عشان نوريك العروض اللي بتوصل لمكانك بس"
+        action={{ label: 'اختار مكانك', onClick: () => navigate('/') }} />
     )
   }
 

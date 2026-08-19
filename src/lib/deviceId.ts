@@ -45,7 +45,7 @@ function sessionFallback(): string {
 
 /**
  * Something an admin can read in the drivers tab and match against a phone in
- * front of them: "iPhone · Safari". Not parsed by anything, never trusted --
+ * front of them: "iPhone • Safari". Not parsed by anything, never trusted --
  * userAgent is trivially spoofed and increasingly reduced by browsers.
  */
 export function getDeviceLabel(): string {
@@ -68,5 +68,5 @@ export function getDeviceLabel(): string {
     /Firefox\//i.test(ua) ? 'Firefox' :
     /Safari\//i.test(ua) ? 'Safari' : ''
 
-  return browser ? `${os} · ${browser}` : os
+  return browser ? `${os} • ${browser}` : os
 }

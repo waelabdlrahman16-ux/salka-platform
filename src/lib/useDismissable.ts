@@ -43,6 +43,22 @@ export function useDismissable<T extends HTMLElement = HTMLDivElement>(
     if (!active) return
     const previouslyFocused = document.activeElement as HTMLElement | null
 
+    // The page behind an overlay kept scrolling: opening a sheet and dragging
+    // moved the menu underneath it, so closing the sheet left you somewhere
+    // else entirely. Every overlay in the app runs this hook, so locking here
+    // fixes all of them rather than one sheet.
+    //
+    // Restore the exact previous value rather than clearing: nested overlays
+    // each run this, and the inner one's cleanup must not unlock the page
+    // while the outer one is still open.
+    // html AND body: html carries overflow-x:clip, which makes the VIEWPORT
+    // the scroller, so locking body alone left the page behind still moving.
+    const root = document.documentElement
+    const previousOverflow = document.body.style.overflow
+    const previousRootOverflow = root.style.overflow
+    document.body.style.overflow = 'hidden'
+    root.style.overflow = 'hidden'
+
     // Focus the container, not its first field. Focusing an input here would
     // raise the on-screen keyboard the instant any sheet opens, which on a
     // phone hides most of the sheet the user was trying to read.
@@ -112,8 +128,22 @@ export function useDismissable<T extends HTMLElement = HTMLDivElement>(
     // once the current state is no longer ours. Without this check, confirming
     // any delete inside an already-open editor closed the editor along with
     // it -- reported as "removing an item closes the whole popup".
+    // StrictMode runs this effect twice in development: mount pushes marker A,
+    // the cleanup calls history.back() to unwind it, and the resulting popstate
+    // arrives AFTER the second mount has already pushed marker B. The second
+    // instance then sees a pop it did not cause and reads it as a real Back
+    // press, so every sheet opened and closed itself within ~16ms and the
+    // history unwind scrolled the page to the top. Production has no double
+    // invoke and never hit it, which made it look like a dev-only curiosity --
+    // but it made the sheets untestable locally, which is its own bug.
+    //
+    // No human presses Back inside 150ms of an overlay appearing, so ignoring
+    // pops that arrive in that window costs nothing real and makes development
+    // behave like production.
+    const mountedAt = performance.now()
     const onPop = () => {
       if (history.state?.salkaOverlay === marker) return
+      if (performance.now() - mountedAt < 150) return
       closedByBack = true
       onDismissRef.current?.()
     }
@@ -124,6 +154,8 @@ export function useDismissable<T extends HTMLElement = HTMLDivElement>(
     }
 
     return () => {
+      document.body.style.overflow = previousOverflow
+      root.style.overflow = previousRootOverflow
       document.removeEventListener('keydown', onKey, true)
       if (marker) {
         window.removeEventListener('popstate', onPop)

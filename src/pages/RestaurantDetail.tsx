@@ -6,6 +6,8 @@ import ProductCard from '../components/ProductCard'
 import ProductDetailSheet from '../components/ProductDetailSheet'
 import CustomizeSheet from '../components/CustomizeSheet'
 import Icon from '../components/Icon'
+import { useDismissable } from '../lib/useDismissable'
+import { sized, IMG } from '../lib/imageUrl'
 import { isItemAvailableNow } from '../lib/itemAvailability'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { applyDiscount, effectiveDiscount } from '../lib/discounts'
@@ -46,6 +48,14 @@ export default function RestaurantDetail() {
   // أرابياتا has 85 items across 8 categories. Categories are a filing system,
   // not a way to find one specific dish, and there was nothing else.
   const [menuQ, setMenuQ] = useState('')
+  // The box is closed by default. It sat permanently above the chips saying
+  // «دوّر في قايمة ماكدونالدز» -- a whole 40px row asking a question most
+  // people do not have, on a screen whose job is to show food. The magnifier
+  // on the cover opens it, which is the same control Talabat uses.
+  const [searchOpen, setSearchOpen] = useState(false)
+  // An add that would replace a basket belonging to another restaurant waits
+  // here until the customer says yes.
+  const [pendingAdd, setPendingAdd] = useState<(() => void) | null>(null)
   // Which section the customer is currently looking at, tracked so the sticky
   // bar can say where they are. Every section is rendered at once now -- the
   // chips scroll to a heading rather than filtering the page down to one.
@@ -68,6 +78,80 @@ export default function RestaurantDetail() {
     if (cat === ALL) next.delete('cat'); else next.set('cat', cat)
     setSearchParams(next)
   }
+  // The chip bar pins to the top, so a section scrolled with scrollIntoView
+  // landed UNDER it. Measure the bar and land the heading just below its
+  // bottom edge instead of guessing a constant.
+  //
+  // Motion, per Apple's HIG: it is here to explain where the content went, so
+  // it is a single continuous move, and Reduce Motion turns it into an instant
+  // jump rather than a slower animation. The tapped chip also slides itself
+  // into view horizontally, so the bar never leaves the active chip offscreen.
+  const chipBarRef = useRef<HTMLDivElement | null>(null)
+  // «الكل» returns to the top of the menu rather than filtering: the list is
+  // already complete, so "all" can only mean "start again from the beginning".
+  const jumpToAll = () => {
+    setActiveCat(ALL)
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const first = document.querySelector<HTMLElement>('section[data-cat]')
+    if (!first) return
+    const bar = chipBarRef.current
+    const barH = bar?.getBoundingClientRect().height ?? 0
+    const stickyTop = bar ? parseFloat(getComputedStyle(bar).top) || 0 : 0
+    const top = Math.max(0, first.getBoundingClientRect().top + window.scrollY - stickyTop - barH - 8)
+    const far = Math.abs(top - window.scrollY) > window.innerHeight * 2
+    window.scrollTo({ top, behavior: reduce || far ? 'auto' : 'smooth' })
+  }
+
+  const jumpToCategory = (cat: string) => {
+    setActiveCat(cat)
+    const section = document.getElementById(`cat-${cat}`)
+    if (!section) return
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const targetTop = () => {
+      const bar = chipBarRef.current
+      const barH = bar?.getBoundingClientRect().height ?? 0
+      // The bar's own sticky offset (the compact header above it) counts too --
+      // read it rather than hard-coding 48, so safe-area insets are included.
+      const stickyTop = bar ? parseFloat(getComputedStyle(bar).top) || 0 : 0
+      return Math.max(0, section.getBoundingClientRect().top + window.scrollY - stickyTop - barH - 8)
+    }
+    // Animate only when the animation can still be read as a movement. A long
+    // menu puts «صوصات» 7,800px away, and gliding that whole distance is
+    // several seconds of blurred content -- motion that makes you wait rather
+    // than telling you where you went. Past two screens, cut instead.
+    const far = Math.abs(targetTop() - window.scrollY) > window.innerHeight * 2
+    window.scrollTo({ top: targetTop(), behavior: reduce || far ? 'auto' : 'smooth' })
+    // The dish images below the fold are lazy, so the document is still short
+    // when the jump starts: a near section landed ~28px off and a far one did
+    // not move at all, because the browser clamped the target to a height the
+    // page had not grown into yet. Re-measure once layout settles and close the
+    // gap. Silent when there is nothing to correct.
+    let tries = 0
+    const settle = () => {
+      const top = targetTop()
+      if (Math.abs(window.scrollY - top) > 4) window.scrollTo({ top, behavior: 'auto' })
+      if (++tries < 3) setTimeout(settle, 220)
+    }
+    setTimeout(settle, reduce || far ? 60 : 420)
+    chipBarRef.current
+      ?.querySelector(`[data-chip="${CSS.escape(cat)}"]`)
+      ?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest', inline: 'center' })
+  }
+
+  // Same rule as the home card: the vendor's own cover when set, otherwise
+  // the best-ranked photographed dish, computed server-side.
+  const cover = restaurant?.cover_image_url || restaurant?.hero_image_url || null
+
+  // One order is tied to one vendor, so adding here empties a basket built
+  // somewhere else. That is the customer's call, not ours -- it used to happen
+  // silently the moment this page loaded.
+  const otherVendorInCart =
+    cart.count > 0 && cart.restaurantId != null && cart.restaurantId !== Number(id)
+  const guardAdd = (run: () => void) => {
+    if (otherVendorInCart) setPendingAdd(() => run)
+    else run()
+  }
+
   const [loadFailed, setLoadFailed] = useState(false)
   const [catalogRevision, setCatalogRevision] = useState(0)
 
@@ -298,7 +382,9 @@ export default function RestaurantDetail() {
   const totalEta = restaurant && selectedCompound
     ? { min: restaurant.prep_minutes + selectedCompound.est_travel_minutes_min, max: restaurant.prep_minutes + selectedCompound.est_travel_minutes_max }
     : null
-  const { fee: deliveryFee } = useDeliveryQuote(compoundId, restaurant?.id)
+  // The fee is no longer printed on this page -- it belongs to the compound and
+  // the home header already states it -- but the quote still drives totalEta.
+  useDeliveryQuote(compoundId, restaurant?.id)
 
   if (loadFailed) return (
     <div className="card p-6 text-center max-w-sm mx-auto mt-6">
@@ -340,7 +426,7 @@ export default function RestaurantDetail() {
             <span className="font-bold text-sm truncate">{restaurant.name}</span>
             {visibleCat && !menuQuery && (
               <>
-                <span className="text-mist text-xs shrink-0">·</span>
+                <span className="text-mist text-xs shrink-0">•</span>
                 <span className="text-xs text-mist truncate">{visibleCat}</span>
               </>
             )}
@@ -358,66 +444,110 @@ export default function RestaurantDetail() {
         </div>
       )}
 
-      {/* THREE ROWS, not six.
-          Before: back link / logo+name+badge / category / meta / search /
-          chips -- every one a full row, so the first photograph of food began
-          below the fold on a 76-item menu. Status and delivery are short facts
-          and now share the back row; the category folded into the meta line
-          under the name. */}
-      <div className="flex items-center gap-2 mb-2.5">
-        {/* -mr-2 keeps the text where it was while the tappable box grows to the
-            44px minimum. It measured 47x20. */}
-        <Link to="/" className="text-sm text-mist hover:text-foam flex items-center h-11 pl-2 pr-2 -mr-2">
-          {/* The page is RTL, so "back" is to the RIGHT. chevronLeft was
-              rendering a left-pointing arrow next to رجوع, which reads as
-              "forward". Icon.tsx only ships chevronLeft, so it is mirrored
-              rather than adding a near-duplicate glyph. */}
-          <Icon name="chevronLeft" size="xs" className="ml-1 rotate-180" />رجوع
-        </Link>
-        <span className="flex-1" />
-        <span className={restaurant.is_open ? 'badge-open' : 'badge-closed'}>
-          {restaurant.is_open ? 'مفتوح' : 'مغلق'}
-        </span>
-        {deliveryFee !== null && (
-          <span className="text-[11px] font-bold text-coral-700 bg-coral-200 rounded-lg px-2 py-1 shrink-0">
-            {deliveryFee} ج.م توصيل
-          </span>
-        )}
-      </div>
-
-      <div className="flex items-center gap-3 mb-3">
-        {restaurant.logo_url
-          ? <img src={restaurant.logo_url} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0 border border-line" />
-          : <div className="w-12 h-12 rounded-xl bg-shellup grid place-items-center shrink-0 text-xl font-bold text-mist">{restaurant.name.charAt(0)}</div>}
-        <div className="min-w-0 flex-1">
-          <h1 className="text-xl font-bold truncate">{restaurant.name}</h1>
-          <div className="flex items-center gap-1.5 text-[13px] text-mist flex-wrap mt-0.5">
-            {/* ONLY when somebody has actually rated them.
-                restaurants.rating is hand-typed and unconnected to
-                order_ratings -- 8 of 9 vendors have zero reviews and every one
-                displayed a score. A number with no count behind it is not a
-                weak signal, it is a false one, and "★ 3.0" on an unrated
-                restaurant actively damages that vendor. */}
-            {(restaurant.review_count ?? 0) > 0 && (
-              <>
-                <span className="flex items-center gap-1">
-                  <Icon name="star" size="xs" className="text-coral-600" />
-                  <span className="font-bold text-foam">{restaurant.rating_real ?? restaurant.rating}</span>
-                  <span>({restaurant.review_count})</span>
+      {/* A cover photo, controls floating on it, and the identity card lifted
+          over its bottom edge -- the shape Talabat, Waffarha and Deliveroo all
+          use, because it answers "where am I" with a picture before it answers
+          it with words.
+          Two things are deliberately NOT here. «مفتوح» was true of every
+          restaurant whose page you can open -- a closed one cannot be added to,
+          and its home card is already greyed with an opening time -- so it
+          asserted nothing. The delivery fee belongs to the compound, not the
+          vendor: the same number on every restaurant, already stated in the
+          home header, and in coral it was the loudest thing on the page. */}
+      <div className="-mx-4 -mt-6">
+        <div className="relative h-40 bg-shellup">
+          {cover && (
+            <img src={sized(cover, IMG.wide)} alt="" loading="eager" decoding="async"
+              className={`absolute inset-0 w-full h-full object-cover ${restaurant.is_open ? '' : 'grayscale'}`}
+              // A broken cover must not leave a grey rectangle where the food
+              // should be; hiding it reveals the tint, which reads as a plain
+              // header rather than a failure.
+              onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
+          )}
+          {/* A scrim only under the controls. A full-cover overlay would dull
+              the photograph, which is the one thing on this screen doing the
+              selling. */}
+          <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/35 to-transparent" />
+          {/* px-4 with the -mr/-ml pulls cancelled: the visible discs line up
+              with the identity card's edges below them, not 4px inside. */}
+          <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-4">
+            <Link to="/" aria-label="رجوع" title="رجوع"
+              className="grid place-items-center min-w-[44px] min-h-[44px] -mr-1">
+              {/* The page is RTL, so "back" is to the RIGHT. Icon.tsx only ships
+                  chevronLeft, so it is mirrored rather than adding a glyph. */}
+              <span className="w-9 h-9 rounded-full bg-white/95 text-slate-700 grid place-items-center shadow-sm">
+                <Icon name="chevronLeft" size="sm" className="rotate-180" />
+              </span>
+            </Link>
+            {items.length > 8 && (
+              <button aria-label="بحث في القايمة" title="بحث في القايمة"
+                className="grid place-items-center min-w-[44px] min-h-[44px] -ml-1"
+                onClick={() => {
+                  setSearchOpen(true)
+                  setTimeout(() => document.getElementById('menu-search')?.focus(), 60)
+                }}>
+                <span className="w-9 h-9 rounded-full bg-white/95 text-slate-700 grid place-items-center shadow-sm">
+                  <Icon name="magnifyingGlass" size="sm" />
                 </span>
-                <span aria-hidden="true">·</span>
-              </>
+              </button>
             )}
-            {/* A range, not a single number. "16 دقيقة تقريبًا" reads as a
-                promise; the home card already says 20–30 for the same vendor,
-                so the two screens disagreed about the same restaurant. */}
-            {totalEta && <span>يوصلك {totalEta.min}–{totalEta.max} دقيقة</span>}
-            {restaurant.category && (
-              <>
-                {totalEta && <span aria-hidden="true">·</span>}
-                <span className="truncate">{restaurant.category}</span>
-              </>
+          </div>
+        </div>
+
+        {/* Lifted over the photo's bottom edge, so the two read as one object
+            rather than a picture with a paragraph under it. */}
+        <div className="card mx-4 -mt-9 relative z-10 p-3 flex items-center gap-3">
+          {/* Closed is stated on the artwork, not in a card of its own. The
+              card said «مقفول دلوقتي» in words and then offered a way out --
+              a whole block of chrome for a fact the greyed-out photograph
+              already tells you. The mark carries the word so it survives
+              wherever the eye lands. */}
+          <div className="relative w-14 h-14 shrink-0">
+            {restaurant.logo_url
+              ? <img src={sized(restaurant.logo_url, IMG.icon)} alt=""
+                  className={`w-14 h-14 rounded-xl object-cover border border-line bg-white ${restaurant.is_open ? '' : 'grayscale'}`} />
+              : <div className={`w-14 h-14 rounded-xl bg-shellup grid place-items-center text-xl font-bold text-mist ${restaurant.is_open ? '' : 'grayscale'}`}>{restaurant.name.charAt(0)}</div>}
+            {!restaurant.is_open && (
+              // A scrim under the word, or «مقفول» sits on whatever colour the
+              // logo happens to be and is unreadable on half of them.
+              <span className="absolute inset-0 rounded-xl bg-black/55 grid place-items-center text-white text-[11px] font-bold">
+                مقفول
+              </span>
             )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg font-bold truncate leading-tight">{restaurant.name}</h1>
+            <div className="flex items-center gap-1.5 text-[13px] text-mist flex-wrap mt-1">
+              {/* ONLY when somebody has actually rated them. restaurants.rating
+                  is hand-typed and unconnected to order_ratings, and a number
+                  with no count behind it is not a weak signal but a false one.
+                  The count itself is gone: 3 of 19 vendors have any rating, and
+                  saying the 3.5 rests on two opinions weakens it. */}
+              {(restaurant.review_count ?? 0) > 0 && (
+                <>
+                  <span className="flex items-center gap-1">
+                    <Icon name="star" size="xs" className="text-coral-600" />
+                    <span className="text-foam">{restaurant.rating_real ?? restaurant.rating}</span>
+                  </span>
+                  <span aria-hidden="true" className="text-slate-300">•</span>
+                </>
+              )}
+              {/* A range, not a single number. "16 دقيقة تقريبًا" reads as a
+                  promise; the home card already says 20-30 for the same vendor,
+                  so the two screens disagreed about the same restaurant. */}
+              {totalEta && (
+                <span className="flex items-center gap-1">
+                  <Icon name="clock" size="xs" className="text-mist" />
+                  <bdi dir="ltr">{totalEta.min} – {totalEta.max}</bdi> د
+                </span>
+              )}
+              {restaurant.category && (
+                <>
+                  {totalEta && <span aria-hidden="true" className="text-slate-300">•</span>}
+                  <span className="truncate">{restaurant.category}</span>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -458,33 +588,24 @@ export default function RestaurantDetail() {
               could be ordered. That loses the app, not just the restaurant.
               The menu stays browsable on purpose; people look before a place
               opens. What is blocked is ordering, and there is a way out. */}
-          {!restaurant.is_open && (
-            <div className="card p-4 mb-4 bg-shellup border-none">
-              <p className="font-bold text-sm">مقفول دلوقتي</p>
-              <p className="text-xs text-mist mt-1 mb-3">
-                تقدر تتفرج على القايمة، بس مش هينفع تطلب لحد ما يفتح.
-              </p>
-              <Link to="/" className="btn-ghost !py-2.5 text-sm !flex items-center justify-center">
-                شوف المطاعم المفتوحة دلوقتي
-              </Link>
-            </div>
-          )}
-
           {/* Search before the category pills, because it answers a different
               and more common question: "do they have X?" rather than "show me
               everything under Y". */}
-          {items.length > 8 && (
+          {items.length > 8 && searchOpen && (
             <div className="relative mb-3">
-              <input id="menu-search" className="field !pr-10" value={menuQ} onChange={e => setMenuQ(e.target.value)}
+              <input id="menu-search" className="field !bg-white !pr-10" value={menuQ} onChange={e => setMenuQ(e.target.value)}
                 aria-label={`دوّر في قايمة ${restaurant.name}`}
                 placeholder={`دوّر في قايمة ${restaurant.name}…`} />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mist pointer-events-none">
                 <Icon name="magnifyingGlass" size="sm" />
               </span>
-              {menuQ.trim() && (
-                <button className="absolute left-3 top-1/2 -translate-y-1/2 text-mist text-sm"
-                  aria-label="مسح" onClick={() => setMenuQ('')}><Icon name="x" size="sm" /></button>
-              )}
+              {/* Clearing an empty box closes it: otherwise the only way back
+                  out of search is to leave the page. */}
+              <button className="absolute left-3 top-1/2 -translate-y-1/2 text-mist"
+                aria-label={menuQ.trim() ? 'مسح' : 'إغلاق البحث'}
+                onClick={() => { if (menuQ.trim()) setMenuQ(''); else setSearchOpen(false) }}>
+                <Icon name="x" size="sm" />
+              </button>
             </div>
           )}
 
@@ -496,27 +617,46 @@ export default function RestaurantDetail() {
             </p>
           )}
 
-          {/* The chips SCROLL to a section, they no longer filter to one.
-              "الكل" is gone with them: it was never a category, and its presence
-              meant the first real section was hidden behind a choice. Now the
-              whole menu is on the page and the chips are a way to jump, which
-              is also what makes the sticky bar able to say which section you
-              are in. */}
+          {/* The chips SCROLL to a section, they do not filter to one -- the
+              whole menu is on the page. «الكل» is the way back to the start of
+              it, on every restaurant. */}
           {categories.length > 1 && !menuQuery && (
-          <div className="flex gap-2 overflow-x-auto pb-1 mb-4 -mx-4 px-4 scrollbar-none">
+          // Pins below the compact header, not under it. That bar is `fixed`
+          // and 48px tall, so a chip row stuck to top-0 slid straight beneath
+          // it and the chips were unreadable while scrolling.
+          <div ref={chipBarRef}
+            style={{ top: 'calc(env(safe-area-inset-top) + 48px)' }}
+            className="sticky z-20 flex gap-6 overflow-x-auto mb-3 -mx-4 px-4 bg-night border-b border-line scrollbar-none">
+            {/* Underlined, not filled. These tabs NAVIGATE -- the whole menu is
+                already on the page -- and a filled pill is the language of a
+                filter. The underline is also ~12px shorter than the pill row,
+                which the header can use.
+                Deliberately not the shared .tab class: that one dresses the
+                admin, driver and vendor screens too, and this is a customer
+                storefront decision. */}
+            <button data-chip={ALL} onClick={() => jumpToAll()}
+              className={`shrink-0 whitespace-nowrap text-sm font-bold pt-2.5 pb-3 border-b-[3px] -mb-px transition-colors ${
+                activeCat === ALL ? 'text-foam border-sea' : 'text-mist border-transparent hover:text-foam'}`}>
+              الكل
+            </button>
             {categories.map(cat => (
-              <button key={cat}
-                className={`tab shrink-0 ${visibleCat === cat ? 'tab-active' : 'bg-shellup/60'}`}
-                onClick={() => {
-                  setActiveCat(cat)
-                  document.getElementById(`cat-${cat}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                }}>{cat}</button>
+              <button key={cat} data-chip={cat} onClick={() => jumpToCategory(cat)}
+                // The tap highlights the tab itself; the scroll observer then
+                // takes over as you move through the menu. Waiting for the
+                // observer meant tapping gave no feedback at all. While «الكل»
+                // is the choice no section tab is underlined, or two read as
+                // active at once.
+                className={`shrink-0 whitespace-nowrap text-sm font-bold pt-2.5 pb-3 border-b-[3px] -mb-px transition-colors ${
+                  activeCat !== ALL && (visibleCat ?? activeCat) === cat
+                    ? 'text-foam border-sea' : 'text-mist border-transparent hover:text-foam'}`}>
+                {cat}
+              </button>
             ))}
           </div>
           )}
 
           {categories.map(cat => shown(cat).length === 0 ? null : (
-            <section key={cat} id={`cat-${cat}`} data-cat={cat} className="mb-6 scroll-mt-16">
+            <section key={cat} id={`cat-${cat}`} data-cat={cat} className="mb-6 scroll-mt-24">
               <h2 className="font-bold text-lg mb-3">{cat}</h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {shown(cat).map(it => {
@@ -545,9 +685,9 @@ export default function RestaurantDetail() {
                       // so the plain price is a starting point there too -- not
                       // only when there are sizes.
                       isFromPrice={itemSizes.length > 0 || itemCombos.length > 0}
-                      onAdd={() => cart.add(it, 1)}
+                      onAdd={() => guardAdd(() => cart.add(it, 1))}
                       onRemove={() => cart.add(it, -1)}
-                      onCustomize={() => openCustomization(it)}
+                      onCustomize={() => guardAdd(() => openCustomization(it))}
                       onOpenDetail={() => setDetailItem(it)}
                     />
                   )
@@ -575,6 +715,12 @@ export default function RestaurantDetail() {
           onCustomize={it => { setDetailItem(null); openCustomization(it) }}
           onClose={() => setDetailItem(null)}
         />
+      )}
+
+      {pendingAdd && (
+        <SwitchVendorDialog
+          onCancel={() => setPendingAdd(null)}
+          onConfirm={() => { const run = pendingAdd; cart.clear(); setPendingAdd(null); run() }} />
       )}
 
       {customizing && (
@@ -607,28 +753,61 @@ export default function RestaurantDetail() {
           and the basket survives in sessionStorage -- so a reload onto this
           page with a combo in the cart priced it from menu_items.price
           (دوبل بيج تايستي: 433 instead of the 575 combo) and, in the tick
-          before items land at all, showed "0 ج.م · شوف العربة" over a badge of
+          before items land at all, showed "0 ج.م • شوف العربة" over a badge of
           1. The count is always true, so it stays; only the money waits. */}
       {cart.count > 0 && restaurant.is_open && (
         <div className="fixed inset-x-0 z-30 px-4"
-          style={{ bottom: 'calc(env(safe-area-inset-bottom) + 68px)' }}>
-          <button className="max-w-lg mx-auto w-full bg-sea text-white rounded-2xl shadow-lg px-4 py-3.5 flex items-center justify-between gap-3"
+          // 68px used to clear the bottom tab bar; that bar no longer renders
+          // on this page, so the gap was empty space.
+          style={{ bottom: 'calc(env(safe-area-inset-bottom) + 28px)' }}>
+          <button className="max-w-lg mx-auto w-full bg-sea text-white rounded-full shadow-lg px-4 py-3.5 flex items-center justify-between gap-3"
             onClick={() => nav('/cart')}>
-            <span className="flex items-center gap-2 min-w-0">
-              <span className="bg-white/20 rounded-lg min-w-[26px] h-[26px] grid place-items-center text-sm font-bold px-1.5">
-                {cart.count}
-              </span>
-              <span className="font-bold text-sm truncate">
-                {cart.count === 1 ? 'صنف واحد' : `${cart.count} أصناف`}
-              </span>
+            {/* The count is the badge now, rather than a bare «3» sitting
+                beside the same number spelled out. */}
+            <span className="bg-white/20 rounded-full px-3 py-1 font-bold text-sm truncate min-w-0">
+              {cart.count === 1 ? 'صنف واحد' : `${cart.count} أصناف`}
             </span>
-            <span className="font-bold text-sm shrink-0">
-              {optionsLoaded ? `${Math.round(cartSubtotal * 100) / 100} ج.م · ` : ''}شوف العربة
+            {/* The bullet was inside the template string, so it carried the
+                full weight of the label either side of it. Its own span at 50%
+                now, like every other separator. */}
+            <span className="font-bold text-sm shrink-0 flex items-center gap-1.5">
+              {optionsLoaded && (
+                <>
+                  <span>{Math.round(cartSubtotal * 100) / 100} ج.م</span>
+                  <span aria-hidden="true" className="opacity-50">•</span>
+                </>
+              )}
+              <span>شوف العربة</span>
             </span>
           </button>
         </div>
       )}
 
+    </div>
+  )
+}
+
+/**
+ * Asked before an add replaces a basket from another restaurant. Previously
+ * the basket was emptied the moment this page opened, so a customer comparing
+ * two places lost the first one with no warning and no way back.
+ */
+function SwitchVendorDialog({ onCancel, onConfirm }: { onCancel: () => void; onConfirm: () => void }) {
+  const ref = useDismissable<HTMLDivElement>(onCancel)
+  return (
+    <div ref={ref} role="dialog" aria-modal="true" aria-labelledby="switch-vendor-title"
+      className="fixed inset-0 z-50 bg-black/60 grid place-items-center px-6" onClick={onCancel}>
+      <div className="card w-full max-w-sm p-5 rounded-2xl" onClick={e => e.stopPropagation()}>
+        <h2 id="switch-vendor-title" className="font-bold text-lg mb-1">تبدأ عربية جديدة؟</h2>
+        <p className="text-sm text-mist mb-5">
+          عندك أصناف من مطعم تاني في عربيتك. الطلب الواحد بيبقى من مطعم واحد، فلو
+          كمّلت هنا هنفضّي العربية القديمة.
+        </p>
+        <div className="flex gap-2.5">
+          <button className="btn-ghost flex-1" onClick={onCancel}>إلغاء</button>
+          <button className="btn-sea flex-1" onClick={onConfirm}>فضّي وابدأ</button>
+        </div>
+      </div>
     </div>
   )
 }

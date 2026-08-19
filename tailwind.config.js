@@ -93,10 +93,18 @@ export default {
         // undertone. Kept the teal brand color exactly as-is; warmed every neutral around
         // it instead, so teal now stands out as the one cool-toned element rather than
         // blending into a cool-grey family.
-        night: '#FBF7F1',     // page background — warm ivory (was #F4F7F7, cool silver)
+        // 2026-08-19, Wael: the ground goes white. THREE jobs only -- page
+        // background, image-container background, image-container border. The
+        // rest of the palette stays warm; an earlier pass spread the neutral
+        // across cards, shelves and headers, which is not what was asked.
+        night: '#FFFFFF',     // page background — white (was #FBF7F1, warm ivory)
         shell: '#FFFFFF',     // card background
-        shellup: '#F4EEE3',   // elevated surface (header, active tab, thumbnails) — warm tint (was #EAF1F0)
-        line: '#E8E1D6',      // borders — warm light grey (was #E1E8E7, cool silver)
+        shellup: '#F4EEE3',   // elevated surface (header, active tab, tints) — warm
+        line: '#E8E1D6',      // borders — warm light grey
+        // The image container, and ONLY the image container: a surface that
+        // sits behind a photograph, where a warm tint casts onto the food.
+        imgbg: '#F5F5F5',
+        imgline: '#E5E5E5',
         sea: '#00625F',       // brand primary = teal-600. Was #0A5F5E, whose comment claimed it
                               // matched the logo exactly; Wael confirmed the logo is #00625F.
                               // 14/765 in RGB, invisible, and both pass AA -- but only one is right.

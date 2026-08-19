@@ -5,7 +5,7 @@ import { customerOrderCreation } from '../lib/customerOrderCreation'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
 import { displayEgyptPhone, isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
-import { artFor, VENDOR_TYPE_ART } from '../lib/categoryArt'
+import { VENDOR_TYPE_ART } from '../lib/categoryArt'
 import Icon from '../components/Icon'
 import { getSessionToken, useCustomerAuth } from '../lib/customerAuth'
 import type { Compound, MenuItem, Restaurant, Slot } from '../lib/types'
@@ -407,15 +407,38 @@ export default function CustomOrder() {
 
   // Step 1 -- pick the vendor
   if (!vendor) {
-    const shownVendors = typeFilter ? vendors.filter(v => v.vendor_type === typeFilter) : vendors
+    // Salka's own two errands lead, always. They are the reason this tab
+    // exists; the brands underneath are the extras. Server order put them
+    // wherever the query happened to return them, so «صيدلية» could sit sixth.
+    const ERRAND_FIRST = ['supermarket', 'pharmacy']
+    const rank = (v: Restaurant) => {
+      const i = ERRAND_FIRST.indexOf(v.vendor_type ?? '')
+      return i === -1 ? ERRAND_FIRST.length : i
+    }
+    const shownVendors = (typeFilter ? vendors.filter(v => v.vendor_type === typeFilter) : vendors)
+      .slice().sort((a, b) => rank(a) - rank(b))
     const pharmacyOpen = vendors.some(v => v.vendor_type === 'pharmacy')
 
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-1">
-          {typeFilter === 'pharmacy' ? 'الصيدلية' : typeFilter === 'supermarket' ? 'السوبر ماركت' : 'محتاج إيه دلوقتي؟'}
-        </h1>
-        <p className="text-mist text-sm mb-4">قول لنا اللي محتاجه، وإحنا هنجهزه معاك</p>
+        {/* A gradient band, bleeding to the screen edges and fading into the
+            page. This tab is the one screen with no photography at all -- a
+            plain heading over a list of logos had nothing carrying it -- so the
+            surface does the work instead of a bigger typeface.
+
+            cream to transparent, not a new colour: the token already exists
+            and the band has to end in the page's own white or it reads as a
+            block with a hard edge rather than a header. The van glyph is the
+            same one the tab bar uses for this destination. */}
+        <div className="-mx-4 -mt-6 mb-4 px-4 pt-8 pb-5 bg-gradient-to-b from-shellup to-night">
+          <span className="w-11 h-11 rounded-2xl bg-white/70 text-[#6B4A18] grid place-items-center mb-2.5">
+            <Icon name="van" size="lg" />
+          </span>
+          <h1 className="text-xl font-bold leading-tight">
+            {typeFilter === 'pharmacy' ? 'الصيدلية' : typeFilter === 'supermarket' ? 'السوبر ماركت' : 'محتاج إيه دلوقتي؟'}
+          </h1>
+          <p className="text-mist text-[13px] mt-1">قول لنا اللي محتاجه، وإحنا هنجهزه معاك</p>
+        </div>
 
         {loadFailed && (
           <div className="card p-4 mb-4 border-coral-300 bg-coral-100">
@@ -433,7 +456,6 @@ export default function CustomOrder() {
             Each card now carries its own status, fee, timing and range. */}
         <div className="space-y-3">
           {shownVendors.map(v => {
-            const art = artFor(v.vendor_type === 'pharmacy' ? 'أدوية' : 'خضار وفاكهة')
             // Slotted or not, NOT market or not: a market with slots turned off
             // delivers as soon as it is picked, exactly like the pharmacy, and
             // must say so on the card rather than promising windows it no
@@ -442,9 +464,15 @@ export default function CustomOrder() {
             const vSlots = vendorSlots[v.id] ?? []
             const next = vSlots[0]
             const today = next?.scheduled_date === cairoToday()
+            // Same arithmetic as the home card: prep plus the compound's own
+            // travel window, never a constant.
+            const eta = selectedCompound
+              ? { min: v.prep_minutes + selectedCompound.est_travel_minutes_min,
+                  max: v.prep_minutes + selectedCompound.est_travel_minutes_max }
+              : null
             return (
               <button key={v.id}
-                className="card p-3 w-full text-right flex items-center gap-3 hover:border-sea/40 transition-colors"
+                className="card px-2.5 py-2.5 w-full text-right flex items-center gap-2.5 hover:border-sea/40 transition-colors"
                 onClick={() => setVendor(v)}>
                 {/* Salka's OWN two errand destinations get an icon; every other
                     vendor in this list is a real brand and keeps its logo.
@@ -452,11 +480,11 @@ export default function CustomOrder() {
                     customer recognises by their mark -- Krispy Kreme, Costa and KFC
                     are the opposite, and stripping their logos made them harder to
                     find, not more consistent. */}
-                <span className="w-12 h-12 rounded-lg overflow-hidden grid place-items-center shrink-0"
+                <span className="w-10 h-10 rounded-lg overflow-hidden grid place-items-center shrink-0 border border-line"
                   style={(v.vendor_type === 'pharmacy' || v.vendor_type === 'supermarket')
                     ? { background: VENDOR_TYPE_ART[v.vendor_type].tint,
                         color: VENDOR_TYPE_ART[v.vendor_type].ink }
-                    : { background: art.tint }}>
+                    : { background: '#F4EEE3' }}>
                   {v.vendor_type === 'pharmacy' || v.vendor_type === 'supermarket'
                     ? <Icon name={VENDOR_TYPE_ART[v.vendor_type].icon} size="lg" />
                     : v.logo_url
@@ -465,8 +493,8 @@ export default function CustomOrder() {
                         : <Icon name="storefront" size="lg" className="text-mist" />}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-2">
-                    <span className="font-bold text-[15px] truncate">{v.name}</span>
+                  <span className="flex items-baseline gap-1.5 min-w-0">
+                    <span className="font-bold text-[15px] truncate leading-tight">{v.name}</span>
                     {/* «مفتوحة» carried no information: a shop that is closed is not
                         in this list at all, so the badge was true of every row and
                         told you nothing. «فترات محددة» stays -- that one is a real
@@ -478,25 +506,51 @@ export default function CustomOrder() {
                   {v.description && (
                     <span className="block text-xs text-mist mt-0.5 truncate">{v.description}</span>
                   )}
-                  <span className="block text-xs text-mist mt-1">
-                    {/* The fee already waited for a compound; the TIME did not, and
-                        it should have. prep_minutes + 20 treats the drive as a
-                        constant, on a coast that runs 31km -- so an unlocated
-                        customer was being quoted a delivery time we cannot know.
-                        Both halves wait for the same answer now. A fixed slot is
-                        different: it is the vendor's own schedule and holds
-                        wherever you are. */}
-                    {deliveryFee === null
-                      ? 'التوصيل والوقت حسب مكانك'
-                      : `التوصيل ${deliveryFee} ج.م · خلال ${v.prep_minutes + 20} دقيقة تقريبًا`}
-                    {/* Slots are the vendor's own schedule, so they hold wherever
-                        you are and print either way. */}
-                    {usesSlots && (next
-                      ? ` · أقرب فترة ${today ? '' : 'بكرة '}${next.start_time.slice(0, 5)}`
-                      : ' · مفيش فترات دلوقتي')}
+                  {/* The same meta row as the home card: rating, time, category,
+                      one weight, bullets between. The fee is gone from here for
+                      the reason it left the home card -- it belongs to the
+                      compound, is identical on every row, and is already stated
+                      in the header above.
+
+                      The TIME still waits for a compound. prep_minutes + a
+                      constant treats the drive as fixed on a coast that runs
+                      31km, so an unlocated customer was quoted a time we cannot
+                      know. A fixed slot is different: it is the vendor's own
+                      schedule and holds wherever you are. */}
+                  <span className="flex items-center gap-1.5 text-[13px] text-mist flex-wrap mt-0.5">
+                    {(v.review_count ?? 0) > 0 && (
+                      <>
+                        <span className="flex items-center gap-1">
+                          <Icon name="star" size="xs" className="text-coral-600" />
+                          <span className="text-foam">{v.rating_real ?? v.rating}</span>
+                        </span>
+                        <span aria-hidden="true" className="text-slate-300">•</span>
+                      </>
+                    )}
+                    {eta ? (
+                      <span className="flex items-center gap-1">
+                        <Icon name="clock" size="xs" className="text-mist" />
+                        <span className="text-seadeep"><bdi dir="ltr">{eta.min} – {eta.max}</bdi> د</span>
+                      </span>
+                    ) : (
+                      <span>الوقت حسب مكانك</span>
+                    )}
+                    {v.category && (
+                      <>
+                        <span aria-hidden="true" className="text-slate-300">•</span>
+                        <span className="truncate">{v.category}</span>
+                      </>
+                    )}
+                    {usesSlots && (
+                      <>
+                        <span aria-hidden="true" className="text-slate-300">•</span>
+                        <span>{next
+                          ? `أقرب فترة ${today ? '' : 'بكرة '}${next.start_time.slice(0, 5)}`
+                          : 'مفيش فترات دلوقتي'}</span>
+                      </>
+                    )}
                   </span>
                 </span>
-                <Icon name="chevronLeft" size="xs" className="text-mist shrink-0" />
               </button>
             )
           })}
@@ -539,29 +593,55 @@ export default function CustomOrder() {
           call nav(-1), which on a cold start from a shared /restaurant/:id link
           -- redirected here with replace:true, so that entry is gone -- either
           did nothing or threw the customer out of the app entirely. */}
-      <button className="text-sm text-mist hover:text-foam mb-3" onClick={() => {
-        const siblings = typeFilter ? vendors.filter(v => v.vendor_type === typeFilter) : vendors
-        if (siblings.length > 1) setVendor(null); else nav('/')
-      }}><Icon name="chevronLeft" size="xs" className="inline-block align-middle ml-1" />رجوع</button>
-      <div className="flex items-center gap-2 mb-1 flex-wrap">
-        <h1 className="text-2xl font-bold">{vendor.name}</h1>
-        <span className="text-[11px] font-bold text-sea bg-sea/10 rounded px-2 py-0.5">
-          {deliveryFee !== null ? `${deliveryFee} ج.م توصيل` : 'التوصيل حسب مكانك'}
-        </span>
+      {/* The same gradient band as the list this screen came from, so the two
+          read as one place. Back is the app's icon button rather than a word,
+          the vendor's mark identifies where you are, and the fee sits with the
+          name instead of on a line of its own. */}
+      <div className="-mx-4 -mt-6 mb-4 px-4 pt-4 pb-5 bg-gradient-to-b from-shellup to-night">
+        <button aria-label="رجوع" title="رجوع"
+          className="grid place-items-center min-w-[44px] min-h-[44px] -mr-2.5 mb-1"
+          onClick={() => {
+            const siblings = typeFilter ? vendors.filter(v => v.vendor_type === typeFilter) : vendors
+            if (siblings.length > 1) setVendor(null); else nav('/')
+          }}>
+          <span className="w-8 h-8 rounded-full bg-white/70 text-slate-700 grid place-items-center">
+            <Icon name="chevronLeft" size="sm" className="rotate-180" />
+          </span>
+        </button>
+        <div className="flex items-center gap-3">
+          <span className="w-12 h-12 rounded-xl overflow-hidden grid place-items-center shrink-0 bg-white/70 border border-line">
+            {vendor.vendor_type === 'pharmacy' || vendor.vendor_type === 'supermarket'
+              ? <Icon name={VENDOR_TYPE_ART[vendor.vendor_type].icon} size="lg"
+                  className="text-[#6B4A18]" />
+              : vendor.logo_url
+                  ? <img src={vendor.logo_url} alt="" className="w-full h-full object-cover" />
+                  : <Icon name="storefront" size="lg" className="text-mist" />}
+          </span>
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold truncate leading-tight">{vendor.name}</h1>
+            <p className="text-[13px] text-mist mt-0.5">
+              {deliveryFee !== null ? `${deliveryFee} ج.م توصيل` : 'التوصيل حسب مكانك'}
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* The four-step numbered card that used to open this screen is now one
-          line plus a disclosure. The promise that matters -- we call you with
-          the price, you can say no, nothing is paid now -- stays visible,
-          because that is the deal being struck. The mechanics moved behind
-          "إزاي بيشتغل؟". Someone who wants paracetamol should not have to read
-          an explainer to get to a text box. */}
-      <p className="text-mist text-sm mb-3">
-        هنتصل بيك بسعر الأصناف قبل ما نجهّز حاجة · مفيش دفع دلوقتي ·{' '}
-        <button className="text-sea font-semibold underline" onClick={() => setHowOpen(o => !o)}>
-          {howOpen ? 'إخفاء' : 'إزاي بيشتغل؟'}
-        </button>
-      </p>
+      {/* The deal being struck, as a card rather than a run-on sentence with a
+          link buried in it. The four-step explainer that used to open this
+          screen is still behind «إزاي بيشتغل؟» -- someone who wants paracetamol
+          should not have to read an explainer to reach a text box. */}
+      <div className="card !bg-shellup p-3.5 mb-4 flex items-start gap-2.5">
+        <Icon name="phone" size="sm" className="text-sea shrink-0 mt-0.5" />
+        <div className="min-w-0">
+          <p className="text-[13px] font-semibold">هنتصل بيك بالسعر قبل ما نجهّز</p>
+          <p className="text-[13px] text-mist mt-0.5">
+            مفيش دفع دلوقتي.{' '}
+            <button className="text-sea font-semibold underline" onClick={() => setHowOpen(o => !o)}>
+              {howOpen ? 'إخفاء' : 'إزاي بيشتغل؟'}
+            </button>
+          </p>
+        </div>
+      </div>
 
       {howOpen && (
         <ol className="card p-4 mb-4 text-sm space-y-2 bg-shellup/50">
@@ -669,8 +749,8 @@ export default function CustomOrder() {
                   aria-pressed={on}
                   className={`card p-3 text-right ${on ? 'border-sea' : ''}`}
                   onClick={() => setSlot(sl)}>
-                  <p className="text-sm font-semibold">{sl.start_time.slice(0, 5)}–{sl.end_time.slice(0, 5)}</p>
-                  <p className="text-xs text-mist mt-0.5">{today ? 'النهاردة' : 'بكرة'} · باقي {sl.remaining}</p>
+                  <p className="text-sm font-semibold"><bdi dir="ltr">{sl.start_time.slice(0, 5)}–{sl.end_time.slice(0, 5)}</bdi></p>
+                  <p className="text-xs text-mist mt-0.5">{today ? 'النهاردة' : 'بكرة'} • باقي {sl.remaining}</p>
                 </button>
               )
             })}
@@ -776,7 +856,7 @@ export default function CustomOrder() {
             <span className="flex-1 min-w-0">
               <span className="block text-sm font-bold">اطلب زي المرة اللي فاتت</span>
               <span className="block text-xs text-mist truncate mt-0.5">
-                {lastRequest.request_items.map(it => it.name).join(' · ')}
+                {lastRequest.request_items.map(it => it.name).join(' • ')}
               </span>
             </span>
           </button>
@@ -906,8 +986,8 @@ export default function CustomOrder() {
             <p className="text-xs text-mist">
               {rxPath && lines.length === 0
                 ? 'روشتة مرفوعة'
-                : [rxPath ? 'روشتة مرفوعة' : null, lines.map(l => `${l.name}${l.qty > 1 ? ` ×${l.qty}` : ''}`).join(' · ')]
-                    .filter(Boolean).join(' · ')}
+                : [rxPath ? 'روشتة مرفوعة' : null, lines.map(l => `${l.name}${l.qty > 1 ? ` ×${l.qty}` : ''}`).join(' • ')]
+                    .filter(Boolean).join(' • ')}
             </p>
           </div>
 
@@ -920,8 +1000,8 @@ export default function CustomOrder() {
           onClick={() => setAddressExpanded(true)}>
           <Icon name="locationDot" size="md" className="shrink-0 mt-0.5" />
           <span className="flex-1 min-w-0">
-            <span className="block font-bold text-sm">{selectedCompound?.name} · {unit}</span>
-            <span className="block text-xs text-mist mt-0.5 truncate">{name} · <span dir="ltr">{phone}</span></span>
+            <span className="block font-bold text-sm">{selectedCompound?.name} • {unit}</span>
+            <span className="block text-xs text-mist mt-0.5 truncate">{name} • <span dir="ltr">{phone}</span></span>
           </span>
           <span className="text-sea text-xs font-semibold shrink-0 mt-1"><Icon name="pencilSimple" size="xs" className="inline-block align-[-0.15em] me-0.5" />تغيير</span>
         </button>
@@ -945,7 +1025,7 @@ export default function CustomOrder() {
                         setAddressExpanded(false)
                       }}>
                       <span className="block text-sm font-bold">{a.label || a.compound_name}</span>
-                      <span className="block text-xs text-mist">{a.compound_name} · {a.unit_number}</span>
+                      <span className="block text-xs text-mist">{a.compound_name} • {a.unit_number}</span>
                     </button>
                   )
                 })}

@@ -124,7 +124,7 @@ export default function VendorHoursRow({ restaurant, onSaved }: {
             <input type="time" dir="ltr" aria-label={`فتح ${d.label}`} disabled={v.closed}
               className="field !h-9 !w-24 text-center !text-[11.5px] disabled:opacity-40"
               value={v.opens} onChange={e => set(d.dow, { opens: e.target.value })} />
-            <span className="text-mist text-[11px]">—</span>
+            <span className="text-mist text-[11px]">-</span>
             <input type="time" dir="ltr" aria-label={`قفل ${d.label}`} disabled={v.closed}
               className="field !h-9 !w-24 text-center !text-[11.5px] disabled:opacity-40"
               value={v.closes} onChange={e => set(d.dow, { closes: e.target.value })} />

@@ -40,7 +40,7 @@ export default function Observer() {
         {cards.map(([label, value]) => <div className="card p-4" key={String(label)}><p className="text-sm text-mist">{label}</p><p className="text-3xl font-black mt-1">{value}</p></div>)}
       </div>
       <div className="card overflow-hidden"><div className="p-4 border-b border-line"><h2 className="font-bold">آخر الطلبات</h2><p className="text-xs text-mist mt-1">بدون أسماء عملاء أو أرقام أو مبالغ</p></div>
-        <div className="divide-y divide-line">{board.recent.map(o => <div className="p-4 flex justify-between gap-4" key={o.id}><div><p className="font-semibold">طلب #{o.id}: {o.restaurant_name}</p><p className="text-sm text-mist mt-1">{o.status}{o.kitchen_status ? ' · ' + o.kitchen_status : ''}</p></div><time className="text-xs text-mist shrink-0">{new Date(o.created_at).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}</time></div>)}
+        <div className="divide-y divide-line">{board.recent.map(o => <div className="p-4 flex justify-between gap-4" key={o.id}><div><p className="font-semibold">طلب #{o.id}: {o.restaurant_name}</p><p className="text-sm text-mist mt-1">{o.status}{o.kitchen_status ? ' • ' + o.kitchen_status : ''}</p></div><time className="text-xs text-mist shrink-0">{new Date(o.created_at).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})}</time></div>)}
         {board.recent.length === 0 && <p className="p-5 text-sm text-mist">لا توجد طلبات بعد.</p>}</div>
       </div>
     </>}

@@ -252,7 +252,7 @@ export default function Supervisor() {
 
   const addr = (o: Order) => {
     const addressNote = o.address_notes?.trim()
-    return `${o.zone ?? '—'} · وحدة ${o.unit_number ?? '—'}${addressNote ? ` · ${addressNote}` : ''}`
+    return `${o.zone ?? '-'} • وحدة ${o.unit_number ?? '-'}${addressNote ? ` • ${addressNote}` : ''}`
   }
 
   if (loading) return <p className="text-mist text-center py-10">جاري التحميل…</p>
@@ -294,7 +294,7 @@ export default function Supervisor() {
               <div key={a.id} className="bg-night border border-line rounded-xl p-3">
                 <p className="font-semibold text-sm">طلب #{a.order_id}: {a.orders?.restaurants?.name}</p>
                 <p className="text-xs text-mist mt-0.5">
-                  <Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />{a.drivers?.name} · <Icon name="user" size="xs" className="inline-block align-[-0.15em] me-1" />{a.orders?.customer_name} ·{' '}
+                  <Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />{a.drivers?.name} • <Icon name="user" size="xs" className="inline-block align-[-0.15em] me-1" />{a.orders?.customer_name} •{' '}
                   <a className="text-sea" dir="ltr" href={`tel:${a.orders?.customer_phone}`}>{a.orders?.customer_phone}</a>
                 </p>
                 <p className="text-xs text-coral-700 mt-1">
@@ -338,8 +338,8 @@ export default function Supervisor() {
               <div key={o.id} className="card p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <h3 className="font-bold">#{o.id} · {o.restaurants?.name}</h3>
-                    <p className="text-xs text-mist mt-0.5"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
+                    <h3 className="font-bold">#{o.id} • {o.restaurants?.name}</h3>
+                    <p className="text-xs text-mist mt-0.5"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
                     <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{addr(o)}</p>
                   </div>
                   <div className="text-left shrink-0">
@@ -382,8 +382,8 @@ export default function Supervisor() {
           <div key={o.id} className="card p-4">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <h3 className="font-bold">#{o.id} · {o.restaurants?.name}</h3>
-                <p className="text-xs text-mist mt-0.5"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
+                <h3 className="font-bold">#{o.id} • {o.restaurants?.name}</h3>
+                <p className="text-xs text-mist mt-0.5"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
                 <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{addr(o)}</p>
               </div>
               <div className="text-left shrink-0">
@@ -407,7 +407,7 @@ export default function Supervisor() {
                     <button key={m} className="btn-sea !py-2 text-sm flex-1"
                       disabled={busy === `accept:${o.id}`}
                       onClick={() => accept(o, m)}>
-                      {busy === `accept:${o.id}` ? '…' : `قبل · ${m} د`}
+                      {busy === `accept:${o.id}` ? '…' : `قبل • ${m} د`}
                     </button>
                   ))}
                 </div>
@@ -438,8 +438,8 @@ export default function Supervisor() {
           <div key={o.id} className="card p-4">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="font-bold text-sm">#{o.id} · {o.restaurants?.name}</p>
-                <p className="text-xs text-mist mt-0.5"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
+                <p className="font-bold text-sm">#{o.id} • {o.restaurants?.name}</p>
+                <p className="text-xs text-mist mt-0.5"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
                 <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{addr(o)}</p>
               </div>
               <div className="text-left shrink-0">
@@ -473,10 +473,10 @@ export default function Supervisor() {
           <div key={a.id} className="card p-4">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="font-bold text-sm truncate">#{a.order_id} · {a.orders?.restaurants?.name}</p>
-                <p className="text-xs text-mist mt-0.5"><Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />{a.drivers?.name} · محاولة {a.attempt_number}</p>
-                {a.orders && <p className="text-xs text-mist mt-0.5"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{a.orders.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${a.orders.customer_phone}`}>{a.orders.customer_phone}</a></p>}
-                <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{a.orders ? addr(a.orders) : '—'}</p>
+                <p className="font-bold text-sm truncate">#{a.order_id} • {a.orders?.restaurants?.name}</p>
+                <p className="text-xs text-mist mt-0.5"><Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />{a.drivers?.name} • محاولة {a.attempt_number}</p>
+                {a.orders && <p className="text-xs text-mist mt-0.5"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{a.orders.customer_name} • <a className="text-sea" dir="ltr" href={`tel:${a.orders.customer_phone}`}>{a.orders.customer_phone}</a></p>}
+                <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{a.orders ? addr(a.orders) : '-'}</p>
               </div>
               <span className="text-xs font-semibold bg-shellup rounded-full px-2.5 py-1 shrink-0">
                 {assignmentStatusLabel(a.status)}
@@ -511,7 +511,7 @@ export default function Supervisor() {
                   disabled={!!busy}
                   onClick={() => assign(assigning, d)}>
                   <span className="block font-semibold text-sm">{d.name}</span>
-                  <span className="block text-xs text-mist">{d.vehicle_type === 'van' ? 'فان' : 'موتوسيكل'} · {d.phone}</span>
+                  <span className="block text-xs text-mist">{d.vehicle_type === 'van' ? 'فان' : 'موتوسيكل'} • {d.phone}</span>
                 </button>
               ))}
             </div>
@@ -583,8 +583,8 @@ function QuoteCard({ order, addr, busy, onConfirm, onCancel }: {
     <div className="card p-4">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="font-bold">#{order.id} · {order.restaurants?.name}</h3>
-          <p className="text-xs text-mist mt-0.5"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{order.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${order.customer_phone}`}>{order.customer_phone}</a></p>
+          <h3 className="font-bold">#{order.id} • {order.restaurants?.name}</h3>
+          <p className="text-xs text-mist mt-0.5"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{order.customer_name} • <a className="text-sea" dir="ltr" href={`tel:${order.customer_phone}`}>{order.customer_phone}</a></p>
           <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{addr}</p>
         </div>
         <span className={`text-xs font-semibold rounded-full px-2.5 py-1 shrink-0 ${
