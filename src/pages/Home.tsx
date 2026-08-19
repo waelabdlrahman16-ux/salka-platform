@@ -448,18 +448,12 @@ export default function Home() {
             <span className="font-bold text-[17px] truncate">{selected ? selected.name : 'اختر مكانك'}</span>
             <span className="text-mist text-xs shrink-0">▾</span>
           </span>
-          {/* The reason, but only while there is no answer yet. Once a compound
-              is set the name above says everything and this would be noise on
-              every subsequent visit. This replaced a separate full-width card
-              that repeated the question a second time, lower down the page. */}
-          {!selected && (
-            <span className="block text-[11px] text-mist mt-0.5">
-              عشان نعرفك سعر التوصيل والمطاعم اللي بتوصلك
-            </span>
-          )}
         </button>
+        {/* Neutral, not coral. A delivery fee is an ordinary fact, and coral is
+            the accent colour -- it made the one number nobody is worried about
+            the loudest thing in the header. */}
         {deliveryFee !== null && (
-          <span className="shrink-0 text-[11px] font-bold text-coral-700 bg-coral-200 rounded-lg px-2.5 py-1 mt-3">
+          <span className="shrink-0 text-[11px] font-bold text-mist bg-shellup border border-line rounded-lg px-2.5 py-1 mt-3">
             {deliveryFee} ج.م توصيل
           </span>
         )}
@@ -541,28 +535,35 @@ export default function Home() {
 
       {!loading && (
         <div id="restaurants">
-          {kind && (
-            <div className="flex justify-end mb-2">
-              <button className="text-sm text-seadeep font-semibold" onClick={() => setKind(null)}>
-                إلغاء الفلتر
-              </button>
-            </div>
-          )}
-
           {/* Browse by kind. Until now the only way to find food was to already
               know which restaurant sold it -- there was no way to ask "who does
               seafood?". Only kinds that actually have a vendor delivering here
               are offered, so tapping one can never land on an empty list. */}
+          {/* Two lines, icon over label. On one line the emoji and the word
+              competed for the same horizontal space and the rail read as a run of
+              similar-width pills. Stacked, the icon is what you scan and the word
+              confirms it.
+
+              The idle state was bg-shellup/60 -- a 60% wash of an already pale
+              surface, so a chip barely separated from the page. Solid surface with
+              a real border now, and the active state is ink rather than a tint, so
+              which one is on is unmistakable.
+
+              There is no «إلغاء الفلتر» button any more: onClick already does
+              setKind(kind === k ? null : k), so tapping the active chip clears it.
+              The button was a second control for behaviour the chip already had. */}
           {availableKinds.length > 1 && (
             <div className="flex gap-2 overflow-x-auto pb-1 mb-4 -mx-4 px-4 scrollbar-none">
               {availableKinds.map(({ kind: k, emoji }) => {
                 return (
-                  <button key={k}
-                    className={`tab shrink-0 ${kind === k ? 'tab-active' : 'bg-shellup/60'}`}
+                  <button key={k} aria-pressed={kind === k}
+                    className={`shrink-0 w-[74px] rounded-xl border px-2 py-2 transition-colors ${
+                      kind === k
+                        ? 'bg-foam text-night border-foam'
+                        : 'bg-shell border-line text-foam hover:border-sea/40'}`}
                     onClick={() => setKind(kind === k ? null : k)}>
-                    <span className="flex items-center gap-1.5">
-                      <span aria-hidden="true">{emoji}</span>{k}
-                    </span>
+                    <span className="block text-xl leading-none" aria-hidden="true">{emoji}</span>
+                    <span className="block text-[11px] font-bold mt-1 truncate">{k}</span>
                   </button>
                 )
               })}

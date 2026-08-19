@@ -446,31 +446,45 @@ export default function CustomOrder() {
               <button key={v.id}
                 className="card p-3 w-full text-right flex items-center gap-3 hover:border-sea/40 transition-colors"
                 onClick={() => setVendor(v)}>
-                {/* Tighter than a restaurant card: these are two fixed shops the
-                    customer already knows, not a browsable list, so the logo is
-                    an identifier rather than the subject. */}
-                <span className="w-12 h-12 rounded-lg overflow-hidden grid place-items-center text-xl shrink-0"
+                {/* An ICON, not the shop's logo. The home tiles for these same two
+                    destinations use icons, and a row of brand marks here made the
+                    list look like a different product from the one that sent you.
+                    These are errands, not brands you are browsing. */}
+                <span className="w-12 h-12 rounded-lg grid place-items-center shrink-0"
                   style={{ background: art.tint }}>
-                  {v.logo_url
-                    ? <img src={v.logo_url} alt="" loading="eager" className="w-full h-full object-cover"
-                        onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
-                    : <Icon name={v.vendor_type === 'pharmacy' ? 'pill' : 'cartShopping'} size="md" className="text-mist" />}
+                  <Icon name={v.vendor_type === 'pharmacy' ? 'pill' : 'cartShopping'}
+                    size="lg" className="text-foam" />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-2">
                     <span className="font-bold text-[15px] truncate">{v.name}</span>
-                    {usesSlots
-                      ? <span className="shrink-0 text-[10px] font-bold text-coral-700 bg-coral-200 rounded px-1.5 py-0.5">فترات محددة</span>
-                      : <span className="shrink-0 text-[10px] font-bold text-sea bg-sea/10 rounded px-1.5 py-0.5">مفتوحة</span>}
+                    {/* «مفتوحة» carried no information: a shop that is closed is not
+                        in this list at all, so the badge was true of every row and
+                        told you nothing. «فترات محددة» stays -- that one is a real
+                        difference between two rows. */}
+                    {usesSlots && (
+                      <span className="shrink-0 text-[10px] font-bold text-mist bg-shellup border border-line rounded px-1.5 py-0.5">فترات محددة</span>
+                    )}
                   </span>
                   {v.description && (
                     <span className="block text-xs text-mist mt-0.5 truncate">{v.description}</span>
                   )}
                   <span className="block text-xs text-mist mt-1">
-                    {deliveryFee !== null ? `التوصيل ${deliveryFee} ج.م` : 'التوصيل حسب مكانك'}
-                    {usesSlots
-                      ? next ? ` · أقرب فترة ${today ? '' : 'بكرة '}${next.start_time.slice(0, 5)}` : ' · مفيش فترات دلوقتي'
-                      : ` · خلال ${v.prep_minutes + 20} دقيقة تقريبًا`}
+                    {/* The fee already waited for a compound; the TIME did not, and
+                        it should have. prep_minutes + 20 treats the drive as a
+                        constant, on a coast that runs 31km -- so an unlocated
+                        customer was being quoted a delivery time we cannot know.
+                        Both halves wait for the same answer now. A fixed slot is
+                        different: it is the vendor's own schedule and holds
+                        wherever you are. */}
+                    {deliveryFee === null
+                      ? 'التوصيل والوقت حسب مكانك'
+                      : `التوصيل ${deliveryFee} ج.م · خلال ${v.prep_minutes + 20} دقيقة تقريبًا`}
+                    {/* Slots are the vendor's own schedule, so they hold wherever
+                        you are and print either way. */}
+                    {usesSlots && (next
+                      ? ` · أقرب فترة ${today ? '' : 'بكرة '}${next.start_time.slice(0, 5)}`
+                      : ' · مفيش فترات دلوقتي')}
                   </span>
                 </span>
                 <Icon name="chevronLeft" size="xs" className="text-mist shrink-0" />
