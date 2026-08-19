@@ -52,12 +52,6 @@ export default function RestaurantDetail() {
   // people do not have, on a screen whose job is to show food. The magnifier
   // on the cover opens it, which is the same control Talabat uses.
   const [searchOpen, setSearchOpen] = useState(false)
-  // The chip bar pins ONLY while you are navigating by tab. Tapping a chip
-  // pins it and brings that section to the top under it; the next scroll you
-  // make yourself releases it, and the whole header travels with the page
-  // again. Pinned permanently it was a bar you never asked for occupying the
-  // top of every screenful.
-  const [chipsPinned, setChipsPinned] = useState(false)
   // Which section the customer is currently looking at, tracked so the sticky
   // bar can say where they are. Every section is rendered at once now -- the
   // chips scroll to a heading rather than filtering the page down to one.
@@ -89,9 +83,23 @@ export default function RestaurantDetail() {
   // jump rather than a slower animation. The tapped chip also slides itself
   // into view horizontally, so the bar never leaves the active chip offscreen.
   const chipBarRef = useRef<HTMLDivElement | null>(null)
+  // «الكل» returns to the top of the menu rather than filtering: the list is
+  // already complete, so "all" can only mean "start again from the beginning".
+  const jumpToAll = () => {
+    setActiveCat(ALL)
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const first = document.querySelector<HTMLElement>('section[data-cat]')
+    if (!first) return
+    const bar = chipBarRef.current
+    const barH = bar?.getBoundingClientRect().height ?? 0
+    const stickyTop = bar ? parseFloat(getComputedStyle(bar).top) || 0 : 0
+    const top = Math.max(0, first.getBoundingClientRect().top + window.scrollY - stickyTop - barH - 8)
+    const far = Math.abs(top - window.scrollY) > window.innerHeight * 2
+    window.scrollTo({ top, behavior: reduce || far ? 'auto' : 'smooth' })
+  }
+
   const jumpToCategory = (cat: string) => {
     setActiveCat(cat)
-    setChipsPinned(true)
     const section = document.getElementById(`cat-${cat}`)
     if (!section) return
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -129,22 +137,6 @@ export default function RestaurantDetail() {
   // Same rule as the home card: the vendor's own cover when set, otherwise
   // the best-ranked photographed dish, computed server-side.
   const cover = restaurant?.cover_image_url || restaurant?.hero_image_url || null
-
-  useEffect(() => {
-    if (!chipsPinned) return
-    // wheel/touchmove/keydown, not 'scroll': the jump we just performed emits
-    // scroll events too, and listening for those would unpin the bar
-    // instantly every time.
-    const release = () => setChipsPinned(false)
-    window.addEventListener('wheel', release, { passive: true })
-    window.addEventListener('touchmove', release, { passive: true })
-    window.addEventListener('keydown', release)
-    return () => {
-      window.removeEventListener('wheel', release)
-      window.removeEventListener('touchmove', release)
-      window.removeEventListener('keydown', release)
-    }
-  }, [chipsPinned])
 
   const [loadFailed, setLoadFailed] = useState(false)
   const [catalogRevision, setCatalogRevision] = useState(0)
@@ -606,26 +598,27 @@ export default function RestaurantDetail() {
             </p>
           )}
 
-          {/* The chips SCROLL to a section, they no longer filter to one.
-              "الكل" is gone with them: it was never a category, and its presence
-              meant the first real section was hidden behind a choice. Now the
-              whole menu is on the page and the chips are a way to jump, which
-              is also what makes the sticky bar able to say which section you
-              are in. */}
+          {/* The chips SCROLL to a section, they do not filter to one -- the
+              whole menu is on the page. «الكل» is the way back to the start of
+              it, on every restaurant. */}
           {categories.length > 1 && !menuQuery && (
           // Pins below the compact header, not under it. That bar is `fixed`
           // and 48px tall, so a chip row stuck to top-0 slid straight beneath
           // it and the chips were unreadable while scrolling.
           <div ref={chipBarRef}
-            style={chipsPinned ? { top: 'calc(env(safe-area-inset-top) + 48px)' } : undefined}
-            className={`flex gap-2 overflow-x-auto pt-2 pb-2 mb-2 -mx-4 px-4 bg-night scrollbar-none ${
-              chipsPinned ? 'sticky z-20' : ''}`}>
+            style={{ top: 'calc(env(safe-area-inset-top) + 48px)' }}
+            className="sticky z-20 flex gap-2 overflow-x-auto pt-2 pb-2 mb-2 -mx-4 px-4 bg-night scrollbar-none">
+            <button data-chip={ALL}
+              className={`tab shrink-0 ${activeCat === ALL ? 'tab-active' : 'bg-shellup/60'}`}
+              onClick={() => jumpToAll()}>الكل</button>
             {categories.map(cat => (
               <button key={cat} data-chip={cat}
                 // The tap highlights the chip itself; the scroll observer then
                 // takes over as you move through the menu. Waiting for the
                 // observer meant tapping a chip gave no feedback at all.
-                className={`tab shrink-0 ${(visibleCat ?? (activeCat === ALL ? null : activeCat)) === cat ? 'tab-active' : 'bg-shellup/60'}`}
+                // While «الكل» is the choice, no section chip is highlighted --
+                // otherwise two chips read as active at once.
+                className={`tab shrink-0 ${activeCat !== ALL && (visibleCat ?? activeCat) === cat ? 'tab-active' : 'bg-shellup/60'}`}
                 onClick={() => jumpToCategory(cat)}>{cat}</button>
             ))}
           </div>
