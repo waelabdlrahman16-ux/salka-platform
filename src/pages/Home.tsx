@@ -488,11 +488,15 @@ export default function Home() {
           <span className="font-bold text-[17px] truncate">{selected ? selected.name : 'اختر مكانك'}</span>
           <Icon name="caretDown" size="xs" className="text-mist shrink-0" />
         </button>
-        {/* Its own badge at the far end of the row, centred against the place
-            rather than hung 12px below it. */}
+        {/* Its own badge at the far end of the row, and the same 44px height as
+            the place control beside it, so the row reads as two aligned
+            controls rather than a heading with something stuck to it. The word
+            «توصيل» is the motorcycle glyph -- the icon says delivery in less
+            space than the word. */}
         {deliveryFee !== null && (
-          <span className="shrink-0 text-[11px] font-bold text-mist bg-shellup border border-line rounded-lg px-2.5 py-1">
-            {deliveryFee} ج.م توصيل
+          <span className="shrink-0 h-11 flex items-center gap-1.5 text-[12px] font-bold text-mist bg-shellup border border-line rounded-xl px-3">
+            <Icon name="motorcycle" size="sm" className="text-mist" />
+            {deliveryFee} ج.م
           </span>
         )}
       </div>
