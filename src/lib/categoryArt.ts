@@ -122,7 +122,13 @@ const DEFAULT: Art = { emoji: '🍽️', tint: TINT.neutral }
  *   ـ      dropped  tatweel, a purely typographic stretch
  *   leading "ال"   "الدجاج" and "دجاج" are the same category
  */
-function normalise(s: string): string {
+// Exported because the home search needed exactly this and did not have it: a
+// customer typing «كشرى» found nothing, because the vendor is «كشري بلازا».
+// Arabic has several spellings of the same word and a raw includes() treats
+// them as different strings. This file already knew that -- it was written
+// because the data said «الدجاج» and the map said «دجاج» -- so search should
+// use the same folding rather than grow its own.
+export function normaliseArabic(s: string): string {
   const folded = (s || '')
     .replace(/ـ/g, '')
     .replace(/[أإآ]/g, 'ا')
@@ -132,6 +138,8 @@ function normalise(s: string): string {
     .trim()
   return folded.startsWith('ال') ? folded.slice(2) : folded
 }
+
+const normalise = normaliseArabic
 
 // Built once, sorted longest-key-first so substring matching cannot pick a
 // shorter, wronger entry: "سندويتشات دجاج" must match the sandwich, not the

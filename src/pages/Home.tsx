@@ -5,7 +5,7 @@ import { useDismissable } from '../lib/useDismissable'
 import { haversineKm } from '../lib/geo'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { openLabel } from '../lib/vendorHours'
-import { BROWSE_KINDS, vendorKind, type VendorKind } from '../lib/categoryArt'
+import { BROWSE_KINDS, vendorKind, normaliseArabic, type VendorKind } from '../lib/categoryArt'
 import Icon from '../components/Icon'
 import BannerRail from '../components/BannerRail'
 import RestaurantCard from '../components/RestaurantCard'
@@ -374,16 +374,28 @@ export default function Home() {
   const closedRestaurants = shownRestaurants.filter(r => !r.is_open)
   // Vendor names are matched locally -- the list is already in memory and a
   // round trip to match nine names would be silly.
+  // Folded on both sides, not just lowercased: «كشرى» and «كشري» are the same
+  // word to a customer and two different strings to includes().
   const matchedVendors = foodQ.trim().length >= 2
-    ? catalogRestaurants.filter(r =>
-        r.name.toLowerCase().includes(foodQ.trim().toLowerCase()) ||
-        (r.category ?? '').toLowerCase().includes(foodQ.trim().toLowerCase()))
+    ? (() => {
+        const q = normaliseArabic(foodQ).toLowerCase()
+        return catalogRestaurants.filter(r =>
+          normaliseArabic(r.name).toLowerCase().includes(q) ||
+          normaliseArabic(r.category ?? '').toLowerCase().includes(q))
+      })()
     : []
   const filtered = search.trim() ? compounds.filter(c => c.name.toLowerCase().includes(search.toLowerCase())) : []
 
-  // Needs a compound the same way the restaurant list does -- without one
-  // there is nothing for either destination to deliver to yet.
-  const quickAccessTiles = compoundId ? (
+  // These used to be gated on compoundId, on the reasoning that "without one
+  // there is nothing for either destination to deliver to yet". That is the
+  // same argument finding 01 overturned for the restaurant list: gating the
+  // storefront on a location is what turned 4,770 ad clicks into zero orders.
+  // The fix was applied to the vendor list and not to these, so two of the
+  // three businesses stayed invisible to anyone who had not picked a place.
+  //
+  // /custom-order carries its own compound state and its own picker, so it is
+  // perfectly able to ask when it actually needs to know.
+  const quickAccessTiles = (
     <div className="grid grid-cols-2 gap-2.5 mb-4">
       <Link to="/custom-order?type=supermarket" className="card p-2.5 flex items-center gap-2 hover:border-sea/50 transition-colors">
         <span className="w-8 h-8 rounded-lg grid place-items-center text-base shrink-0" style={{ background: 'rgba(212,163,42,.12)' }}><Icon name="cartShopping" size="sm" className="text-ink" /></span>
@@ -394,7 +406,7 @@ export default function Home() {
         <span className="font-bold text-sm truncate">صيدلية</span>
       </Link>
     </div>
-  ) : null
+  )
 
   // Interleave the restaurant list with the featured-products shelf (once,
   // after the 3rd card) and feed ads (round-robin, every 5th card after
@@ -455,19 +467,31 @@ export default function Home() {
 
       {/* One box, two kinds of answer: vendor names matched locally, dishes
           matched on the server across every vendor delivering here. */}
-      {compoundId && (
-        <div className="relative mb-3">
-          <input className="field !pr-10" value={foodQ} onChange={e => setFoodQ(e.target.value)}
-            aria-label="دوّر على مطعم أو أكلة"
-            placeholder="دوّر على مطعم أو أكلة…" />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mist pointer-events-none">
-            <Icon name="magnifyingGlass" size="sm" />
-          </span>
-          {foodQ.trim() && (
-            <button className="absolute left-3 top-1/2 -translate-y-1/2 text-mist text-sm"
-              aria-label="مسح" onClick={() => setFoodQ('')}><Icon name="x" size="sm" /></button>
-          )}
-        </div>
+      {/* The box itself was gated on compoundId, so a first-time visitor -- the
+          exact person a paid click delivers -- had no way to search at all.
+          Vendor names are matched client-side and need no location, so the box
+          works the moment it is shown.
+
+          Dish search still does need one: searchMenu calls
+          search_menu_for_compound, which is scoped to a compound by design.
+          Rather than hide the whole control for the half it cannot do, say so
+          when someone types without a place set. */}
+      <div className="relative mb-3">
+        <input className="field !pr-10" value={foodQ} onChange={e => setFoodQ(e.target.value)}
+          aria-label="دوّر على مطعم أو أكلة"
+          placeholder={compoundId ? 'دوّر على مطعم أو أكلة…' : 'دوّر على مطعم…'} />
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mist pointer-events-none">
+          <Icon name="magnifyingGlass" size="sm" />
+        </span>
+        {foodQ.trim() && (
+          <button className="absolute left-3 top-1/2 -translate-y-1/2 text-mist text-sm"
+            aria-label="مسح" onClick={() => setFoodQ('')}><Icon name="x" size="sm" /></button>
+        )}
+      </div>
+      {!compoundId && foodQ.trim().length >= 2 && (
+        <p className="text-xs text-mist -mt-1 mb-3">
+          اختار مكانك عشان ندوّرلك في الأصناف كمان، مش في أسامي المطاعم بس
+        </p>
       )}
 
       {/* Ads sit above the fee strip but below the place picker: the compound
