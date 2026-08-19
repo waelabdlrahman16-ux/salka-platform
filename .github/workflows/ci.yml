@@ -119,6 +119,12 @@ jobs:
         # That is a property of the current bodies, not a guarantee, and it is
         # what a rewrite removes silently. credit_wallet already lacked it and
         # could be paid twice until #147.
+        #
+        # Guarded like the two steps around it. Without the secret this script
+        # exits 2 with a clear message, so it was never opaque -- but it FAILED
+        # where the order and promo steps SKIP, which made the same missing
+        # secret mean two different things inside one job.
+        if: steps.creds.outputs.have == 'true'
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: npm run test:money
@@ -141,6 +147,26 @@ jobs:
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: npm run test:promo
+
+      # Dispatch was the last untested load-bearing path. 44 assertions across
+      # admin_assign_order, driver accept/reject, the four-delivery cap, the
+      # direction rule, admin_unassign_order and the full pickup -> out for
+      # delivery -> no-answer ladder.
+      #
+      # The guard worth naming: a test order cannot be put on a live driver and
+      # a live order cannot be put on a test driver, and p_force does NOT
+      # override it. A real driver sent to a test address is a wasted trip, and
+      # a test delivery on a real driver is how phantom cash reaches his
+      # account. That rule is one line in one function and nothing else checks
+      # it.
+      #
+      # This suite refuses to run if the test driver's profile holds any push
+      # token, because delivery_assignments carries a notify trigger.
+      - name: Exercise driver assignment and roll it back
+        if: steps.creds.outputs.have == 'true'
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: npm run test:dispatch
 
       - name: Place a test order and roll it back
         if: steps.creds.outputs.have == 'true'
