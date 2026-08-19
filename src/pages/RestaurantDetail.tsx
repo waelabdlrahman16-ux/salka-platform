@@ -454,9 +454,11 @@ export default function RestaurantDetail() {
               the photograph, which is the one thing on this screen doing the
               selling. */}
           <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/35 to-transparent" />
-          <div className="absolute inset-x-0 top-0 flex items-center justify-between px-3 pt-3">
+          {/* px-4 with the -mr/-ml pulls cancelled: the visible discs line up
+              with the identity card's edges below them, not 4px inside. */}
+          <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-4">
             <Link to="/" aria-label="رجوع" title="رجوع"
-              className="grid place-items-center min-w-[44px] min-h-[44px] -mr-2.5">
+              className="grid place-items-center min-w-[44px] min-h-[44px] -mr-1">
               {/* The page is RTL, so "back" is to the RIGHT. Icon.tsx only ships
                   chevronLeft, so it is mirrored rather than adding a glyph. */}
               <span className="w-9 h-9 rounded-full bg-white/95 text-slate-700 grid place-items-center shadow-sm">
@@ -465,7 +467,7 @@ export default function RestaurantDetail() {
             </Link>
             {items.length > 8 && (
               <button aria-label="بحث في القايمة" title="بحث في القايمة"
-                className="grid place-items-center min-w-[44px] min-h-[44px] -ml-2.5"
+                className="grid place-items-center min-w-[44px] min-h-[44px] -ml-1"
                 onClick={() => {
                   setSearchOpen(true)
                   setTimeout(() => document.getElementById('menu-search')?.focus(), 60)
@@ -481,9 +483,24 @@ export default function RestaurantDetail() {
         {/* Lifted over the photo's bottom edge, so the two read as one object
             rather than a picture with a paragraph under it. */}
         <div className="card mx-4 -mt-9 relative z-10 p-3 flex items-center gap-3">
-          {restaurant.logo_url
-            ? <img src={sized(restaurant.logo_url, IMG.icon)} alt="" className="w-14 h-14 rounded-xl object-cover shrink-0 border border-line bg-white" />
-            : <div className="w-14 h-14 rounded-xl bg-shellup grid place-items-center shrink-0 text-xl font-bold text-mist">{restaurant.name.charAt(0)}</div>}
+          {/* Closed is stated on the artwork, not in a card of its own. The
+              card said «مقفول دلوقتي» in words and then offered a way out --
+              a whole block of chrome for a fact the greyed-out photograph
+              already tells you. The mark carries the word so it survives
+              wherever the eye lands. */}
+          <div className="relative w-14 h-14 shrink-0">
+            {restaurant.logo_url
+              ? <img src={sized(restaurant.logo_url, IMG.icon)} alt=""
+                  className={`w-14 h-14 rounded-xl object-cover border border-line bg-white ${restaurant.is_open ? '' : 'grayscale'}`} />
+              : <div className={`w-14 h-14 rounded-xl bg-shellup grid place-items-center text-xl font-bold text-mist ${restaurant.is_open ? '' : 'grayscale'}`}>{restaurant.name.charAt(0)}</div>}
+            {!restaurant.is_open && (
+              // A scrim under the word, or «مقفول» sits on whatever colour the
+              // logo happens to be and is unreadable on half of them.
+              <span className="absolute inset-0 rounded-xl bg-black/55 grid place-items-center text-white text-[11px] font-bold">
+                مقفول
+              </span>
+            )}
+          </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-lg font-bold truncate leading-tight">{restaurant.name}</h1>
             <div className="flex items-center gap-1.5 text-[13px] text-mist flex-wrap mt-1">
@@ -557,18 +574,6 @@ export default function RestaurantDetail() {
               could be ordered. That loses the app, not just the restaurant.
               The menu stays browsable on purpose; people look before a place
               opens. What is blocked is ordering, and there is a way out. */}
-          {!restaurant.is_open && (
-            <div className="card p-4 mb-4 bg-shellup border-none">
-              <p className="font-bold text-sm">مقفول دلوقتي</p>
-              <p className="text-xs text-mist mt-1 mb-3">
-                تقدر تتفرج على القايمة، بس مش هينفع تطلب لحد ما يفتح.
-              </p>
-              <Link to="/" className="btn-ghost !py-2.5 text-sm !flex items-center justify-center">
-                شوف المطاعم المفتوحة دلوقتي
-              </Link>
-            </div>
-          )}
-
           {/* Search before the category pills, because it answers a different
               and more common question: "do they have X?" rather than "show me
               everything under Y". */}
@@ -722,7 +727,7 @@ export default function RestaurantDetail() {
         <div className="fixed inset-x-0 z-30 px-4"
           // 68px used to clear the bottom tab bar; that bar no longer renders
           // on this page, so the gap was empty space.
-          style={{ bottom: 'calc(env(safe-area-inset-bottom) + 40px)' }}>
+          style={{ bottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}>
           <button className="max-w-lg mx-auto w-full bg-sea text-white rounded-2xl shadow-lg px-4 py-3.5 flex items-center justify-between gap-3"
             onClick={() => nav('/cart')}>
             <span className="flex items-center gap-2 min-w-0">

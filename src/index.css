@@ -28,7 +28,7 @@ body { @apply bg-night text-foam antialiased; overflow-x: hidden; overflow-x: cl
    inline-flex + centring is what makes the floor actually raise the box instead
    of leaving the label stuck to the top edge; every .btn in this codebase wraps
    a single run of text or an emoji, so nothing reflows. */
-.btn { @apply inline-flex items-center justify-center gap-1.5 min-h-[44px] rounded-xl px-4 py-2.5 font-semibold transition-colors disabled:opacity-40 disabled:pointer-events-none; }
+.btn { @apply inline-flex items-center justify-center gap-1.5 min-h-[44px] rounded-full px-5 py-2.5 font-semibold transition-colors disabled:opacity-40 disabled:pointer-events-none; }
 .btn-sea { @apply btn bg-sea text-white hover:bg-seadeep; }
 .btn-ghost { @apply btn bg-shellup text-foam hover:bg-line; }
 .btn-danger { @apply btn bg-dangerbg text-danger hover:bg-dangerbg; }
