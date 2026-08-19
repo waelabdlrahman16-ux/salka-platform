@@ -174,7 +174,7 @@ function BottomNav() {
   // 4.5:1 that 10-11px text needs. One active colour for all five now.
   const items = [
     { to: '/', label: 'الرئيسية', icon: 'house' as const },
-    { to: '/custom-order', label: 'هنجبلك', icon: 'truck' as const },
+    { to: '/custom-order', label: 'هنجبلك', icon: 'van' as const },
     { to: '/offers', label: 'العروض', icon: 'tag' as const },
     { to: '/cart', label: 'عربتي', icon: 'cartShopping' as const, badge: cart.count },
     { to: '/profile', label: 'حسابي', icon: 'circleUser' as const },
