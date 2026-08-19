@@ -626,19 +626,31 @@ export default function RestaurantDetail() {
           // it and the chips were unreadable while scrolling.
           <div ref={chipBarRef}
             style={{ top: 'calc(env(safe-area-inset-top) + 48px)' }}
-            className="sticky z-20 flex gap-2 overflow-x-auto pt-2 pb-2 mb-2 -mx-4 px-4 bg-night scrollbar-none">
-            <button data-chip={ALL}
-              className={`tab shrink-0 ${activeCat === ALL ? 'tab-active' : 'bg-shellup/60'}`}
-              onClick={() => jumpToAll()}>الكل</button>
+            className="sticky z-20 flex gap-6 overflow-x-auto mb-3 -mx-4 px-4 bg-night border-b border-line scrollbar-none">
+            {/* Underlined, not filled. These tabs NAVIGATE -- the whole menu is
+                already on the page -- and a filled pill is the language of a
+                filter. The underline is also ~12px shorter than the pill row,
+                which the header can use.
+                Deliberately not the shared .tab class: that one dresses the
+                admin, driver and vendor screens too, and this is a customer
+                storefront decision. */}
+            <button data-chip={ALL} onClick={() => jumpToAll()}
+              className={`shrink-0 whitespace-nowrap text-sm font-bold pt-2.5 pb-3 border-b-[3px] -mb-px transition-colors ${
+                activeCat === ALL ? 'text-foam border-sea' : 'text-mist border-transparent hover:text-foam'}`}>
+              الكل
+            </button>
             {categories.map(cat => (
-              <button key={cat} data-chip={cat}
-                // The tap highlights the chip itself; the scroll observer then
+              <button key={cat} data-chip={cat} onClick={() => jumpToCategory(cat)}
+                // The tap highlights the tab itself; the scroll observer then
                 // takes over as you move through the menu. Waiting for the
-                // observer meant tapping a chip gave no feedback at all.
-                // While «الكل» is the choice, no section chip is highlighted --
-                // otherwise two chips read as active at once.
-                className={`tab shrink-0 ${activeCat !== ALL && (visibleCat ?? activeCat) === cat ? 'tab-active' : 'bg-shellup/60'}`}
-                onClick={() => jumpToCategory(cat)}>{cat}</button>
+                // observer meant tapping gave no feedback at all. While «الكل»
+                // is the choice no section tab is underlined, or two read as
+                // active at once.
+                className={`shrink-0 whitespace-nowrap text-sm font-bold pt-2.5 pb-3 border-b-[3px] -mb-px transition-colors ${
+                  activeCat !== ALL && (visibleCat ?? activeCat) === cat
+                    ? 'text-foam border-sea' : 'text-mist border-transparent hover:text-foam'}`}>
+                {cat}
+              </button>
             ))}
           </div>
           )}
