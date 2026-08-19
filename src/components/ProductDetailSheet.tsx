@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import IconButton from './IconButton'
 import CategoryArt from './CategoryArt'
 import { artFor } from '../lib/categoryArt'
 import { useDismissable } from '../lib/useDismissable'
@@ -111,7 +112,9 @@ export default function ProductDetailSheet({
             ? <img src={sized(active.image_url, IMG.photo)} alt={active.name} className="w-full h-full object-cover"
                 onError={() => setImgFailed(true)} />
             : <CategoryArt art={art} size="xl" className="text-mist" />}
-          <button aria-label="إغلاق" className="absolute top-3 left-3 bg-white/80 rounded-full w-7 h-7 grid place-items-center text-mist text-sm" onClick={onClose}><Icon name="x" size="sm" /></button>
+          <span className="absolute top-1.5 left-1.5">
+            <IconButton icon="x" label="إغلاق" variant="onPhoto" onClick={onClose} />
+          </span>
           {active.requires_prescription && (
             <span className="absolute top-3 right-3 bg-white/90 rounded-full px-2.5 py-1 text-xs font-bold text-seadeep">
               <Icon name="pill" size="xs" className="inline-block align-[-0.15em] me-1" />يحتاج روشتة

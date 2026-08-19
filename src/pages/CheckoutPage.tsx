@@ -642,7 +642,7 @@ export default function CheckoutPage() {
               )
             })}
           </div>
-          <textarea id={`${fid}-notes`} className="field" rows={2} value={customerNote} onChange={e => setCustomerNote(e.target.value)}
+          <textarea id={`${fid}-notes`} className="field h-20 resize-none" rows={2} value={customerNote} onChange={e => setCustomerNote(e.target.value)}
             placeholder="اكتب أي حاجة تانية…" /></div>
       </div>
 

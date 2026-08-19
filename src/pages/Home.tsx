@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import IconButton from '../components/IconButton'
 import EmptyState from '../components/EmptyState'
 import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
@@ -397,7 +398,13 @@ export default function Home() {
           normaliseArabic(r.category ?? '').toLowerCase().includes(q))
       })()
     : []
-  const filtered = search.trim() ? compounds.filter(c => c.name.toLowerCase().includes(search.toLowerCase())) : []
+  // Was `: []` -- so with an empty search box the list below rendered NOTHING,
+  // directly under copy that says «دوّر على اسم مكانك تحت». A customer whose GPS
+  // failed got an error, an instruction, and blank space. Searching narrows the
+  // list; it should not be the only way to see one.
+  const filtered = search.trim()
+    ? compounds.filter(c => normaliseArabic(c.name).toLowerCase().includes(normaliseArabic(search).toLowerCase()))
+    : compounds
 
   // These used to be gated on compoundId, on the reasoning that "without one
   // there is nothing for either destination to deliver to yet". That is the
@@ -498,8 +505,9 @@ export default function Home() {
           <Icon name="magnifyingGlass" size="sm" />
         </span>
         {foodQ.trim() && (
-          <button className="absolute left-3 top-1/2 -translate-y-1/2 text-mist text-sm"
-            aria-label="مسح" onClick={() => setFoodQ('')}><Icon name="x" size="sm" /></button>
+          <span className="absolute left-1 top-1/2 -translate-y-1/2">
+            <IconButton icon="x" label="مسح" size="sm" onClick={() => setFoodQ('')} />
+          </span>
         )}
       </div>
       {!compoundId && foodQ.trim().length >= 2 && (
@@ -725,12 +733,18 @@ export default function Home() {
           aria-labelledby="place-picker-title"
           onClick={() => setPicking(false)}>
           <div className="card w-full max-w-md p-4 max-h-[85vh] overflow-y-auto relative" onClick={e => e.stopPropagation()}>
-            {/* Unconditional. This close button, the backdrop and Escape used
-                to work only *while a compound was already selected*, so on a
-                first visit the dialog had no exit at all. */}
-            <button className="absolute top-2 left-2 w-11 h-11 grid place-items-center text-mist hover:text-foam text-xl"
-              aria-label="إغلاق" onClick={() => setPicking(false)}><Icon name="x" size="sm" /></button>
-            <h3 id="place-picker-title" className="font-bold text-lg mb-3">فين مكانك؟</h3>
+            {/* Sticky header, not an absolutely-positioned button. The card is
+                overflow-y-auto, and an absolute child of a scrolling box scrolls
+                WITH the content -- so the close button drifted up out of view as
+                soon as the list moved, which is what "floating" looked like.
+
+                Unconditional, too: this button, the backdrop and Escape used to
+                work only while a compound was already selected, so on a first
+                visit the dialog had no exit at all. */}
+            <div className="sticky -top-4 -mx-4 -mt-4 px-4 pt-4 pb-3 mb-1 bg-shell z-10 flex items-center gap-2">
+              <h3 id="place-picker-title" className="font-bold text-lg flex-1">فين مكانك؟</h3>
+              <IconButton icon="x" label="إغلاق" onClick={() => setPicking(false)} className="-me-2" />
+            </div>
 
             {compoundsFailed && (
               <div className="bg-dangerbg rounded-xl p-3 mb-3 text-center">
@@ -749,20 +763,26 @@ export default function Home() {
                 edge and clipped by the card's rounded corner. Reported from a
                 real phone with a screenshot showing a sliver of it outside the
                 dialog. */}
+            {/* The controls are WHITE; the results stay cream. Everything in this
+                sheet used to be bg-night -- the field, the locate button and all
+                86 rows -- so a thing you type into looked exactly like a thing
+                you tap to choose. Same tone, different jobs. */}
             <div className="flex items-center gap-2 mb-4">
-              <div className="field flex-1 min-w-0 flex items-center gap-2 !px-3.5">
+              <div className="field !bg-shell !border-slate-500 flex-1 min-w-0 flex items-center gap-2 !px-3.5">
                 <Icon name="magnifyingGlass" size="sm" className="shrink-0 text-mist" />
                 <input className="flex-1 min-w-0 bg-transparent focus:outline-none placeholder:text-mist/60" value={search}
                   onChange={e => { setSearch(e.target.value); if (e.target.value.trim()) setNearby(null) }}
                   aria-label="دوّر على اسم المكان"
             placeholder="دوّر على اسم المكان…" />
               </div>
-              <button className="w-12 h-12 rounded-xl border border-line bg-night grid place-items-center shrink-0 disabled:opacity-60"
+              <button className="btn-ghost !min-h-0 !px-0 w-10 h-10 shrink-0"
                 disabled={locating} onClick={() => locateMe()}
                 title="استخدم موقعي الحالي" aria-label="استخدم موقعي الحالي">
+                {/* size="md", not "sm": a 16px glyph inside a 40px box read as a
+                    decoration rather than the button's whole purpose. */}
                 {locating
-                  ? <span className="inline-block w-4 h-4 rounded-full border-2 border-mist/40 border-t-sea animate-spin" />
-                  : <Icon name="locationDot" size="sm" className="text-sea" />}
+                  ? <span className="inline-block w-5 h-5 rounded-full border-2 border-mist/40 border-t-sea animate-spin" />
+                  : <Icon name="locationDot" size="md" className="text-sea" />}
               </button>
             </div>
 

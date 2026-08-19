@@ -32,7 +32,7 @@ body { @apply bg-night text-foam antialiased; overflow-x: hidden; }
    3.59:1 on the page, replacing `linestrong` at 3.40:1. The placeholder
    was mist at 60% opacity, which composites to #A69F98 for 2.45:1; full-opacity
    mist is 5.35:1 and still reads as secondary next to foam at 15.34:1. */
-.field { @apply w-full h-12 rounded-xl bg-night border border-slate-500 px-3.5 text-foam placeholder:text-mist focus:outline-none focus:border-sea focus:ring-1 focus:ring-sea; }
+.field { @apply w-full h-10 rounded-xl bg-night border border-slate-500 px-3.5 text-foam placeholder:text-mist focus:outline-none focus:border-sea focus:ring-1 focus:ring-sea; }
 select.field {
   @apply appearance-none bg-no-repeat pr-3.5;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%236E655C'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z' clip-rule='evenodd'/%3E%3C/svg%3E");
