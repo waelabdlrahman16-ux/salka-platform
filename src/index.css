@@ -11,9 +11,15 @@
    `position: fixed` bottom sheet opened during or right after that bounce
    can render offset from the true viewport edge on iOS WebKit, which is the
    most likely explanation for a full-height gap down one side of a sheet
-   that measures as a perfect 0-to-100%-width box in every other engine. */
-html { font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif; overflow-x: hidden; }
-body { @apply bg-night text-foam antialiased; overflow-x: hidden; }
+   that measures as a perfect 0-to-100%-width box in every other engine.
+
+   `clip` rather than `hidden`: hidden forces overflow-y to compute to `auto`,
+   which makes the element a scroll container and silently breaks every
+   `position: sticky` descendant -- that is why the menu category bar would not
+   pin. `clip` does the same guarding job without creating one. `hidden` stays
+   first as the fallback for engines older than Safari 16. */
+html { font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif; overflow-x: hidden; overflow-x: clip; }
+body { @apply bg-night text-foam antialiased; overflow-x: hidden; overflow-x: clip; }
 
 .card { @apply bg-shell border border-line rounded-xl; }
 

@@ -170,11 +170,24 @@ export default function ProductCard({
         </span>
 
         {hasOptions ? (
+          // A chevron, not a plus. These items do not go into the cart on tap --
+          // they open the options sheet -- and a plus promises an add that does
+          // not happen. The chevron says "this opens something", which is what
+          // the button actually does, and it still drops the «اختار» wording
+          // that made the grid read as two kinds of product.
+          //
+          // It points LEFT: forward in RTL. This file already rotates
+          // chevronLeft by 180 to make «رجوع» point back, so an unrotated one
+          // is the forward direction.
+          //
+          // Once something is in the cart the button carries the count instead.
           <button
-            className="h-8 px-3 rounded-full bg-sea text-white font-bold text-[12px] shrink-0 hover:bg-seadeep transition-colors disabled:opacity-40 disabled:pointer-events-none"
+            className={`h-8 rounded-full bg-sea text-white shrink-0 grid place-items-center hover:bg-seadeep transition-colors disabled:opacity-40 disabled:pointer-events-none ${qty > 0 ? 'px-3 font-bold text-[12px]' : 'w-8'}`}
             disabled={disabled} onClick={onCustomize}
             aria-label={`اختيارات ${item.name}`}>
-            {qty > 0 ? <>{qty}<Icon name="check" size="xs" className="inline-block align-[-0.15em] ms-1" /></> : 'اختار'}
+            {qty > 0
+              ? <span>{qty}<Icon name="check" size="xs" className="inline-block align-[-0.15em] ms-1" /></span>
+              : <Icon name="chevronLeft" size="sm" />}
           </button>
         ) : qty === 0 ? (
           <button

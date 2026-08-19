@@ -68,6 +68,47 @@ export default function RestaurantDetail() {
     if (cat === ALL) next.delete('cat'); else next.set('cat', cat)
     setSearchParams(next)
   }
+  // The chip bar pins to the top, so a section scrolled with scrollIntoView
+  // landed UNDER it. Measure the bar and land the heading just below its
+  // bottom edge instead of guessing a constant.
+  //
+  // Motion, per Apple's HIG: it is here to explain where the content went, so
+  // it is a single continuous move, and Reduce Motion turns it into an instant
+  // jump rather than a slower animation. The tapped chip also slides itself
+  // into view horizontally, so the bar never leaves the active chip offscreen.
+  const chipBarRef = useRef<HTMLDivElement | null>(null)
+  const jumpToCategory = (cat: string) => {
+    setActiveCat(cat)
+    const section = document.getElementById(`cat-${cat}`)
+    if (!section) return
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const targetTop = () => {
+      const barH = chipBarRef.current?.getBoundingClientRect().height ?? 0
+      return Math.max(0, section.getBoundingClientRect().top + window.scrollY - barH - 8)
+    }
+    // Animate only when the animation can still be read as a movement. A long
+    // menu puts «صوصات» 7,800px away, and gliding that whole distance is
+    // several seconds of blurred content -- motion that makes you wait rather
+    // than telling you where you went. Past two screens, cut instead.
+    const far = Math.abs(targetTop() - window.scrollY) > window.innerHeight * 2
+    window.scrollTo({ top: targetTop(), behavior: reduce || far ? 'auto' : 'smooth' })
+    // The dish images below the fold are lazy, so the document is still short
+    // when the jump starts: a near section landed ~28px off and a far one did
+    // not move at all, because the browser clamped the target to a height the
+    // page had not grown into yet. Re-measure once layout settles and close the
+    // gap. Silent when there is nothing to correct.
+    let tries = 0
+    const settle = () => {
+      const top = targetTop()
+      if (Math.abs(window.scrollY - top) > 4) window.scrollTo({ top, behavior: 'auto' })
+      if (++tries < 3) setTimeout(settle, 220)
+    }
+    setTimeout(settle, reduce || far ? 60 : 420)
+    chipBarRef.current
+      ?.querySelector(`[data-chip="${CSS.escape(cat)}"]`)
+      ?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'nearest', inline: 'center' })
+  }
+
   const [loadFailed, setLoadFailed] = useState(false)
   const [catalogRevision, setCatalogRevision] = useState(0)
 
@@ -503,20 +544,21 @@ export default function RestaurantDetail() {
               is also what makes the sticky bar able to say which section you
               are in. */}
           {categories.length > 1 && !menuQuery && (
-          <div className="flex gap-2 overflow-x-auto pb-1 mb-4 -mx-4 px-4 scrollbar-none">
+          <div ref={chipBarRef}
+            className="sticky top-0 z-20 flex gap-2 overflow-x-auto pt-2 pb-2 mb-2 -mx-4 px-4 bg-night scrollbar-none">
             {categories.map(cat => (
-              <button key={cat}
-                className={`tab shrink-0 ${visibleCat === cat ? 'tab-active' : 'bg-shellup/60'}`}
-                onClick={() => {
-                  setActiveCat(cat)
-                  document.getElementById(`cat-${cat}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                }}>{cat}</button>
+              <button key={cat} data-chip={cat}
+                // The tap highlights the chip itself; the scroll observer then
+                // takes over as you move through the menu. Waiting for the
+                // observer meant tapping a chip gave no feedback at all.
+                className={`tab shrink-0 ${(visibleCat ?? (activeCat === ALL ? null : activeCat)) === cat ? 'tab-active' : 'bg-shellup/60'}`}
+                onClick={() => jumpToCategory(cat)}>{cat}</button>
             ))}
           </div>
           )}
 
           {categories.map(cat => shown(cat).length === 0 ? null : (
-            <section key={cat} id={`cat-${cat}`} data-cat={cat} className="mb-6 scroll-mt-16">
+            <section key={cat} id={`cat-${cat}`} data-cat={cat} className="mb-6 scroll-mt-24">
               <h2 className="font-bold text-lg mb-3">{cat}</h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {shown(cat).map(it => {
