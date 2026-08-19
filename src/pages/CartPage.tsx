@@ -210,12 +210,19 @@ export default function CartPage() {
         {/* Held until sizes/combos/add-ons land. Before that the total on this
             button is understated for any combo line, and it is the number the
             customer taps. */}
-        <button className="btn-sea w-full !rounded-xl !py-4 shadow-lg shadow-sea/20 flex items-center justify-between px-4"
+        <button className="btn-sea w-full !py-4 shadow-lg shadow-sea/20"
           disabled={!optionsLoaded} onClick={() => nav('/checkout')}>
           <span>{optionsLoaded ? 'روح للدفع' : 'لحظة…'}</span>
-          {/* The number was still printed next to 'لحظة…', which is the number
-              being waited for. */}
-          {optionsLoaded && grandTotal !== null && <span className="font-bold">{grandTotal} ج.م</span>}
+          {/* One phrase with a bullet, like every other action in the app --
+              «إضافة • 335 ج.م». Pushed to opposite ends of the button it read
+              as two separate controls. The number is still withheld until
+              sizes/combos land, because it is the number being waited for. */}
+          {optionsLoaded && grandTotal !== null && (
+            <>
+              <span aria-hidden="true" className="opacity-60">•</span>
+              <span className="font-bold">{grandTotal} ج.م</span>
+            </>
+          )}
         </button>
       </div>
     </div>

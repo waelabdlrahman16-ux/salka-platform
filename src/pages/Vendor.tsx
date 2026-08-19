@@ -907,14 +907,14 @@ function KitchenVendor({ rid }: { rid: number }) {
             {stage.next === 'preparing' ? (
               <div className="flex gap-2">
                 {[15, 20, 30].map(m => (
-                  <button key={m} className="btn-sea flex-1 !rounded-2xl !text-base !py-3.5"
+                  <button key={m} className="btn-sea flex-1 !text-base !py-3.5"
                     disabled={busyOrder === o.id} onClick={() => advance(o, 'preparing', m)}>
                     {busyOrder === o.id ? '…' : `قبول • ${m} د`}
                   </button>
                 ))}
               </div>
             ) : (
-              <button className="btn-sea w-full !rounded-2xl !text-lg !py-4"
+              <button className="btn-sea w-full !text-lg !py-4"
                 disabled={busyOrder === o.id} onClick={() => advance(o, stage.next!)}>
                 {busyOrder === o.id ? 'لحظة…'
                   : remaining(o) !== null && remaining(o)! > 0
@@ -922,7 +922,7 @@ function KitchenVendor({ rid }: { rid: number }) {
                     : stage.action}
               </button>
             )}
-            <button className="btn-ghost w-full !rounded-2xl !text-sm mt-2 !text-danger !border-dangerline"
+            <button className="btn-ghost w-full !text-sm mt-2 !text-danger !border-dangerline"
               onClick={() => { setDeclineError(''); setDeclining(o) }}>رفض الطلب</button>
           </div>
         ) : (
@@ -930,7 +930,7 @@ function KitchenVendor({ rid }: { rid: number }) {
             {stage.next === 'preparing' ? (
               <div className="flex gap-2 mt-3">
                 {[15, 20, 30].map(m => (
-                  <button key={m} className="btn-sea flex-1 !rounded-2xl !text-sm !py-2.5 active:scale-95 transition-transform"
+                  <button key={m} className="btn-sea flex-1 !text-sm !py-2.5 active:scale-95 transition-transform"
                     disabled={busyOrder === o.id} onClick={() => advance(o, 'preparing', m)}>
                     {busyOrder === o.id ? '…' : `قبول • ${m} د`}
                   </button>
@@ -938,12 +938,12 @@ function KitchenVendor({ rid }: { rid: number }) {
               </div>
             ) : stage.next && (
               <div className="flex gap-2.5 mt-3">
-                <button className="btn-sea flex-1 !rounded-2xl active:scale-95 transition-transform"
+                <button className="btn-sea flex-1 active:scale-95 transition-transform"
                   disabled={busyOrder === o.id} onClick={() => advance(o, stage.next!)}>
                   {busyOrder === o.id ? 'لحظة…' : stage.action}
                 </button>
                 {o.delay_count < 3 && (
-                  <button className="btn-ghost !rounded-2xl active:scale-95 transition-transform" onClick={() => delay(o)}>+5 دقائق</button>
+                  <button className="btn-ghost active:scale-95 transition-transform" onClick={() => delay(o)}>+5 دقائق</button>
                 )}
               </div>
             )}
@@ -1174,8 +1174,8 @@ function KitchenVendor({ rid }: { rid: number }) {
               <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-3">{declineError}</p>
             )}
             <div className="flex gap-3">
-              <button className="btn-ghost !rounded-2xl flex-1" disabled={declineBusy} onClick={() => { setDeclining(null); setDeclineError('') }}>تراجع</button>
-              <button className="btn-danger !rounded-2xl flex-1" disabled={declineBusy} onClick={decline}>
+              <button className="btn-ghost flex-1" disabled={declineBusy} onClick={() => { setDeclining(null); setDeclineError('') }}>تراجع</button>
+              <button className="btn-danger flex-1" disabled={declineBusy} onClick={decline}>
                 {declineBusy ? 'لحظة…' : 'تأكيد الرفض'}
               </button>
             </div>
