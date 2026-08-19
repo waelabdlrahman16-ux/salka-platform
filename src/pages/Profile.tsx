@@ -148,11 +148,15 @@ export default function Profile() {
 
         <ul className="space-y-3 mb-7">
           {perks.map(p => (
-            <li key={p.title} className="card p-3.5 flex items-start gap-3">
+            <li key={p.title} className="card p-3.5 flex items-stretch gap-3">
               {/* The same pair as the pharmacy and supermarket tiles: cream with
                   #6B4A18 at 6.95:1. coral read as an error colour on a screen
                   that is selling something. */}
-              <span className="w-9 h-9 rounded-lg bg-cream text-[#6B4A18] grid place-items-center shrink-0">
+              {/* self-stretch, not a fixed height: the tile is as tall as the
+                  title and subtitle beside it, whatever those wrap to. At h-9
+                  it floated against a 40px text block, and a perk whose body
+                  wrapped to two lines pushed the gap wider still. */}
+              <span className="w-9 self-stretch rounded-lg bg-cream text-[#6B4A18] grid place-items-center shrink-0">
                 <Icon name={p.icon} size="md" />
               </span>
               <span className="min-w-0">
