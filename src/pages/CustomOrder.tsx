@@ -453,10 +453,12 @@ export default function CustomOrder() {
                     are the opposite, and stripping their logos made them harder to
                     find, not more consistent. */}
                 <span className="w-12 h-12 rounded-lg overflow-hidden grid place-items-center shrink-0"
-                  style={{ background: (v.vendor_type === 'pharmacy' || v.vendor_type === 'supermarket')
-                    ? VENDOR_TYPE_ART[v.vendor_type].tint : art.tint }}>
+                  style={(v.vendor_type === 'pharmacy' || v.vendor_type === 'supermarket')
+                    ? { background: VENDOR_TYPE_ART[v.vendor_type].tint,
+                        color: VENDOR_TYPE_ART[v.vendor_type].ink }
+                    : { background: art.tint }}>
                   {v.vendor_type === 'pharmacy' || v.vendor_type === 'supermarket'
-                    ? <Icon name={VENDOR_TYPE_ART[v.vendor_type].icon} size="lg" className="text-foam" />
+                    ? <Icon name={VENDOR_TYPE_ART[v.vendor_type].icon} size="lg" />
                     : v.logo_url
                         ? <img src={v.logo_url} alt="" loading="eager" className="w-full h-full object-cover"
                             onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />

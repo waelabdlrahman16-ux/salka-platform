@@ -229,9 +229,24 @@ export function vendorKind(category: string | null | undefined): VendorKind {
 // because they were raw rgba rather than tokens -- while هنجبلك used the
 // category tints. Same destination, two different looks, on two screens one tap
 // apart.
-export const VENDOR_TYPE_ART: Record<'pharmacy' | 'supermarket', { icon: IconName; tint: string }> = {
-  pharmacy:    { icon: 'asclepius', tint: TINT.green },
-  supermarket: { icon: 'basket',    tint: TINT.neutral },
+// `ink` is a DARK VERSION OF THE TINT, not an arbitrary dark colour. Both are
+// derived by holding the tint's own hue and dropping lightness, so the icon
+// belongs to its tile instead of sitting on it:
+//
+//   pharmacy     #E6F4EA is green at 137°  ->  #007020, 5.54:1 on its tile
+//   supermarket  #F4EEE3 is warm at  39°  ->  #6B4A18, 6.95:1 on its tile
+//
+// Mixing toward black instead would have desaturated both to grey -- dark, but
+// no longer the background's colour, which is the whole point.
+//
+// The supermarket ink is deliberately NOT the hue-exact #855600: that is 7 RGB
+// units from the warning token #8A5B00, so the grocery icon would have been
+// painted the colour that means "something needs your attention". #6B4A18 sits
+// 43 away and keeps the warm-brown family.
+export const VENDOR_TYPE_ART: Record<'pharmacy' | 'supermarket',
+  { icon: IconName; tint: string; ink: string }> = {
+  pharmacy:    { icon: 'asclepius', tint: TINT.green,   ink: '#007020' },
+  supermarket: { icon: 'basket',    tint: TINT.neutral, ink: '#6B4A18' },
 }
 
 export const BROWSE_KINDS: Array<{ kind: VendorKind; emoji: string }> = [

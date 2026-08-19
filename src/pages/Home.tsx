@@ -397,14 +397,16 @@ export default function Home() {
   // perfectly able to ask when it actually needs to know.
   const quickAccessTiles = (
     <div className="grid grid-cols-2 gap-2.5 mb-4">
-      {([['supermarket', 'جروسري'], ['pharmacy', 'صيدلية']] as const).map(([type, label]) => {
+      {([['supermarket', 'سوبر ماركت'], ['pharmacy', 'صيدلية']] as const).map(([type, label]) => {
         const art = VENDOR_TYPE_ART[type]
         return (
           <Link key={type} to={`/custom-order?type=${type}`}
             className="card p-2.5 flex items-center gap-2 hover:border-sea/50 transition-colors">
+            {/* colour on the TILE, not the icon: Icon paints with currentColor,
+                so the tile owns both halves of the pairing. */}
             <span className="w-9 h-9 rounded-lg grid place-items-center shrink-0"
-              style={{ background: art.tint }}>
-              <Icon name={art.icon} size="md" className="text-foam" />
+              style={{ background: art.tint, color: art.ink }}>
+              <Icon name={art.icon} size="md" />
             </span>
             <span className="font-bold text-sm truncate">{label}</span>
           </Link>
