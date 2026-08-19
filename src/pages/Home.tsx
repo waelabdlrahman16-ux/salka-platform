@@ -763,20 +763,26 @@ export default function Home() {
                 edge and clipped by the card's rounded corner. Reported from a
                 real phone with a screenshot showing a sliver of it outside the
                 dialog. */}
+            {/* The controls are WHITE; the results stay cream. Everything in this
+                sheet used to be bg-night -- the field, the locate button and all
+                86 rows -- so a thing you type into looked exactly like a thing
+                you tap to choose. Same tone, different jobs. */}
             <div className="flex items-center gap-2 mb-4">
-              <div className="field flex-1 min-w-0 flex items-center gap-2 !px-3.5">
+              <div className="field !bg-shell !border-slate-500 flex-1 min-w-0 flex items-center gap-2 !px-3.5">
                 <Icon name="magnifyingGlass" size="sm" className="shrink-0 text-mist" />
                 <input className="flex-1 min-w-0 bg-transparent focus:outline-none placeholder:text-mist/60" value={search}
                   onChange={e => { setSearch(e.target.value); if (e.target.value.trim()) setNearby(null) }}
                   aria-label="دوّر على اسم المكان"
             placeholder="دوّر على اسم المكان…" />
               </div>
-              <button className="w-12 h-12 rounded-xl border border-line bg-night grid place-items-center shrink-0 disabled:opacity-60"
+              <button className="w-12 h-12 rounded-xl border border-slate-500 bg-shell grid place-items-center shrink-0 disabled:opacity-60 hover:bg-successbg transition-colors"
                 disabled={locating} onClick={() => locateMe()}
                 title="استخدم موقعي الحالي" aria-label="استخدم موقعي الحالي">
+                {/* size="lg", not "sm": a 16px glyph inside a 48px box read as a
+                    decoration rather than the button's whole purpose. */}
                 {locating
-                  ? <span className="inline-block w-4 h-4 rounded-full border-2 border-mist/40 border-t-sea animate-spin" />
-                  : <Icon name="locationDot" size="sm" className="text-sea" />}
+                  ? <span className="inline-block w-5 h-5 rounded-full border-2 border-mist/40 border-t-sea animate-spin" />
+                  : <Icon name="locationDot" size="lg" className="text-sea" />}
               </button>
             </div>
 

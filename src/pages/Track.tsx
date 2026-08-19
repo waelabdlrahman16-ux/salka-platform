@@ -1152,7 +1152,7 @@ function CancelReasonSheet({ busy, onClose, onConfirm }: {
   // ALWAYS a full-bleed bottom sheet, no sm: desktop-centered variant --
   // see the note in ProductDetailSheet.
   return (
-    <div className="fixed inset-0 z-50 bg-black/50"
+    <div className="fixed inset-0 z-50 bg-black/60"
       onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}>
       <div ref={ref} role="dialog" aria-modal="true" aria-labelledby="cancel-reason-title"
         className="card fixed inset-x-0 bottom-0 w-full p-5 rounded-b-none">

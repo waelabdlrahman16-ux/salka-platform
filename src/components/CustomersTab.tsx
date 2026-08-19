@@ -400,7 +400,7 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
   }, [onClose])
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center p-0 sm:p-4"
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-0 sm:p-4"
       onClick={onClose}>
       <div className="bg-white w-full sm:max-w-2xl max-h-[92vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl"
         onClick={e => e.stopPropagation()}>

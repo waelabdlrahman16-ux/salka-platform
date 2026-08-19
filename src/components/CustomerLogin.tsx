@@ -144,7 +144,7 @@ export default function CustomerLogin({ onDone, onSkip }: { onDone: () => void; 
   // customer had just been texted.
   return (
     <div
-      className="fixed inset-0 z-50 bg-night/80 backdrop-blur-sm grid place-items-center p-4"
+      className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4"
       role="dialog" aria-labelledby="customer-login-title" aria-modal="true"
       onClick={e => { if (e.target === e.currentTarget && onSkip && mode === 'main') onSkip() }}>
       <div className="card w-full max-w-sm p-6 text-center relative">
