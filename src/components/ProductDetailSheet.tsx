@@ -134,52 +134,57 @@ export default function ProductDetailSheet({
           {/* Name and price on one line: they are the two facts the customer
               opened this for, and stacking them pushed the button further down
               for no gain. The description tucks under the name. */}
-          <div className="flex items-baseline gap-3">
-            <h2 id="product-detail-title" className="font-bold text-xl leading-snug min-w-0 flex-1">{active.name}</h2>
-            <span className="shrink-0 text-lg">
-              {activeDiscount && <span className="text-mist text-sm line-through ml-2">{baseActivePrice}</span>}
-              <span className="text-sea font-bold">{itemSizes.length > 0 ? `من ${activeDisplayPrice}` : activeDisplayPrice} ج.م</span>
-            </span>
-          </div>
+          <h2 id="product-detail-title" className="font-bold text-xl leading-snug">{active.name}</h2>
           {active.description && <p className="text-sm text-mist mt-1 leading-relaxed">{active.description}</p>}
 
-          <div className="mt-5">
+          {/* The action bar, Talabat's shape: the price holds the start of the
+              row and the control at the end SWAPS -- «إضافة للعربة» while the
+              cart is empty of this item, a stepper once it is not. One row that
+              answers "how much" and "how many" without stacking them.
+
+              The discount is a struck price plus what you save, not a quieter
+              number. «وفّر ١٥ ج.م» is the reason to act; a smaller figure on its
+              own is just a price. */}
+          <div className="mt-5 flex items-center gap-3">
+            <div className="min-w-0">
+              {activeDiscount && (
+                <div className="flex items-center gap-2">
+                  <span className="text-mist text-xs line-through">{baseActivePrice} ج.م</span>
+                  <span className="bg-coral-100 text-coral-700 text-[11px] font-bold rounded-md px-2 py-0.5">
+                    وفّر {Math.round((baseActivePrice - activeDisplayPrice) * 100) / 100} ج.م
+                  </span>
+                </div>
+              )}
+              <p className="text-xl font-bold">
+                {itemSizes.length > 0 ? `من ${activeDisplayPrice}` : activeDisplayPrice} ج.م
+              </p>
+            </div>
+
+            <div className="flex-1" />
+
             {hasOptions ? (
-              <button className="btn-sea w-full !py-3 !rounded-full" disabled={disabled} onClick={() => onCustomize(active)}>
+              <button className="btn-sea !px-7" disabled={disabled} onClick={() => onCustomize(active)}>
                 اختيار
               </button>
+            ) : qty === 0 ? (
+              <button className="btn-sea !px-7" disabled={disabled} onClick={() => onAdd(active)}>
+                إضافة للعربة
+              </button>
             ) : (
-              // Stepper BESIDE the action, the same shape as CustomizeSheet.
-              // Here the stepper used to replace the button once anything was
-              // in the cart, so the two sheets behaved differently for the
-              // same job -- and once it appeared there was no «إضافة» left to
-              // press, only a counter.
-              <div className="flex items-center gap-2.5">
-                <div className="flex items-center gap-1 bg-imgbg rounded-full px-1.5 py-1.5 shrink-0">
-                  <button className="w-9 h-9 rounded-full grid place-items-center hover:bg-white disabled:opacity-40"
-                    aria-label="أقل" disabled={qty <= 0} onClick={() => onRemove(active)}>
-                    <Icon name="minus" size="sm" />
-                  </button>
-                  <span className="font-bold text-sm min-w-[1.4rem] text-center">{qty}</span>
-                  <button className="w-9 h-9 rounded-full grid place-items-center bg-sea text-white"
-                    aria-label="أكتر" onClick={() => onAdd(active)}>
-                    <Icon name="plus" size="sm" />
-                  </button>
-                </div>
-                {/* At zero the button IS the add; once something is in the
-                    cart it confirms and closes. */}
-                <button className="btn-sea flex-1" disabled={disabled}
-                  onClick={() => (qty === 0 ? onAdd(active) : onClose())}>
-                  {qty === 0 ? 'إضافة' : `تمام • ${activeDisplayPrice * qty} ج.م`}
+              <div className="flex items-center gap-1 bg-shellup rounded-full px-1.5 py-1.5 shrink-0">
+                <button className="w-9 h-9 rounded-full grid place-items-center hover:bg-white"
+                  aria-label="أقل" onClick={() => onRemove(active)}>
+                  <Icon name="minus" size="sm" />
+                </button>
+                <span className="font-bold text-sm min-w-[1.4rem] text-center">{qty}</span>
+                <button className="w-9 h-9 rounded-full grid place-items-center bg-sea text-white"
+                  aria-label="أكتر" onClick={() => onAdd(active)}>
+                  <Icon name="plus" size="sm" />
                 </button>
               </div>
             )}
           </div>
 
-          {/* A warm band, bled to the sheet's edges, exactly like the featured
-              shelf on the home screen. A shelf of other people's dishes is a
-              different KIND of thing from the item you opened, and the surface
-              says so before the heading does. */}
           {related.length > 0 && (
             <div className="relative -mx-5 mt-6 px-5 py-7 bg-shellup overflow-hidden">
               <span aria-hidden="true" className="absolute inset-x-0 top-0 h-3 pointer-events-none"
