@@ -539,18 +539,18 @@ export default function CheckoutPage() {
                 form convention that announces as nothing and sits where an
                 Arabic reader does not look for it. */}
             <div><label className="label" htmlFor={`${fid}-1`}>الاسم <span className="text-mist font-normal">(مطلوب)</span></label>
-              <input id={`${fid}-1`} className={`field ${touched.name && !name.trim() ? '!border-red-400' : ''}`}
+              <input id={`${fid}-1`} className={`field ${touched.name && !name.trim() ? '!border-dangerline' : ''}`}
                 value={name} onChange={e => setName(e.target.value)}
                 onBlur={() => setTouched(t => ({ ...t, name: true }))} placeholder="الاسم بالكامل" />
               {touched.name && !name.trim() && (
-                <p className="text-xs text-red-600 mt-1">اكتب اسمك عشان المندوب يعرف يسأل عليك</p>
+                <p className="text-xs text-danger mt-1">اكتب اسمك عشان المندوب يعرف يسأل عليك</p>
               )}</div>
             <div><label className="label" htmlFor={`${fid}-2`}>رقم الموبايل <span className="text-mist font-normal">(مطلوب)</span></label>
-              <input id={`${fid}-2`} className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-red-400' : ''}`}
+              <input id={`${fid}-2`} className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-dangerline' : ''}`}
                 dir="ltr" value={phone} onChange={e => setPhone(e.target.value)}
                 placeholder="01xxxxxxxxx" maxLength={13} />
               {phone.trim() && !isValidEgyptPhone(phone) && (
-                <p className="text-xs text-red-600 mt-1">{PHONE_HINT}</p>
+                <p className="text-xs text-danger mt-1">{PHONE_HINT}</p>
               )}</div>
           </>
         )}
@@ -578,11 +578,11 @@ export default function CheckoutPage() {
                 {compounds.map(c => <option key={c.id} value={c.id}>{c.name} (~{c.est_travel_minutes} د)</option>)}
               </select></div>
             <div><label className="label" htmlFor={`${fid}-4`}>رقم الشاليه / الفيلا <span className="text-mist font-normal">(مطلوب)</span></label>
-              <input id={`${fid}-4`} className={`field ${touched.unit && !unit.trim() ? '!border-red-400' : ''}`}
+              <input id={`${fid}-4`} className={`field ${touched.unit && !unit.trim() ? '!border-dangerline' : ''}`}
                 value={unit} onChange={e => setUnit(e.target.value)}
                 onBlur={() => setTouched(t => ({ ...t, unit: true }))} placeholder="مثال: B4 - 204" />
               {touched.unit && !unit.trim() && (
-                <p className="text-xs text-red-600 mt-1">من غير رقم الوحدة المندوب مش هيعرف يوصلك</p>
+                <p className="text-xs text-danger mt-1">من غير رقم الوحدة المندوب مش هيعرف يوصلك</p>
               )}</div>
             {showLandmark || notes.trim() ? (
               <div><label className="label" htmlFor={`${fid}-5`}>علامة مميزة (اختياري)</label>
@@ -596,8 +596,8 @@ export default function CheckoutPage() {
         )}
 
         {optionsFailed && (
-          <div className="card p-3 border-red-400/50 bg-red-500/5 flex items-center justify-between gap-3">
-            <p className="text-sm text-red-700 font-semibold">مش قادرين نجيب تفاصيل الأصناف، مش هينفع نأكد الطلب دلوقتي</p>
+          <div className="card p-3 border-dangerline bg-dangerbg flex items-center justify-between gap-3">
+            <p className="text-sm text-danger font-semibold">مش قادرين نجيب تفاصيل الأصناف، مش هينفع نأكد الطلب دلوقتي</p>
             <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0"
               onClick={() => setOptionsAttempt(a => a + 1)}>جرب تاني</button>
           </div>
@@ -662,10 +662,10 @@ export default function CheckoutPage() {
           placeholder="مثال: SOKHNA10" maxLength={32} dir="ltr" />
         {promoChecking && <p className="text-xs text-mist mt-2">بنتأكد من الكود…</p>}
         {!promoChecking && promoCode.trim() && promoQuote?.valid && (
-          <p className="text-xs text-emerald-700 font-semibold mt-2">تم تطبيق الخصم على {PROMO_SCOPE_LABEL[promoQuote.applies_to ?? 'all']}: -{promoDiscount} ج.م</p>
+          <p className="text-xs text-success font-semibold mt-2">تم تطبيق الخصم على {PROMO_SCOPE_LABEL[promoQuote.applies_to ?? 'all']}: -{promoDiscount} ج.م</p>
         )}
         {!promoChecking && promoCode.trim() && promoQuote && !promoQuote.valid && (
-          <p className="text-xs text-red-600 mt-2">
+          <p className="text-xs text-danger mt-2">
             {promoQuote.reason === 'promo_expired' ? 'الكود منتهي أو لسه ما بدأش'
               : promoQuote.reason === 'promo_minimum_not_met' ? `الحد الأدنى ${promoQuote.minimum ?? ''} ج.م`
               : promoQuote.reason === 'promo_not_available' ? 'الكود مش متاح للمطعم أو المكان ده'
@@ -744,7 +744,7 @@ export default function CheckoutPage() {
           </span>
         </div>
         {promoDiscount > 0 && (
-          <div className="flex justify-between text-sm text-emerald-700"><span>كود خصم {promoCode.trim().toUpperCase()} · {PROMO_SCOPE_LABEL[promoQuote?.applies_to ?? 'all']}</span><span>-{promoDiscount} ج.م</span></div>
+          <div className="flex justify-between text-sm text-success"><span>كود خصم {promoCode.trim().toUpperCase()} · {PROMO_SCOPE_LABEL[promoQuote?.applies_to ?? 'all']}</span><span>-{promoDiscount} ج.م</span></div>
         )}
         <div className="flex justify-between text-sm text-mist">
           <span>رسوم الخدمة</span>
@@ -755,7 +755,7 @@ export default function CheckoutPage() {
           </span>
         </div>
         {walletApplied > 0 && (
-          <div className="flex justify-between text-sm text-emerald-700"><span>من رصيدك</span><span>-{walletApplied} ج.م</span></div>
+          <div className="flex justify-between text-sm text-success"><span>من رصيدك</span><span>-{walletApplied} ج.م</span></div>
         )}
         <div className="flex justify-between font-bold border-t border-line pt-2">
           <span>الإجمالي</span>
@@ -767,7 +767,7 @@ export default function CheckoutPage() {
       </div>
 
       {compoundsFailed && compounds.length === 0 && (
-        <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">
+        <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-4">
           مش قادرين نجيب قايمة الأماكن دلوقتي:{' '}
           <button className="underline font-semibold" onClick={() => window.location.reload()}>حدّث الصفحة</button>
         </p>
@@ -782,14 +782,14 @@ export default function CheckoutPage() {
       )}
 
       {feeFailed && compoundId && (
-        <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">
+        <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-4">
           مش قادرين نحسب رسوم التوصيل دلوقتي.{' '}
           <button className="underline font-semibold" onClick={retryFee}>جرب تاني</button>
         </p>
       )}
 
       {serviceFeeFailed && (
-        <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">
+        <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-4">
           مش قادرين نحسب رسوم الخدمة دلوقتي.{' '}
           <button className="underline font-semibold" onClick={retryServiceFee}>جرب تاني</button>
         </p>
@@ -801,7 +801,7 @@ export default function CheckoutPage() {
         </p>
       )}
 
-      {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">{error}</p>}
+      {error && <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-4">{error}</p>}
 
       {/* The reason a disabled button is disabled belongs next to the button.
           CustomOrder already does this; checkout did not, and the gap is worse

@@ -81,7 +81,7 @@ export default function RestaurantDeliverySettings({ restaurant, compounds }: { 
       </button>
       {open && <div className="mt-3 space-y-3">
         <p className="text-xs text-mist">الرسوم الأساسية من «الأماكن والتوصيل» تظل شغالة. اكتب رقمًا هنا فقط لو هذا المطعم له تكلفة مختلفة من موقعه الخاص.</p>
-        {error && <p className="text-xs text-red-600">{error}</p>}
+        {error && <p className="text-xs text-danger">{error}</p>}
         {kitchens.map(k => <div key={k.id} className="rounded-xl bg-shellup p-3 flex items-center gap-2">
           <div className="flex-1 min-w-0"><p className="text-sm font-semibold">{k.name} {k.is_default && <span className="text-[10px] text-sea">الموقع الأساسي</span>}</p><p className="text-xs text-mist truncate">{k.address || 'العنوان لم يُكتب بعد'}</p></div>
           {k.is_default ? <span className="text-[11px] text-mist">الموقع الأساسي لا يتوقف</span> : <Toggle on={k.active} onChange={() => updateKitchen(k, { active: !k.active })} label="شغال" labelOff="موقوف" />}

@@ -174,7 +174,7 @@ export default function Profile() {
 
         {/* remove()/makeDefault() failures happen outside the edit card */}
         {addressError && !editing && (
-          <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3">{addressError}</p>
+          <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-3">{addressError}</p>
         )}
 
         {editing && (
@@ -190,7 +190,7 @@ export default function Profile() {
               <input id={`${fid}-3`} className="field" value={unit} onChange={e => setUnit(e.target.value)} placeholder="مثال: B4 - 204" /></div>
             <div><label className="label" htmlFor={`${fid}-4`}>علامة مميزة (اختياري)</label>
               <input id={`${fid}-4`} className="field" value={notes} onChange={e => setNotes(e.target.value)} placeholder="مثال: بجوار حمام السباحة" /></div>
-            {addressError && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3">{addressError}</p>}
+            {addressError && <p className="text-sm text-danger bg-dangerbg rounded-xl p-3">{addressError}</p>}
             <div className="flex gap-2">
               <button className="btn-ghost flex-1 text-sm" onClick={() => setEditing(null)}>إلغاء</button>
               <button className="btn-sea flex-1 text-sm" disabled={!compoundId || !unit.trim() || saving} onClick={save}>
@@ -222,7 +222,7 @@ export default function Profile() {
                 {!a.is_default && (
                   <button className="btn-ghost flex-1 !py-1.5 text-xs" onClick={() => makeDefault(a)}>خليه الافتراضي</button>
                 )}
-                <button className="btn-ghost !py-1.5 !px-3 text-xs !text-red-600" onClick={() => remove(a)}>حذف</button>
+                <button className="btn-ghost !py-1.5 !px-3 text-xs !text-danger" onClick={() => remove(a)}>حذف</button>
               </div>
             </div>
           ))}
@@ -255,7 +255,7 @@ export default function Profile() {
 
       <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noreferrer"
         className="card p-4 flex items-center gap-3 hover:border-sea/50 transition-colors">
-        <span className="w-11 h-11 rounded-xl grid place-items-center text-xl shrink-0 bg-emerald-500/10"><Icon name="chatCircle" size="md" className="text-emerald-700" /></span>
+        <span className="w-11 h-11 rounded-xl grid place-items-center text-xl shrink-0 bg-successbg"><Icon name="chatCircle" size="md" className="text-success" /></span>
         <div>
           <p className="font-bold">تحتاج مساعدة؟</p>
           <p className="text-xs text-mist mt-0.5">كلّمنا على واتساب</p>
@@ -328,9 +328,9 @@ function IdentityEditor({
         <label className="label" htmlFor={`${fid}-name`}>الاسم</label>
         <input id={`${fid}-name`} className="field" value={name}
           onChange={e => { setName(e.target.value); setError('') }} placeholder="الاسم بالكامل" />
-        {name.trim() && !nameValid && <p className="text-xs text-red-600 mt-1">الاسم قصير أوي</p>}
+        {name.trim() && !nameValid && <p className="text-xs text-danger mt-1">الاسم قصير أوي</p>}
       </div>
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="text-xs text-danger">{error}</p>}
       <div className="flex gap-2">
         <button className="btn-ghost flex-1 text-sm" onClick={onClose} disabled={saving}>إلغاء</button>
         <button className="btn-sea flex-1 text-sm" disabled={!canSave} onClick={save}>

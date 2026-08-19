@@ -224,15 +224,15 @@ export default function MenuItemsPanel({
   return (
     <div className="mt-4">
       {loadFailed && (
-        <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-2.5 mb-2" role="alert">
+        <p className="text-sm text-danger bg-dangerbg rounded-xl p-2.5 mb-2" role="alert">
           مش قادرين نحمّل الأقسام. جرب تاني.
         </p>
       )}
       {catError && (
-        <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-2.5 mb-2" role="alert">{catError}</p>
+        <p className="text-sm text-danger bg-dangerbg rounded-xl p-2.5 mb-2" role="alert">{catError}</p>
       )}
       {savedNotice && (
-        <p className="text-xs text-emerald-700 bg-emerald-500/10 rounded-xl p-2.5 mb-2" role="status"><Icon name="check" size="xs" className="inline-block align-[-0.15em] me-1" />{savedNotice}</p>
+        <p className="text-xs text-success bg-successbg rounded-xl p-2.5 mb-2" role="status"><Icon name="check" size="xs" className="inline-block align-[-0.15em] me-1" />{savedNotice}</p>
       )}
 
       <input className="field text-sm mb-2.5" value={search} onChange={e => setSearch(e.target.value)}
@@ -364,7 +364,7 @@ export default function MenuItemsPanel({
         <div className="flex items-center justify-between gap-2 mb-2.5 flex-wrap">
           <div className="flex items-center gap-2 text-xs">
             <button className="text-mist underline min-h-[44px] inline-flex items-center" onClick={() => renameCategory(current)}>تغيير الاسم</button>
-            <button className="text-red-600 underline min-h-[44px] inline-flex items-center" onClick={() => deleteCategory(current)}>حذف القسم</button>
+            <button className="text-danger underline min-h-[44px] inline-flex items-center" onClick={() => deleteCategory(current)}>حذف القسم</button>
           </div>
           <button className="btn-ghost !py-1.5 !px-3 text-xs" onClick={onAddItem}>+ صنف هنا</button>
         </div>
@@ -451,7 +451,7 @@ export default function MenuItemsPanel({
                   ) : (
                     <input type="number" inputMode="numeric" defaultValue={it.price}
                       aria-label={`سعر ${it.name} بالجنيه`}
-                      className={`field !w-24 shrink-0 !py-2 !px-2 text-center text-sm ${savedPrice === it.id ? '!border-emerald-600 bg-emerald-50' : ''}`}
+                      className={`field !w-24 shrink-0 !py-2 !px-2 text-center text-sm ${savedPrice === it.id ? '!border-successline bg-successbg' : ''}`}
                       onBlur={async e => {
                         const v = Number(e.target.value)
                         if (v === Number(it.price)) return

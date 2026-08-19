@@ -55,19 +55,38 @@ export default {
           900: '#39332E',
         },
 
-        // Danger is deliberately NOT from the coral ramp. Coral is warm-red,
-        // so a coral-derived error would share a hue family with the brand
-        // accent and read as on-brand rather than alarming. Wael's call.
-        // #B91C1C is 6.47:1 on card and 6.06:1 on page, and sits furthest
-        // from coral of the candidates (RGB distance 67 vs 58 for red-600).
+        // ---- STATE COLOURS -----------------------------------------------
+        // Each state is a TRIPLET -- text, background, line -- not a single hex.
+        // A single token can only ever colour text; a warning that needs to read
+        // as a box needs all three, and inventing the other two at the call site
+        // is how the opacity variants got started.
         //
-        // It also replaces text-red-600, which is what the code uses today at
-        // 4.52:1 on the page background -- passing by 0.02.
-        danger: '#B91C1C',
-        dangertint: '#FDECEC',
-        success: '#2A7C79',      // teal-500, 4.62:1 on page
-        successtint: '#E3ECE9',  // teal-100
-        warning: '#867E76',      // slate-500, 3.74:1 -- large text / UI only
+        // WARNING IS AMBER, NOT GREY. It shipped as slate-500 in the first pass,
+        // which passes contrast and says nothing: it is the same colour as
+        // secondary text. That gap is why the admin board reads as "too much
+        // red" -- with no warning colour, red was doing two jobs, "this failed"
+        // and "look at this". A late order and a refund failure are not the
+        // same news and should not be the same colour.
+        //
+        // Danger is deliberately NOT from the coral ramp: coral is warm-red, so
+        // a coral-derived error would share a hue family with the brand accent
+        // and read as on-brand rather than alarming. It also replaces
+        // text-red-600, which the code used at 4.52:1 on the page -- passing by
+        // 0.02.
+        //
+        // Text values are measured on card #FFFFFF, page #FBF7F1, elevated
+        // #F4EEE3 AND on their own tint, which is the ground they most often
+        // sit on. success is teal-600 rather than teal-500 for exactly that
+        // reason: 500 was 4.44:1 on its own tint, under the 4.5 line.
+        danger: '#B91C1C',       // 6.47 / 6.06 / 5.66 / 5.66 on its tint
+        dangerbg: '#FAEDEA',
+        dangerline: '#EDC2C0',
+        warning: '#8A5B00',      // 5.87 / 5.50 / 5.08 / 5.26 on its tint
+        warningbg: '#F7F2E8',
+        warningline: '#E1D3B9',
+        success: '#00625F',      // 7.21 / 6.76 / 6.24 / 6.49 on its tint
+        successbg: '#F0F4F1',
+        successline: '#C8DBD8',
 
         // Salka — teal, silver & gold (warm neutrals, cool teal accent — updated Aug 2026)
         // Rationale: the palette read as cold since every neutral had a cool teal-grey

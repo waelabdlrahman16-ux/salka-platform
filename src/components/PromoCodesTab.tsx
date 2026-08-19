@@ -86,7 +86,7 @@ export default function PromoCodesTab({ restaurants, compounds }: { restaurants:
         {input('starts_at', 'يبدأ (اختياري)', 'datetime-local')}
         {input('ends_at', 'ينتهي (اختياري)', 'datetime-local')}
       </div>
-      {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
+      {error && <p className="text-sm text-danger mt-3">{error}</p>}
       <button className="btn-sea w-full mt-4" disabled={busy || !canSave} onClick={save}>{busy ? 'جارٍ الحفظ…' : editing ? 'حفظ التعديل' : 'إنشاء كود الخصم'}</button>
     </div>
     <div className="space-y-3">

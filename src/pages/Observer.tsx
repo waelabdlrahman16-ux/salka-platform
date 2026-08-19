@@ -34,7 +34,7 @@ export default function Observer() {
   ] : []
   return <div className="space-y-5">
     <div><p className="text-sea font-semibold">متابعة فقط</p><h1 className="text-3xl font-black mt-1">لوحة المراقبة</h1><p className="text-sm text-mist mt-2">آخر تحديث تلقائي كل 30 ثانية. لا يمكن تنفيذ أي إجراء من هذه الصفحة.</p></div>
-    {error && <div className="card p-4 text-red-600">{error}<button className="btn-ghost mr-3 !py-1" onClick={load}>إعادة المحاولة</button></div>}
+    {error && <div className="card p-4 text-danger">{error}<button className="btn-ghost mr-3 !py-1" onClick={load}>إعادة المحاولة</button></div>}
     {!board ? <p className="text-mist text-center py-10">جاري التحميل…</p> : <>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {cards.map(([label, value]) => <div className="card p-4" key={String(label)}><p className="text-sm text-mist">{label}</p><p className="text-3xl font-black mt-1">{value}</p></div>)}

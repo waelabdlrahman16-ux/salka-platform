@@ -90,7 +90,7 @@ function PromptForm({ opts, done }: { opts: PromptOpts; done: (v: string | null)
           value={value} onChange={e => { setValue(e.target.value); setErr('') }}
           onKeyDown={e => { if (e.key === 'Enter') submit() }} />
       )}
-      {err && <p className="text-xs text-red-600 font-semibold mb-1" role="alert">{err}</p>}
+      {err && <p className="text-xs text-danger font-semibold mb-1" role="alert">{err}</p>}
       <div className="flex gap-2 mt-3">
         <button className="btn-sea flex-1" onClick={submit}>{opts.submitLabel ?? 'تأكيد'}</button>
         <button className="btn-ghost" onClick={() => done(null)}>{opts.cancelLabel ?? 'إلغاء'}</button>
@@ -126,7 +126,7 @@ export function useSheets() {
         {o.body && <div className="text-sm text-mist mb-3 leading-relaxed">{o.body}</div>}
         <div className="flex gap-2 mt-3">
           <button
-            className={`flex-1 ${o.danger ? 'btn bg-red-600 text-white hover:bg-red-700' : 'btn-sea'}`}
+            className={`flex-1 ${o.danger ? 'btn bg-danger text-white hover:bg-danger' : 'btn-sea'}`}
             onClick={() => finish(true)}>
             {o.confirmLabel ?? 'تأكيد'}
           </button>

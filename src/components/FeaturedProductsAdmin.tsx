@@ -141,7 +141,7 @@ export default function FeaturedProductsAdmin({ restaurants }: { restaurants: Re
       {sheetElement}
       <p className="text-sm text-mist">بتظهر في شريط بين المطاعم في الصفحة الرئيسية.</p>
 
-      {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3">{error}</p>}
+      {error && <p className="text-sm text-danger bg-dangerbg rounded-xl p-3">{error}</p>}
 
       <div className="card p-4 space-y-3">
         <h3 className="font-bold">ضيف صنف</h3>
@@ -209,7 +209,7 @@ export default function FeaturedProductsAdmin({ restaurants }: { restaurants: Re
               <button className={`btn-ghost !py-1.5 !px-3 text-xs ${r.active ? '!text-sea' : '!text-mist'}`}
                 onClick={() => toggle(r)}>{r.active ? 'شغّال' : 'موقوف'}</button>
               <button className="btn-ghost !py-1.5 !px-3 text-xs" onClick={() => startSchedule(r)}>مواعيد</button>
-              <button className="btn-ghost !py-1.5 !px-2.5 text-xs !text-red-600" onClick={() => remove(r)}>شيل</button>
+              <button className="btn-ghost !py-1.5 !px-2.5 text-xs !text-danger" onClick={() => remove(r)}>شيل</button>
             </div>
           </div>
         )

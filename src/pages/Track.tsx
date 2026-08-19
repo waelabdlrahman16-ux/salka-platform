@@ -419,7 +419,7 @@ export default function Track() {
         )}
         <Link to="/" className="text-sm text-mist hover:text-foam"><Icon name="chevronLeft" size="xs" className="inline-block align-middle ml-1" />العودة للرئيسية</Link>
         {errFor('instapay') && (
-          <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mt-3">{errFor('instapay')}</p>
+          <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mt-3">{errFor('instapay')}</p>
         )}
         {/* Also rendered here, not only in the main return.
             The two switch_to_cash outcomes leave by different doors: a small
@@ -499,7 +499,7 @@ export default function Track() {
           {!cancelled ? (
             <>
               {errFor('cancel') && (
-                <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mt-4">{errFor('cancel')}</p>
+                <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mt-4">{errFor('cancel')}</p>
               )}
               <button className="text-sm text-mist underline mt-4" disabled={cancelling} onClick={() => setCancelPickerOpen(true)}>
                 {cancelling ? 'جاري الإلغاء…' : 'مش عايز أكمل. الغِ الطلب'}
@@ -589,7 +589,7 @@ export default function Track() {
       )}
 
       {errFor('instapay') && (
-        <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-4">{errFor('instapay')}</p>
+        <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-4">{errFor('instapay')}</p>
       )}
 
       {isCancelled(o.status) || cancelled ? (
@@ -614,7 +614,7 @@ export default function Track() {
             </p>
           )}
           {o.refund_status === 'refunded' && (
-            <p className="text-sm text-emerald-700 bg-emerald-500/10 rounded-xl p-3 mt-3">
+            <p className="text-sm text-success bg-successbg rounded-xl p-3 mt-3">
               <Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />تم تحويل المبلغ ليك
             </p>
           )}
@@ -654,7 +654,7 @@ export default function Track() {
               const late = Date.now() > new Date(o.created_at).getTime() + o.sla_minutes * 60000
               return (
                 <span className={`shrink-0 text-[11px] font-bold rounded-full px-2.5 py-1 ${
-                  late ? 'bg-coral-200 text-coral-700' : 'bg-emerald-500/12 text-emerald-700'}`}>
+                  late ? 'bg-coral-200 text-coral-700' : 'bg-success/12 text-success'}`}>
                   {late ? 'متأخر شوية' : 'في الميعاد'}
                 </span>
               )
@@ -858,7 +858,7 @@ export default function Track() {
             </div>
 
             {errFor('extra') && (
-              <p className="text-xs text-red-600 bg-red-500/10 rounded-xl p-2.5 mt-3">{errFor('extra')}</p>
+              <p className="text-xs text-danger bg-dangerbg rounded-xl p-2.5 mt-3">{errFor('extra')}</p>
             )}
 
             {addingItem ? (
@@ -994,12 +994,12 @@ export default function Track() {
           <div className="flex justify-between text-sm"><span className="text-mist">رسوم الخدمة</span><span>{o.service_fee} ج.م</span></div>
         )}
         {!!o.promo_discount && o.promo_discount > 0 && (
-          <div className="flex justify-between text-sm text-emerald-700">
+          <div className="flex justify-between text-sm text-success">
             <span>كود خصم{o.promo_code ? ` ${o.promo_code}` : ''}</span><span>-{o.promo_discount} ج.م</span>
           </div>
         )}
         {o.wallet_used > 0 && (
-          <div className="flex justify-between text-sm text-emerald-700"><span>من رصيدك</span><span>-{o.wallet_used} ج.م</span></div>
+          <div className="flex justify-between text-sm text-success"><span>من رصيدك</span><span>-{o.wallet_used} ج.م</span></div>
         )}
         <div className="flex justify-between font-bold pt-2 border-t border-line">
           <span>الإجمالي</span>
@@ -1041,14 +1041,14 @@ export default function Track() {
               </div>
             </div>
           </div>
-          {errFor('rating') && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-2">{errFor('rating')}</p>}
+          {errFor('rating') && <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-2">{errFor('rating')}</p>}
           <button className="btn-sea w-full mt-3 text-sm" disabled={!driverRating && !restaurantRating} onClick={sendRating}>إرسال التقييم</button>
         </div>
       )}
       {o.rating_submitted && !ratingSent && (
-        <p className="text-emerald-700 text-sm text-center mb-4"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />شكرًا، تقييم الطلب مسجّل</p>
+        <p className="text-success text-sm text-center mb-4"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />شكرًا، تقييم الطلب مسجّل</p>
       )}
-      {ratingSent && !showTipPrompt && <p className="text-emerald-700 text-sm text-center mb-4"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />شكرًا لتقييمك</p>}
+      {ratingSent && !showTipPrompt && <p className="text-success text-sm text-center mb-4"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />شكرًا لتقييمك</p>}
 
       {showTipPrompt && !tipSent && data.assignment?.driver_instapay && (
         <div className="card p-4 mb-4">
@@ -1069,18 +1069,18 @@ export default function Track() {
               <p className="font-bold text-sea" dir="ltr">{data.assignment.driver_instapay}</p>
             </div>
           )}
-          {errFor('tip') && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-2">{errFor('tip')}</p>}
+          {errFor('tip') && <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-2">{errFor('tip')}</p>}
           <div className="flex gap-2">
             <button className="btn-ghost flex-1 text-sm" onClick={() => setShowTipPrompt(false)}>لأ شكرًا</button>
             <button className="btn-sea flex-1 text-sm" disabled={!tipAmount && !(Number(customTip) > 0)} onClick={sendTip}>أبلغت إني حوّلت</button>
           </div>
         </div>
       )}
-      {tipSent && <p className="text-emerald-700 text-sm text-center mb-4"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />تم إبلاغ المندوب، يراجع إنستاباي للتأكيد</p>}
+      {tipSent && <p className="text-success text-sm text-center mb-4"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />تم إبلاغ المندوب، يراجع إنستاباي للتأكيد</p>}
 
       {canCancel && (
         <>
-          {errFor('cancel') && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-2">{errFor('cancel')}</p>}
+          {errFor('cancel') && <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-2">{errFor('cancel')}</p>}
           <button className="btn-danger w-full mb-2" disabled={cancelling} onClick={() => setCancelPickerOpen(true)}>
             {cancelling ? 'جاري الإلغاء…' : 'إلغاء الطلب'}
           </button>
@@ -1115,14 +1115,14 @@ export default function Track() {
             ))}
           </div>
           <textarea className="field h-20 resize-none" value={complaintText} onChange={e => setComplaintText(e.target.value)} placeholder="مثال: نقص صنف من الطلب" />
-          {errFor('complaint') && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-2">{errFor('complaint')}</p>}
+          {errFor('complaint') && <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-2">{errFor('complaint')}</p>}
           <div className="flex gap-2.5 mt-2.5">
             <button className="btn-ghost flex-1 text-sm" onClick={() => setComplaining(false)}>إلغاء</button>
             <button className="btn-danger flex-1 text-sm" disabled={!complaintText.trim()} onClick={sendComplaint}>إرسال</button>
           </div>
         </div>
       ) : !isCancelled(o.status) && !cancelled ? (
-        <button className="text-red-600 text-sm underline block mx-auto mb-4" onClick={() => setComplaining(true)}>في مشكلة في الطلب؟</button>
+        <button className="text-danger text-sm underline block mx-auto mb-4" onClick={() => setComplaining(true)}>في مشكلة في الطلب؟</button>
       ) : null}
 
       {/* Both of these belong to an order that is still happening.
@@ -1161,7 +1161,7 @@ function CancelReasonSheet({ busy, onClose, onConfirm }: {
           {CUSTOMER_CANCEL_REASONS.map(item => (
             <label key={item.code}
               className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 cursor-pointer ${
-                reason === item.code ? 'border-red-500 bg-red-500/5' : 'border-line'
+                reason === item.code ? 'border-dangerline bg-dangerbg' : 'border-line'
               }`}>
               <input type="radio" name="cancel-reason" value={item.code}
                 checked={reason === item.code}
@@ -1173,7 +1173,7 @@ function CancelReasonSheet({ busy, onClose, onConfirm }: {
         </div>
 
         <div className="flex gap-2 mt-4">
-          <button className="btn bg-red-600 text-white hover:bg-red-700 flex-1"
+          <button className="btn bg-danger text-white hover:bg-danger flex-1"
             disabled={!reason || busy}
             onClick={() => reason && onConfirm(reason)}>
             {busy ? 'جاري الإلغاء…' : 'تأكيد إلغاء الطلب'}
@@ -1205,7 +1205,7 @@ function Adjustments({ items }: { items: { name: string; total: number; is_adjus
       {rows.map((it, i) => (
         <div key={i} className="flex items-center justify-between gap-3 text-sm">
           <span className="text-mist">{it.name}</span>
-          <span className={`font-semibold ${Number(it.total) < 0 ? 'text-emerald-700' : 'text-foam'}`}>
+          <span className={`font-semibold ${Number(it.total) < 0 ? 'text-success' : 'text-foam'}`}>
             {Number(it.total) > 0 ? '+' : ''}{it.total} ج.م
           </span>
         </div>

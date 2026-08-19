@@ -86,7 +86,7 @@ export default function OrderAdjust({ orderId, onDone }: {
           onClick={markAsAuditTest}>
           <Icon name="flask" size="sm" className="inline-block align-[-0.15em] me-1" />تسجيل كاختبار تدقيق
         </button>
-        {error && <p className="text-xs text-red-600 font-semibold">{error}</p>}
+        {error && <p className="text-xs text-danger font-semibold">{error}</p>}
       </div>
     )
   }
@@ -99,7 +99,7 @@ export default function OrderAdjust({ orderId, onDone }: {
       </div>
 
       {result && (
-        <div className="bg-emerald-500/10 text-emerald-800 rounded-lg p-2.5 mb-2.5 text-xs font-semibold">
+        <div className="bg-successbg text-success rounded-lg p-2.5 mb-2.5 text-xs font-semibold">
           <Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />اتعدّل، الإجمالي من {result.old_total} لـ {result.new_total} ج.م
           {result.service_fee_waived
             ? ` · معفي من ${result.service_fee_waived} ج.م رسوم` : ''}
@@ -129,7 +129,7 @@ export default function OrderAdjust({ orderId, onDone }: {
           sign > 0 ? 'bg-sea text-white border-sea' : 'bg-shell border-line'}`}
           onClick={() => setSign(1)} aria-pressed={sign > 0}>+ زيادة</button>
         <button className={`text-sm font-bold rounded-lg px-3 min-h-[40px] border ${
-          sign < 0 ? 'bg-red-500 text-white border-red-500' : 'bg-shell border-line'}`}
+          sign < 0 ? 'bg-dangerbg text-white border-dangerline' : 'bg-shell border-line'}`}
           onClick={() => setSign(-1)} aria-pressed={sign < 0}>− خصم</button>
         <input className="field !h-10 flex-1 text-center" type="number" inputMode="decimal"
           dir="ltr" placeholder="المبلغ" value={amount}
@@ -149,7 +149,7 @@ export default function OrderAdjust({ orderId, onDone }: {
         </label>
       )}
 
-      {error && <p className="text-xs text-red-600 font-semibold mb-2">{error}</p>}
+      {error && <p className="text-xs text-danger font-semibold mb-2">{error}</p>}
 
       <button className="btn-sea w-full !py-2 text-sm" disabled={!valid || saving} onClick={submit}>
         {saving ? 'جاري التعديل…' : `${sign > 0 ? 'ضيف' : 'اخصم'} ${value || 0} ج.م`}

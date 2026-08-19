@@ -197,7 +197,7 @@ export default function CustomersTab() {
   if (error) {
     return (
       <div className="card p-6 text-center space-y-3">
-        <p className="text-red-700 font-semibold">{error}</p>
+        <p className="text-danger font-semibold">{error}</p>
         <button className="btn-ghost" onClick={load}>جرب تاني</button>
       </div>
     )
@@ -311,7 +311,7 @@ function Stat({ label, value, tone = 'plain' }: { label: string; value: string; 
 function Tag({ children, tone }: { children: React.ReactNode; tone: 'good' | 'warn' | 'bad' }) {
   const cls = tone === 'good' ? 'bg-sea/10 text-sea'
     : tone === 'warn' ? 'bg-coral-200 text-coral-700'
-    : 'bg-red-500/10 text-red-700'
+    : 'bg-dangerbg text-danger'
   return <span className={`${cls} text-[10px] font-bold rounded px-1.5 py-0.5 shrink-0`}>{children}</span>
 }
 
@@ -436,8 +436,8 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
           </div>
 
           {detail && detail.complaints.length > 0 && (
-            <div className="bg-red-500/5 rounded-xl p-3 space-y-2">
-              <p className="font-bold text-sm text-red-700">شكاوى ({detail.complaints.length})</p>
+            <div className="bg-dangerbg rounded-xl p-3 space-y-2">
+              <p className="font-bold text-sm text-danger">شكاوى ({detail.complaints.length})</p>
               {detail.complaints.map(x => (
                 <div key={x.id} className="text-xs">
                   <p className="font-semibold">#{x.order_id} · {x.category || 'شكوى'} · {x.status || 'مفتوحة'}</p>
@@ -453,13 +453,13 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
               happen. */}
           <div className="border-t border-line pt-3">
             {c.banned && (
-              <div className="bg-red-500/10 rounded-xl p-3 mb-2">
-                <p className="text-sm font-bold text-red-700">موقوف عن الطلب</p>
+              <div className="bg-dangerbg rounded-xl p-3 mb-2">
+                <p className="text-sm font-bold text-danger">موقوف عن الطلب</p>
                 {c.ban_reason && <p className="text-xs text-mist mt-0.5">{c.ban_reason}</p>}
                 {c.banned_at && <p className="text-xs text-mist mt-0.5">من {day(c.banned_at)}</p>}
               </div>
             )}
-            {banError && <p className="text-sm text-red-700 mb-2">{banError}</p>}
+            {banError && <p className="text-sm text-danger mb-2">{banError}</p>}
             <div className="min-h-[44px] flex items-center">
               <Toggle on={!c.banned} onChange={toggleBan} disabled={banBusy}
                 label="يقدر يطلب" labelOff="محظور" />
@@ -468,7 +468,7 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
             {/* Deleting is below banning on purpose, and worded so the
                 difference is obvious: a ban is reversible from this same
                 toggle, a delete is not. The orders stay either way. */}
-            <button className="w-full text-xs mt-2 text-red-600 underline min-h-[44px] inline-flex items-center justify-center"
+            <button className="w-full text-xs mt-2 text-danger underline min-h-[44px] inline-flex items-center justify-center"
               disabled={banBusy} onClick={removeAccount}>
               امسح حساب العميل ده نهائيًا
             </button>
@@ -483,7 +483,7 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
               الطلبات {detail ? `(${detail.orders.length})` : ''}
             </p>
 
-            {error && <p className="text-sm text-red-700">{error}</p>}
+            {error && <p className="text-sm text-danger">{error}</p>}
             {!detail && !error && <p className="text-sm text-mist">بنحمّل…</p>}
 
             {detail && detail.orders.length === 0 && (
@@ -510,7 +510,7 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
                   {o.request_notes && <p className="text-xs text-mist mt-1"><Icon name="penToSquare" size="xs" className="inline-block align-[-0.15em] me-1" />{o.request_notes}</p>}
                   {o.customer_note && <p className="text-xs text-mist mt-1"><Icon name="chatCircle" size="xs" className="inline-block align-[-0.15em] me-1" />{o.customer_note}</p>}
                   {o.cancel_reason && (
-                    <p className="text-xs text-red-700 mt-1">سبب الإلغاء: {o.cancel_reason}</p>
+                    <p className="text-xs text-danger mt-1">سبب الإلغاء: {o.cancel_reason}</p>
                   )}
                   {o.rating && (o.rating.driver || o.rating.restaurant) && (
                     <p className="text-xs text-coral-700 mt-1">

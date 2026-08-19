@@ -113,8 +113,8 @@ export default function FunnelPanel() {
       )}
 
       {error && (
-        <div className="border border-red-400/50 bg-red-500/5 rounded-xl p-3 mb-3 flex items-center justify-between gap-3">
-          <p className="text-sm text-red-700 font-semibold">{error}</p>
+        <div className="border border-dangerline bg-dangerbg rounded-xl p-3 mb-3 flex items-center justify-between gap-3">
+          <p className="text-sm text-danger font-semibold">{error}</p>
           <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0" onClick={() => load(days)}>جرب تاني</button>
         </div>
       )}
@@ -149,7 +149,7 @@ export default function FunnelPanel() {
                       shown explicitly rather than left as arithmetic between
                       two bars. */}
                   {prev && dropped > 0 && (
-                    <p className="text-[10px] text-red-600 mr-20 mt-0.5">
+                    <p className="text-[10px] text-danger mr-20 mt-0.5">
                       <Icon name="arrowDown" size="sm" className="inline-block align-[-0.15em] me-1" />خسرنا {dropped} هنا
                     </p>
                   )}
@@ -222,7 +222,7 @@ export default function FunnelPanel() {
               <h4 className="font-bold text-sm mb-2">ليه تأكيد الطلب وقف؟</h4>
               <div className="flex flex-wrap gap-2">
                 {data!.checkout_blocks.map(b => (
-                  <span key={b.reason} className="text-xs bg-red-500/10 text-red-700 rounded-full px-3 py-1.5">
+                  <span key={b.reason} className="text-xs bg-dangerbg text-danger rounded-full px-3 py-1.5">
                     {BLOCK_LABELS[b.reason] ?? b.reason}: {b.devices}
                   </span>
                 ))}

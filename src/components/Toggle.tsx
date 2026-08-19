@@ -43,7 +43,7 @@ export default function Toggle({
         disabled={disabled}
         onClick={onChange}
         className={`relative w-10 h-6 rounded-full shrink-0 transition-colors disabled:opacity-40
-          before:content-[''] before:absolute before:-inset-2 ${on ? 'bg-emerald-600' : 'bg-line'}`}
+          before:content-[''] before:absolute before:-inset-2 ${on ? 'bg-success' : 'bg-line'}`}
       >
         <span
           className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform
@@ -51,7 +51,7 @@ export default function Toggle({
         />
       </button>
       {label != null && (
-        <span className={`text-sm font-semibold min-w-0 truncate ${on ? 'text-emerald-800' : 'text-mist'}`}>
+        <span className={`text-sm font-semibold min-w-0 truncate ${on ? 'text-success' : 'text-mist'}`}>
           {on ? label : (labelOff ?? label)}
         </span>
       )}

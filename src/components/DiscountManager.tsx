@@ -103,7 +103,7 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
     return (
       <div>
         {writeError && (
-          <p className="text-xs text-red-600 bg-red-500/10 rounded-lg p-2.5 mb-2" role="alert">{writeError}</p>
+          <p className="text-xs text-danger bg-dangerbg rounded-lg p-2.5 mb-2" role="alert">{writeError}</p>
         )}
       <div className="flex items-center justify-between bg-coral-100 rounded-lg px-3 py-2 text-sm">
         <span>
@@ -112,7 +112,7 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
         </span>
         <div className="flex gap-2">
           <button className="text-sea text-xs font-semibold min-h-[44px] inline-flex items-center" onClick={() => setEditing(true)}>تعديل</button>
-          <button className="text-red-600 text-xs font-semibold min-h-[44px] inline-flex items-center" onClick={remove}>حذف</button>
+          <button className="text-danger text-xs font-semibold min-h-[44px] inline-flex items-center" onClick={remove}>حذف</button>
         </div>
       </div>
       {sheetElement}
@@ -127,7 +127,7 @@ export default function DiscountManager({ restaurantId, scope, menuItemId, categ
   return (
     <div className="bg-shellup/60 rounded-lg p-2.5 space-y-2">
       {writeError && (
-        <p className="text-xs text-red-600 bg-red-500/10 rounded-lg p-2.5" role="alert">{writeError}</p>
+        <p className="text-xs text-danger bg-dangerbg rounded-lg p-2.5" role="alert">{writeError}</p>
       )}
       {conflicts && conflicts.length > 0 && (
         <div className="bg-coral-100 rounded-lg p-2.5 text-xs">

@@ -136,7 +136,7 @@ export default function AddonLibrary({ restaurantId, items }: {
               <button className="btn-ghost !py-1 !px-2.5 text-xs shrink-0" onClick={() => { setSelectedIds([l.id]); setApplying(l); setTargetCat(categories[0] ?? '') }}>
                 ضيفه لقسم
               </button>
-              <button className="text-red-500 text-xs shrink-0" onClick={() => remove(l.id)}>حذف</button>
+              <button className="text-danger text-xs shrink-0" onClick={() => remove(l.id)}>حذف</button>
             </div>
           ))}
         </div>
@@ -198,8 +198,8 @@ export default function AddonLibrary({ restaurantId, items }: {
         </div>
       </div>
 
-      {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
-      {notice && <p className="text-xs text-emerald-700 bg-emerald-500/10 rounded-lg p-2 mt-2">{notice}</p>}
+      {error && <p className="text-xs text-danger mt-2">{error}</p>}
+      {notice && <p className="text-xs text-success bg-successbg rounded-lg p-2 mt-2">{notice}</p>}
     </div>
   )
 }

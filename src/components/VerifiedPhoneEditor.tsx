@@ -73,7 +73,7 @@ export default function VerifiedPhoneEditor({ compact = false }: { compact?: boo
     <div className={compact ? '' : 'space-y-3'}>
       {!sent ? (
         <div className="space-y-2">
-          <input className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-red-400' : ''}`}
+          <input className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-dangerline' : ''}`}
             aria-label="رقم الموبايل الجديد" dir="ltr" value={phone}
             onChange={e => { setPhone(e.target.value); setError('') }}
             placeholder="01xxxxxxxxx" maxLength={13} />
@@ -96,7 +96,7 @@ export default function VerifiedPhoneEditor({ compact = false }: { compact?: boo
           </button>
         </div>
       )}
-      {error && <p className="text-xs text-red-600 mt-2" role="alert">{error}</p>}
+      {error && <p className="text-xs text-danger mt-2" role="alert">{error}</p>}
     </div>
   )
 }

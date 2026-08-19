@@ -148,7 +148,7 @@ export default function VendorHoursRow({ restaurant, onSaved }: {
         </p>
       )}
 
-      {error && <p className="text-[11px] text-red-600 mt-2 font-semibold" role="alert">{error}</p>}
+      {error && <p className="text-[11px] text-danger mt-2 font-semibold" role="alert">{error}</p>}
 
       <div className="flex gap-2 mt-3 pt-2.5 border-t border-line">
         <button className="btn-sea !py-2 !px-5 text-sm" disabled={saving || loading} onClick={save}>

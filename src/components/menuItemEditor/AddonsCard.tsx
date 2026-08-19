@@ -93,7 +93,7 @@ export default function AddonsCard({
                   {!isSwap && g.max_select != null && <span> · حد أقصى {g.max_select}</span>}
                 </p>
               </div>
-              <button className="text-red-500 text-xs shrink-0 disabled:opacity-40" disabled={disabled} onClick={() => onRemoveGroup(g.id)}>حذف المجموعة</button>
+              <button className="text-danger text-xs shrink-0 disabled:opacity-40" disabled={disabled} onClick={() => onRemoveGroup(g.id)}>حذف المجموعة</button>
             </div>
 
             <div className="space-y-2 mb-3">
@@ -108,7 +108,7 @@ export default function AddonsCard({
                     onBlur={e => { if (Number(e.target.value) !== Number(a.price)) onAddonPriceChange(a.id, e.target.value) }}
                     onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }} />
                   <span className="text-xs text-mist shrink-0">{Number(a.price) > 0 ? 'ج.م' : 'مجانًا'}</span>
-                  <button className="text-red-500 text-xs shrink-0 disabled:opacity-40" disabled={disabled} onClick={() => onRemoveAddon(a.id)}>حذف</button>
+                  <button className="text-danger text-xs shrink-0 disabled:opacity-40" disabled={disabled} onClick={() => onRemoveAddon(a.id)}>حذف</button>
                 </div>
               ))}
               {addons.filter(a => a.group_id === g.id).length === 0 && (

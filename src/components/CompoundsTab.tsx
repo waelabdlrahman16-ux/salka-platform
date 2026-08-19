@@ -100,7 +100,7 @@ export default function CompoundsTab() {
             <p className="font-bold text-sm">{f.id ? 'تعديل كومباوند' : 'كومباوند جديد'}</p>
             <button className="text-mist text-xs" onClick={() => { setEditing(false); setError('') }}>إغلاق<Icon name="x" size="xs" className="inline-block align-[-0.15em] ms-1" /></button>
           </div>
-          {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3" role="alert">{error}</p>}
+          {error && <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-3" role="alert">{error}</p>}
 
           <div className="grid grid-cols-2 gap-2.5">
             <div className="col-span-2">
@@ -179,7 +179,7 @@ export default function CompoundsTab() {
           <div key={r.id} className={`card p-3 flex items-center gap-3 ${r.active ? '' : 'opacity-60'}`}>
             <div className="min-w-0 flex-1">
               <p className="font-semibold text-sm truncate">
-                {r.name} {!r.active && <span className="text-xs text-red-600">(موقوف)</span>}
+                {r.name} {!r.active && <span className="text-xs text-danger">(موقوف)</span>}
               </p>
               <p className="text-xs text-mist">
                 {regions.find(g => g.id === r.region_id)?.name ?? '—'}
