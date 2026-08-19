@@ -67,7 +67,7 @@ export default function RestaurantCard({
       {rated && (
         <>
           <span className="flex items-center gap-1">
-            <Icon name="star" className="w-3.5 h-3.5 text-sand" />
+            <Icon name="star" size="xs" className="text-sand" />
             <span className="font-bold text-foam">{r.rating}</span>
             <span>({r.review_count})</span>
           </span>
@@ -102,7 +102,7 @@ export default function RestaurantCard({
           style={{ background: art.tint }}>
           {r.logo_url
             ? <img src={sized(r.logo_url, IMG.icon)} alt="" loading="eager" className="w-full h-full object-cover" />
-            : <CategoryArt art={art} className="w-6 h-6 text-mist" />}
+            : <CategoryArt art={art} size="lg" className="text-mist" />}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -166,7 +166,7 @@ export default function RestaurantCard({
           style={{ background: art.tint }}>
           {r.logo_url
             ? <img src={sized(r.logo_url, IMG.icon)} alt="" loading="eager" className="w-full h-full object-cover" />
-            : <CategoryArt art={art} className="w-6 h-6 text-mist" />}
+            : <CategoryArt art={art} size="lg" className="text-mist" />}
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-1.5 min-w-0">

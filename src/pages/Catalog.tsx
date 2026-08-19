@@ -96,7 +96,7 @@ export default function Catalog() {
     <div className="max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-4">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold truncate"><Icon name="folders" className="w-5 h-5 inline-block align-[-0.15em] me-1" />إدارة القوايم</h1>
+          <h1 className="text-2xl font-bold truncate"><Icon name="folders" size="md" className="inline-block align-[-0.15em] me-1" />إدارة القوايم</h1>
           <p className="text-sm text-mist mt-0.5">{profile?.name}</p>
         </div>
         <button className="btn-ghost !py-1.5 !px-3 text-sm shrink-0" onClick={signOut}>خروج</button>
@@ -126,7 +126,7 @@ export default function Catalog() {
                 </div>
                 {/* Same U+2039 bidi-mirroring bug as the chooser: the
                     character flips in an RTL paragraph and points backwards. */}
-                <Icon name="chevronLeft" className="w-3 h-3 text-mist shrink-0" />
+                <Icon name="chevronLeft" size="xs" className="text-mist shrink-0" />
               </button>
             ))}
             {restaurants.length === 0 && (
@@ -139,7 +139,7 @@ export default function Catalog() {
       {selected && (
         <>
           <button className="text-sm text-mist hover:text-foam mb-3" onClick={() => setSelectedId(null)}>
-            <Icon name="chevronLeft" className="w-3 h-3 inline-block align-middle ml-1" />كل المطاعم
+            <Icon name="chevronLeft" size="xs" className="inline-block align-middle ml-1" />كل المطاعم
           </button>
 
           <div className="flex items-center justify-between gap-2 mb-3">

@@ -426,7 +426,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
               type="button"
               className="btn-ghost !py-2.5 text-sm"
               onClick={() => addModifierTemplate('required')}
-            ><Icon name="check" className="w-4 h-4 inline-block align-[-0.15em] me-1" />اختيار مطلوب</button>
+            ><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />اختيار مطلوب</button>
             <button
               type="button"
               className="btn-ghost !py-2.5 text-sm"
@@ -496,7 +496,7 @@ export default function AddMenuItemModal({ restaurant, onClose, onSaved }: {
                             ...current,
                             choices: current.choices.filter((_, j) => j !== choiceIndex)
                           } : current))}
-                        ><Icon name="x" className="w-4 h-4" /></button>
+                        ><Icon name="x" size="sm" /></button>
                       </div>
                     ))}
                   </div>

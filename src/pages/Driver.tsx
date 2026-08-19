@@ -715,7 +715,7 @@ export default function DriverPage() {
           التليفون، كلّم الإدارة عشان يفكّوا الربط ويشتغل من هنا.
         </p>
         <a href="tel:+201150068077" className="btn-sea w-full !flex items-center justify-center mt-6">
-          <Icon name="phone" className="w-4 h-4 inline-block align-[-0.15em] me-1" />كلّم الإدارة
+          <Icon name="phone" size="sm" className="inline-block align-[-0.15em] me-1" />كلّم الإدارة
         </a>
         <button className="btn-ghost w-full mt-2.5" onClick={() => supabase.auth.signOut()}>
           تسجيل خروج
@@ -815,7 +815,7 @@ export default function DriverPage() {
             : (driver.cash_held ?? 0) >= 2500 ? 'bg-red-500/15 text-red-700'
             : 'bg-shellup text-seadeep'
         }`}>
-          <span><Icon name="moneyBill" className="w-4 h-4 inline-block align-[-0.15em] me-1" />كاش معاك دلوقتي</span>
+          <span><Icon name="moneyBill" size="sm" className="inline-block align-[-0.15em] me-1" />كاش معاك دلوقتي</span>
           <span>{driver.cash_held} ج.م{(driver.cash_held ?? 0) >= 2500 ? '. قرّب الحد' : ''}</span>
         </div>
       )}
@@ -831,7 +831,7 @@ export default function DriverPage() {
       {(syncFailed || (lastSyncAt !== null && Date.now() - lastSyncAt > STALE_AFTER_MS)) && (
         <div className="bg-sand/15 border border-sand/40 rounded-xl p-3 mb-4 flex items-center justify-between gap-3">
           <p className="text-sm font-semibold text-foam">
-            <Icon name="broadcast" className="w-4 h-4 inline-block align-[-0.15em] me-1" />الاتصال ضعيف، اللي ظاهر قدامك ممكن يكون قديم
+            <Icon name="broadcast" size="sm" className="inline-block align-[-0.15em] me-1" />الاتصال ضعيف، اللي ظاهر قدامك ممكن يكون قديم
           </p>
           <button className="btn-ghost !py-2 text-sm shrink-0" disabled={refreshing} onClick={manualRefresh}>
             {refreshing ? '…' : 'حدّث'}
@@ -842,7 +842,7 @@ export default function DriverPage() {
       {gpsDenied && (
         <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 mb-4">
           <p className="text-sm font-semibold text-red-700">
-            <Icon name="locationDot" className="w-4 h-4 inline-block align-[-0.15em] me-1" />الموقع مقفول. شغّل الـ GPS عشان الخريطة والوقت المتوقع يشتغلوا
+            <Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />الموقع مقفول. شغّل الـ GPS عشان الخريطة والوقت المتوقع يشتغلوا
           </p>
           {/* The old copy said WHAT was broken but never HOW to fix it -- a
               driver who tapped "block" on the permission prompt once has no
@@ -859,7 +859,7 @@ export default function DriverPage() {
       {justDelivered && (
         <div className="fixed inset-0 z-50 bg-white grid place-items-center p-6">
           <div className="text-center">
-            <div className="w-16 h-16 rounded-full bg-shellup grid place-items-center text-3xl mx-auto mb-4"><Icon name="check" className="w-8 h-8" /></div>
+            <div className="w-16 h-16 rounded-full bg-shellup grid place-items-center text-3xl mx-auto mb-4"><Icon name="check" size="xl" /></div>
             <p className="text-lg font-bold text-foam">تم التسليم</p>
             <div className="bg-shellup rounded-2xl px-5 py-3 mt-5">
               <p className="text-xs text-mist">أرباح النهاردة</p>
@@ -926,7 +926,7 @@ export default function DriverPage() {
               : o.total
             return (
               <div key={a.id} className="card !rounded-2xl p-3.5 flex items-center gap-3">
-                <span className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 grid place-items-center shrink-0"><Icon name="check" className="w-5 h-5" /></span>
+                <span className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 grid place-items-center shrink-0"><Icon name="check" size="md" /></span>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-sm truncate">#{o.id} · {o.restaurants?.name}</p>
                   <p className="text-xs text-mist mt-0.5 truncate">
@@ -950,7 +950,7 @@ export default function DriverPage() {
           if (dead) {
             return (
               <div key={a.id} className="card !rounded-2xl p-3.5 flex items-center gap-3 border-line">
-                <span className="w-9 h-9 rounded-full bg-shellup text-mist grid place-items-center shrink-0"><Icon name="x" className="w-5 h-5" /></span>
+                <span className="w-9 h-9 rounded-full bg-shellup text-mist grid place-items-center shrink-0"><Icon name="x" size="md" /></span>
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-sm truncate">#{o.id} · {o.restaurants?.name}</p>
                   <p className="text-xs text-mist mt-0.5">
@@ -969,7 +969,7 @@ export default function DriverPage() {
                     admin" with no number on screen is not a real instruction. */}
                 {dead.held && (
                   <a href="tel:+201150068077" className="btn-sea !py-2 !px-3 text-xs shrink-0 !flex items-center gap-1">
-                    <Icon name="phone" className="w-4 h-4 inline-block align-[-0.15em] me-1" />اتصال
+                    <Icon name="phone" size="sm" className="inline-block align-[-0.15em] me-1" />اتصال
                   </a>
                 )}
               </div>
@@ -1085,7 +1085,7 @@ export default function DriverPage() {
               {a.status === 'Offered' ? (
                 <div className="mt-3 bg-night border border-line rounded-xl p-3.5 text-sm">
                   <p className="text-mist flex items-start gap-1.5">
-                    <Icon name="locationDot" className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                    <Icon name="locationDot" size="xs" className="mt-0.5 shrink-0" />
                     <span>التوصيل لـ {o.zone}</span>
                   </p>
                 </div>
@@ -1093,7 +1093,7 @@ export default function DriverPage() {
               <div className="mt-3 bg-night border border-line rounded-xl p-3.5 text-sm space-y-2">
                 <p className="font-semibold">{o.customer_name}</p>
                 <p className="text-mist flex items-start gap-1.5">
-                  <Icon name="locationDot" className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                  <Icon name="locationDot" size="xs" className="mt-0.5 shrink-0" />
                   <span>{o.zone}، وحدة {o.unit_number}</span>
                 </p>
                 {o.address_notes && (
@@ -1127,7 +1127,7 @@ export default function DriverPage() {
                   hint that 400 of it leaves their pocket first. */}
               {o.order_type === 'pickup_request' && o.payment_mode === 'driver_pays' && o.collect_amount != null && (
                 <p className="mt-3 text-sm text-sandink bg-sandink/10 rounded-xl p-3 font-semibold">
-                  <Icon name="moneyBill" className="w-4 h-4 inline-block align-[-0.15em] me-1" />هتدفع {o.collect_amount} ج.م للمحل من فلوسك، وتحصّلها من العميل مع التوصيل
+                  <Icon name="moneyBill" size="sm" className="inline-block align-[-0.15em] me-1" />هتدفع {o.collect_amount} ج.م للمحل من فلوسك، وتحصّلها من العميل مع التوصيل
                 </p>
               )}
 
@@ -1227,7 +1227,7 @@ export default function DriverPage() {
                       <div className="pt-2 mt-1 border-t border-line/60 space-y-1.5">
                         {a.no_answer_reported_at ? (
                           <p className="text-sandink text-xs text-center">
-                            <Icon name="hourglass" className="w-4 h-4 inline-block align-[-0.15em] me-1" />اتبلّغت الإدارة، مستنيين قرارهم
+                            <Icon name="hourglass" size="sm" className="inline-block align-[-0.15em] me-1" />اتبلّغت الإدارة، مستنيين قرارهم
                             {a.delivery_problem_reason ? `، "${a.delivery_problem_reason}"` : ''}
                           </p>
                         ) : !a.called_customer_at ? (

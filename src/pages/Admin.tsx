@@ -91,7 +91,7 @@ function AccountActionsMenu({ busy, onChangeEmail, onResetPassword, onCustomPass
   return (
     <div className="relative shrink-0" ref={ref}>
       <button className="btn-ghost !py-1.5 !px-2.5 text-xs inline-flex items-center gap-1" disabled={busy} onClick={() => setOpen(v => !v)}>
-        <Icon name="penToSquare" className="w-3 h-3" /> الحساب
+        <Icon name="penToSquare" size="xs" /> الحساب
       </button>
       {open && (
         <div className="absolute left-0 mt-1 z-20 bg-shell border border-line rounded-xl shadow-lg py-1.5 min-w-[160px]">
@@ -1756,8 +1756,8 @@ export default function Admin() {
   const addr = (o: Order) => `${o.zone}، وحدة ${o.unit_number}${o.address_notes ? `: ${o.address_notes}` : ''}`
   const customer = (o: Order) => (
     <div className="mt-2.5 bg-night border border-line rounded-xl p-3 text-sm space-y-1">
-      <p><Icon name="user" className="w-4 h-4 inline-block align-[-0.15em] me-1" />{o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
-      <p><Icon name="locationDot" className="w-4 h-4 inline-block align-[-0.15em] me-1" />{addr(o)}</p>
+      <p><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
+      <p><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{addr(o)}</p>
       {o.customer_note && <p className="text-sandink">📝 {o.customer_note}</p>}
     </div>
   )
@@ -1810,7 +1810,7 @@ export default function Admin() {
       {syncFailed && (
         <div className="card p-3 mb-4 border-red-400/50 bg-red-500/5">
           <p className="text-sm text-red-700 font-semibold">
-            <Icon name="warning" className="w-4 h-4 inline-block align-[-0.15em] me-1" />آخر محاولة تحديث فشلت، اللي شايفه دلوقتي ممكن يكون مش أحدث حاجة. جرب "حدّث" فوق.
+            <Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />آخر محاولة تحديث فشلت، اللي شايفه دلوقتي ممكن يكون مش أحدث حاجة. جرب "حدّث" فوق.
           </p>
         </div>
       )}
@@ -1846,7 +1846,7 @@ export default function Admin() {
                     <div className="min-w-0">
                       <p className="font-semibold text-sm">طلب #{o.id}: {o.vendor_name}: {o.total} ج.م</p>
                       <p className="text-xs text-mist mt-0.5">
-                        <Icon name="user" className="w-4 h-4 inline-block align-[-0.15em] me-1" />{o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a>
+                        <Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a>
                       </p>
                       <p className="text-xs text-mist mt-0.5">📍 {o.compound_name ?? '—'}</p>
                     </div>
@@ -1856,13 +1856,13 @@ export default function Admin() {
                   </div>
                   {full?.pricing_status === 'pending_quote' && (
                     <p className="text-xs text-sandink font-semibold mt-1.5 bg-sand/10 rounded-lg px-2 py-1">
-                      <Icon name="receipt" className="w-4 h-4 inline-block align-[-0.15em] me-1" />واقف عليك إنت، الطلب ده محتاج تسعير قبل ما أي مندوب يقدر ياخده
+                      <Icon name="receipt" size="sm" className="inline-block align-[-0.15em] me-1" />واقف عليك إنت، الطلب ده محتاج تسعير قبل ما أي مندوب يقدر ياخده
                     </p>
                   )}
                   {(full?.customer_note?.trim() || full?.request_notes?.trim()) && (
                     <div className="mt-2 rounded-xl border border-sand/40 bg-sand/10 px-3 py-2 text-xs text-sandink space-y-1">
-                      {full.customer_note?.trim() && <p><Icon name="chatCircle" className="w-4 h-4 inline-block align-[-0.15em] me-1" />ملاحظة العميل: {full.customer_note}</p>}
-                      {full.request_notes?.trim() && <p><Icon name="penToSquare" className="w-4 h-4 inline-block align-[-0.15em] me-1" />تفاصيل الطلب: {full.request_notes}</p>}
+                      {full.customer_note?.trim() && <p><Icon name="chatCircle" size="sm" className="inline-block align-[-0.15em] me-1" />ملاحظة العميل: {full.customer_note}</p>}
+                      {full.request_notes?.trim() && <p><Icon name="penToSquare" size="sm" className="inline-block align-[-0.15em] me-1" />تفاصيل الطلب: {full.request_notes}</p>}
                     </div>
                   )}
                   <p className="text-xs text-red-700 font-semibold mt-1.5">
@@ -1883,7 +1883,7 @@ export default function Admin() {
                     {full?.pricing_status === 'pending_quote' && (
                       <button className="btn-sea !py-1.5 text-xs flex-1 min-w-[7rem]"
                         onClick={() => { setTab('orders'); setOrderStatusFilter('all'); setOrderQuery(`#${o.id}`) }}>
-                        <Icon name="receipt" className="w-4 h-4 inline-block align-[-0.15em] me-1" />سعّر الطلب
+                        <Icon name="receipt" size="sm" className="inline-block align-[-0.15em] me-1" />سعّر الطلب
                       </button>
                     )}
 
@@ -1899,7 +1899,7 @@ export default function Admin() {
                     {/* Stuck because nobody has taken it. This is the common one. */}
                     {!assignment && full && full.status !== 'awaiting_payment' && full.pricing_status !== 'pending_quote' && (
                       <button className="btn-sea !py-1.5 text-xs flex-1 min-w-[7rem]" onClick={() => setAssigning(full)}>
-                        <Icon name="moped" className="w-4 h-4 inline-block align-[-0.15em] me-1" />عيّن مندوب
+                        <Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />عيّن مندوب
                       </button>
                     )}
 
@@ -1988,7 +1988,7 @@ export default function Admin() {
                       they said it instead -- that is the number that decides
                       whether this is fresh or has been sitting. */}
                   <p className="text-xs mt-0.5 text-emerald-700">
-                    <Icon name="check" className="w-4 h-4 inline-block align-[-0.15em] me-1" />قال إنه حوّل{o.instapay_claimed_at ? ` · ${new Date(o.instapay_claimed_at).toLocaleTimeString('ar-EG', { timeZone: 'Africa/Cairo', hour: 'numeric', minute: '2-digit' })}` : ''}
+                    <Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />قال إنه حوّل{o.instapay_claimed_at ? ` · ${new Date(o.instapay_claimed_at).toLocaleTimeString('ar-EG', { timeZone: 'Africa/Cairo', hour: 'numeric', minute: '2-digit' })}` : ''}
                   </p>
                 </div>
                 <button className="btn-sea !py-1.5 !px-3.5 text-sm shrink-0" disabled={accountBusy === `instapay-${o.id}`}
@@ -2033,7 +2033,7 @@ export default function Admin() {
                 if (next !== 'wallet') setWalletOrderId(null)
                 setTab(next)
               }}>
-              <Icon name={g.icon} className="w-4 h-4 inline-block align-[-0.15em] me-1" />{g.label}
+              <Icon name={g.icon} size="sm" className="inline-block align-[-0.15em] me-1" />{g.label}
               {n > 0 && (
                 <span className={`mr-1.5 rounded-full px-1.5 text-[11px] font-bold ${on ? 'bg-white text-sea' : 'bg-red-600 text-white'}`}>{n}</span>
               )}
@@ -2092,7 +2092,7 @@ export default function Admin() {
                 const priorAttempts = assignments.filter(a => a.order_id === o.id && a.status !== 'Offered')
                 return priorAttempts.length > 0 ? (
                   <p className="text-xs text-sandink mt-1.5">
-                    <Icon name="warning" className="w-4 h-4 inline-block align-[-0.15em] me-1" />اتعرض قبل كده على {priorAttempts.length} مندوب ({priorAttempts.map(a => a.drivers?.name).filter(Boolean).join('، ')})
+                    <Icon name="warning" size="sm" className="inline-block align-[-0.15em] me-1" />اتعرض قبل كده على {priorAttempts.length} مندوب ({priorAttempts.map(a => a.drivers?.name).filter(Boolean).join('، ')})
                   </p>
                 ) : null
               })()}
@@ -2160,7 +2160,7 @@ export default function Admin() {
             : <button className="btn-sea w-full text-sm" onClick={() => setDriverForm({
                 id: null, name: '', phone: '', vehicle_type: 'motorcycle',
                 vehicle_plate: '', instapay_number: '', payout_schedule: 'daily', active: true,
-              })}><Icon name="plus" className="w-4 h-4 inline-block align-[-0.15em] me-1" />إضافة مندوب</button>}
+              })}><Icon name="plus" size="sm" className="inline-block align-[-0.15em] me-1" />إضافة مندوب</button>}
           <div className="card p-4">
             <p className="font-semibold mb-1">إضافة مندوبين بالجملة</p>
             <p className="text-xs text-mist mb-2">سطر لكل مندوب: الاسم, رقم الموبايل, النوع (اكتب فان لو فان، سيبها فاضية أو اكتب موتوسيكل)</p>
@@ -2185,7 +2185,7 @@ export default function Admin() {
                   {/* So you can match the binding against the phone in the
                       driver's hand before deciding whether to reset it. */}
                   <p className="text-xs text-mist mt-1">
-                    <Icon name="mobileScreen" className="w-4 h-4 inline-block align-[-0.15em] me-1" />{d.device_id ? `مربوط بـ ${d.device_label || 'جهاز'}` : 'مش مربوط بجهاز لسه'}
+                    <Icon name="mobileScreen" size="sm" className="inline-block align-[-0.15em] me-1" />{d.device_id ? `مربوط بـ ${d.device_label || 'جهاز'}` : 'مش مربوط بجهاز لسه'}
                   </p>
                   {disputeCount > 0 && (
                     <p className="text-sm text-red-600 font-semibold mt-1">⚠ {disputeCount} مشكلة مؤكدة في السجل</p>
@@ -2244,7 +2244,7 @@ export default function Admin() {
                       showTestOrders
                         ? 'bg-sandink border-sandink text-white'
                         : 'bg-shell border-dashed border-linestrong text-sandink'}`}>
-                    <Icon name="flask" className="w-4 h-4 inline-block align-[-0.15em] me-1" />التجارب
+                    <Icon name="flask" size="sm" className="inline-block align-[-0.15em] me-1" />التجارب
                     <span className={`text-xs font-normal ${showTestOrders ? 'text-white/70' : 'text-mist'}`}> {testCount}</span>
                   </button>
                 )}
@@ -2369,7 +2369,7 @@ export default function Admin() {
                   #{o.id} · {o.restaurants?.name}
                   {o.is_test && (
                     <span className="mr-2 align-middle text-[10px] font-bold bg-sandink text-white rounded-full px-2 py-0.5">
-                      <Icon name="flask" className="w-4 h-4 inline-block align-[-0.15em] me-1" />تجربة
+                      <Icon name="flask" size="sm" className="inline-block align-[-0.15em] me-1" />تجربة
                     </span>
                   )}
                 </h2>
@@ -2494,12 +2494,12 @@ export default function Admin() {
                   <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
                     {known && (
                       <span className="bg-night border border-line rounded-lg px-2 py-1">
-                        <Icon name="moped" className="w-4 h-4 inline-block align-[-0.15em] me-1" />{done?.drivers?.name ?? 'محدش'}
+                        <Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />{done?.drivers?.name ?? 'محدش'}
                       </span>
                     )}
                     {mins != null && (
                       <span className={`rounded-lg px-2 py-1 border ${late ? 'bg-red-500/10 border-red-500/30 text-red-700' : 'bg-night border-line'}`}>
-                        <Icon name="clock" className="w-4 h-4 inline-block align-[-0.15em] me-1" />{mins} دقيقة{o.sla_minutes ? ` / ${o.sla_minutes}` : ''}{late ? '، متأخر' : ''}
+                        <Icon name="clock" size="sm" className="inline-block align-[-0.15em] me-1" />{mins} دقيقة{o.sla_minutes ? ` / ${o.sla_minutes}` : ''}{late ? '، متأخر' : ''}
                       </span>
                     )}
                     <span className="bg-night border border-line rounded-lg px-2 py-1">💵 {cash}</span>
@@ -2509,7 +2509,7 @@ export default function Admin() {
                         before they gave up -- had no answer on this card. */}
                     {o.status === 'Cancelled' && (o.cancel_reason || o.cancelled_at) && (
                       <span className="bg-red-500/10 border border-red-500/30 text-red-700 rounded-lg px-2 py-1">
-                        <Icon name="x" className="w-4 h-4 inline-block align-[-0.15em] me-1" />{cancelReasonLabel(o.cancel_reason)}
+                        <Icon name="x" size="sm" className="inline-block align-[-0.15em] me-1" />{cancelReasonLabel(o.cancel_reason)}
                         {o.cancelled_at && ` · اتلغى ${fmtTime(o.cancelled_at)}`}
                         {o.cancelled_at && o.created_at &&
                           ` · بعد ${Math.max(0, Math.round(
@@ -2558,7 +2558,7 @@ export default function Admin() {
                     <p className="font-semibold">الإجمالي: {o.total} ج.م</p>
                   </div>
 
-                  <p><Icon name="clock" className="w-4 h-4 inline-block align-[-0.15em] me-1" />الطلب اتعمل: {fmtTime(o.created_at)}</p>
+                  <p><Icon name="clock" size="sm" className="inline-block align-[-0.15em] me-1" />الطلب اتعمل: {fmtTime(o.created_at)}</p>
                   {assignments.filter(a => a.order_id === o.id).map(a => (
                     <div key={a.id} className="border-t border-line pt-1.5 mt-1.5 first:border-t-0 first:pt-0 first:mt-0">
                       <p className="font-semibold">محاولة {a.attempt_number}: {a.drivers?.name} ({assignmentStatusLabel(a.status)})</p>
@@ -2770,7 +2770,7 @@ export default function Admin() {
                     </p>
                     {r.cover_image_url && (
                       <button className="text-red-500 text-xs font-semibold mt-1" onClick={() => removeCover(r)}>
-                        <Icon name="x" className="w-4 h-4 inline-block align-[-0.15em] me-1" />إزالة صورة الواجهة
+                        <Icon name="x" size="sm" className="inline-block align-[-0.15em] me-1" />إزالة صورة الواجهة
                       </button>
                     )}
                   </div>
@@ -2814,7 +2814,7 @@ export default function Admin() {
 
                 {reliability[r.id] && reliability[r.id].total_orders > 0 && (
                   <p className="text-xs text-mist mt-2">
-                    <Icon name="clock" className="w-4 h-4 inline-block align-[-0.15em] me-1" />متوسط وقت القبول: <bdi dir="ltr">{reliability[r.id].avg_accept_minutes ?? '—'}</bdi> د ·
+                    <Icon name="clock" size="sm" className="inline-block align-[-0.15em] me-1" />متوسط وقت القبول: <bdi dir="ltr">{reliability[r.id].avg_accept_minutes ?? '—'}</bdi> د ·
                     {' '}<span className={reliability[r.id].slow_accepts > 2 ? 'text-red-600' : 'text-mist'}>
                       <bdi dir="ltr">{reliability[r.id].slow_accepts}</bdi> طلب اتأخر قبوله (٣٠ يوم)
                     </span>
@@ -3201,7 +3201,7 @@ export default function Admin() {
                     <div className="min-w-0">
                       <p className="font-semibold text-sm truncate">طلب #{o.id}: {o.vendor_name ?? '—'}</p>
                       <p className="text-xs text-mist mt-0.5">
-                        <Icon name="user" className="w-4 h-4 inline-block align-[-0.15em] me-1" />{o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a>
+                        <Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} · <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a>
                       </p>
                       {o.cancel_reason && <p className="text-xs text-mist mt-0.5">📝 {o.cancel_reason}</p>}
                       <p className="text-xs text-mist mt-0.5">

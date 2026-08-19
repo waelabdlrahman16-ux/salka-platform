@@ -189,7 +189,7 @@ function BottomNav() {
                   : (active ? 'text-sea' : 'text-mist')
               }`}>
               <span className="relative leading-none">
-                <Icon name={it.icon} className="w-5 h-5" />
+                <Icon name={it.icon} size="md" />
                 {!!it.badge && (
                   <span className="absolute -top-1.5 -left-2.5 bg-sea text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 grid place-items-center px-1">
                     {it.badge}

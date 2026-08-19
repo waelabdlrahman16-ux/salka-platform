@@ -417,7 +417,7 @@ export default function Track() {
             onClose={() => setCancelPickerOpen(false)}
             onConfirm={cancelOrder} />
         )}
-        <Link to="/" className="text-sm text-mist hover:text-foam"><Icon name="chevronLeft" className="w-3 h-3 inline-block align-middle ml-1" />العودة للرئيسية</Link>
+        <Link to="/" className="text-sm text-mist hover:text-foam"><Icon name="chevronLeft" size="xs" className="inline-block align-middle ml-1" />العودة للرئيسية</Link>
         {errFor('instapay') && (
           <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mt-3">{errFor('instapay')}</p>
         )}
@@ -462,7 +462,7 @@ export default function Track() {
                 try { await navigator.clipboard.writeText(INSTAPAY_HANDLE); setCopied(true); setTimeout(() => setCopied(false), 2000) }
                 catch { /* select-all above is the fallback */ }
               }}>
-              {copied ? <>تم النسخ<Icon name="check" className="w-3.5 h-3.5 inline-block align-[-0.15em] ms-1" /></> : 'نسخ'}
+              {copied ? <>تم النسخ<Icon name="check" size="xs" className="inline-block align-[-0.15em] ms-1" /></> : 'نسخ'}
             </button>
           </div>
 
@@ -473,7 +473,7 @@ export default function Track() {
           ) : (
             <>
               <button className="btn-sea w-full" disabled={claimingPayment} onClick={claimInstapayPayment}>
-                {claimingPayment ? 'جاري التأكيد…' : <>حوّلت المبلغ<Icon name="check" className="w-3.5 h-3.5 inline-block align-[-0.15em] ms-1" /></>}
+                {claimingPayment ? 'جاري التأكيد…' : <>حوّلت المبلغ<Icon name="check" size="xs" className="inline-block align-[-0.15em] ms-1" /></>}
               </button>
 
               {/* The missing door. Before this, someone who opened InstaPay and
@@ -483,7 +483,7 @@ export default function Track() {
                   offered on a deposit order -- that one is already cash. */}
               {o.payment_method === 'instapay' && (
                 <button className="btn-ghost w-full mt-2.5" disabled={switchingToCash} onClick={switchToCash}>
-                  {switchingToCash ? 'لحظة…' : <><Icon name="moneyBill" className="w-4 h-4 inline-block align-[-0.15em] me-1" />هدفع كاش بدل</>}
+                  {switchingToCash ? 'لحظة…' : <><Icon name="moneyBill" size="sm" className="inline-block align-[-0.15em] me-1" />هدفع كاش بدل</>}
                 </button>
               )}
             </>
@@ -566,7 +566,7 @@ export default function Track() {
       <div className="flex items-center justify-between mb-3">
         {/* rotate-180: the page is RTL, so "back" points RIGHT -- same mirror
             fix as RestaurantDetail and Vendor. */}
-        <Link to="/" className="text-sm text-mist hover:text-foam"><Icon name="chevronLeft" className="w-3 h-3 inline-block align-middle ml-1 rotate-180" />العودة</Link>
+        <Link to="/" className="text-sm text-mist hover:text-foam"><Icon name="chevronLeft" size="xs" className="inline-block align-middle ml-1 rotate-180" />العودة</Link>
         <span className="text-sm font-semibold text-mist">طلب #{o.id}</span>
       </div>
 
@@ -574,7 +574,7 @@ export default function Track() {
           rather than replacing it with a not-found card. */}
       {staleSince !== null && (
         <div className="bg-sand/15 border border-sand/40 rounded-xl p-3 mb-4 flex items-center justify-between gap-3">
-          <p className="text-sm font-semibold text-foam"><Icon name="broadcast" className="w-4 h-4 inline-block align-[-0.15em] me-1" />مش قادرين نحدّث الحالة، ممكن تكون قديمة</p>
+          <p className="text-sm font-semibold text-foam"><Icon name="broadcast" size="sm" className="inline-block align-[-0.15em] me-1" />مش قادرين نحدّث الحالة، ممكن تكون قديمة</p>
           <button className="btn-ghost !py-2 text-sm shrink-0" onClick={() => load(true)}>حدّث</button>
         </div>
       )}
@@ -594,7 +594,7 @@ export default function Track() {
 
       {isCancelled(o.status) || cancelled ? (
         <div className="card p-4 text-center mb-4">
-          <Icon name="boxOpen" className="w-10 h-10 mx-auto mb-2 text-mist" />
+          <Icon name="boxOpen" size="xl" className="mx-auto mb-2 text-mist" />
           <h1 className="font-bold text-lg">تم إلغاء الطلب</h1>
           {/* cancelReasonLabel, not the raw column. The reason is a code --
               `customer_cancelled`, `vendor_rejected` -- and it was being
@@ -609,13 +609,13 @@ export default function Track() {
               -- while an admin was looking at the same row in a refunds queue. */}
           {o.refund_status === 'pending' && (
             <p className="text-sm text-sandink bg-sand/10 rounded-xl p-3 mt-3">
-              <Icon name="coins" className="w-4 h-4 inline-block align-[-0.15em] me-1" />فلوسك في طريقها ليك، هنحوّلها على نفس الرقم اللي حوّلت منه.
+              <Icon name="coins" size="sm" className="inline-block align-[-0.15em] me-1" />فلوسك في طريقها ليك، هنحوّلها على نفس الرقم اللي حوّلت منه.
               لو اتأخرت، كلّمنا.
             </p>
           )}
           {o.refund_status === 'refunded' && (
             <p className="text-sm text-emerald-700 bg-emerald-500/10 rounded-xl p-3 mt-3">
-              <Icon name="check" className="w-4 h-4 inline-block align-[-0.15em] me-1" />تم تحويل المبلغ ليك
+              <Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />تم تحويل المبلغ ليك
             </p>
           )}
         </div>
@@ -638,7 +638,7 @@ export default function Track() {
           )}
           <div className="flex items-start justify-between gap-2 mb-1">
             <h1 className="font-bold text-xl">
-              {current === 'Delivered' ? <><Icon name="check" className="w-5 h-5 inline-block align-[-0.15em] me-1" />تم التوصيل</>
+              {current === 'Delivered' ? <><Icon name="check" size="md" className="inline-block align-[-0.15em] me-1" />تم التوصيل</>
                 // The BAR is right to sit at stage 2 -- the order really did get
                 // that far -- but «في الطريق إليك» as the headline for a
                 // delivery that has already failed is simply false, and it was
@@ -702,7 +702,7 @@ export default function Track() {
             const isLate = Date.now() > target.getTime()
             return (
               <p className={`text-sm mt-1 flex items-center gap-1 ${isLate ? 'text-sandink' : 'text-mist'}`}>
-                <Icon name="clock" className="w-3.5 h-3.5" />
+                <Icon name="clock" size="xs" />
                 {isLate ? 'اتأخر شوية عن الوقت المستهدف' : `الهدف: يوصلك قبل ${fmtTime(target.toISOString())}`}
               </p>
             )
@@ -731,7 +731,7 @@ export default function Track() {
                 <span aria-hidden="true"
                   className={`w-7 h-7 shrink-0 rounded-full grid place-items-center text-[13px] ${
                     i <= stageIdx ? 'bg-sea text-white' : 'bg-line text-mist'}`}>
-                  <Icon className="w-4 h-4" name={(['check', 'forkKnife', 'moped', 'locationDot'] as const)[i]} />
+                  <Icon size="sm" name={(['check', 'forkKnife', 'moped', 'locationDot'] as const)[i]} />
                 </span>
                 {i < STAGES.length - 1 && (
                   <span className={`h-1 flex-1 rounded-full ${i < stageIdx ? 'bg-sea' : 'bg-line'}`} />
@@ -812,19 +812,19 @@ export default function Track() {
       {o.order_type === 'pickup_request' && (
         <p className="text-sm bg-shellup/60 rounded-xl p-3 mb-4">
           {o.payment_mode === 'driver_pays'
-            ? <><Icon name="moneyBill" className="w-4 h-4 inline-block align-[-0.15em] me-1" />{`المندوب هيدفع ${o.collect_amount} ج.م لـ${vendorNoun(o.vendor_type)}، ويحصلها منك كاش عند التوصيل`}</>
-            : <><Icon name="check" className="w-4 h-4 inline-block align-[-0.15em] me-1" />الأوردر متدفوع بالفعل، هتدفع رسوم التوصيل بس</>}
+            ? <><Icon name="moneyBill" size="sm" className="inline-block align-[-0.15em] me-1" />{`المندوب هيدفع ${o.collect_amount} ج.م لـ${vendorNoun(o.vendor_type)}، ويحصلها منك كاش عند التوصيل`}</>
+            : <><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />الأوردر متدفوع بالفعل، هتدفع رسوم التوصيل بس</>}
         </p>
       )}
 
       {/* address */}
       <div className="card p-4 mb-4 flex items-start gap-3">
-        <span className="w-9 h-9 rounded-md bg-sea/10 text-sea grid place-items-center shrink-0"><Icon name="locationDot" className="w-4 h-4" /></span>
+        <span className="w-9 h-9 rounded-md bg-sea/10 text-sea grid place-items-center shrink-0"><Icon name="locationDot" size="sm" /></span>
         <div>
           <p className="font-semibold text-sm">{o.zone}</p>
           <p className="text-sm text-mist">وحدة {o.unit_number}{o.address_notes ? `: ${o.address_notes}` : ''}</p>
           {o.customer_note?.trim() && (
-            <p className="text-sm text-mist mt-1"><Icon name="penToSquare" className="w-3.5 h-3.5 inline-block align-[-0.15em] me-1" />{o.customer_note}</p>
+            <p className="text-sm text-mist mt-1"><Icon name="penToSquare" size="xs" className="inline-block align-[-0.15em] me-1" />{o.customer_note}</p>
           )}
         </div>
       </div>
@@ -846,7 +846,7 @@ export default function Track() {
             {/* An open-ended wait with no number attached is the worst kind.
                 "خلال ١٠ دقايق" gives it an end, and gives you something to
                 measure the vendor against. */}
-            <p className="font-semibold text-sm"><Icon name="phone" className="w-4 h-4 inline-block align-[-0.15em] me-1" />هنتصل بيك خلال ١٠ دقايق</p>
+            <p className="font-semibold text-sm"><Icon name="phone" size="sm" className="inline-block align-[-0.15em] me-1" />هنتصل بيك خلال ١٠ دقايق</p>
             <p className="text-sm text-mist mt-0.5">
               بنراجع طلبك دلوقتي ونحسب السعر. مفيش دفع لحد ما توافق.
             </p>
@@ -923,7 +923,7 @@ export default function Track() {
         <div className="card p-4 mb-4 flex items-center justify-between">
           <div>
             <p className="text-xs text-mist mb-0.5">المندوب</p>
-            <span className="font-semibold text-sm"><Icon name="moped" className="w-4 h-4 inline-block align-[-0.15em] me-1" />{data.assignment.driver_name}</span>
+            <span className="font-semibold text-sm"><Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />{data.assignment.driver_name}</span>
           </div>
           {data.assignment.driver_phone && (
             <a className="btn-ghost !py-1.5 !px-3 text-sm" dir="ltr" href={`tel:${data.assignment.driver_phone}`}>
@@ -983,7 +983,7 @@ export default function Track() {
         <div className="flex items-center justify-between text-sm pb-2 border-b border-line">
           <span className="text-mist">رقم الطلب</span>
           <button className="font-semibold flex items-center gap-1.5" onClick={copyOrderNumber}>
-            #{o.id} <span className="text-xs text-mist">{copied ? <><Icon name="check" className="w-3 h-3 inline-block align-[-0.15em] me-1" />اتنسخ</> : <Icon name="clone" className="w-3.5 h-3.5" />}</span>
+            #{o.id} <span className="text-xs text-mist">{copied ? <><Icon name="check" size="xs" className="inline-block align-[-0.15em] me-1" />اتنسخ</> : <Icon name="clone" size="xs" />}</span>
           </button>
         </div>
         {o.pricing_status !== 'pending_quote' && (
@@ -1024,7 +1024,7 @@ export default function Track() {
                 {[1,2,3,4,5].map(n => (
                   <button key={n} onClick={() => setDriverRating(n)} aria-label={`${n} من 5`}
                     className={`grid place-items-center min-w-[44px] min-h-[44px] ${n <= driverRating ? 'text-sand' : 'text-mist/40'}`}>
-                    <Icon name="star" className="w-5 h-5" />
+                    <Icon name="star" size="md" />
                   </button>
                 ))}
               </div>
@@ -1035,7 +1035,7 @@ export default function Track() {
                 {[1,2,3,4,5].map(n => (
                   <button key={n} onClick={() => setRestaurantRating(n)} aria-label={`${n} من 5`}
                     className={`grid place-items-center min-w-[44px] min-h-[44px] ${n <= restaurantRating ? 'text-sand' : 'text-mist/40'}`}>
-                    <Icon name="star" className="w-5 h-5" />
+                    <Icon name="star" size="md" />
                   </button>
                 ))}
               </div>
@@ -1046,9 +1046,9 @@ export default function Track() {
         </div>
       )}
       {o.rating_submitted && !ratingSent && (
-        <p className="text-emerald-700 text-sm text-center mb-4"><Icon name="check" className="w-4 h-4 inline-block align-[-0.15em] me-1" />شكرًا، تقييم الطلب مسجّل</p>
+        <p className="text-emerald-700 text-sm text-center mb-4"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />شكرًا، تقييم الطلب مسجّل</p>
       )}
-      {ratingSent && !showTipPrompt && <p className="text-emerald-700 text-sm text-center mb-4"><Icon name="check" className="w-4 h-4 inline-block align-[-0.15em] me-1" />شكرًا لتقييمك</p>}
+      {ratingSent && !showTipPrompt && <p className="text-emerald-700 text-sm text-center mb-4"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />شكرًا لتقييمك</p>}
 
       {showTipPrompt && !tipSent && data.assignment?.driver_instapay && (
         <div className="card p-4 mb-4">
@@ -1076,7 +1076,7 @@ export default function Track() {
           </div>
         </div>
       )}
-      {tipSent && <p className="text-emerald-700 text-sm text-center mb-4"><Icon name="check" className="w-4 h-4 inline-block align-[-0.15em] me-1" />تم إبلاغ المندوب، يراجع إنستاباي للتأكيد</p>}
+      {tipSent && <p className="text-emerald-700 text-sm text-center mb-4"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />تم إبلاغ المندوب، يراجع إنستاباي للتأكيد</p>}
 
       {canCancel && (
         <>
@@ -1097,7 +1097,7 @@ export default function Track() {
       <InAppLoginPrompt className="mb-4" />
 
       {complaintSent ? (
-        <p className="text-sandink text-sm text-center mb-4"><Icon name="check" className="w-4 h-4 inline-block align-[-0.15em] me-1" />تم إرسال الشكوى، هنراجعها قريب</p>
+        <p className="text-sandink text-sm text-center mb-4"><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />تم إرسال الشكوى، هنراجعها قريب</p>
       ) : complaining ? (
         <div className="card p-4 mb-4">
           <p className="text-sm font-semibold mb-2">إيه المشكلة؟</p>
@@ -1111,7 +1111,7 @@ export default function Track() {
             ] as const).map(([val, icon, label]) => (
               <button key={val} type="button"
                 className={`text-xs py-2 rounded-lg border-2 ${complaintCategory === val ? 'border-sea bg-sea/5' : 'border-line'}`}
-                onClick={() => setComplaintCategory(val)}><Icon name={icon} className="w-3.5 h-3.5 inline-block align-[-0.15em] me-1" />{label}</button>
+                onClick={() => setComplaintCategory(val)}><Icon name={icon} size="xs" className="inline-block align-[-0.15em] me-1" />{label}</button>
             ))}
           </div>
           <textarea className="field h-20 resize-none" value={complaintText} onChange={e => setComplaintText(e.target.value)} placeholder="مثال: نقص صنف من الطلب" />

@@ -68,7 +68,7 @@ export default function InstallPrompt() {
         </p>
         {showIOSHelp && stepsOpen && (
           <p className="text-xs text-mist mt-2 bg-shellup rounded-lg p-2.5 leading-relaxed">
-            اضغط <span className="font-bold">زر المشاركة</span> <Icon name="arrowUp" className="w-3.5 h-3.5 inline-block align-[-0.15em] me-1" /> تحت،
+            اضغط <span className="font-bold">زر المشاركة</span> <Icon name="arrowUp" size="xs" className="inline-block align-[-0.15em] me-1" /> تحت،
             وبعدين <span className="font-bold">"إضافة إلى الشاشة الرئيسية"</span>
           </p>
         )}

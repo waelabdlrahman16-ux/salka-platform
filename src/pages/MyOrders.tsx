@@ -132,7 +132,7 @@ export default function MyOrders() {
             to="/profile"
             className="btn-ghost w-full mt-3 text-sm !flex items-center justify-center"
           >
-            <Icon name="locationDot" className="w-4 h-4 inline-block align-[-0.15em] me-1" />عناويني ومحفظتي
+            <Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />عناويني ومحفظتي
           </Link>
         </div>
       ) : (

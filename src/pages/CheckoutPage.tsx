@@ -449,7 +449,7 @@ export default function CheckoutPage() {
 
       {hasRx && (
         <p className="text-sandink text-sm mb-4 bg-sand/10 rounded-xl p-3">
-          <Icon name="pill" className="w-4 h-4 inline-block align-[-0.15em] me-1" />في صنف محتاج روشتة طبية، الصيدلية هتتواصل معاك تليفونيًا للتأكيد قبل التجهيز
+          <Icon name="pill" size="sm" className="inline-block align-[-0.15em] me-1" />في صنف محتاج روشتة طبية، الصيدلية هتتواصل معاك تليفونيًا للتأكيد قبل التجهيز
         </p>
       )}
 
@@ -503,7 +503,7 @@ export default function CheckoutPage() {
                     aria-hidden="true">
                     {/* The label decides the icon: a home is a home, anything
                         else is just a pin. */}
-                    <Icon className="w-4 h-4" name={
+                    <Icon size="sm" name={
                       (a.label || '').includes('شغل') || (a.label || '').includes('مكتب') ? 'briefcase'
                         : (a.label || '').includes('منزل') || (a.label || '').includes('بيت') ? 'house'
                         : 'locationDot'} />
@@ -515,7 +515,7 @@ export default function CheckoutPage() {
                       {a.unit_number}{a.notes?.trim() ? `، ${a.notes.trim()}` : ''}
                     </span>
                   </span>
-                  {on && <span className="text-sea text-sm font-bold shrink-0"><Icon name="check" className="w-4 h-4" /></span>}
+                  {on && <span className="text-sea text-sm font-bold shrink-0"><Icon name="check" size="sm" /></span>}
                 </button>
               )
             })}
@@ -529,7 +529,7 @@ export default function CheckoutPage() {
             it together. */}
         {!addressExpanded && selectedCompound && name.trim() && isValidEgyptPhone(phone) ? (
           <div className="flex items-center gap-2 text-sm">
-            <Icon name="user" className="w-4 h-4 shrink-0 text-mist" />
+            <Icon name="user" size="sm" className="shrink-0 text-mist" />
             <span className="flex-1 min-w-0 truncate">{name}</span>
             <span className="text-mist shrink-0" dir="ltr">{phone}</span>
           </div>
@@ -559,7 +559,7 @@ export default function CheckoutPage() {
           <>
             <button type="button" className="w-full flex items-center gap-3 rounded-xl border-2 border-sea/40 bg-sea/5 px-4 py-3.5 text-right"
               onClick={() => setAddressExpanded(true)}>
-              <Icon name="locationDot" className="w-6 h-6 shrink-0 text-mist" />
+              <Icon name="locationDot" size="lg" className="shrink-0 text-mist" />
               <span className="flex-1 min-w-0">
                 <span className="block font-bold truncate">{selectedCompound.name}{unit.trim() ? `، شاليه ${unit}` : ''}</span>
                 {notes.trim() && <span className="block text-xs text-mist truncate mt-0.5">{notes}</span>}
@@ -613,7 +613,7 @@ export default function CheckoutPage() {
             takes 45 minutes to shop and this line promised 20. */}
         {quote?.sla_minutes && (
           <div className="card p-3.5 flex items-center gap-3 !rounded-2xl">
-            <Icon name="moped" className="w-5 h-5 shrink-0 text-mist" />
+            <Icon name="moped" size="md" className="shrink-0 text-mist" />
             <div>
               <p className="font-bold text-sm">التوصيل</p>
               <p className="text-xs text-mist">
@@ -646,7 +646,7 @@ export default function CheckoutPage() {
         <div className="card p-4 mb-4">
           <label className="flex items-center gap-3 cursor-pointer">
             <input type="checkbox" className="accent-sea w-4 h-4" checked={useWallet} onChange={e => setUseWallet(e.target.checked)} />
-            <Icon name="wallet" className="w-5 h-5 text-mist" />
+            <Icon name="wallet" size="md" className="text-mist" />
             <span className="flex-1">
               <span className="font-semibold block">استخدم رصيدك</span>
               <span className="text-xs text-mist">عندك {walletBalance} ج.م في محفظتك</span>
@@ -844,7 +844,7 @@ export default function CheckoutPage() {
             const el = document.getElementById(m.field!)
             el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
             ;(el as HTMLInputElement | null)?.focus({ preventScroll: true })
-          }}>{m.text}<Icon name="chevronLeft" className="w-3.5 h-3.5 inline-block align-[-0.15em] ms-1" /></button>
+          }}>{m.text}<Icon name="chevronLeft" size="xs" className="inline-block align-[-0.15em] ms-1" /></button>
         ) : <p className={cls}>{m.text}</p>
       })()}
 

@@ -192,7 +192,7 @@ export default function EnablePushButton({
           if (ok) setGranted(true)
           else { setReason(lastPushError); setFailed(true) }
         }}>
-        {busy ? 'جاري التفعيل…' : <><Icon name="bell" className="w-4 h-4 inline-block align-[-0.15em] me-1" />{label}</>}
+        {busy ? 'جاري التفعيل…' : <><Icon name="bell" size="sm" className="inline-block align-[-0.15em] me-1" />{label}</>}
       </button>
       <p className="text-xs text-mist mt-1.5 text-center">
         من غير التنبيهات لازم تسيب الصفحة مفتوحة عشان تعرف إن في طلب جديد

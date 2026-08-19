@@ -150,7 +150,7 @@ export default function FunnelPanel() {
                       two bars. */}
                   {prev && dropped > 0 && (
                     <p className="text-[10px] text-red-600 mr-20 mt-0.5">
-                      <Icon name="arrowDown" className="w-4 h-4 inline-block align-[-0.15em] me-1" />خسرنا {dropped} هنا
+                      <Icon name="arrowDown" size="sm" className="inline-block align-[-0.15em] me-1" />خسرنا {dropped} هنا
                     </p>
                   )}
                 </div>

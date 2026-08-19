@@ -386,11 +386,11 @@ export default function Home() {
   const quickAccessTiles = compoundId ? (
     <div className="grid grid-cols-2 gap-2.5 mb-4">
       <Link to="/custom-order?type=supermarket" className="card p-2.5 flex items-center gap-2 hover:border-sea/50 transition-colors">
-        <span className="w-8 h-8 rounded-lg grid place-items-center text-base shrink-0" style={{ background: 'rgba(212,163,42,.12)' }}><Icon name="cartShopping" className="w-4 h-4 text-ink" /></span>
+        <span className="w-8 h-8 rounded-lg grid place-items-center text-base shrink-0" style={{ background: 'rgba(212,163,42,.12)' }}><Icon name="cartShopping" size="sm" className="text-ink" /></span>
         <span className="font-bold text-sm truncate">سوبر ماركت</span>
       </Link>
       <Link to="/custom-order?type=pharmacy" className="card p-2.5 flex items-center gap-2 hover:border-sea/50 transition-colors">
-        <span className="w-8 h-8 rounded-lg grid place-items-center text-base shrink-0" style={{ background: 'rgba(200,60,60,.1)' }}><Icon name="pill" className="w-4 h-4 text-ink" /></span>
+        <span className="w-8 h-8 rounded-lg grid place-items-center text-base shrink-0" style={{ background: 'rgba(200,60,60,.1)' }}><Icon name="pill" size="sm" className="text-ink" /></span>
         <span className="font-bold text-sm truncate">صيدلية</span>
       </Link>
     </div>
@@ -432,7 +432,7 @@ export default function Home() {
         <button className="text-right min-w-0 flex-1 min-h-11" onClick={() => setPicking(true)}>
           <span className="block text-[11px] text-mist">التوصيل لـ</span>
           <span className="flex items-center gap-1 min-w-0">
-            <Icon name="locationDot" className="w-4 h-4 shrink-0 text-sea" />
+            <Icon name="locationDot" size="sm" className="shrink-0 text-sea" />
             <span className="font-bold text-[17px] truncate">{selected ? selected.name : 'اختر مكانك'}</span>
             <span className="text-mist text-xs shrink-0">▾</span>
           </span>
@@ -461,11 +461,11 @@ export default function Home() {
             aria-label="دوّر على مطعم أو أكلة"
             placeholder="دوّر على مطعم أو أكلة…" />
           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-mist pointer-events-none">
-            <Icon name="magnifyingGlass" className="w-4 h-4" />
+            <Icon name="magnifyingGlass" size="sm" />
           </span>
           {foodQ.trim() && (
             <button className="absolute left-3 top-1/2 -translate-y-1/2 text-mist text-sm"
-              aria-label="مسح" onClick={() => setFoodQ('')}><Icon name="x" className="w-4 h-4" /></button>
+              aria-label="مسح" onClick={() => setFoodQ('')}><Icon name="x" size="sm" /></button>
           )}
         </div>
       )}
@@ -678,7 +678,7 @@ export default function Home() {
                 to work only *while a compound was already selected*, so on a
                 first visit the dialog had no exit at all. */}
             <button className="absolute top-2 left-2 w-11 h-11 grid place-items-center text-mist hover:text-foam text-xl"
-              aria-label="إغلاق" onClick={() => setPicking(false)}><Icon name="x" className="w-4 h-4" /></button>
+              aria-label="إغلاق" onClick={() => setPicking(false)}><Icon name="x" size="sm" /></button>
             <h3 id="place-picker-title" className="font-bold text-lg mb-3">فين مكانك؟</h3>
 
             {compoundsFailed && (
@@ -700,7 +700,7 @@ export default function Home() {
                 dialog. */}
             <div className="flex items-center gap-2 mb-4">
               <div className="field flex-1 min-w-0 flex items-center gap-2 !px-3.5">
-                <Icon name="magnifyingGlass" className="w-4 h-4 shrink-0 text-mist" />
+                <Icon name="magnifyingGlass" size="sm" className="shrink-0 text-mist" />
                 <input className="flex-1 min-w-0 bg-transparent focus:outline-none placeholder:text-mist/60" value={search}
                   onChange={e => { setSearch(e.target.value); if (e.target.value.trim()) setNearby(null) }}
                   aria-label="دوّر على اسم المكان"
@@ -711,7 +711,7 @@ export default function Home() {
                 title="استخدم موقعي الحالي" aria-label="استخدم موقعي الحالي">
                 {locating
                   ? <span className="inline-block w-4 h-4 rounded-full border-2 border-mist/40 border-t-sea animate-spin" />
-                  : <Icon name="locationDot" className="w-4 h-4 text-sea" />}
+                  : <Icon name="locationDot" size="sm" className="text-sea" />}
               </button>
             </div>
 

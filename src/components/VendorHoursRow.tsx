@@ -108,7 +108,7 @@ export default function VendorHoursRow({ restaurant, onSaved }: {
       <div className="flex items-center justify-between gap-2 mb-1">
         <p className="text-sm font-bold">مواعيد الفتح</p>
         <button className="btn-ghost !py-1.5 !px-3 text-[11px]" onClick={copyFromFirst}>
-          <Icon name="clipboardText" className="w-4 h-4 inline-block align-[-0.15em] me-1" />طبّق السبت على الكل
+          <Icon name="clipboardText" size="sm" className="inline-block align-[-0.15em] me-1" />طبّق السبت على الكل
         </button>
       </div>
       <p className="text-[11px] text-mist mb-2">كل المواعيد بتوقيت القاهرة</p>
@@ -159,7 +159,7 @@ export default function VendorHoursRow({ restaurant, onSaved }: {
         </button>
       </div>
       <p className="text-[10px] text-mist mt-2">
-        <Icon name="moon" className="w-4 h-4 inline-block align-[-0.15em] me-1" />يعني الميعاد بيعدّي نص الليل، المحل بيفضل مفتوح لبعد ١٢
+        <Icon name="moon" size="sm" className="inline-block align-[-0.15em] me-1" />يعني الميعاد بيعدّي نص الليل، المحل بيفضل مفتوح لبعد ١٢
       </p>
     </div>
   )
