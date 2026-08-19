@@ -83,8 +83,12 @@ export default function RestaurantDetail() {
     if (!section) return
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const targetTop = () => {
-      const barH = chipBarRef.current?.getBoundingClientRect().height ?? 0
-      return Math.max(0, section.getBoundingClientRect().top + window.scrollY - barH - 8)
+      const bar = chipBarRef.current
+      const barH = bar?.getBoundingClientRect().height ?? 0
+      // The bar's own sticky offset (the compact header above it) counts too --
+      // read it rather than hard-coding 48, so safe-area insets are included.
+      const stickyTop = bar ? parseFloat(getComputedStyle(bar).top) || 0 : 0
+      return Math.max(0, section.getBoundingClientRect().top + window.scrollY - stickyTop - barH - 8)
     }
     // Animate only when the animation can still be read as a movement. A long
     // menu puts «صوصات» 7,800px away, and gliding that whole distance is
@@ -544,8 +548,12 @@ export default function RestaurantDetail() {
               is also what makes the sticky bar able to say which section you
               are in. */}
           {categories.length > 1 && !menuQuery && (
+          // Pins below the compact header, not under it. That bar is `fixed`
+          // and 48px tall, so a chip row stuck to top-0 slid straight beneath
+          // it and the chips were unreadable while scrolling.
           <div ref={chipBarRef}
-            className="sticky top-0 z-20 flex gap-2 overflow-x-auto pt-2 pb-2 mb-2 -mx-4 px-4 bg-night scrollbar-none">
+            style={{ top: 'calc(env(safe-area-inset-top) + 48px)' }}
+            className="sticky z-20 flex gap-2 overflow-x-auto pt-2 pb-2 mb-2 -mx-4 px-4 bg-night scrollbar-none">
             {categories.map(cat => (
               <button key={cat} data-chip={cat}
                 // The tap highlights the chip itself; the scroll observer then
@@ -653,7 +661,9 @@ export default function RestaurantDetail() {
           1. The count is always true, so it stays; only the money waits. */}
       {cart.count > 0 && restaurant.is_open && (
         <div className="fixed inset-x-0 z-30 px-4"
-          style={{ bottom: 'calc(env(safe-area-inset-bottom) + 68px)' }}>
+          // 68px used to clear the bottom tab bar; that bar no longer renders
+          // on this page, so the gap was empty space.
+          style={{ bottom: 'calc(env(safe-area-inset-bottom) + 40px)' }}>
           <button className="max-w-lg mx-auto w-full bg-sea text-white rounded-2xl shadow-lg px-4 py-3.5 flex items-center justify-between gap-3"
             onClick={() => nav('/cart')}>
             <span className="flex items-center gap-2 min-w-0">

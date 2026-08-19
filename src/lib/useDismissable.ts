@@ -112,8 +112,22 @@ export function useDismissable<T extends HTMLElement = HTMLDivElement>(
     // once the current state is no longer ours. Without this check, confirming
     // any delete inside an already-open editor closed the editor along with
     // it -- reported as "removing an item closes the whole popup".
+    // StrictMode runs this effect twice in development: mount pushes marker A,
+    // the cleanup calls history.back() to unwind it, and the resulting popstate
+    // arrives AFTER the second mount has already pushed marker B. The second
+    // instance then sees a pop it did not cause and reads it as a real Back
+    // press, so every sheet opened and closed itself within ~16ms and the
+    // history unwind scrolled the page to the top. Production has no double
+    // invoke and never hit it, which made it look like a dev-only curiosity --
+    // but it made the sheets untestable locally, which is its own bug.
+    //
+    // No human presses Back inside 150ms of an overlay appearing, so ignoring
+    // pops that arrive in that window costs nothing real and makes development
+    // behave like production.
+    const mountedAt = performance.now()
     const onPop = () => {
       if (history.state?.salkaOverlay === marker) return
+      if (performance.now() - mountedAt < 150) return
       closedByBack = true
       onDismissRef.current?.()
     }
