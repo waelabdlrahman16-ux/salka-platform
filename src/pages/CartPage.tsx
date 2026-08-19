@@ -144,7 +144,7 @@ export default function CartPage() {
           const { unit, original, sizeName, comboName, addonNames } = priceFor(l)
           const art = artFor(item.category)
           return (
-            <div key={l.key} className="card p-3.5 flex items-center gap-3">
+            <div key={l.key} className="card !bg-warm p-3.5 flex items-center gap-3">
               {/* The menu shows a photograph and the cart showed a generic
                   emoji tile for the same item, which reads as a loading failure
                   right at the moment the customer is deciding to pay. */}
@@ -181,7 +181,7 @@ export default function CartPage() {
         })}
       </div>
 
-      <div className="card p-3.5 mb-24 space-y-1.5">
+      <div className="card !bg-warm p-3.5 mb-24 space-y-1.5">
         <div className="flex justify-between text-sm text-mist"><span>المنتجات</span><span>{subtotal} ج.م</span></div>
         <div className="flex justify-between text-sm text-mist">
           <span>التوصيل</span>
@@ -210,7 +210,7 @@ export default function CartPage() {
         {/* Held until sizes/combos/add-ons land. Before that the total on this
             button is understated for any combo line, and it is the number the
             customer taps. */}
-        <button className="btn-sea w-full !py-4 shadow-lg shadow-sea/20"
+        <button className="btn-sea w-full !py-4"
           disabled={!optionsLoaded} onClick={() => nav('/checkout')}>
           <span>{optionsLoaded ? 'روح للدفع' : 'لحظة…'}</span>
           {/* One phrase with a bullet, like every other action in the app --

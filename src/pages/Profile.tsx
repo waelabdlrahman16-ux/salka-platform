@@ -146,7 +146,7 @@ export default function Profile() {
         <ul className="space-y-3 mb-7">
           {perks.map(p => (
             <li key={p.title} className="card p-3.5 flex items-start gap-3">
-              <span className="w-9 h-9 rounded-xl bg-shellup text-mist grid place-items-center shrink-0">
+              <span className="w-9 h-9 rounded-lg bg-warm text-coral-700 grid place-items-center shrink-0">
                 <Icon name={p.icon} size="md" />
               </span>
               <span className="min-w-0">

@@ -759,11 +759,12 @@ export default function RestaurantDetail() {
         <div className="fixed inset-x-0 z-30 px-4"
           // 68px used to clear the bottom tab bar; that bar no longer renders
           // on this page, so the gap was empty space.
-          style={{ bottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}>
+          style={{ bottom: 'calc(env(safe-area-inset-bottom) + 28px)' }}>
           <button className="max-w-lg mx-auto w-full bg-sea text-white rounded-2xl shadow-lg px-4 py-3.5 flex items-center justify-between gap-3"
             onClick={() => nav('/cart')}>
-            {/* The count chip said «3» directly beside «3 أصناف». */}
-            <span className="font-bold text-sm truncate min-w-0">
+            {/* The count is the badge now, rather than a bare «3» sitting
+                beside the same number spelled out. */}
+            <span className="bg-white/20 rounded-full px-3 py-1 font-bold text-sm truncate min-w-0">
               {cart.count === 1 ? 'صنف واحد' : `${cart.count} أصناف`}
             </span>
             <span className="font-bold text-sm shrink-0">

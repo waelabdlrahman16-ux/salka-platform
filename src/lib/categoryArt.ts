@@ -245,7 +245,11 @@ export function vendorKind(category: string | null | undefined): VendorKind {
 // 43 away and keeps the warm-brown family.
 export const VENDOR_TYPE_ART: Record<'pharmacy' | 'supermarket',
   { icon: IconName; tint: string; ink: string }> = {
-  pharmacy:    { icon: 'asclepius', tint: TINT.green,   ink: '#007020' },
+  // Warm, both of them. TINT.green was the one cool tile left on a warm
+  // storefront, and the neutrals now belong to image containers -- surfaces
+  // that sit behind a photograph, where a tint would cast onto the food.
+  // 6.89:1 and 6.95:1 respectively.
+  pharmacy:    { icon: 'asclepius', tint: '#F9EBE5',    ink: '#803D2A' },
   supermarket: { icon: 'basket',    tint: TINT.neutral, ink: '#6B4A18' },
 }
 

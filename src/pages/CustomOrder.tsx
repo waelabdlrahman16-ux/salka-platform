@@ -5,7 +5,7 @@ import { customerOrderCreation } from '../lib/customerOrderCreation'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
 import { displayEgyptPhone, isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
-import { artFor, VENDOR_TYPE_ART } from '../lib/categoryArt'
+import { VENDOR_TYPE_ART } from '../lib/categoryArt'
 import Icon from '../components/Icon'
 import { getSessionToken, useCustomerAuth } from '../lib/customerAuth'
 import type { Compound, MenuItem, Restaurant, Slot } from '../lib/types'
@@ -407,15 +407,27 @@ export default function CustomOrder() {
 
   // Step 1 -- pick the vendor
   if (!vendor) {
-    const shownVendors = typeFilter ? vendors.filter(v => v.vendor_type === typeFilter) : vendors
+    // Salka's own two errands lead, always. They are the reason this tab
+    // exists; the brands underneath are the extras. Server order put them
+    // wherever the query happened to return them, so «صيدلية» could sit sixth.
+    const ERRAND_FIRST = ['supermarket', 'pharmacy']
+    const rank = (v: Restaurant) => {
+      const i = ERRAND_FIRST.indexOf(v.vendor_type ?? '')
+      return i === -1 ? ERRAND_FIRST.length : i
+    }
+    const shownVendors = (typeFilter ? vendors.filter(v => v.vendor_type === typeFilter) : vendors)
+      .slice().sort((a, b) => rank(a) - rank(b))
     const pharmacyOpen = vendors.some(v => v.vendor_type === 'pharmacy')
 
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-1">
+        {/* A page header, not a poster. 2xl over a full-width sentence took
+            three lines before the first vendor on a 375px phone, for a screen
+            whose whole content is a list. */}
+        <h1 className="text-lg font-bold">
           {typeFilter === 'pharmacy' ? 'الصيدلية' : typeFilter === 'supermarket' ? 'السوبر ماركت' : 'محتاج إيه دلوقتي؟'}
         </h1>
-        <p className="text-mist text-sm mb-4">قول لنا اللي محتاجه، وإحنا هنجهزه معاك</p>
+        <p className="text-mist text-[13px] mb-4">قول لنا اللي محتاجه، وإحنا هنجهزه معاك</p>
 
         {loadFailed && (
           <div className="card p-4 mb-4 border-coral-300 bg-coral-100">
@@ -433,7 +445,6 @@ export default function CustomOrder() {
             Each card now carries its own status, fee, timing and range. */}
         <div className="space-y-3">
           {shownVendors.map(v => {
-            const art = artFor(v.vendor_type === 'pharmacy' ? 'أدوية' : 'خضار وفاكهة')
             // Slotted or not, NOT market or not: a market with slots turned off
             // delivers as soon as it is picked, exactly like the pharmacy, and
             // must say so on the card rather than promising windows it no
@@ -456,7 +467,7 @@ export default function CustomOrder() {
                   style={(v.vendor_type === 'pharmacy' || v.vendor_type === 'supermarket')
                     ? { background: VENDOR_TYPE_ART[v.vendor_type].tint,
                         color: VENDOR_TYPE_ART[v.vendor_type].ink }
-                    : { background: art.tint }}>
+                    : { background: '#F4EEE3' }}>
                   {v.vendor_type === 'pharmacy' || v.vendor_type === 'supermarket'
                     ? <Icon name={VENDOR_TYPE_ART[v.vendor_type].icon} size="lg" />
                     : v.logo_url
