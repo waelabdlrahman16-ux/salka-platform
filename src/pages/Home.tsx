@@ -784,7 +784,7 @@ export default function Home() {
                 86 rows -- so a thing you type into looked exactly like a thing
                 you tap to choose. Same tone, different jobs. */}
             <div className="flex items-center gap-2 mb-4">
-              <div className="field !bg-shell !border-slate-500 flex-1 min-w-0 flex items-center gap-2 !px-3.5">
+              <div className="field !bg-shell !border-slate-300 flex-1 min-w-0 flex items-center gap-2 !px-3.5">
                 <Icon name="magnifyingGlass" size="sm" className="shrink-0 text-mist" />
                 <input className="flex-1 min-w-0 bg-transparent focus:outline-none placeholder:text-mist/60" value={search}
                   onChange={e => { setSearch(e.target.value); if (e.target.value.trim()) setNearby(null) }}
