@@ -1,4 +1,5 @@
 import { useEffect, useState, useId } from 'react'
+import CustomerLogin from '../components/CustomerLogin'
 import EmptyState from '../components/EmptyState'
 import Icon from '../components/Icon'
 import { Link, useNavigate } from 'react-router-dom'
@@ -34,6 +35,7 @@ export default function Profile() {
   const [addresses, setAddresses] = useState<Address[]>([])
   const [orders, setOrders] = useState<OrderRow[]>([])
   const [compounds, setCompounds] = useState<Compound[]>([])
+  const [showLogin, setShowLogin] = useState(false)
   const [walletBalance, setWalletBalance] = useState<number | null>(null)
   const [editing, setEditing] = useState<Address | 'new' | null>(null)
   const [label, setLabel] = useState('')
@@ -115,10 +117,59 @@ export default function Profile() {
   }
 
   if (!customer) {
+    // The old screen said «سجّل دخولك الأول عشان تشوف حسابك» -- log in to see
+    // your account, which is circular: it names the reward as the thing you
+    // cannot see. Four real things sit behind this, so say them.
+    //
+    // These are NOT invented benefits. Each maps to something already built and
+    // visible further down this same file once `customer` exists.
+    const perks = [
+      { icon: 'locationDot' as const, title: 'عناوينك محفوظة',
+        body: 'اختار الشاليه مرة واحدة، وبعدها الطلب بيبقى أسرع' },
+      { icon: 'receipt' as const, title: 'كل طلباتك في مكان واحد',
+        body: 'ترجع لأي طلب قديم وتشوف تفاصيله، حتى لو قفلت التطبيق' },
+      { icon: 'coins' as const, title: 'رصيدك محفوظ',
+        body: 'أي تعويض أو استرداد بيفضل في محفظتك لحد ما تستخدمه' },
+      { icon: 'user' as const, title: 'مش هتكتب بياناتك تاني',
+        body: 'اسمك ورقمك بيتحطوا لوحدهم في الأوردر' },
+    ]
     return (
-      <div className="max-w-sm mx-auto mt-8 text-center">
-        <p className="text-mist mb-4">سجّل دخولك الأول عشان تشوف حسابك</p>
-        <Link to="/my-orders" className="btn-sea">تسجيل الدخول</Link>
+      <div className="max-w-sm mx-auto py-8">
+        <div className="text-center mb-7">
+          <span className="w-14 h-14 rounded-2xl bg-successbg text-success grid place-items-center mx-auto mb-3">
+            <Icon name="circleUser" size="xl" />
+          </span>
+          <h1 className="font-bold text-xl mb-1">اعمل حساب في ثانية</h1>
+          <p className="text-mist text-sm">من غير كلمة سر — بإيميلك أو بحساب جوجل</p>
+        </div>
+
+        <ul className="space-y-3 mb-7">
+          {perks.map(p => (
+            <li key={p.title} className="card p-3.5 flex items-start gap-3">
+              <span className="w-9 h-9 rounded-xl bg-shellup text-mist grid place-items-center shrink-0">
+                <Icon name={p.icon} size="md" />
+              </span>
+              <span className="min-w-0">
+                <span className="block font-bold text-sm">{p.title}</span>
+                <span className="block text-xs text-mist mt-0.5 leading-relaxed">{p.body}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+
+        {/* Opens the login sheet HERE. This was a <Link to="/my-orders">, which
+            navigates to a screen whose logged-out state is another «سجّل دخولك»
+            heading and another button -- so the customer was asked twice for one
+            intent, and the second screen threw away everything the first one had
+            just explained. MyOrders opens the same sheet the same way.
+
+            PRIMARY, unlike an empty state: this screen is a task with a clear
+            next step, not a dead end, so under-weighting the button would be the
+            wrong restraint. */}
+        <button className="btn-sea w-full" onClick={() => setShowLogin(true)}>تسجيل الدخول</button>
+        {showLogin && (
+          <CustomerLogin onDone={() => setShowLogin(false)} onSkip={() => setShowLogin(false)} />
+        )}
       </div>
     )
   }

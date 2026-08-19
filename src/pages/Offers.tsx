@@ -108,7 +108,6 @@ export default function Offers() {
   if (!compoundId) {
     return (
       <div>
-        <h1 className="text-2xl font-bold mb-1">العروض والخصومات</h1>
         <div className="card p-6 text-center mt-4">
           <p className="font-semibold">اختار مكانك الأول</p>
           <p className="text-sm text-mist mt-1.5 mb-4">
@@ -122,7 +121,6 @@ export default function Offers() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-1">العروض والخصومات</h1>
       {/* Each card already states its scope via describe() ("على قسم X" /
           "على صنف معيّن"), but a customer skimming a list of restaurant cards
           with a bold "خصم 20%" headline could still read that as storewide --

@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import IconButton from '../components/IconButton'
 import EmptyState from '../components/EmptyState'
 import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
@@ -397,7 +398,13 @@ export default function Home() {
           normaliseArabic(r.category ?? '').toLowerCase().includes(q))
       })()
     : []
-  const filtered = search.trim() ? compounds.filter(c => c.name.toLowerCase().includes(search.toLowerCase())) : []
+  // Was `: []` -- so with an empty search box the list below rendered NOTHING,
+  // directly under copy that says «دوّر على اسم مكانك تحت». A customer whose GPS
+  // failed got an error, an instruction, and blank space. Searching narrows the
+  // list; it should not be the only way to see one.
+  const filtered = search.trim()
+    ? compounds.filter(c => normaliseArabic(c.name).toLowerCase().includes(normaliseArabic(search).toLowerCase()))
+    : compounds
 
   // These used to be gated on compoundId, on the reasoning that "without one
   // there is nothing for either destination to deliver to yet". That is the
@@ -498,8 +505,9 @@ export default function Home() {
           <Icon name="magnifyingGlass" size="sm" />
         </span>
         {foodQ.trim() && (
-          <button className="absolute left-3 top-1/2 -translate-y-1/2 text-mist text-sm"
-            aria-label="مسح" onClick={() => setFoodQ('')}><Icon name="x" size="sm" /></button>
+          <span className="absolute left-1 top-1/2 -translate-y-1/2">
+            <IconButton icon="x" label="مسح" size="sm" onClick={() => setFoodQ('')} />
+          </span>
         )}
       </div>
       {!compoundId && foodQ.trim().length >= 2 && (
@@ -725,12 +733,18 @@ export default function Home() {
           aria-labelledby="place-picker-title"
           onClick={() => setPicking(false)}>
           <div className="card w-full max-w-md p-4 max-h-[85vh] overflow-y-auto relative" onClick={e => e.stopPropagation()}>
-            {/* Unconditional. This close button, the backdrop and Escape used
-                to work only *while a compound was already selected*, so on a
-                first visit the dialog had no exit at all. */}
-            <button className="absolute top-2 left-2 w-11 h-11 grid place-items-center text-mist hover:text-foam text-xl"
-              aria-label="إغلاق" onClick={() => setPicking(false)}><Icon name="x" size="sm" /></button>
-            <h3 id="place-picker-title" className="font-bold text-lg mb-3">فين مكانك؟</h3>
+            {/* Sticky header, not an absolutely-positioned button. The card is
+                overflow-y-auto, and an absolute child of a scrolling box scrolls
+                WITH the content -- so the close button drifted up out of view as
+                soon as the list moved, which is what "floating" looked like.
+
+                Unconditional, too: this button, the backdrop and Escape used to
+                work only while a compound was already selected, so on a first
+                visit the dialog had no exit at all. */}
+            <div className="sticky -top-4 -mx-4 -mt-4 px-4 pt-4 pb-3 mb-1 bg-shell z-10 flex items-center gap-2">
+              <h3 id="place-picker-title" className="font-bold text-lg flex-1">فين مكانك؟</h3>
+              <IconButton icon="x" label="إغلاق" onClick={() => setPicking(false)} className="-me-2" />
+            </div>
 
             {compoundsFailed && (
               <div className="bg-dangerbg rounded-xl p-3 mb-3 text-center">
