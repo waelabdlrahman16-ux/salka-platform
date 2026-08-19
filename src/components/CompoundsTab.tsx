@@ -98,7 +98,7 @@ export default function CompoundsTab() {
         <div className="card p-4">
           <div className="flex items-center justify-between mb-3">
             <p className="font-bold text-sm">{f.id ? 'تعديل كومباوند' : 'كومباوند جديد'}</p>
-            <button className="text-mist text-xs" onClick={() => { setEditing(false); setError('') }}>إغلاق ✕</button>
+            <button className="text-mist text-xs" onClick={() => { setEditing(false); setError('') }}>إغلاق<Icon name="x" size="xs" className="inline-block align-[-0.15em] ms-1" /></button>
           </div>
           {error && <p className="text-sm text-red-600 bg-red-500/10 rounded-xl p-3 mb-3" role="alert">{error}</p>}
 
@@ -185,7 +185,7 @@ export default function CompoundsTab() {
                 {regions.find(g => g.id === r.region_id)?.name ?? '—'}
                 {r.distance_km != null && ` · ${r.distance_km} كم`}
                 {r.direction && ` · ${r.direction === 'north' ? 'شمال' : 'جنوب'}`}
-                {(r.latitude == null || r.longitude == null) && ' · ⚠ مفيش إحداثيات'}
+                {(r.latitude == null || r.longitude == null) && <> · <Icon name="warning" size="xs" className="inline-block align-[-0.15em] me-1" />مفيش إحداثيات</>}
               </p>
             </div>
             <span className="font-bold text-sea text-sm shrink-0">{r.delivery_fee} ج.م</span>

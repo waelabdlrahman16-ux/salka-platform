@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from 'react'
+import Icon from './Icon'
 import { supabase } from '../lib/supabase'
 import { describeError } from '../lib/rpc'
 import { compressImage } from '../lib/upload'
@@ -215,7 +216,7 @@ export default function FeedAdsAdmin({ restaurants }: { restaurants: Restaurant[
                 <LinkItemPicker restaurants={restaurants} onPick={url => setForm(f => ({ ...f, link_url: url }))} />
                 {form.link_url && (
                   <div className="flex items-center gap-2 bg-shellup rounded-lg px-3 py-2.5 mt-2 text-sm">
-                    <span className="flex-1 min-w-0 truncate">✓ هيروح لـ: <bdi dir="ltr">{form.link_url}</bdi></span>
+                    <span className="flex-1 min-w-0 truncate"><Icon name="check" size="xs" className="inline-block align-[-0.15em] me-1" />هيروح لـ: <bdi dir="ltr">{form.link_url}</bdi></span>
                     <button type="button" className="text-xs text-red-600 font-semibold shrink-0"
                       onClick={() => setForm(f => ({ ...f, link_url: '' }))}>مسح</button>
                   </div>

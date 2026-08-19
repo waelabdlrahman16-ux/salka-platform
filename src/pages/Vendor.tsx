@@ -283,7 +283,7 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
     <div className="max-w-lg mx-auto pb-6">
       <div className="flex items-center justify-between mb-1">
         <h1 className="text-xl font-bold"><Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />{restaurant.name}، طلب مندوب</h1>
-        {!standalone && <button className="text-sm text-mist hover:text-foam" onClick={onClose}>إغلاق ✕</button>}
+        {!standalone && <button className="text-sm text-mist hover:text-foam" onClick={onClose}>إغلاق<Icon name="x" size="xs" className="inline-block align-[-0.15em] ms-1" /></button>}
       </div>
       <p className="text-mist text-sm mb-4">
         {standalone
@@ -722,7 +722,7 @@ function KitchenVendor({ rid }: { rid: number }) {
     return (
       <div key={o.id} className="card !rounded-2xl p-3.5 flex items-center gap-3">
         <span className={`w-9 h-9 rounded-full grid place-items-center shrink-0 ${ok ? 'bg-emerald-100 text-emerald-700' : 'bg-shellup text-mist'}`}>
-          {ok ? '✓' : '✗'}
+          <Icon name={ok ? 'check' : 'x'} size="sm" />
         </span>
         <div className="min-w-0 flex-1">
           <p className="font-semibold text-sm truncate">#{o.id} · {o.customer_name}</p>
@@ -758,8 +758,10 @@ function KitchenVendor({ rid }: { rid: number }) {
     if (completedToday.length === 0) setBoard('live')
   }, [completedToday.length])
 
-  const COMPLETED_LABEL: Record<string, string> = {
-    Delivered: '✓ تم التوصيل', Cancelled: '✗ ملغي', Failed_Delivery: '⚠ فشل التوصيل'
+  const COMPLETED_LABEL: Record<string, React.ReactNode> = {
+    Delivered: <><Icon name="check" size="xs" className="inline-block align-[-0.15em] me-1" />تم التوصيل</>,
+    Cancelled: <><Icon name="x" size="xs" className="inline-block align-[-0.15em] me-1" />ملغي</>,
+    Failed_Delivery: <><Icon name="warning" size="xs" className="inline-block align-[-0.15em] me-1" />فشل التوصيل</>
   }
 
   const card = (o: Order, big = false) => {
@@ -958,7 +960,7 @@ function KitchenVendor({ rid }: { rid: number }) {
                 return (
                   <div className={`mt-3 rounded-2xl p-3.5 text-center ${stale ? 'bg-red-500/10' : 'bg-shellup'}`}>
                     <p className={`text-sm font-semibold ${stale ? 'text-red-700' : 'text-sea'}`}>
-                      {stale ? '⚠ ' : '✓ '}في انتظار المندوب{waitMin !== null ? `، من ${waitMin} دقيقة` : ''}
+                      <Icon name={stale ? 'warning' : 'check'} size="xs" className="inline-block align-[-0.15em] me-1" />في انتظار المندوب{waitMin !== null ? `، من ${waitMin} دقيقة` : ''}
                     </p>
                   </div>
                 )
@@ -968,8 +970,8 @@ function KitchenVendor({ rid }: { rid: number }) {
                 : d.status === 'Accepted' ? <><Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />في الطريق للمطعم</>
                 : d.status === 'Picked_Up' ? <><Icon name="boxOpen" size="sm" className="inline-block align-[-0.15em] me-1" />استلم الطلب</>
                 : d.status === 'Out_for_Delivery' ? <><Icon name="car" size="sm" className="inline-block align-[-0.15em] me-1" />{`في الطريق للعميل${minsSince(d.out_for_delivery_at) !== null ? `، من ${minsSince(d.out_for_delivery_at)} دقيقة` : ''}`}</>
-                : d.status === 'Delivered' ? '✓ تم التوصيل'
-                : '✓ في انتظار المندوب'
+                : d.status === 'Delivered' ? <><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />تم التوصيل</>
+                : <><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />في انتظار المندوب</>
               return (
                 <div className="mt-3 rounded-2xl bg-shellup p-3.5 flex items-center justify-between gap-3">
                   <div className="min-w-0">
@@ -1112,7 +1114,7 @@ function KitchenVendor({ rid }: { rid: number }) {
         <>
           {orders.length === 0 && (
             <div className="card p-6 text-center text-mist">
-              {completedToday.length > 0 ? 'مفيش طلبات مستنية، كله خلص ✓' : 'لا توجد طلبات حالياً'}
+              {completedToday.length > 0 ? <>مفيش طلبات مستنية، كله خلص<Icon name="check" size="xs" className="inline-block align-[-0.15em] ms-1" /></> : 'لا توجد طلبات حالياً'}
             </div>
           )}
 

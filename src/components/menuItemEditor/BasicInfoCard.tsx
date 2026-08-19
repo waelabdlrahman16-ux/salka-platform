@@ -82,7 +82,9 @@ export default function BasicInfoCard({
 
       <button className={`w-full py-2 rounded-xl text-sm font-semibold border-2 ${available ? 'border-emerald-500/40 text-emerald-700 bg-emerald-500/5' : 'border-red-400/40 text-red-600 bg-red-500/5'}`}
         onClick={() => setAvailable(!available)}>
-        {available ? '✓ متاح للطلب' : '✗ غير متاح (خلص)'}
+        {available
+            ? <><Icon name="check" size="sm" className="inline-block align-[-0.15em] me-1" />متاح للطلب</>
+            : <><Icon name="x" size="sm" className="inline-block align-[-0.15em] me-1" />غير متاح (خلص)</>}
       </button>
 
       <div className="border-t border-line mt-4 pt-3">

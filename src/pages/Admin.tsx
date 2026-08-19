@@ -1799,7 +1799,7 @@ export default function Admin() {
         <div className="flex items-center gap-2 text-xs shrink-0">
           {lastSyncAt && (
             <span className={syncFailed ? 'text-red-600 font-semibold' : 'text-mist'}>
-              {syncFailed ? '⚠ آخر تحديث ناجح' : 'آخر تحديث'}{' '}
+              {syncFailed ? <><Icon name="warning" size="xs" className="inline-block align-[-0.15em] me-1" />آخر تحديث ناجح</> : 'آخر تحديث'}{' '}
               {new Date(lastSyncAt).toLocaleTimeString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </span>
           )}
@@ -3223,7 +3223,7 @@ export default function Admin() {
                   <button className="btn-sea w-full !py-2 text-sm mt-3"
                     disabled={accountBusy === `refund-${o.id}`}
                     onClick={() => markRefunded(o.id)}>
-                    {accountBusy === `refund-${o.id}` ? '...' : 'حوّلت المبلغ ✓'}
+                    {accountBusy === `refund-${o.id}` ? '...' : <>حوّلت المبلغ<Icon name="check" size="xs" className="inline-block align-[-0.15em] ms-1" /></>}
                   </button>
                 </div>
               ))}
@@ -3712,7 +3712,7 @@ function DailyReportTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <button className="btn-ghost text-sm" onClick={() => shift(-1)}>اليوم اللي قبله ←</button>
+        <button className="btn-ghost text-sm" onClick={() => shift(-1)}>اليوم اللي قبله<Icon name="chevronLeft" size="xs" className="inline-block align-[-0.15em] ms-1" /></button>
         <span className="font-bold text-sm">{day}</span>
         <button className="btn-ghost text-sm" onClick={() => shift(1)}><Icon name="arrowRight" size="sm" className="inline-block align-[-0.15em] me-1" />اليوم اللي بعده</button>
       </div>

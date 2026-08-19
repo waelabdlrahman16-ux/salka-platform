@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
+import Icon from './Icon'
 
 interface Props {
-  label: string
+  // ReactNode, not string: the label carries an inline <Icon> on the "confirm
+  // the cash first" state, which points at the button above it.
+  label: React.ReactNode
   onConfirm: () => void
   disabled?: boolean
 }
@@ -135,7 +138,7 @@ export default function SwipeToConfirm({ label, onConfirm, disabled }: Props) {
         style={{ right: 6, transform: `translateX(${-dragX}px)`, transition: dragging ? 'none' : 'transform 0.2s ease' }}
         onMouseDown={e => start(e.clientX)}
         onTouchStart={e => start(e.touches[0].clientX)}>
-        ←
+        <Icon name="chevronLeft" size="md" />
       </div>
     </div>
   )
