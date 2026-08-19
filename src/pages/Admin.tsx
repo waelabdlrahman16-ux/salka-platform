@@ -1850,7 +1850,7 @@ export default function Admin() {
                       <p className="text-xs text-mist mt-0.5">
                         <Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a>
                       </p>
-                      <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{o.compound_name ?? '—'}</p>
+                      <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{o.compound_name ?? '-'}</p>
                     </div>
                     <span className="text-xs font-semibold bg-dangerbg text-danger rounded-full px-2.5 py-1 shrink-0">
                       {orderStatusLabel(o.status)}
@@ -2711,7 +2711,7 @@ export default function Admin() {
                       <input
                         type="number" min={1} inputMode="numeric"
                         className="field !w-20 text-center"
-                        placeholder="—"
+                        placeholder="-"
                         value={rankDraft[r.id] ?? (r.display_order == null ? '' : String(r.display_order))}
                         onChange={e => setRankDraft(d => ({ ...d, [r.id]: e.target.value }))}
                         onBlur={() => commitRank(r)} />
@@ -2820,7 +2820,7 @@ export default function Admin() {
 
                 {reliability[r.id] && reliability[r.id].total_orders > 0 && (
                   <p className="text-xs text-mist mt-2">
-                    <Icon name="clock" size="sm" className="inline-block align-[-0.15em] me-1" />متوسط وقت القبول: <bdi dir="ltr">{reliability[r.id].avg_accept_minutes ?? '—'}</bdi> د •
+                    <Icon name="clock" size="sm" className="inline-block align-[-0.15em] me-1" />متوسط وقت القبول: <bdi dir="ltr">{reliability[r.id].avg_accept_minutes ?? '-'}</bdi> د •
                     {' '}<span className={reliability[r.id].slow_accepts > 2 ? 'text-warning' : 'text-mist'}>
                       <bdi dir="ltr">{reliability[r.id].slow_accepts}</bdi> طلب اتأخر قبوله (٣٠ يوم)
                     </span>
@@ -3205,7 +3205,7 @@ export default function Admin() {
                 <div key={o.id} className="card p-4 border-coral-300">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="font-semibold text-sm truncate">طلب #{o.id}: {o.vendor_name ?? '—'}</p>
+                      <p className="font-semibold text-sm truncate">طلب #{o.id}: {o.vendor_name ?? '-'}</p>
                       <p className="text-xs text-mist mt-0.5">
                         <Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a>
                       </p>

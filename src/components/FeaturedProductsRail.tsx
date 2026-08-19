@@ -29,7 +29,7 @@ export default function FeaturedProductsRail({ items }: { items: FeaturedProduct
     // The heading is gone: the band already says "different kind of thing",
     // and «أصناف مميزة» named a category the customer cannot act on -- the
     // dishes and their prices say what this is.
-    <div className="-mx-4 px-4 py-4 mb-4 bg-shellup border-y border-line">
+    <div className="-mx-4 px-4 py-7 mb-4 bg-shellup border-y border-line">
       <div className="flex gap-3 overflow-x-auto pb-1 snap-x snap-mandatory scrollbar-none">
         {items.map(it => (
           <Link key={it.menu_item_id} to={`/restaurant/${it.restaurant_id}?item=${it.menu_item_id}`}

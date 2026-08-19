@@ -122,7 +122,7 @@ export default function BannerRail({ onBanners }: { onBanners?: (has: boolean) =
               aria-label={clickable
                 ? [b.title, b.subtitle].filter(Boolean).join('، ') || 'إعلان. اضغط للتفاصيل'
                 : undefined}
-              className={`relative shrink-0 snap-center w-[96%] sm:w-[358px] h-[140px] rounded-2xl overflow-hidden
+              className={`relative shrink-0 snap-center w-[96%] sm:w-[358px] h-[140px] rounded-3xl overflow-hidden
                           text-right ${clickable ? 'cursor-pointer' : ''}`}
               style={{ background: b.bg_color }}>
 

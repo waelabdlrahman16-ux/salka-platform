@@ -252,7 +252,7 @@ export default function Supervisor() {
 
   const addr = (o: Order) => {
     const addressNote = o.address_notes?.trim()
-    return `${o.zone ?? '—'} • وحدة ${o.unit_number ?? '—'}${addressNote ? ` • ${addressNote}` : ''}`
+    return `${o.zone ?? '-'} • وحدة ${o.unit_number ?? '-'}${addressNote ? ` • ${addressNote}` : ''}`
   }
 
   if (loading) return <p className="text-mist text-center py-10">جاري التحميل…</p>
@@ -476,7 +476,7 @@ export default function Supervisor() {
                 <p className="font-bold text-sm truncate">#{a.order_id} • {a.orders?.restaurants?.name}</p>
                 <p className="text-xs text-mist mt-0.5"><Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />{a.drivers?.name} • محاولة {a.attempt_number}</p>
                 {a.orders && <p className="text-xs text-mist mt-0.5"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{a.orders.customer_name} • <a className="text-sea" dir="ltr" href={`tel:${a.orders.customer_phone}`}>{a.orders.customer_phone}</a></p>}
-                <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{a.orders ? addr(a.orders) : '—'}</p>
+                <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{a.orders ? addr(a.orders) : '-'}</p>
               </div>
               <span className="text-xs font-semibold bg-shellup rounded-full px-2.5 py-1 shrink-0">
                 {assignmentStatusLabel(a.status)}

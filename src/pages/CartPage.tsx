@@ -195,7 +195,7 @@ export default function CartPage() {
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-mist">رسوم الخدمة</span>
-          <span className="text-foam font-semibold">{serviceFee !== null ? `${serviceFee} ج.م` : serviceFeeLoading ? '…' : '—'}</span>
+          <span className="text-foam font-semibold">{serviceFee !== null ? `${serviceFee} ج.م` : serviceFeeLoading ? '…' : '-'}</span>
         </div>
         <div className="flex justify-between font-bold border-t border-line pt-2">
           <span>{grandTotal !== null ? 'الإجمالي' : 'الإجمالي قبل التوصيل'}</span>

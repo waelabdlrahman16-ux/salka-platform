@@ -142,7 +142,7 @@ export default function PushCoveragePanel() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         <div className="card p-3"><p className="text-xs text-mist">محاولات 30 يوم</p><p className="text-lg font-bold">{stats?.attempts_30d ?? 0}</p></div>
-        <div className="card p-3"><p className="text-xs text-mist">قبلتها فايربيز</p><p className="text-lg font-bold text-success">{acceptance == null ? '—' : `${acceptance}%`}</p></div>
+        <div className="card p-3"><p className="text-xs text-mist">قبلتها فايربيز</p><p className="text-lg font-bold text-success">{acceptance == null ? '-' : `${acceptance}%`}</p></div>
         <div className="card p-3"><p className="text-xs text-mist">فشلت آخر 24 ساعة</p><p className="text-lg font-bold text-danger">{stats?.failed_24h ?? 0}</p></div>
         <div className="card p-3"><p className="text-xs text-mist">توكنات منتهية 30 يوم</p><p className="text-lg font-bold">{report?.dead_tokens_30d ?? 0}</p></div>
       </div>
@@ -178,7 +178,7 @@ export default function PushCoveragePanel() {
                 <p className="text-sm font-semibold truncate">{p.restaurant_name || p.driver_name || p.name}</p>
                 <p className="text-xs text-mist">{ROLE_AR[p.role] ?? p.role}</p>
               </div>
-              <p className="text-xs text-mist text-left shrink-0">{p.platforms.join(' + ') || '—'}<br />{dateLabel(p.last_registered_at)}</p>
+              <p className="text-xs text-mist text-left shrink-0">{p.platforms.join(' + ') || '-'}<br />{dateLabel(p.last_registered_at)}</p>
             </div>
           ))}
         </div>

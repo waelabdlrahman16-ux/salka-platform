@@ -864,12 +864,12 @@ export default function DriverPage() {
             <div className="bg-shellup rounded-2xl px-5 py-3 mt-5">
               <p className="text-xs text-mist">أرباح النهاردة</p>
               {/* money() and haveStats exist precisely so a failed my_driver_stats
-                  renders "— ج.م" instead of a confident zero -- and this overlay,
+                  renders "- ج.م" instead of a confident zero -- and this overlay,
                   the one full-screen moment a driver actually reads their
                   earnings, used the raw values. Deliver an order with stats down
                   and the celebration said "0 ج.م • 0 طلبات". */}
               <p className="text-lg font-bold text-sea mt-0.5">
-                {money(todayEarnings)} • {haveStats ? `${todayOrders} طلبات` : '—'}
+                {money(todayEarnings)} • {haveStats ? `${todayOrders} طلبات` : '-'}
               </p>
               {/* Was a hardcoded "+10" that could disagree with the recorded
                   earning. Show the tier progress instead -- it is the number
@@ -1363,7 +1363,7 @@ export default function DriverPage() {
         </div>
         <div className="card p-4">
           <p className="text-xs text-mist">طلبات النهاردة</p>
-          <p className="text-xl font-bold text-foam mt-1">{haveStats ? todayOrders : '—'}</p>
+          <p className="text-xl font-bold text-foam mt-1">{haveStats ? todayOrders : '-'}</p>
         </div>
       </div>
 
@@ -1450,7 +1450,7 @@ export default function DriverPage() {
           <button className="btn-ghost w-full mt-3 text-sm" disabled={requestingSettlement || !haveStats || unpaidEarnings === 0} onClick={requestSettlement}>
             {/* disabled:pointer-events-none means a dead button does not even
                 flash. The !haveStats case is the cruel one: the figure above
-                reads "— ج.م" and the button is dead, so a driver whose stats
+                reads "- ج.م" and the button is dead, so a driver whose stats
                 call failed reads it as "the system lost my money". */}
             {requestingSettlement ? 'جاري الإرسال…'
               : !haveStats ? 'مش قادرين نجيب أرباحك. حدّث الصفحة'

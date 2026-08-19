@@ -72,7 +72,7 @@ export default function RestaurantCard({
   const ratingChip = (
     <span className="flex items-center gap-1">
       <Icon name="star" size="xs" className="text-coral-600" />
-      <span className="text-foam">{r.rating}</span>
+      <span className="font-medium text-foam">{r.rating}</span>
     </span>
   )
 
@@ -89,7 +89,7 @@ export default function RestaurantCard({
         <>
           <span className="flex items-center gap-1">
             <Icon name="clock" size="xs" className="text-mist" />
-            <span className="text-seadeep"><bdi dir="ltr">{etaMinutes.min} – {etaMinutes.max}</bdi> د</span>
+            <span><bdi dir="ltr">{etaMinutes.min} – {etaMinutes.max}</bdi> د</span>
           </span>
           {r.category && <><span aria-hidden="true" className="text-slate-300">•</span><span className="truncate">{r.category}</span></>}
         </>
@@ -135,7 +135,7 @@ export default function RestaurantCard({
       // bottom of the list on its own. Greyscale plus the reopening time beside
       // the name says it once and still lets someone see the food and decide to
       // come back at nine.
-      className="block card overflow-hidden !rounded-3xl"
+      className="block card !bg-shellup overflow-hidden !rounded-3xl"
     >
       {/* 5:2, trimmed again on 2026-08-07 at Wael's request after seeing it
           rendered at real phone width. On a 390px screen (minus the app's 16px

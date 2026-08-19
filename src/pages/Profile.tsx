@@ -295,7 +295,7 @@ export default function Profile() {
 
       <div className="card p-4">
         <p className="text-sm text-mist">رصيدك في المحفظة</p>
-        <p className="text-2xl font-bold text-sea mt-1">{walletBalance ?? '—'} ج.م</p>
+        <p className="text-2xl font-bold text-sea mt-1">{walletBalance ?? '-'} ج.م</p>
       </div>
 
       {orders.length > 0 && (

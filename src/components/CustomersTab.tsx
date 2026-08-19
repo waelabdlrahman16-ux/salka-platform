@@ -102,7 +102,7 @@ const money = (n: number | null | undefined) =>
   `${Number(n ?? 0).toLocaleString('en-EG', { maximumFractionDigits: 0 })} ج.م`
 
 const day = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'short' }) : '—'
+  iso ? new Date(iso).toLocaleDateString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'short' }) : '-'
 
 const dayTime = (iso: string) =>
   new Date(iso).toLocaleString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
@@ -209,7 +209,7 @@ export default function CustomersTab() {
         <p className="font-bold text-sm">طلبات استرجاع الحساب ({recoveries.length})</p>
         <p className="text-xs text-mist mt-1">اتصل بالرقم المسجل الأول، وبعد التأكد وافق لربط الحساب.</p>
         <div className="space-y-2 mt-3">{recoveries.map(r => <div key={r.id} className="bg-white rounded-lg p-3 flex items-center justify-between gap-2">
-          <div><p dir="ltr" className="font-semibold text-sm">{dial(r.phone)}</p><p dir="ltr" className="text-xs text-mist">{r.email || '—'}</p></div>
+          <div><p dir="ltr" className="font-semibold text-sm">{dial(r.phone)}</p><p dir="ltr" className="text-xs text-mist">{r.email || '-'}</p></div>
           <div className="flex gap-1"><a className="btn-ghost !py-1.5 !px-2 text-xs" href={`tel:${dial(r.phone)}`}>اتصل</a><button className="btn-sea !py-1.5 !px-2 text-xs" disabled={recoveryBusy===r.id} onClick={() => approveRecovery(r.id)}>وافق</button></div>
         </div>)}</div>
       </div>}
@@ -429,10 +429,10 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
             <Field label="آخر طلب" value={day(c.last_at)} />
             <Field label="سجّل معانا" value={day(c.signed_up_at)} />
             <Field label="رصيد المحفظة" value={money(c.wallet)} />
-            <Field label="آخر مكان" value={[c.last_zone, c.last_unit].filter(Boolean).join(' • ') || '—'} />
-            <Field label="أكتر مطعم" value={c.favourite_vendor || '—'} />
-            <Field label="طريقة الدفع" value={c.last_payment || '—'} />
-            <Field label="تقييمه للمندوبين" value={c.avg_rating_given ? `${c.avg_rating_given} ★` : '—'} />
+            <Field label="آخر مكان" value={[c.last_zone, c.last_unit].filter(Boolean).join(' • ') || '-'} />
+            <Field label="أكتر مطعم" value={c.favourite_vendor || '-'} />
+            <Field label="طريقة الدفع" value={c.last_payment || '-'} />
+            <Field label="تقييمه للمندوبين" value={c.avg_rating_given ? `${c.avg_rating_given} ★` : '-'} />
           </div>
 
           {detail && detail.complaints.length > 0 && (
@@ -514,7 +514,7 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
                   )}
                   {o.rating && (o.rating.driver || o.rating.restaurant) && (
                     <p className="text-xs text-coral-700 mt-1">
-                      قيّم المندوب {o.rating.driver ?? '—'}★ والمطعم {o.rating.restaurant ?? '—'}★
+                      قيّم المندوب {o.rating.driver ?? '-'}★ والمطعم {o.rating.restaurant ?? '-'}★
                       {o.rating.comment ? `، ${o.rating.comment}` : ''}
                     </p>
                   )}

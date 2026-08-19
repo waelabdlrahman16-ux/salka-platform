@@ -751,7 +751,7 @@ export default function CheckoutPage() {
             {deliveryFee !== null ? `${deliveryFee} ج.م`
               : feeLoading ? '…'
               : compoundId ? <button className="text-sea underline" onClick={retryFee}>إعادة المحاولة</button>
-              : '—'}
+              : '-'}
           </span>
         </div>
         {promoDiscount > 0 && (
