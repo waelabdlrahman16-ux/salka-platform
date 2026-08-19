@@ -259,23 +259,39 @@ export default function Admin() {
   const [walletOrderId, setWalletOrderId] = useState<number | null>(null)
   const [compensatedOrderIds, setCompensatedOrderIds] = useState<Set<number>>(new Set())
   const [showResolvedComplaints, setShowResolvedComplaints] = useState(false)
-  const [openHistory, setOpenHistory] = useState<number | null>(null)
   // Items are NOT loaded with the 500-order window -- that would be thousands of
   // rows nobody reads. They are fetched once, on expand, and kept.
   const [orderItems, setOrderItems] = useState<Record<number, { name: string; qty: number; total: number; size_name: string | null; combo_name: string | null; addon_names: string[] | null }[]>>({})
 
-  async function toggleOrderDetail(id: number) {
-    const next = openHistory === id ? null : id
-    setOpenHistory(next)
-    if (next === null || orderItems[id]) return
-    const { data, error } = await supabase.from('order_items')
-      .select('name, qty, total, size_name, combo_name, addon_names').eq('order_id', id).order('id')
-    // Caching [] on a failed read told the operator the order was empty -- in
-    // the exact situation the panel exists for ("the customer says an item was
-    // missing") -- and never retried, because the key was then present.
-    if (error) { setActionError('مش قادرين نحمّل أصناف الطلب دلوقتي، اقفل وافتح تاني'); return }
-    setOrderItems(prev => ({ ...prev, [id]: data ?? [] }))
-  }
+  // D's card shows what was in the bag without asking. That used to be one
+  // fetch per order, fired on click; showing it always would have meant a fetch
+  // per card -- the exact self-inflicted traffic #145 removed. So it is ONE
+  // query for the orders currently in view, and only while the orders tab is
+  // open. `orders` is already capped at ORDERS_LIMIT.
+  useEffect(() => {
+    if (tab !== 'orders') return
+    const need = orders
+      .filter(o => o.order_type === 'catalog' && !o.is_test && orderItems[o.id] === undefined)
+      .slice(0, 60).map(o => o.id)
+    if (need.length === 0) return
+    let alive = true
+    supabase.from('order_items')
+      .select('order_id, name, qty, total, size_name, combo_name, addon_names')
+      .in('order_id', need).order('id')
+      .then(({ data, error }) => {
+        if (!alive || error) return
+        type Row = { order_id: number; name: string; qty: number; total: number
+          size_name: string | null; combo_name: string | null; addon_names: string[] | null }
+        const by: Record<number, Omit<Row, 'order_id'>[]> = {}
+        for (const id of need) by[id] = []
+        for (const { order_id, ...rest } of (data ?? []) as Row[]) (by[order_id] ??= []).push(rest)
+        setOrderItems(prev => ({ ...by, ...prev }))
+      })
+    return () => { alive = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, orders])
+
+
   const [vendorAccounts, setVendorAccounts] = useState<{ profile_id: string; restaurant_id: number; email: string }[]>([])
   const [driverAccounts, setDriverAccounts] = useState<{ profile_id: string; driver_id: number; email: string }[]>([])
   const [catalogAccounts, setCatalogAccounts] = useState<{ profile_id: string; name: string; email: string; role: 'catalog' | 'supervisor' | 'observer' }[]>([])
@@ -2364,218 +2380,236 @@ export default function Admin() {
                       for revenue by someone glancing at the screen. */}
                   {group.items.map(o => (
             <div key={o.id} className={o.is_test
-              ? 'card p-4 border-dashed border-slate-500 bg-coral-100'
-              : 'card p-4'}>
-              <div className="flex items-start justify-between">
-                <h2 className="font-bold">
-                  #{o.id} · {o.restaurants?.name}
-                  {o.is_test && (
-                    <span className="mr-2 align-middle text-[10px] font-bold bg-coral-700 text-white rounded-full px-2 py-0.5">
-                      <Icon name="flask" size="sm" className="inline-block align-[-0.15em] me-1" />تجربة
+              ? 'card !p-0 overflow-hidden border-dashed border-coral-300'
+              : 'card !p-0 overflow-hidden'}>
+
+              {/* BAND 1 — identity. Same first band on every order type, so the
+                  eye stops hunting for the order number. The status is a PILL,
+                  not small grey text under the price: it was the single most
+                  important fact on the card and the least visible thing on it.
+                  The total appears here and nowhere else -- it used to be
+                  printed twice, once in the header and once in a chip. */}
+              <div className="p-4 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 className="font-bold">
+                    #{o.id} · {o.restaurants?.name}
+                    {o.is_test && (
+                      <span className="mr-2 align-middle text-[10px] font-bold bg-coral-700 text-white rounded-full px-2 py-0.5">
+                        <Icon name="flask" size="xs" className="inline-block align-[-0.15em] me-1" />تجربة
+                      </span>
+                    )}
+                  </h2>
+                  <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                    <span className={`text-[11px] font-bold rounded-full px-2.5 py-0.5 border ${
+                      isCancelled(o.status) ? 'bg-dangerbg border-dangerline text-danger'
+                      : CLOSED_ORDER_STATUSES.includes(o.status as OrderStatus)
+                        ? 'bg-successbg border-successline text-success'
+                        : 'bg-shellup border-line text-mist'}`}>
+                      {orderStatusLabel(o.status)}
                     </span>
-                  )}
-                </h2>
-                <div className="text-left">
-                  {/* «قيد التسعير» belongs only to an order still waiting for a
-                      price. A cancelled one is not waiting for anything, and
-                      showing it in the biggest text on the card -- with «ملغي»
-                      small underneath -- buried the one fact that matters. */}
-                  <span className={`font-bold block ${
-                    isCancelled(o.status) ? 'text-danger'
-                    : o.is_test ? 'text-coral-700' : 'text-sea'}`}>
-                    {isCancelled(o.status) ? 'ملغي'
-                      : o.pricing_status === 'pending_quote' ? 'قيد التسعير'
-                      : `${o.total} ج.م`}
-                  </span>
-                  <span className="text-xs text-mist">
-                    {isCancelled(o.status) ? `${o.total} ج.م` : orderStatusLabel(o.status)}
-                  </span>
+                    {isLate(o) && !CLOSED_ORDER_STATUSES.includes(o.status as OrderStatus) && (
+                      <span className="text-[11px] font-bold rounded-full px-2.5 py-0.5 border bg-warningbg border-warningline text-warning">
+                        محدش استلمه
+                      </span>
+                    )}
+                    {o.pricing_status === 'pending_quote' && !isCancelled(o.status) && (
+                      <span className="text-[11px] font-bold rounded-full px-2.5 py-0.5 border bg-warningbg border-warningline text-warning">
+                        قيد التسعير
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="text-left shrink-0">
+                  <span className="font-bold text-lg tabular-nums">{o.total}</span>
+                  <span className="text-xs text-mist"> ج.م</span>
                 </div>
               </div>
 
-              {/* Money correction after the fact. Writes a visible line rather
-                  than editing the header, so the customer's own item list still
-                  adds up to what they are charged. */}
-              {!o.is_test && <OrderAdjust orderId={o.id} onDone={() => load(true)} />}
-
-              {o.order_type === 'custom_request' && (
-                <div className="mt-2.5 bg-coral-100 border border-coral-200 rounded-xl p-3 text-sm space-y-1">
-                  <p className="font-semibold"><Icon name="receipt" size="sm" className="inline-block align-[-0.15em] me-1" />طلب خاص</p>
-                  {(o.request_items ?? []).map((it, i) => <p key={i}>• {it.name} × {it.qty}</p>)}
-                  {o.request_notes && <p className="italic">"{o.request_notes}"</p>}
-                  {o.prescription_path && <div className="pt-1"><PrescriptionLink path={o.prescription_path} /></div>}
-                </div>
-              )}
-
-              {o.order_type === 'pickup_request' && (
-                <div className="mt-2.5 bg-shellup/60 rounded-xl p-3 text-sm space-y-1">
-                  <p className="font-semibold"><Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />طلب مندوب بس</p>
-                  <p>{o.payment_mode === 'driver_pays' ? `المندوب يدفع ${o.collect_amount} ج.م ويحصلها كاش` : 'الأوردر متدفوع بالفعل'}</p>
-                  {o.request_notes && <p className="italic">"{o.request_notes}"</p>}
-                </div>
-              )}
-
-              {customer(o)}
-
-              {/* `pricing_status` does NOT clear when an order is cancelled, so a
-                  cancelled custom order still reads pending_quote forever. This
-                  block was therefore offering a live price box on a dead order --
-                  and confirm_custom_order_price had no status check either, so
-                  typing a number would have rewritten the total of an order the
-                  customer had already walked away from. Order #86 was exactly
-                  this: cancelled at 14:07 and still asking to be priced. */}
-              {o.order_type === 'custom_request' && o.pricing_status === 'pending_quote'
-                && !isCancelled(o.status) && (
-                <div className="flex items-center gap-2 mt-3">
-                  <input type="number" inputMode="decimal" placeholder="السعر بعد المكالمة" aria-label="السعر بعد المكالمة"
-                    className="field !py-1.5 text-sm" id={`quote-${o.id}`} />
-                  <button className="btn-sea shrink-0 !py-1.5 text-sm" onClick={() => {
-                    const el = document.getElementById(`quote-${o.id}`) as HTMLInputElement
-                    confirmCustomOrderPrice(o.id, Number(el.value))
-                  }}>تأكيد السعر</button>
-                </div>
-              )}
-
-              {!CLOSED_ORDER_STATUSES.includes(o.status as OrderStatus) && (
-                <div className="flex gap-2 mt-3">
-                  <button className="btn-danger !py-1.5 text-xs" onClick={() => cancelOrder(o)}>إلغاء الطلب</button>
-                </div>
-              )}
-              {CLOSED_ORDER_STATUSES.includes(o.status as OrderStatus) && showTestOrders && (
-                <button className="btn-danger !py-1.5 text-xs mt-3"
-                  disabled={accountBusy === `deltest-${o.id}`} onClick={async () => {
-                  if (!await confirmSheet({ title: `حذف تجربة #${o.id} نهائياً؟`, body: 'هيتم حذف الطلب التجريبي المغلق وسجلّه المرتبط. الطلبات الحقيقية لا يمكن حذفها من هنا.', danger: true })) return
-                  const key = `deltest-${o.id}`
-                  setAccountBusy(key)
-                  let result
-                  try { result = await adminFinancialAction('deleteTestOrder', { orderId: o.id }) }
-                  finally { releaseBusy(key) }
-                  if (!result.ok) { await alertSheet(result.error); return }
-                  await alertSheet('تم حذف الطلب التجريبي')
-                  load(true)
-                }}>حذف التجربة نهائياً</button>
-              )}
-              {CLOSED_ORDER_STATUSES.includes(o.status as OrderStatus) && !showTestOrders && (
-                <button className="btn-ghost !py-1.5 text-xs mt-3"
-                  disabled={accountBusy === `archive-${o.id}`} onClick={async () => {
-                  if (!await confirmSheet({ title: `أرشفة الطلب #${o.id}؟`, body: 'هيختفي من القوائم اليومية، لكنه سيبقى محفوظاً بالكامل في قاعدة البيانات للمراجعة.', danger: false })) return
-                  const key = `archive-${o.id}`
-                  setAccountBusy(key)
-                  let result
-                  try { result = await adminFinancialAction('archiveOrder', { orderId: o.id }) }
-                  finally { releaseBusy(key) }
-                  if (!result.ok) { await alertSheet(result.error); return }
-                  await alertSheet('تمت أرشفة الطلب')
-                  load(true)
-                }}>أرشفة الطلب</button>
-              )}
-
-              {/* A delivered order used to end at a total and a status word.
-                  Everything you actually reach for afterwards -- who drove it,
-                  how long it took against the SLA it promised, whether the cash
-                  came back -- was either inside a collapsed timeline or nowhere.
-                  This is the answer to "what happened with #41", on the card. */}
-              {(() => {
-                if (!CLOSED_ORDER_STATUSES.includes(o.status as OrderStatus)) return null
-                // assignments is capped at 400 while orders reaches 500 and
-                // search is unbounded, so an older order simply is not in this
-                // list. Saying «محدش» there would claim nobody delivered an
-                // order that was delivered.
-                const done = assignments.find(a => a.order_id === o.id && a.delivered_at)
-                const known = assignments.some(a => a.order_id === o.id)
-                const mins = done?.delivered_at
-                  ? Math.round((new Date(done.delivered_at).getTime() - new Date(o.created_at).getTime()) / 60000)
-                  : null
-                const late = mins != null && o.sla_minutes != null && mins > o.sla_minutes
-                const cash = o.payment_method === 'cod'
-                  ? (o.cod_deposit_amount != null
-                      ? `كاش ${Math.round((o.total - o.cod_deposit_amount) * 100) / 100} + عربون ${o.cod_deposit_amount}`
-                      : `كاش ${o.total}`)
-                  : o.payment_method === 'instapay' ? 'InstaPay' : 'أونلاين'
-                return (
-                  <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
-                    {known && (
-                      <span className="bg-night border border-line rounded-lg px-2 py-1">
-                        <Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />{done?.drivers?.name ?? 'محدش'}
-                      </span>
-                    )}
-                    {mins != null && (
-                      <span className={`rounded-lg px-2 py-1 border ${late ? 'bg-warningbg border-warningline text-warning' : 'bg-night border-line'}`}>
-                        <Icon name="clock" size="sm" className="inline-block align-[-0.15em] me-1" />{mins} دقيقة{o.sla_minutes ? ` / ${o.sla_minutes}` : ''}{late ? '، متأخر' : ''}
-                      </span>
-                    )}
-                    <span className="bg-night border border-line rounded-lg px-2 py-1"><Icon name="moneyBill" size="sm" className="inline-block align-[-0.15em] me-1" />{cash}</span>
-                    {/* WHEN, not just why. The reason chip said
-                        «customer_cancelled» and nothing else, so the one
-                        question you actually ask -- how long did we sit on it
-                        before they gave up -- had no answer on this card. */}
-                    {o.status === 'Cancelled' && (o.cancel_reason || o.cancelled_at) && (
-                      <span className="bg-dangerbg border border-dangerline text-danger rounded-lg px-2 py-1">
-                        <Icon name="x" size="sm" className="inline-block align-[-0.15em] me-1" />{cancelReasonLabel(o.cancel_reason)}
-                        {o.cancelled_at && ` · اتلغى ${fmtTime(o.cancelled_at)}`}
-                        {o.cancelled_at && o.created_at &&
-                          ` · بعد ${Math.max(0, Math.round(
-                            (new Date(o.cancelled_at).getTime() - new Date(o.created_at).getTime()) / 60000))} دقيقة`}
-                      </span>
-                    )}
-                  </div>
-                )
-              })()}
-
-              <button className="text-xs text-sea font-semibold mt-3" onClick={() => toggleOrderDetail(o.id)}>
-                {openHistory === o.id ? 'إخفاء التفاصيل ▲' : 'عرض التفاصيل الكاملة ▼'}
-              </button>
-              {openHistory === o.id && (
-                <div className="mt-2 bg-night border border-line rounded-xl p-3 text-xs space-y-1.5">
-                  {/* What was actually in the bag. Never shown anywhere in Admin
-                      for a catalogue order before now -- so "the customer says
-                      an item was missing" had no answer on this screen. */}
+              {/* BAND 2 — what was ordered. Neutral, NOT coral: this is the
+                  order's contents, and a coral wash made the one piece of
+                  ordinary content on the card read like an alert. Catalogue
+                  items are batch-fetched above rather than hidden behind a
+                  disclosure. */}
+              <div className="px-4 py-3 border-t border-line bg-night">
+                <p className="text-[10px] uppercase tracking-wider text-mist font-bold mb-1.5">
+                  {o.order_type === 'custom_request' ? 'الطلب — طلب خاص'
+                    : o.order_type === 'pickup_request' ? 'الطلب — مندوب بس' : 'الأصناف'}
+                </p>
+                <div className="text-sm space-y-0.5">
+                  {o.order_type === 'custom_request' && (
+                    <>
+                      {(o.request_items ?? []).map((it, i) => <p key={i}>• {it.name} × {it.qty}</p>)}
+                      {o.request_notes && <p className="italic text-mist">«{o.request_notes}»</p>}
+                      {o.prescription_path && <div className="pt-1"><PrescriptionLink path={o.prescription_path} /></div>}
+                    </>
+                  )}
+                  {o.order_type === 'pickup_request' && (
+                    <>
+                      <p>{o.payment_mode === 'driver_pays'
+                        ? `المندوب يدفع ${o.collect_amount} ج.م ويحصلها كاش`
+                        : 'الأوردر متدفوع، رسوم التوصيل بس'}</p>
+                      {o.request_notes && <p className="italic text-mist">«{o.request_notes}»</p>}
+                    </>
+                  )}
                   {o.order_type === 'catalog' && (
-                    <div className="pb-2 mb-2 border-b border-line">
-                      <p className="font-semibold mb-1"><Icon name="receipt" size="sm" className="inline-block align-[-0.15em] me-1" />الأصناف</p>
-                      {orderItems[o.id] === undefined ? (
-                        <p className="text-mist">بنحمّل…</p>
-                      ) : orderItems[o.id].length === 0 ? (
-                        <p className="text-mist">مفيش أصناف مسجلة</p>
-                      ) : orderItems[o.id].map((it, i) => (
-                        <p key={i}>
-                          <span className="font-semibold">{it.qty}×</span> {it.name}
-                          {[it.size_name, it.combo_name, ...(it.addon_names ?? [])].filter(Boolean).length > 0 && (
-                            <span className="text-mist"> · {[it.size_name, it.combo_name, ...(it.addon_names ?? [])].filter(Boolean).join(' · ')}</span>
-                          )}
-                          <span className="text-mist"> · {it.total} ج.م</span>
-                        </p>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* The money, itemised. The card shows one number; a customer
-                      querying their bill is asking about these four. */}
-                  <div className="pb-2 mb-2 border-b border-line">
-                    <p className="font-semibold mb-1"><Icon name="coins" size="sm" className="inline-block align-[-0.15em] me-1" />الحساب</p>
-                    <p>المنتجات: {o.subtotal} ج.م</p>
-                    <p>التوصيل: {o.delivery_fee} ج.م</p>
-                    {Number(o.service_fee ?? 0) > 0 && <p>رسوم الخدمة: {o.service_fee} ج.م</p>}
-                    {Number(o.wallet_used ?? 0) > 0 && <p className="text-sea">من المحفظة: −{o.wallet_used} ج.م</p>}
-                    <p className="font-semibold">الإجمالي: {o.total} ج.م</p>
-                  </div>
-
-                  <p><Icon name="clock" size="sm" className="inline-block align-[-0.15em] me-1" />الطلب اتعمل: {fmtTime(o.created_at)}</p>
-                  {assignments.filter(a => a.order_id === o.id).map(a => (
-                    <div key={a.id} className="border-t border-line pt-1.5 mt-1.5 first:border-t-0 first:pt-0 first:mt-0">
-                      <p className="font-semibold">محاولة {a.attempt_number}: {a.drivers?.name} ({assignmentStatusLabel(a.status)})</p>
-                      {a.offered_at && <p>عُرض عليه: {fmtTime(a.offered_at)}</p>}
-                      {a.responded_at && <p>رد: {fmtTime(a.responded_at)}</p>}
-                      {a.picked_up_at && <p>استلم من المطعم: {fmtTime(a.picked_up_at)}</p>}
-                      {a.delivered_at && <p>سلّم: {fmtTime(a.delivered_at)}</p>}
-                      {a.rejection_reason && <p className="text-coral-700">سبب: {a.rejection_reason}</p>}
-                    </div>
-                  ))}
-                  {assignments.filter(a => a.order_id === o.id).length === 0 && (
-                    <p className="text-mist">محدش اتعين على الطلب ده لسه</p>
+                    orderItems[o.id] === undefined ? <p className="text-mist">بنحمّل…</p>
+                    : orderItems[o.id].length === 0 ? <p className="text-mist">مفيش أصناف مسجلة</p>
+                    : orderItems[o.id].map((it, i) => (
+                      <p key={i}>
+                        <span className="font-semibold tabular-nums">{it.qty}×</span> {it.name}
+                        {[it.size_name, it.combo_name, ...(it.addon_names ?? [])].filter(Boolean).length > 0 && (
+                          <span className="text-mist"> · {[it.size_name, it.combo_name, ...(it.addon_names ?? [])].filter(Boolean).join('، ')}</span>
+                        )}
+                        <span className="text-mist tabular-nums"> · {it.total} ج.م</span>
+                      </p>
+                    ))
                   )}
                 </div>
-              )}
+                {o.order_type === 'custom_request' && o.pricing_status === 'pending_quote'
+                  && !isCancelled(o.status) && (
+                  <div className="flex items-center gap-2 mt-2.5">
+                    <input type="number" inputMode="decimal" placeholder="السعر بعد المكالمة" aria-label="السعر بعد المكالمة"
+                      className="field !py-1.5 text-sm" id={`quote-${o.id}`} />
+                    <button className="btn-sea shrink-0 !py-1.5 text-sm" onClick={() => {
+                      const el = document.getElementById(`quote-${o.id}`) as HTMLInputElement
+                      confirmCustomOrderPrice(o.id, Number(el.value))
+                    }}>تأكيد السعر</button>
+                  </div>
+                )}
+              </div>
+
+              {/* BAND 3 — the people, and BAND 4 — where and how. Every value
+                  carries a label, because «146» on its own was ambiguous and a
+                  chip row put a person, a duration and a sum in one style. */}
+              <div className="px-4 py-3 border-t border-line grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-mist font-bold">العميل</p>
+                  <p className="text-sm font-semibold">{o.customer_name}</p>
+                  <a className="text-sm text-sea font-semibold" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-mist font-bold">المندوب</p>
+                  {(() => {
+                    const done = assignments.find(a => a.order_id === o.id && a.delivered_at)
+                    const known = assignments.some(a => a.order_id === o.id)
+                    const mins = done?.delivered_at
+                      ? Math.round((new Date(done.delivered_at).getTime() - new Date(o.created_at).getTime()) / 60000)
+                      : null
+                    const late = mins != null && o.sla_minutes != null && mins > o.sla_minutes
+                    return (
+                      <>
+                        <p className="text-sm font-semibold">{known ? (done?.drivers?.name ?? 'لسه محدش') : '—'}</p>
+                        {mins != null && (
+                          <p className={`text-sm font-semibold ${late ? 'text-warning' : 'text-mist'}`}>
+                            {mins} دقيقة{o.sla_minutes ? ` / ${o.sla_minutes}` : ''}{late ? '، متأخر' : ''}
+                          </p>
+                        )}
+                      </>
+                    )
+                  })()}
+                </div>
+                <div className="col-span-2">
+                  <p className="text-[10px] uppercase tracking-wider text-mist font-bold">العنوان</p>
+                  <p className="text-sm">{addr(o)}</p>
+                </div>
+                {o.customer_note && (
+                  <div className="col-span-2">
+                    <p className="text-[10px] uppercase tracking-wider text-mist font-bold">ملاحظة العميل</p>
+                    <p className="text-sm text-coral-700">{o.customer_note}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* BAND 5 — the money, itemised. This lived behind «عرض التفاصيل
+                  الكاملة» before; a customer querying their bill is asking about
+                  these four numbers, and it is four lines. */}
+              <div className="px-4 py-3 border-t border-line text-sm">
+                <p className="text-[10px] uppercase tracking-wider text-mist font-bold mb-1.5">الحساب</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 tabular-nums">
+                  <span className="text-mist">المنتجات</span><span className="text-left">{o.subtotal} ج.م</span>
+                  <span className="text-mist">التوصيل</span><span className="text-left">{o.delivery_fee} ج.م</span>
+                  {Number(o.service_fee ?? 0) > 0 && (
+                    <><span className="text-mist">رسوم الخدمة</span><span className="text-left">{o.service_fee} ج.م</span></>
+                  )}
+                  {Number(o.wallet_used ?? 0) > 0 && (
+                    <><span className="text-sea">من المحفظة</span><span className="text-left text-sea">−{o.wallet_used} ج.م</span></>
+                  )}
+                  <span className="font-bold">الإجمالي</span><span className="text-left font-bold">{o.total} ج.م</span>
+                  <span className="text-mist">طريقة الدفع</span>
+                  <span className="text-left">{o.payment_method === 'cod'
+                    ? (o.cod_deposit_amount != null
+                        ? `كاش ${Math.round((o.total - o.cod_deposit_amount) * 100) / 100} + عربون ${o.cod_deposit_amount}`
+                        : 'كاش')
+                    : o.payment_method === 'instapay' ? 'InstaPay' : 'أونلاين'}</span>
+                </div>
+                {!o.is_test && <div className="mt-2"><OrderAdjust orderId={o.id} onDone={() => load(true)} /></div>}
+              </div>
+
+              {/* BAND 6 — what happened, in order. Also previously collapsed. */}
+              <div className="px-4 py-3 border-t border-line text-xs space-y-1">
+                <p className="text-[10px] uppercase tracking-wider text-mist font-bold mb-1">السجل</p>
+                <p><Icon name="clock" size="xs" className="inline-block align-[-0.15em] me-1" />الطلب اتعمل: {fmtTime(o.created_at)}</p>
+                {assignments.filter(a => a.order_id === o.id).map(a => (
+                  <div key={a.id} className="border-t border-line pt-1 mt-1">
+                    <p className="font-semibold">محاولة {a.attempt_number}: {a.drivers?.name} ({assignmentStatusLabel(a.status)})</p>
+                    {a.offered_at && <p className="text-mist">عُرض: {fmtTime(a.offered_at)}</p>}
+                    {a.responded_at && <p className="text-mist">رد: {fmtTime(a.responded_at)}</p>}
+                    {a.picked_up_at && <p className="text-mist">استلم: {fmtTime(a.picked_up_at)}</p>}
+                    {a.delivered_at && <p className="text-mist">سلّم: {fmtTime(a.delivered_at)}</p>}
+                    {a.rejection_reason && <p className="text-warning">سبب: {a.rejection_reason}</p>}
+                  </div>
+                ))}
+                {assignments.filter(a => a.order_id === o.id).length === 0 && (
+                  <p className="text-mist">محدش اتعين على الطلب ده لسه</p>
+                )}
+                {o.status === 'Cancelled' && (o.cancel_reason || o.cancelled_at) && (
+                  <p className="text-danger font-semibold pt-1">
+                    <Icon name="x" size="xs" className="inline-block align-[-0.15em] me-1" />{cancelReasonLabel(o.cancel_reason)}
+                    {o.cancelled_at && ` · اتلغى ${fmtTime(o.cancelled_at)}`}
+                    {o.cancelled_at && o.created_at &&
+                      ` · بعد ${Math.max(0, Math.round(
+                        (new Date(o.cancelled_at).getTime() - new Date(o.created_at).getTime()) / 60000))} دقيقة`}
+                  </p>
+                )}
+              </div>
+
+              {/* BAND 7 — every action, in one strip. They used to sit in three
+                  separate places on the card, so finding one meant scanning the
+                  whole thing. Archive is no longer the most prominent control on
+                  a delivered order; it is the least urgent thing you can do. */}
+              <div className="px-4 py-3 border-t border-line bg-night flex flex-wrap gap-2">
+                {!CLOSED_ORDER_STATUSES.includes(o.status as OrderStatus) && (
+                  <button className="btn-danger !py-1.5 text-xs" onClick={() => cancelOrder(o)}>إلغاء الطلب</button>
+                )}
+                {CLOSED_ORDER_STATUSES.includes(o.status as OrderStatus) && showTestOrders && (
+                  <button className="btn-danger !py-1.5 text-xs"
+                    disabled={accountBusy === `deltest-${o.id}`} onClick={async () => {
+                    if (!await confirmSheet({ title: `حذف تجربة #${o.id} نهائياً؟`, body: 'هيتم حذف الطلب التجريبي وكل ما يتعلق به.', danger: true, confirmLabel: 'احذف' })) return
+                    const key = `deltest-${o.id}`
+                    setAccountBusy(key)
+                    let result
+                    try { result = await adminFinancialAction('deleteTestOrder', { orderId: o.id }) }
+                    finally { releaseBusy(key) }
+                    if (!result.ok) { await alertSheet(result.error); return }
+                    await alertSheet('تم حذف الطلب التجريبي')
+                    load(true)
+                  }}>حذف التجربة نهائياً</button>
+                )}
+                {CLOSED_ORDER_STATUSES.includes(o.status as OrderStatus) && !showTestOrders && (
+                  <button className="btn-ghost !py-1.5 text-xs"
+                    disabled={accountBusy === `archive-${o.id}`} onClick={async () => {
+                    if (!await confirmSheet({ title: `أرشفة الطلب #${o.id}؟`, body: 'هيختفي من القوائم اليومية، وهيفضل في قاعدة البيانات.' })) return
+                    const key = `archive-${o.id}`
+                    setAccountBusy(key)
+                    let result
+                    try { result = await adminFinancialAction('archiveOrder', { orderId: o.id }) }
+                    finally { releaseBusy(key) }
+                    if (!result.ok) { await alertSheet(result.error); return }
+                    await alertSheet('تمت أرشفة الطلب')
+                    load(true)
+                  }}>أرشفة الطلب</button>
+                )}
+              </div>
             </div>
                   ))}
                 </div>
