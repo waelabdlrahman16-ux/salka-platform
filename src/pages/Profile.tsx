@@ -152,11 +152,13 @@ export default function Profile() {
               {/* The same pair as the pharmacy and supermarket tiles: cream with
                   #6B4A18 at 6.95:1. coral read as an error colour on a screen
                   that is selling something. */}
-              {/* self-stretch, not a fixed height: the tile is as tall as the
-                  title and subtitle beside it, whatever those wrap to. At h-9
-                  it floated against a 40px text block, and a perk whose body
-                  wrapped to two lines pushed the gap wider still. */}
-              <span className="w-9 self-stretch rounded-lg bg-cream text-[#6B4A18] grid place-items-center shrink-0">
+              {/* 42x42: the measured height of the title and subtitle stacked, so the
+                  tile squares off against the text instead of floating at 36px.
+                  Stated rather than derived -- `self-stretch` + `aspect-square`
+                  collapses to 20x42, because a flex item cannot take its width
+                  from a height it only gets by stretching. If the copy ever
+                  wraps to a third line, re-measure. */}
+              <span className="w-[42px] h-[42px] rounded-lg bg-cream text-[#6B4A18] grid place-items-center shrink-0">
                 <Icon name={p.icon} size="md" />
               </span>
               <span className="min-w-0">
