@@ -16,22 +16,22 @@ export type IconName =
   | 'magnifyingGlass' | 'locationDot' | 'star' | 'clock'
   | 'minus' | 'plus' | 'clone' | 'moneyBill'
   | 'mobileScreen' | 'house' | 'rectangleList' | 'penToSquare'
-  | 'creditCard' | 'cartShopping' | 'chevronLeft' | 'truck'
-  | 'tag' | 'circleUser' | 'check' | 'x'
-  | 'warning' | 'pill' | 'moped' | 'repeat'
-  | 'envelope' | 'chatCircle' | 'broadcast' | 'paperclip'
-  | 'arrowUp' | 'image' | 'briefcase' | 'wallet'
-  | 'clipboardText' | 'bell' | 'phone' | 'thumbsDown'
-  | 'question' | 'camera' | 'coins' | 'arrowCounterClockwise'
-  | 'pencilSimple' | 'arrowRight' | 'user' | 'hourglass'
-  | 'flask' | 'van' | 'moon' | 'gear'
-  | 'arrowUturn' | 'megaphone' | 'storefront' | 'speakerSlash'
-  | 'link' | 'chartLineDown' | 'arrowDown' | 'trash'
-  | 'folders' | 'bellRinging' | 'siren' | 'mobileSlash'
-  | 'handPointing' | 'car' | 'trafficSignal' | 'users'
-  | 'chartBar' | 'thumbsUp' | 'prohibit' | 'note'
-  | 'stethoscope' | 'handSoap' | 'basket' | 'sprayBottle'
-  | 'umbrella' | 'baby' | 'carrot' | 'cheese'
+  | 'creditCard' | 'cartShopping' | 'chevronLeft' | 'tag'
+  | 'circleUser' | 'check' | 'x' | 'warning'
+  | 'pill' | 'moped' | 'repeat' | 'envelope'
+  | 'chatCircle' | 'broadcast' | 'paperclip' | 'arrowUp'
+  | 'image' | 'briefcase' | 'wallet' | 'clipboardText'
+  | 'bell' | 'phone' | 'thumbsDown' | 'question'
+  | 'camera' | 'coins' | 'arrowCounterClockwise' | 'pencilSimple'
+  | 'arrowRight' | 'user' | 'hourglass' | 'flask'
+  | 'van' | 'moon' | 'gear' | 'arrowUturn'
+  | 'megaphone' | 'storefront' | 'speakerSlash' | 'link'
+  | 'chartLineDown' | 'arrowDown' | 'trash' | 'folders'
+  | 'bellRinging' | 'siren' | 'mobileSlash' | 'handPointing'
+  | 'car' | 'trafficSignal' | 'users' | 'chartBar'
+  | 'thumbsUp' | 'prohibit' | 'note' | 'stethoscope'
+  | 'handSoap' | 'basket' | 'sprayBottle' | 'umbrella'
+  | 'baby' | 'carrot' | 'cheese'
 
 
 const BOLD: Record<IconName, string> = {
@@ -54,7 +54,6 @@ const BOLD: Record<IconName, string> = {
   creditCard: 'M224,44H32A20,20,0,0,0,12,64V192a20,20,0,0,0,20,20H224a20,20,0,0,0,20-20V64A20,20,0,0,0,224,44Zm-4,24V88H36V68ZM36,188V112H220v76Zm172-24a12,12,0,0,1-12,12H164a12,12,0,0,1,0-24h32A12,12,0,0,1,208,164Zm-68,0a12,12,0,0,1-12,12H116a12,12,0,0,1,0-24h12A12,12,0,0,1,140,164Z',
   cartShopping: 'M233.21,56.31A12,12,0,0,0,224,52H66L60.53,21.85A12,12,0,0,0,48.73,12H24a12,12,0,0,0,0,24H38.71L63.62,173a28,28,0,0,0,4.07,10.21A32,32,0,1,0,123,196h34a32,32,0,1,0,31-24H91.17a4,4,0,0,1-3.93-3.28L84.92,156H196.1a28,28,0,0,0,27.55-23l12.16-66.86A12,12,0,0,0,233.21,56.31ZM100,204a8,8,0,1,1-8-8A8,8,0,0,1,100,204Zm88,8a8,8,0,1,1,8-8A8,8,0,0,1,188,212Zm12-83.28A4,4,0,0,1,196.1,132H80.56L70.38,76H209.62Z',
   chevronLeft: 'M168.49,199.51a12,12,0,0,1-17,17l-80-80a12,12,0,0,1,0-17l80-80a12,12,0,0,1,17,17L97,128Z',
-  truck: 'M255.14,115.54l-14-35A19.89,19.89,0,0,0,222.58,68H196V64a12,12,0,0,0-12-12H32A20,20,0,0,0,12,72V184a20,20,0,0,0,20,20H46.06a36,36,0,0,0,67.88,0h44.12a36,36,0,0,0,67.88,0H236a20,20,0,0,0,20-20V120A21.7,21.7,0,0,0,255.14,115.54ZM196,92h23.88l6.4,16H196ZM80,204a12,12,0,1,1,12-12A12,12,0,0,1,80,204Zm92-41.92A36.32,36.32,0,0,0,158.06,180H113.94a36,36,0,0,0-67.88,0H36V140H172ZM172,116H36V76H172Zm20,88a12,12,0,1,1,12-12A12,12,0,0,1,192,204Zm40-24h-6.06A36.09,36.09,0,0,0,196,156.23V132h36Z',
   tag: 'M246.15,133.18,146.83,33.86A19.85,19.85,0,0,0,132.69,28H40A12,12,0,0,0,28,40v92.69a19.85,19.85,0,0,0,5.86,14.14l99.32,99.32a20,20,0,0,0,28.28,0l84.69-84.69A20,20,0,0,0,246.15,133.18Zm-98.83,93.17L52,131V52h79l95.32,95.32ZM104,88A16,16,0,1,1,88,72,16,16,0,0,1,104,88Z',
   circleUser: 'M128,20A108,108,0,1,0,236,128,108.12,108.12,0,0,0,128,20ZM79.57,196.57a60,60,0,0,1,96.86,0,83.72,83.72,0,0,1-96.86,0ZM100,120a28,28,0,1,1,28,28A28,28,0,0,1,100,120ZM194,179.94a83.48,83.48,0,0,0-29-23.42,52,52,0,1,0-74,0,83.48,83.48,0,0,0-29,23.42,84,84,0,1,1,131.9,0Z',
   check: 'M232.49,80.49l-128,128a12,12,0,0,1-17,0l-56-56a12,12,0,1,1,17-17L96,183,215.51,63.51a12,12,0,0,1,17,17Z',
@@ -118,11 +117,11 @@ const BOLD: Record<IconName, string> = {
 }
 
 export type FilledIconName =
-  'house' | 'truck' | 'tag' | 'cartShopping' | 'circleUser'
+  'house' | 'van' | 'tag' | 'cartShopping' | 'circleUser'
 
 const FILL: Record<FilledIconName, string> = {
   house: 'M224,120v96a8,8,0,0,1-8,8H160a8,8,0,0,1-8-8V164a4,4,0,0,0-4-4H108a4,4,0,0,0-4,4v52a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V120a16,16,0,0,1,4.69-11.31l80-80a16,16,0,0,1,22.62,0l80,80A16,16,0,0,1,224,120Z',
-  truck: 'M255.43,117l-14-35A15.93,15.93,0,0,0,226.58,72H192V64a8,8,0,0,0-8-8H32A16,16,0,0,0,16,72V184a16,16,0,0,0,16,16H49a32,32,0,0,0,62,0h50a32,32,0,0,0,62,0h17a16,16,0,0,0,16-16V120A8.13,8.13,0,0,0,255.43,117ZM80,208a16,16,0,1,1,16-16A16,16,0,0,1,80,208ZM32,136V72H176v64Zm160,72a16,16,0,1,1,16-16A16,16,0,0,1,192,208Zm0-96V88h34.58l9.6,24Z',
+  van: 'M254.07,106.79,208.53,53.73A16,16,0,0,0,196.26,48H32A16,16,0,0,0,16,64V176a16,16,0,0,0,16,16H49a32,32,0,0,0,62,0h50a32,32,0,0,0,62,0h17a16,16,0,0,0,16-16V112A8,8,0,0,0,254.07,106.79ZM32,104V64H88v40Zm48,96a16,16,0,1,1,16-16A16,16,0,0,1,80,200Zm80-96H104V64h56Zm32,96a16,16,0,1,1,16-16A16,16,0,0,1,192,200Zm-16-96V64h20.26l34.33,40Z',
   tag: 'M243.31,136,144,36.69A15.86,15.86,0,0,0,132.69,32H40a8,8,0,0,0-8,8v92.69A15.86,15.86,0,0,0,36.69,144L136,243.31a16,16,0,0,0,22.63,0l84.68-84.68a16,16,0,0,0,0-22.63ZM84,96A12,12,0,1,1,96,84,12,12,0,0,1,84,96Z',
   cartShopping: 'M230.14,58.87A8,8,0,0,0,224,56H62.68L56.6,22.57A8,8,0,0,0,48.73,16H24a8,8,0,0,0,0,16h18L67.56,172.29a24,24,0,0,0,5.33,11.27,28,28,0,1,0,44.4,8.44h45.42A27.75,27.75,0,0,0,160,204a28,28,0,1,0,28-28H91.17a8,8,0,0,1-7.87-6.57L80.13,152h116a24,24,0,0,0,23.61-19.71l12.16-66.86A8,8,0,0,0,230.14,58.87ZM104,204a12,12,0,1,1-12-12A12,12,0,0,1,104,204Zm96,0a12,12,0,1,1-12-12A12,12,0,0,1,200,204Z',
   circleUser: 'M172,120a44,44,0,1,1-44-44A44.05,44.05,0,0,1,172,120Zm60,8A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88.09,88.09,0,0,0-91.47-87.93C77.43,41.89,39.87,81.12,40,128.25a87.65,87.65,0,0,0,22.24,58.16A79.71,79.71,0,0,1,84,165.1a4,4,0,0,1,4.83.32,59.83,59.83,0,0,0,78.28,0,4,4,0,0,1,4.83-.32,79.71,79.71,0,0,1,21.79,21.31A87.62,87.62,0,0,0,216,128Z',

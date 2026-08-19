@@ -30,7 +30,7 @@ const MAP = [
   ['clone', 'copy'], ['moneyBill', 'money'], ['mobileScreen', 'device-mobile'],
   ['house', 'house'], ['rectangleList', 'list-dashes'], ['penToSquare', 'note-pencil'],
   ['creditCard', 'credit-card'], ['cartShopping', 'shopping-cart'], ['chevronLeft', 'caret-left'],
-  ['truck', 'truck'], ['tag', 'tag'], ['circleUser', 'user-circle'],
+  ['tag', 'tag'], ['circleUser', 'user-circle'],
   ['check', 'check'], ['x', 'x'], ['warning', 'warning'],
   ['pill', 'pill'], ['moped', 'moped-front'], ['repeat', 'repeat'],
   ['envelope', 'envelope'], ['chatCircle', 'chat-circle'], ['broadcast', 'broadcast'],
@@ -57,7 +57,7 @@ const MAP = [
 // the fill weight is a second full copy of every path, so generating it for the
 // whole set would add ~12kB gzip to carry five nav icons. Add a name here only
 // when something actually renders a filled state.
-const FILLED = ['house', 'truck', 'tag', 'cartShopping', 'circleUser']
+const FILLED = ['house', 'van', 'tag', 'cartShopping', 'circleUser']
 
 if (!existsSync(A)) {
   console.error(`${A} not found. Run:  npm i -D @phosphor-icons/core`)
