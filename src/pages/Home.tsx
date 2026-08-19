@@ -775,14 +775,14 @@ export default function Home() {
                   aria-label="دوّر على اسم المكان"
             placeholder="دوّر على اسم المكان…" />
               </div>
-              <button className="w-12 h-12 rounded-xl border border-slate-500 bg-shell grid place-items-center shrink-0 disabled:opacity-60 hover:bg-successbg transition-colors"
+              <button className="btn-ghost !min-h-0 !px-0 w-10 h-10 shrink-0"
                 disabled={locating} onClick={() => locateMe()}
                 title="استخدم موقعي الحالي" aria-label="استخدم موقعي الحالي">
-                {/* size="lg", not "sm": a 16px glyph inside a 48px box read as a
+                {/* size="md", not "sm": a 16px glyph inside a 40px box read as a
                     decoration rather than the button's whole purpose. */}
                 {locating
                   ? <span className="inline-block w-5 h-5 rounded-full border-2 border-mist/40 border-t-sea animate-spin" />
-                  : <Icon name="locationDot" size="lg" className="text-sea" />}
+                  : <Icon name="locationDot" size="md" className="text-sea" />}
               </button>
             </div>
 

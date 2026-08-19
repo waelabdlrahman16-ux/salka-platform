@@ -127,7 +127,7 @@ export default function Profile() {
       { icon: 'locationDot' as const, title: 'عناوينك محفوظة',
         body: 'اختار الشاليه مرة واحدة، وبعدها الطلب بيبقى أسرع' },
       { icon: 'receipt' as const, title: 'كل طلباتك في مكان واحد',
-        body: 'ترجع لأي طلب قديم وتشوف تفاصيله، حتى لو قفلت التطبيق' },
+        body: 'ترجع لأي طلب قديم وتشوف تفاصيله، من أي جهاز' },
       { icon: 'coins' as const, title: 'رصيدك محفوظ',
         body: 'أي تعويض أو استرداد بيفضل في محفظتك لحد ما تستخدمه' },
       { icon: 'user' as const, title: 'مش هتكتب بياناتك تاني',
