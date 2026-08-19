@@ -21,7 +21,10 @@
 html { font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif; overflow-x: hidden; overflow-x: clip; }
 body { @apply bg-night text-foam antialiased; overflow-x: hidden; overflow-x: clip; }
 
-.card { @apply bg-shell border border-line rounded-xl; }
+/* 16px, Wael's call. Cards were 12px while the vendor cards and the promo
+   banner overrode to 24px, so a single screen stacked three different corners
+   down its length. One number here moves every card in every portal. */
+.card { @apply bg-shell border border-line rounded-2xl; }
 
 /* min-h-[44px] is the floor Apple asks for and Google exceeds at 48. The padding
    alone gave ~42px, and every `!py-1.5` override around the app cut that to ~32.
