@@ -123,6 +123,25 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: npm run test:money
 
+      # Added after 2026-08-19, when two promo faults were found in production
+      # together: a cancelled order held its redemption forever (SOKHNA30 lost 6
+      # of its 50 that way), and the per-customer key changed on sign-in, so the
+      # same human could spend a one-per-customer code twice. Neither is visible
+      # to tsc, to the linter or to the order smoke test -- the order places
+      # perfectly while the discount on it is wrong. 36 assertions across
+      # quote_promo_code, apply_order_promo and release-on-cancel.
+      #
+      # It also carries the one assertion that cannot live inside a transaction:
+      # that a request queued through pg_net does NOT survive the rollback.
+      # notify_admin_new_order fires on every order insert and pushes to admin
+      # devices, so rollback is the only thing standing between CI and a real
+      # notification on every pull request. That was assumed until now.
+      - name: Exercise the promo ladder and roll it back
+        if: steps.creds.outputs.have == 'true'
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: npm run test:promo
+
       - name: Place a test order and roll it back
         if: steps.creds.outputs.have == 'true'
         env:

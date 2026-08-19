@@ -19,6 +19,7 @@
     "smoke:order": "node scripts/smoke-place-order.mjs",
     "smoke:setup": "node scripts/ensure-test-restaurant.mjs",
     "test:money": "node scripts/test-money.mjs",
+    "test:promo": "node scripts/test-promo.mjs",
     "build:icons": "node scripts/build-icons.mjs"
   },
   "dependencies": {
