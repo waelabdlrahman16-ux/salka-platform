@@ -125,7 +125,7 @@ export default function CustomizeSheet({
         {item.image_url && (
           <div className="-mx-5 -mt-5 mb-4 relative">
             <img src={sized(item.image_url, IMG.wide)} alt="" loading="eager" decoding="async"
-              className="w-full h-44 object-cover"
+              className="w-full h-60 object-cover"
               onError={e => { (e.currentTarget.closest('div') as HTMLElement).style.display = 'none' }} />
             {/* Closing was backdrop-tap or «إلغاء» at the very bottom of a
                 scrolling sheet -- so on a long list of add-ons there was no way
@@ -141,20 +141,21 @@ export default function CustomizeSheet({
         <h2 id="customize-sheet-title" className="font-bold text-lg mb-1">{item.name}</h2>
         {item.description && <p className="text-sm text-mist mb-4">{item.description}</p>}
 
+        {/* The sandwich and the combo are two questions, not one list. They
+            were stacked under a single «ساندوتش لوحده ولا كومبو؟» heading, so
+            four rows of different KINDS read as four flavours of the same
+            thing. They still share one radio group -- picking a combo unpicks
+            a size -- but the eye gets told where one choice ends. */}
         {(sizes.length > 0 || availableCombos.length > 0) && (
           <div className="mb-4">
-            <p className="font-semibold text-sm mb-2">
-              {/* «(مطلوب)» rather than a bare `*`. The asterisk is a Western form
-                  convention, it announces as nothing useful, and in an RTL line it
-                  lands where a reader does not look for it. */}
-              {availableCombos.length > 0 ? 'ساندوتش لوحده ولا كومبو؟' : 'الحجم'}{' '}
-              <span className="text-coral-700 font-normal text-xs">(مطلوب)</span>
+            <p className="font-semibold text-sm mb-2 flex items-center gap-2">
+              {sizes.length > 0 ? 'الحجم' : 'الساندوتش'}
+              {/* A badge, not «(مطلوب)» in parentheses. The parenthetical read
+                  as an aside about the heading; the thing it describes is the
+                  section, and a badge says that at a glance. */}
+              <span className="bg-coral-100 text-coral-700 text-[11px] font-bold rounded-md px-2 py-0.5">مطلوب</span>
             </p>
             <div className="space-y-2">
-              {/* Plain rows. With sizes, each size is its own row; without, one
-                  row for the item by itself -- which still has to be visible and
-                  selectable, or "sandwich alone" is not an option the customer
-                  can actually pick. */}
               {sizes.length > 0 ? sizes.map(s => (
                 <label key={`s${s.id}`} className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-2.5 cursor-pointer ${!comboOn && sizeId === s.id ? 'border-sea bg-sea/5' : 'border-line'}`}>
                   <input type="radio" name="what" checked={!comboOn && sizeId === s.id}
@@ -163,6 +164,8 @@ export default function CustomizeSheet({
                   <span className="text-sm text-mist">{applyDiscount(s.price, discount)} ج.م</span>
                 </label>
               )) : availableCombos.length > 0 && (
+                // Without sizes there is still one row for the item by itself,
+                // or "sandwich alone" is not an option the customer can pick.
                 <label className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-2.5 cursor-pointer ${!comboOn ? 'border-sea bg-sea/5' : 'border-line'}`}>
                   <input type="radio" name="what" checked={!comboOn}
                     onChange={() => setComboId(null)} className="accent-sea w-4 h-4 shrink-0" />
@@ -170,7 +173,15 @@ export default function CustomizeSheet({
                   <span className="text-sm text-mist">{applyDiscount(item.price, discount)} ج.م</span>
                 </label>
               )}
+            </div>
+          </div>
+        )}
 
+        {availableCombos.length > 0 && (
+          <div className="mb-4">
+            <p className="font-semibold text-sm mb-1">أو خليها كومبو</p>
+            <p className="text-xs text-mist mb-2">الكومبو شامل البطاطس والمشروب</p>
+            <div className="space-y-2">
               {availableCombos.map(c => (
                 <label key={`c${c.id}`} className={`flex items-center gap-3 rounded-xl border-2 px-3.5 py-2.5 cursor-pointer ${comboId === c.id ? 'border-sea bg-sea/5' : 'border-line'}`}>
                   <input type="radio" name="what" checked={comboId === c.id}
@@ -181,19 +192,19 @@ export default function CustomizeSheet({
                 </label>
               ))}
             </div>
-            {availableCombos.length > 0 && (
-              <p className="text-xs text-mist mt-2">الكومبو شامل البطاطس والمشروب</p>
-            )}
           </div>
         )}
 
         {addonGroups.map(g => (
           <div key={g.id} className="mb-4">
-            <p className="font-semibold text-sm mb-2">
-              {g.name} {g.min_select > 0 && <span className="text-coral-700 font-normal text-xs">(مطلوب)</span>}
+            <p className="font-semibold text-sm mb-2 flex items-center gap-2">
+              {g.name}
+              {g.min_select > 0 && (
+                <span className="bg-coral-100 text-coral-700 text-[11px] font-bold rounded-md px-2 py-0.5">مطلوب</span>
+              )}
               {g.max_select === 1
-                ? <span className="text-mist font-normal"> (اختار واحد)</span>
-                : g.max_select != null && <span className="text-mist font-normal"> (حد أقصى {g.max_select})</span>}
+                ? <span className="text-mist font-normal text-xs">اختار واحد</span>
+                : g.max_select != null && <span className="text-mist font-normal text-xs">حد أقصى {g.max_select}</span>}
             </p>
             <div className="space-y-2">
               {addons.filter(a => a.group_id === g.id && a.available).map(a => (
@@ -220,17 +231,22 @@ export default function CustomizeSheet({
           </div>
         ))}
 
-        <div className="flex items-center justify-between mb-4 mt-2">
-          <span className="font-semibold text-sm">الكمية</span>
-          <div className="flex items-center gap-3 bg-shellup rounded-lg px-2 py-1.5">
-            <button className="w-7 h-7 rounded-md grid place-items-center hover:bg-white" onClick={() => setQty(q => Math.max(1, q - 1))}>−</button>
-            <span className="font-bold text-sm w-4 text-center">{qty}</span>
-            <button className="w-7 h-7 rounded-md grid place-items-center bg-sea text-white" onClick={() => setQty(q => q + 1)}>+</button>
+        {/* Quantity sits in the action row where «إلغاء» was. Cancel had a
+            button as prominent as Add for something the X on the photo and a
+            backdrop tap already do -- and quantity, which people actually
+            change, was a separate row above it. */}
+        <div className="flex items-center gap-2.5 mt-2">
+          <div className="flex items-center gap-1 bg-shellup rounded-xl px-1.5 py-1.5 shrink-0">
+            <button className="w-9 h-9 rounded-lg grid place-items-center hover:bg-white disabled:opacity-40"
+              aria-label="أقل" disabled={qty <= 1} onClick={() => setQty(q => Math.max(1, q - 1))}>
+              <Icon name="minus" size="sm" />
+            </button>
+            <span className="font-bold text-sm min-w-[1.4rem] text-center">{qty}</span>
+            <button className="w-9 h-9 rounded-lg grid place-items-center bg-sea text-white"
+              aria-label="أكتر" onClick={() => setQty(q => q + 1)}>
+              <Icon name="plus" size="sm" />
+            </button>
           </div>
-        </div>
-
-        <div className="flex gap-2.5">
-          <button className="btn-ghost flex-1" onClick={onClose}>إلغاء</button>
           <button className="btn-sea flex-1" disabled={!valid}
             onClick={() => onConfirm(chosenCombo ? null : sizeId, chosenCombo?.id ?? null, addonIds, qty)}>
             إضافة • {total} ج.م
