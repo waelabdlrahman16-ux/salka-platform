@@ -26,6 +26,8 @@ export default function RestaurantDetail() {
   const cart = useCart()
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
   const [items, setItems] = useState<MenuItem[]>([])
+  /** Category names in the order the vendor arranged them, from menu_categories. */
+  const [catOrder, setCatOrder] = useState<string[]>([])
   const [sizes, setSizes] = useState<MenuItemSize[]>([])
   const [combos, setCombos] = useState<MenuItemCombo[]>([])
   // Items arrive one round trip before their sizes/combos/add-ons do. In that
@@ -177,6 +179,14 @@ export default function RestaurantDetail() {
       if (!res.ok || !res.data) { setLoadFailed(true); return }
       setRestaurant(res.data)
     })
+    // The vendor's arrangement. A failure here is not fatal: `categories` falls
+    // back to arrival order, which is exactly the old behaviour.
+    supabase.from('menu_categories').select('name, display_order, id')
+      .eq('restaurant_id', id).order('display_order').order('id')
+      .then(({ data, error }) => {
+        if (error) return
+        setCatOrder(((data ?? []) as { name: string }[]).map(c => c.name))
+      })
     supabase.from('menu_items').select('*').eq('restaurant_id', id).eq('available', true).then(async ({ data }) => {
       const list = data ?? []
       setItems(list)
@@ -267,12 +277,34 @@ export default function RestaurantDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restaurant?.order_mode])
 
+  /**
+   * THE ORDER THE VENDOR CHOSE, not the order the rows happened to arrive in.
+   *
+   * This used to walk `items` and take each category the first time it appeared.
+   * `items` is fetched with no ORDER BY, so that came out as roughly insertion
+   * order -- and the vendor's drag-and-drop, which writes menu_categories.
+   * display_order, was never read by this screen at all. Reordering categories
+   * in the portal changed nothing a customer could see.
+   *
+   * It was not a subtle mismatch. X Burger & Roll put «العروض» first and
+   * customers saw it EIGHTH, behind every ordinary category; أرابياتا put
+   * «علب و أصناف» first and it showed sixth. The one category a vendor
+   * deliberately promotes was reliably the one buried.
+   *
+   * Ordered categories first, in display_order. Anything on an item but absent
+   * from menu_categories keeps its old arrival order and follows -- a legacy or
+   * newly-typed category must never vanish from the menu just because nobody has
+   * arranged it yet.
+   */
   const categories = useMemo(() => {
-    const seen = new Set<string>()
-    const list: string[] = []
-    for (const it of items) if (!seen.has(it.category)) { seen.add(it.category); list.push(it.category) }
-    return list
-  }, [items])
+    const present = new Set<string>()
+    const arrival: string[] = []
+    for (const it of items) if (!present.has(it.category)) { present.add(it.category); arrival.push(it.category) }
+
+    const arranged = catOrder.filter(name => present.has(name))
+    const arrangedSet = new Set(arranged)
+    return [...arranged, ...arrival.filter(name => !arrangedSet.has(name))]
+  }, [items, catOrder])
 
   const menuQuery = menuQ.trim().toLowerCase()
   const shown = (cat: string) => items.filter(it =>
