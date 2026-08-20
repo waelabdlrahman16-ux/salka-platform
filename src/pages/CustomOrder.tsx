@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, useId } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import PromoSection from '../components/PromoSection'
+import { type PromoQuote } from '../lib/promoOffers'
 import { customerOrderCreation } from '../lib/customerOrderCreation'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
@@ -72,6 +74,14 @@ export default function CustomOrder() {
   // Same three-way disagreement as CheckoutPage -- see the long note there.
   // The account name comes from Google and was beating the name the customer
   // actually orders under.
+  // The code the customer picks now is HELD on the request and applied when
+  // staff confirm the price -- see 20260821090000. Quoted here only to catch a
+  // code that is wrong for reasons that do not need a price (expired, wrong
+  // vendor, wrong area); the two price-dependent verdicts are ignored, because
+  // at a subtotal of zero they are true of every code and mean nothing yet.
+  const [promoCode, setPromoCode] = useState('')
+  const [promoQuote, setPromoQuote] = useState<PromoQuote | null>(null)
+  const [promoChecking, setPromoChecking] = useState(false)
   const nameEdited = useRef(false)
   const [name, setName] = useState(''); const [phone, setPhone] = useState(() => localStorage.getItem('salka_phone') ?? '')
   const [unit, setUnit] = useState('')
@@ -311,6 +321,21 @@ export default function CustomOrder() {
     setRxPreview(URL.createObjectURL(file))
   }
 
+  useEffect(() => {
+    const code = promoCode.trim().toUpperCase()
+    if (!code || !vendor?.id || !compoundId) { setPromoQuote(null); setPromoChecking(false); return }
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      setPromoChecking(true)
+      const { data, error } = await supabase.rpc('quote_promo_code', {
+        p_code: code, p_restaurant_id: vendor.id, p_compound_id: compoundId,
+        p_subtotal: 0, p_delivery_fee: 0, p_service_fee: 0,
+      })
+      if (!cancelled) { setPromoQuote(error ? { valid: false, reason: 'promo_invalid' } : data as PromoQuote); setPromoChecking(false) }
+    }, 350)
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [promoCode, vendor?.id, compoundId])
+
   const selectedCompound = compounds.find(c => c.id === compoundId)
   const { fee: deliveryFee, quote, loading: feeLoading, failed: feeFailed, retry: retryFee } =
     useDeliveryQuote(compoundId)
@@ -393,6 +418,7 @@ export default function CustomOrder() {
       items: lines,
       requestNotes: notes.trim(),
       compoundId,
+      promoCode: promoCode.trim().toUpperCase() || null,
       sessionToken: getSessionToken(),
       slotId: slot?.id ?? null,
       scheduledDate: slot?.scheduled_date ?? null,
@@ -1085,6 +1111,19 @@ export default function CustomOrder() {
       <p className="text-sm text-mist bg-shellup/60 rounded-xl p-3 mb-4">
         <Icon name="chatCircle" size="sm" className="inline-block align-[-0.15em] me-1" />لسه مش هتدفع حاجة دلوقتي. هنتصل بيك بسعر الأصناف وتقرر وقتها.
       </p>
+
+      {/* priceKnown={false}: there is no price yet, so no honest saving to show.
+          The card promises when the discount lands instead of quoting a number
+          that would change the moment staff send the quote. */}
+      <PromoSection
+        basket={{ restaurantId: vendor?.id ?? null, compoundId, subtotal: 0, deliveryFee: 0, serviceFee: 0 }}
+        code={promoCode}
+        quote={promoQuote}
+        checking={promoChecking}
+        priceKnown={false}
+        onApply={setPromoCode}
+        onRemove={() => { setPromoCode(''); setPromoQuote(null) }}
+      />
 
       {feeFailed && compoundId && (
         <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-4">

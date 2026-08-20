@@ -236,6 +236,10 @@ export const ERROR_AR: Record<string, string> = {
   promo_already_used: 'استخدمت كود الخصم ده قبل كده',
   promo_nothing_to_discount: 'كود الخصم مش بيخصم حاجة في الطلب ده',
   promo_customer_missing: 'سجّل دخولك عشان تستخدم كود الخصم',
+  // Raised by submit_custom_order when a هنجبلك request carries a code that is
+  // not even code-shaped. Same class as the block above: emitted by the server,
+  // and without an entry here it collapses into the generic Arabic error.
+  invalid_promo_code: 'كود الخصم غير صحيح',
 
   // ---------------------------------------------------------------------------
   // Order-path validation the customer can act on. Same problem as the promo

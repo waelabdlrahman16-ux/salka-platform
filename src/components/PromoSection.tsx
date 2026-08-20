@@ -29,6 +29,16 @@ import {
 
 interface Props {
   basket: PromoBasket
+  /**
+   * False on هنجبلك requests, where staff quote the price AFTER the customer
+   * sends it. With no price there is no honest number to put on the card: a
+   * percentage of nothing is nothing, and any figure shown now would change the
+   * moment the quote lands. So the saving is replaced by a promise of when it
+   * will be worked out, and the two price-dependent refusals -- "under the
+   * minimum" and "nothing to discount" -- stop counting as refusals, because at
+   * a subtotal of zero they are true of every code and mean nothing yet.
+   */
+  priceKnown?: boolean
   /** The code currently applied to the order, '' when none. Owned by the parent. */
   code: string
   /** The server's verdict on `code`. Null while nothing is applied. */
@@ -38,15 +48,21 @@ interface Props {
   onRemove: () => void
 }
 
-export default function PromoSection({ basket, code, quote, checking, onApply, onRemove }: Props) {
+export default function PromoSection({ basket, code, quote, checking, onApply, onRemove, priceKnown = true }: Props) {
   const fid = useId()
   const [offers, setOffers] = useState<PromoOffer[]>([])
   const [typing, setTyping] = useState(false)
   const [draft, setDraft] = useState('')
 
   const applied = !!code.trim()
-  const isApplied = applied && !checking && quote?.valid === true
-  const failed = applied && !checking && quote?.valid === false
+  // Price-dependent verdicts are not refusals before there is a price.
+  const priceOnly = (r?: string) => r === 'promo_minimum_not_met' || r === 'promo_nothing_to_discount'
+  const usable = (q?: { valid?: boolean; reason?: string } | null) =>
+    q?.valid === true || (!priceKnown && priceOnly(q?.reason))
+  const isApplied = applied && !checking && usable(quote)
+  const failed = applied && !checking && !!quote && !usable(quote)
+
+  const LATER = 'الخصم هيتحسب لما نبعتلك السعر'
 
   // Re-price the offers whenever the basket moves: a card that says «وفّر ٣١ ج.م»
   // while the basket says something else is worse than no card at all.
@@ -60,7 +76,9 @@ export default function PromoSection({ basket, code, quote, checking, onApply, o
 
   // Once a code is on the order, its own card is the applied one -- showing it
   // again in the offer list would read as a second, separate discount.
-  const visibleOffers = offers.filter(o => o.code.toUpperCase() !== code.trim().toUpperCase())
+  const visibleOffers = offers
+    .filter(o => o.code.toUpperCase() !== code.trim().toUpperCase())
+    .map(o => (!priceKnown && priceOnly(o.reason) ? { ...o, valid: true } : o))
 
   function submitTyped() {
     const clean = draft.trim().toUpperCase()
@@ -90,7 +108,7 @@ export default function PromoSection({ basket, code, quote, checking, onApply, o
           <Icon name="checkCircle" size="md" className="text-success shrink-0" />
           <div className="min-w-0 flex-1">
             <p className="font-bold text-sm" dir="ltr">{code.trim().toUpperCase()}</p>
-            <p className="text-xs text-success font-semibold mt-0.5">{promoAppliedText(quote)}</p>
+            <p className="text-xs text-success font-semibold mt-0.5">{priceKnown ? promoAppliedText(quote) : LATER}</p>
           </div>
           <button type="button" className="text-sm text-mist underline shrink-0" onClick={onRemove}>
             شيل الكود
@@ -123,7 +141,9 @@ export default function PromoSection({ basket, code, quote, checking, onApply, o
           <div className="min-w-0 flex-1">
             <p className="font-bold text-sm" dir="ltr">{offer.code}</p>
             <p className={`text-xs mt-0.5 ${offer.valid ? 'text-mist' : 'text-mist'}`}>
-              {offer.valid ? promoAppliedText(offer).replace('وفّرت', 'وفّر') : promoReasonText(offer)}
+              {!offer.valid ? promoReasonText(offer)
+                : priceKnown ? promoAppliedText(offer).replace('وفّرت', 'وفّر')
+                : LATER}
             </p>
           </div>
           {offer.valid ? (
