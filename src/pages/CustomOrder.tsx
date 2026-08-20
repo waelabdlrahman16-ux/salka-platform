@@ -69,6 +69,10 @@ export default function CustomOrder() {
   const [slot, setSlot] = useState<Slot | null>(null)
 
   const [compounds, setCompounds] = useState<Compound[]>([])
+  // Same three-way disagreement as CheckoutPage -- see the long note there.
+  // The account name comes from Google and was beating the name the customer
+  // actually orders under.
+  const nameEdited = useRef(false)
   const [name, setName] = useState(''); const [phone, setPhone] = useState(() => localStorage.getItem('salka_phone') ?? '')
   const [unit, setUnit] = useState('')
   const [addrNotes, setAddrNotes] = useState('')
@@ -136,7 +140,7 @@ export default function CustomOrder() {
       // subsequent keystroke in the phone field, forever.
       setAddressLoaded(true)
       if (data) {
-        if (!name.trim() && data.customer_name) setName(data.customer_name)
+        if (data.customer_name && !nameEdited.current) setName(data.customer_name)
         if (!unit.trim() && data.unit_number) setUnit(data.unit_number)
         if (!addrNotes.trim() && data.address_notes) setAddrNotes(data.address_notes)
         if (!compoundId && data.compound_id) setCompoundId(data.compound_id)
@@ -1034,7 +1038,7 @@ export default function CustomOrder() {
           )}
 
           <div><label className="label" htmlFor={`${fid}-2`}>الاسم *</label>
-            <input id={`${fid}-2`} className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
+            <input id={`${fid}-2`} className="field" value={name} onChange={e => { nameEdited.current = true; setName(e.target.value) }} placeholder="الاسم بالكامل" /></div>
           <div><label className="label" htmlFor={`${fid}-3`}>رقم الموبايل *</label>
             <input id={`${fid}-3`} className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-dangerline' : ''}`}
               dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} placeholder="01xxxxxxxxx" maxLength={13} />
