@@ -10,7 +10,9 @@ import { lineIsStale, priceLine } from '../lib/linePricing'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { track, trackOnce } from '../lib/analytics'
 import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
-import { PROMO_SCOPE_LABEL, type PromoScope } from '../lib/promoScope'
+import { PROMO_SCOPE_LABEL } from '../lib/promoScope'
+import PromoSection from '../components/PromoSection'
+import { type PromoQuote } from '../lib/promoOffers'
 import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
 import { rememberLiveOrder } from '../lib/liveOrder'
 import LocationPreviewMap from '../components/LocationPreviewMap'
@@ -128,7 +130,7 @@ export default function CheckoutPage() {
   const [codThresholdFailed, setCodThresholdFailed] = useState(false)
   const [useWallet, setUseWallet] = useState(true)
   const [promoCode, setPromoCode] = useState('')
-  const [promoQuote, setPromoQuote] = useState<{ valid: boolean; discount?: number; reason?: string; minimum?: number; applies_to?: PromoScope } | null>(null)
+  const [promoQuote, setPromoQuote] = useState<PromoQuote | null>(null)
   const [promoChecking, setPromoChecking] = useState(false)
 
   // Saved addresses, and the default one preselected. Guarded on `customer`
@@ -309,7 +311,7 @@ export default function CheckoutPage() {
         p_code: code, p_restaurant_id: cart.restaurantId, p_compound_id: compoundId, p_subtotal: subtotal,
         p_delivery_fee: deliveryFee, p_service_fee: serviceFee,
       })
-      if (!cancelled) { setPromoQuote(error ? { valid: false, reason: 'promo_invalid' } : data as typeof promoQuote); setPromoChecking(false) }
+      if (!cancelled) { setPromoQuote(error ? { valid: false, reason: 'promo_invalid' } : data as PromoQuote); setPromoChecking(false) }
     }, 350)
     return () => { cancelled = true; clearTimeout(timer) }
   }, [promoCode, cart.restaurantId, compoundId, subtotal, deliveryFee, serviceFee])
@@ -690,25 +692,15 @@ export default function CheckoutPage() {
         </div>
       )}
 
-      <div className="card p-4 mb-4">
-        <label className="label" htmlFor={`${fid}-promo`}>عندك كود خصم؟ <span className="text-mist font-normal">(اختياري)</span></label>
-        <input id={`${fid}-promo`} className="field" value={promoCode}
-          onChange={e => setPromoCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ''))}
-          placeholder="مثال: SOKHNA10" maxLength={32} dir="ltr" />
-        {promoChecking && <p className="text-xs text-mist mt-2">بنتأكد من الكود…</p>}
-        {!promoChecking && promoCode.trim() && promoQuote?.valid && (
-          <p className="text-xs text-success font-semibold mt-2">تم تطبيق الخصم على {PROMO_SCOPE_LABEL[promoQuote.applies_to ?? 'all']}: -{promoDiscount} ج.م</p>
-        )}
-        {!promoChecking && promoCode.trim() && promoQuote && !promoQuote.valid && (
-          <p className="text-xs text-danger mt-2">
-            {promoQuote.reason === 'promo_expired' ? 'الكود منتهي أو لسه ما بدأش'
-              : promoQuote.reason === 'promo_minimum_not_met' ? `الحد الأدنى ${promoQuote.minimum ?? ''} ج.م`
-              : promoQuote.reason === 'promo_not_available' ? 'الكود مش متاح للمطعم أو المكان ده'
-              : promoQuote.reason === 'promo_nothing_to_discount' ? `الكود ده بيخصم من ${PROMO_SCOPE_LABEL[promoQuote.applies_to ?? 'all']}، ومفيش حاجة يخصم منها في الطلب ده`
-              : 'الكود غير صحيح أو غير متاح'}
-          </p>
-        )}
-      </div>
+      {/* The customer no longer types the advertised code. See PromoSection. */}
+      <PromoSection
+        basket={{ restaurantId: cart.restaurantId, compoundId, subtotal, deliveryFee, serviceFee }}
+        code={promoCode}
+        quote={promoQuote}
+        checking={promoChecking}
+        onApply={setPromoCode}
+        onRemove={() => { setPromoCode(''); setPromoQuote(null) }}
+      />
 
       <h2 className="text-[13px] font-bold text-mist mb-2 mt-5">طريقة الدفع</h2>
       <div className="card p-4 mb-4">

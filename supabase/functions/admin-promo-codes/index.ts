@@ -33,7 +33,7 @@ Deno.serve(async req => {
     if (!body || typeof body.action !== "string") return reply({ ok: false, error: "invalid_request" }, 400)
 
     if (body.action === "list") {
-      const { data: codes, error } = await admin.from("promo_codes").select("id,code,active,discount_type,discount_value,max_discount_egp,minimum_subtotal_egp,applies_to,restaurant_id,compound_id,starts_at,ends_at,max_redemptions,max_redemptions_per_customer").order("id", { ascending: false }).range(0, PAGE - 1)
+      const { data: codes, error } = await admin.from("promo_codes").select("id,code,active,featured,discount_type,discount_value,max_discount_egp,minimum_subtotal_egp,applies_to,restaurant_id,compound_id,starts_at,ends_at,max_redemptions,max_redemptions_per_customer").order("id", { ascending: false }).range(0, PAGE - 1)
       if (error) return reply({ ok: false, error: "list_failed" }, 500)
       // Every redemption ever, counted in memory. PostgREST stops at 1000 rows
       // without saying so, and service_role does not change that -- so once this
@@ -55,6 +55,15 @@ Deno.serve(async req => {
     }
 
     const id = positiveInt(body.id)
+    // Whether the code is OFFERED to every customer on the checkout screen.
+    // Separate from `active` on purpose: SORRY200 is active and must never be
+    // advertised. Only this flag makes a code public, and only an admin sets it.
+    if (body.action === "set_featured") {
+      if (!id || typeof body.featured !== "boolean") return reply({ ok: false, error: "invalid_input" }, 400)
+      const { error } = await admin.from("promo_codes").update({ featured: body.featured, updated_at: new Date().toISOString() }).eq("id", id)
+      return error ? reply({ ok: false, error: "update_failed" }, 500) : reply({ ok: true })
+    }
+
     if (body.action === "set_active") {
       if (!id || typeof body.active !== "boolean") return reply({ ok: false, error: "invalid_input" }, 400)
       const { error } = await admin.from("promo_codes").update({ active: body.active, updated_at: new Date().toISOString() }).eq("id", id)

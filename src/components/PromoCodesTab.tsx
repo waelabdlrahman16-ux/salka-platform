@@ -5,7 +5,7 @@ import type { Compound, Restaurant } from '../lib/types'
 import { PROMO_SCOPES, PROMO_SCOPE_ADMIN_LABEL as SCOPE_LABEL, type PromoScope } from '../lib/promoScope'
 import { isoToCairoLocalInput, cairoLocalInputToISO } from '../lib/cairoTime'
 
-type Promo = { id: number; code: string; active: boolean; discount_type: 'percent' | 'fixed'; discount_value: number; max_discount_egp: number | null; minimum_subtotal_egp: number; applies_to: PromoScope; restaurant_id: number | null; compound_id: number | null; starts_at: string | null; ends_at: string | null; max_redemptions: number | null; max_redemptions_per_customer: number; redemption_count: number }
+type Promo = { id: number; code: string; active: boolean; featured: boolean; discount_type: 'percent' | 'fixed'; discount_value: number; max_discount_egp: number | null; minimum_subtotal_egp: number; applies_to: PromoScope; restaurant_id: number | null; compound_id: number | null; starts_at: string | null; ends_at: string | null; max_redemptions: number | null; max_redemptions_per_customer: number; redemption_count: number }
 type Draft = { code: string; discount_type: 'percent' | 'fixed'; discount_value: string; max_discount_egp: string; minimum_subtotal_egp: string; applies_to: PromoScope; restaurant_id: string; compound_id: string; starts_at: string; ends_at: string; max_redemptions: string; max_redemptions_per_customer: string }
 const emptyDraft = (): Draft => ({ code: '', discount_type: 'percent', discount_value: '', max_discount_egp: '', minimum_subtotal_egp: '0', applies_to: 'delivery', restaurant_id: '', compound_id: '', starts_at: '', ends_at: '', max_redemptions: '', max_redemptions_per_customer: '1' })
 const asNumber = (value: string, optional = false) => value.trim() === '' && optional ? null : Number(value)
@@ -63,6 +63,15 @@ export default function PromoCodesTab({ restaurants, compounds }: { restaurants:
     catch { setError('مش قادرين نغيّر حالة الكود دلوقتي') }
     finally { setBusy(false) }
   }
+  // «معروض» is not «شغّال». A code can be live and still be private -- SORRY200
+  // is an apology handed to one customer at a time, and advertising it would
+  // give 200 ج.م to everybody. Nothing is shown to customers until this is on.
+  async function toggleFeatured(p: Promo) {
+    setBusy(true); setError('')
+    try { await call('set_featured', { id: p.id, featured: !p.featured }); await refresh() }
+    catch { setError('مش قادرين نغيّر عرض الكود دلوقتي') }
+    finally { setBusy(false) }
+  }
   const input = (key: keyof Draft, label: string, type = 'text', placeholder = '') => <label className="block text-xs text-mist"><span className="block mb-1">{label}</span><input className="field" type={type} placeholder={placeholder} value={draft[key]} onChange={e => setDraft(d => ({ ...d, [key]: e.target.value }))} /></label>
 
   return <div className="space-y-5">
@@ -91,7 +100,7 @@ export default function PromoCodesTab({ restaurants, compounds }: { restaurants:
     </div>
     <div className="space-y-3">
       <div className="flex items-center justify-between"><h2 className="font-bold">الأكواد الحالية</h2><button className="btn-ghost text-sm" onClick={refresh} disabled={loading}>تحديث</button></div>
-      {loading ? <div className="card p-5 text-center text-mist">جارٍ التحميل…</div> : codes.length === 0 ? <div className="card p-5 text-center text-mist">مفيش أكواد خصم لسه</div> : codes.map(p => <div key={p.id} className="card p-4"><div className="flex justify-between gap-3"><div><p className="font-bold" dir="ltr">{p.code}</p><p className="text-xs text-mist mt-1">{p.discount_type === 'percent' ? String(p.discount_value) + '%' : String(p.discount_value) + ' ج.م'} • استُخدم {p.redemption_count}{p.max_redemptions ? ' من ' + p.max_redemptions : ''}</p><p className={p.applies_to === 'vendor' ? 'text-xs mt-1 text-amber-700 font-semibold' : 'text-xs text-mist mt-1'}>{SCOPE_LABEL[p.applies_to ?? 'delivery']}</p><p className="text-xs text-mist mt-1">{p.restaurant_id ? restaurants.find(r => r.id === p.restaurant_id)?.name : 'كل المطاعم'} • {p.compound_id ? compounds.find(c => c.id === p.compound_id)?.name : 'كل الأماكن'}</p></div><span className={status(p) === 'شغّال' ? 'badge-active' : 'badge-closed'}>{status(p)}</span></div><div className="flex gap-2 mt-3"><button className="btn-ghost flex-1 text-sm" disabled={busy} onClick={() => startEdit(p)}>تعديل</button><button className="btn-ghost flex-1 text-sm" disabled={busy} onClick={() => toggle(p)}>{p.active ? 'إيقاف' : 'تشغيل'}</button></div></div>)}
+      {loading ? <div className="card p-5 text-center text-mist">جارٍ التحميل…</div> : codes.length === 0 ? <div className="card p-5 text-center text-mist">مفيش أكواد خصم لسه</div> : codes.map(p => <div key={p.id} className="card p-4"><div className="flex justify-between gap-3"><div><p className="font-bold" dir="ltr">{p.code}</p><p className="text-xs text-mist mt-1">{p.discount_type === 'percent' ? String(p.discount_value) + '%' : String(p.discount_value) + ' ج.م'} • استُخدم {p.redemption_count}{p.max_redemptions ? ' من ' + p.max_redemptions : ''}</p><p className={p.applies_to === 'vendor' ? 'text-xs mt-1 text-amber-700 font-semibold' : 'text-xs text-mist mt-1'}>{SCOPE_LABEL[p.applies_to ?? 'delivery']}</p><p className="text-xs text-mist mt-1">{p.restaurant_id ? restaurants.find(r => r.id === p.restaurant_id)?.name : 'كل المطاعم'} • {p.compound_id ? compounds.find(c => c.id === p.compound_id)?.name : 'كل الأماكن'}</p></div><div className="flex flex-col items-end gap-1 shrink-0"><span className={status(p) === 'شغّال' ? 'badge-active' : 'badge-closed'}>{status(p)}</span>{p.featured && <span className="badge-open">معروض للعملاء</span>}</div></div><p className="text-xs text-mist mt-2">{p.featured ? 'بيظهر لكل العملاء في صفحة الدفع بضغطة واحدة.' : 'مخفي — العميل لازم يكتبه بنفسه.'}</p><div className="flex gap-2 mt-3"><button className="btn-ghost flex-1 text-sm" disabled={busy} onClick={() => startEdit(p)}>تعديل</button><button className="btn-ghost flex-1 text-sm" disabled={busy} onClick={() => toggle(p)}>{p.active ? 'إيقاف' : 'تشغيل'}</button><button className="btn-ghost flex-1 text-sm" disabled={busy} onClick={() => toggleFeatured(p)}>{p.featured ? 'شيله من العرض' : 'اعرضه للعملاء'}</button></div></div>)}
     </div>
   </div>
 }
