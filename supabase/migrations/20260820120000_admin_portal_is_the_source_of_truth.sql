@@ -21,7 +21,7 @@
 -- fallback-driven decision is indistinguishable from a policy-driven one.
 --
 -- D3 -- POLICY THAT NEVER REACHED THE PORTAL AT ALL. Three numbers govern real
--- behaviour and cannot be changed without a migration: the deposit fraction (50%), the
+-- behaviour and cannot be changed without a migration: the deposit percentage, the
 -- driver load cap (4), and the no-answer wait (5 minutes). They are now settings.
 --
 -- HOW THE GUARANTEE IS MADE, and why it is not simply "delete the fallbacks".
@@ -90,8 +90,14 @@ update settings set kind = 'text', required = false where key = 'driver_pay_mode
 -- Seeded at exactly today's hardcoded values, so this migration changes no behaviour.
 -- Every one is wired to its function in part 3.
 insert into settings (key, value, label, kind, required, min_value, max_value) values
+  -- 50% of the order total, taken by InstaPay before the order proceeds. On a 2,000
+  -- EGP order that is 1,000. Capped at the total in the functions themselves, so a
+  -- deposit can never exceed what the customer actually owes.
+  --
+  -- Seeded at 50, exactly today's hardcoded behaviour, so this migration changes
+  -- nothing until the number is changed in the settings screen.
   ('cod_deposit_percent', '50',
-   'نسبة العربون المطلوبة للطلبات الكاش الكبيرة (%)', 'numeric', true, 1, 100),
+   'نسبة العربون المطلوب تحويله إنستاباي للطلبات الكاش الكبيرة (%)', 'numeric', true, 1, 100),
   ('driver_max_active_orders', '4',
    'أقصى عدد طلبات جارية للمندوب في نفس الوقت', 'numeric', true, 1, 20),
   ('no_answer_wait_minutes', '5',
@@ -187,14 +193,16 @@ revoke all on function private.setting_bool(text, boolean) from public;
 -- ---------------------------------------------------------------------------
 -- 6. The three policy numbers, wired to their settings.
 -- ---------------------------------------------------------------------------
--- Bodies below are the EXACT live definitions from pg_get_functiondef, with only
--- the hardcoded number replaced -- generated and asserted rather than retyped,
--- because place_order is 13,306 characters and a transcription slip there is how
--- checkout died for two hours on 13 August.
+-- Bodies below are the EXACT live definitions from pg_get_functiondef with only the
+-- hardcoded number replaced -- generated and asserted rather than retyped, because
+-- place_order is 13,306 characters and a transcription slip there is how checkout
+-- died for two hours on 13 August.
 --
--- The 4-order cap was written NINE times across EIGHT functions. All nine are
--- converted together: changing the portal number must move every one of them, or
--- the setting would be a lie in whichever was left behind.
+-- The deposit is least(ceil(total * pct/100), total): 50% by default, and never more
+-- than the customer actually owes.
+--
+-- The 4-order cap was written NINE times across EIGHT functions. All nine convert
+-- together, or the setting would be a lie in whichever was left behind.
 --
 -- NOT converted, deliberately: push_nudge_sweep's interval '5 minutes' is an
 -- order-AGE nudge, not the no-answer wait. Same number, different rule.
@@ -391,7 +399,7 @@ begin
     select coalesce((select value::numeric from settings where key = 'cod_deposit_threshold_egp'), 300)
       into v_cod_threshold;
     if v_net_total > v_cod_threshold then
-      v_cod_deposit := ceil(v_net_total * private.setting_num('cod_deposit_percent') / 100.0);
+      v_cod_deposit := least(ceil(v_net_total * private.setting_num('cod_deposit_percent') / 100.0), v_net_total);
     end if;
   end if;
 
@@ -509,7 +517,7 @@ begin
   select coalesce((select value::numeric from settings where key = 'cod_deposit_threshold_egp'),300)
     into v_threshold;
   v_deposit := case when v_order.payment_method = 'cod' and v_total > v_threshold
-                    then ceil(v_total * private.setting_num('cod_deposit_percent') / 100.0) else null end;
+                    then least(ceil(v_total * private.setting_num('cod_deposit_percent') / 100.0), v_total) else null end;
 
   update orders
      set cod_deposit_amount = v_deposit,
@@ -553,7 +561,7 @@ begin
   if v_o.payment_method = 'cod' then
     select coalesce((select value::numeric from settings where key = 'cod_deposit_threshold_egp'), 300)
       into v_threshold;
-    if v_total > v_threshold then v_deposit := ceil(v_total * private.setting_num('cod_deposit_percent') / 100.0); end if;
+    if v_total > v_threshold then v_deposit := least(ceil(v_total * private.setting_num('cod_deposit_percent') / 100.0), v_total); end if;
   end if;
 
   v_status := case
@@ -629,7 +637,7 @@ begin
 
   select coalesce((select value::numeric from settings where key = 'cod_deposit_threshold_egp'), 300)
     into v_threshold;
-  v_deposit_advice := case when v_total > v_threshold then ceil(v_total * private.setting_num('cod_deposit_percent') / 100.0) else null end;
+  v_deposit_advice := case when v_total > v_threshold then least(ceil(v_total * private.setting_num('cod_deposit_percent') / 100.0), v_total) else null end;
 
   insert into orders (restaurant_id, customer_name, customer_phone, zone, unit_number,
                       address_notes, subtotal, delivery_fee, service_fee, total,
@@ -693,7 +701,7 @@ begin
   select coalesce((select value::numeric from settings where key = 'cod_deposit_threshold_egp'), 300)
     into v_threshold;
 
-  v_deposit := case when v_net > v_threshold then ceil(v_net * private.setting_num('cod_deposit_percent') / 100.0) else null end;
+  v_deposit := case when v_net > v_threshold then least(ceil(v_net * private.setting_num('cod_deposit_percent') / 100.0), v_net) else null end;
 
   v_status := case
     when v_deposit is not null then 'awaiting_payment'
