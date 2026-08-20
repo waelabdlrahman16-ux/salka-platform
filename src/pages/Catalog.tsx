@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { selectAll } from '../lib/selectAll'
 import { useCatalogSync } from '../lib/useCatalogSync'
 import { useAuth } from '../lib/auth'
 import MenuItemEditor from '../components/MenuItemEditor'
@@ -31,9 +32,15 @@ export default function Catalog() {
 
   const load = useCallback(async () => {
     setError('')
+    // Both of these page. menu_items is past 1000 rows, so the plain query came
+    // back one page short and this screen quietly lost the tail of the alphabet
+    // -- a DIFFERENT fifteen items from the ones the admin board lost, because
+    // the two screens sort differently. See lib/selectAll.ts.
     const [r, m] = await Promise.all([
-      supabase.from('restaurants').select('*').eq('archived', false).order('name'),
-      supabase.from('menu_items').select('*').order('category').order('name'),
+      selectAll<Restaurant>((from, to) => supabase.from('restaurants').select('*')
+        .eq('archived', false).order('name').order('id').range(from, to)),
+      selectAll<MenuItem>((from, to) => supabase.from('menu_items').select('*')
+        .order('category').order('name').order('id').range(from, to)),
     ])
     if (r.error || m.error) { setError('مش قادرين نحمّل القايمة دلوقتي، جرب تاني'); setLoading(false); return }
     setRestaurants(r.data ?? [])

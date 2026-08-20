@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Icon from './Icon'
 import { supabase } from '../lib/supabase'
+import { selectAll } from '../lib/selectAll'
 import { adminCatalogAction } from '../lib/adminCatalogActions'
 import DiscountManager from './DiscountManager'
 import Toggle from './Toggle'
@@ -68,7 +69,8 @@ export default function MenuItemsPanel({
     const [{ data, error }, { data: others }] = await Promise.all([
       supabase.from('menu_categories').select('*')
         .eq('restaurant_id', restaurant.id).order('display_order').order('id'),
-      supabase.from('menu_categories').select('name').neq('restaurant_id', restaurant.id),
+      selectAll<{ name: string }>((from, to) => supabase.from('menu_categories').select('name')
+        .neq('restaurant_id', restaurant.id).order('id').range(from, to)),
     ])
     // Say it failed rather than rendering an empty tab strip, which reads as
     // "this vendor has no categories" for a menu that plainly has items.

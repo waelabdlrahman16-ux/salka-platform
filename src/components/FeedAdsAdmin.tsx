@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react'
 import Icon from './Icon'
 import { supabase } from '../lib/supabase'
+import { selectAll } from '../lib/selectAll'
 import { describeError } from '../lib/rpc'
 import { compressImage } from '../lib/upload'
 import { isoToCairoLocalInput, cairoLocalInputToISO } from '../lib/cairoTime'
@@ -57,7 +58,8 @@ export default function FeedAdsAdmin({ restaurants }: { restaurants: Restaurant[
   const [manualLink, setManualLink] = useState(false)
 
   async function load() {
-    const { data, error } = await supabase.from('feed_ads').select('*').order('sort').order('id')
+    const { data, error } = await selectAll<FeedAdRow>((from, to) => supabase.from('feed_ads')
+      .select('*').order('sort').order('id').range(from, to))
     setLoading(false)
     if (error) { setError(describeError(error.message)); return }
     setRows((data as FeedAdRow[]) ?? [])

@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { selectAll } from '../lib/selectAll'
 import { describeError } from '../lib/rpc'
 import { isoToCairoLocalInput, cairoLocalInputToISO } from '../lib/cairoTime'
 import { useSheets } from './ActionSheets'
@@ -42,9 +43,9 @@ export default function FeaturedProductsAdmin({ restaurants }: { restaurants: Re
   const [editForm, setEditForm] = useState({ starts_at: '', ends_at: '' })
 
   async function load() {
-    const { data, error } = await supabase.from('featured_products')
+    const { data, error } = await selectAll<FeaturedRow>((from, to) => supabase.from('featured_products')
       .select('*, menu_items(id,name,price,image_url,restaurant_id)')
-      .order('sort').order('id')
+      .order('sort').order('id').range(from, to))
     setLoading(false)
     if (error) { setError(describeError(error.message)); return }
     setRows((data as FeaturedRow[]) ?? [])
