@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useId } from 'react'
+import { useEffect, useMemo, useRef, useState, useId } from 'react'
 import Icon from '../components/Icon'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
@@ -55,6 +55,30 @@ export default function CheckoutPage() {
   // and nothing ever filled them in afterwards. A signed-in customer retyped
   // their name and phone on every single order while the app already knew both.
   // The effect below is what actually delivers them.
+  // WHICH NAME BELONGS IN THIS BOX. Three sources disagree, and until now the
+  // weakest one won.
+  //
+  //   1. What the customer typed here, right now. Always wins.
+  //   2. The name on their LAST ORDER -- what they actually call themselves
+  //      when ordering food, in the language they chose.
+  //   3. `customer.name` on the account. This is NOT something the customer
+  //      ever typed: a database trigger copies it from the Google profile at
+  //      signup, and nothing afterwards updates it. 206 of 256 accounts hold a
+  //      Latin name from Google while the person orders in Arabic.
+  //
+  // Source 3 was reaching the box first -- synchronously, on first paint -- and
+  // source 2 arrived 500ms later behind a debounce and was then discarded,
+  // because the old condition only filled an EMPTY box. So someone who signed
+  // up with an Arabic name saw it silently replaced by an English one on their
+  // next order, having edited nothing. On a shared family Google login it was
+  // not even a translation: «Naglaa Zayed» over an order placed by محمد مصطفي,
+  // and the driver arrives asking for the wrong person.
+  //
+  // Source 3 still prefills, so a first-time customer is not left with an empty
+  // box, but source 2 now replaces it when it lands. A REF, not state: the read
+  // happens inside a 500ms timeout, and a state value captured in that closure
+  // would be stale exactly when someone is mid-word.
+  const nameEdited = useRef(false)
   const [name, setName] = useState(() => customer?.name ?? '')
   const [phone, setPhone] = useState(() => displayEgyptPhone(customer?.phone) || localStorage.getItem('salka_phone') || '')
   // Which fields the customer has actually left, so an error appears when they
@@ -176,7 +200,7 @@ export default function CheckoutPage() {
       const data = result.ok ? result.data : null
       setAddressLoaded(true)
       if (data) {
-        if (!name.trim() && data.customer_name) setName(data.customer_name)
+        if (data.customer_name && !nameEdited.current) setName(data.customer_name)
         if (!unit.trim() && data.unit_number) setUnit(data.unit_number)
         if (!notes.trim() && data.address_notes) setNotes(data.address_notes)
         if (!compoundId && data.compound_id) setCompoundId(data.compound_id)
@@ -551,7 +575,7 @@ export default function CheckoutPage() {
                 Arabic reader does not look for it. */}
             <div><label className="label" htmlFor={`${fid}-1`}>الاسم <span className="text-mist font-normal">(مطلوب)</span></label>
               <input id={`${fid}-1`} className={`field ${touched.name && !name.trim() ? '!border-dangerline' : ''}`}
-                value={name} onChange={e => setName(e.target.value)}
+                value={name} onChange={e => { nameEdited.current = true; setName(e.target.value) }}
                 onBlur={() => setTouched(t => ({ ...t, name: true }))} placeholder="الاسم بالكامل" />
               {touched.name && !name.trim() && (
                 <p className="text-xs text-danger mt-1">اكتب اسمك عشان المندوب يعرف يسأل عليك</p>
