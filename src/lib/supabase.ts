@@ -101,6 +101,55 @@ export function forgetLastStaffHome(): void {
   try { localStorage.removeItem(LAST_STAFF_HOME_KEY) } catch { /* private mode */ }
 }
 
+/** PostgREST's db-max-rows for this project. See lib/selectAll.ts. */
+const ROW_CEILING = 1000
+
+/**
+ * The 1000-row cap is silent by design: PostgREST truncates and returns 200 OK
+ * with no indication that anything was dropped. That silence is what let the
+ * admin portal hide fifteen menu items for weeks -- the screen looked fine, the
+ * data was simply incomplete, and nothing anywhere said so.
+ *
+ * It cannot be silent twice. Every response carries a `content-range` header
+ * saying which rows came back, so a read that returns exactly the ceiling is
+ * either already truncated or one row away from it. Both are worth shouting
+ * about, and shouting costs nothing: this reads a header that is already there.
+ *
+ * The fix for anything this catches is `selectAll()` from lib/selectAll.ts.
+ */
+function truncationAwareFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  // Both `.limit()` and `.range()` compile to a `limit=` query parameter, so a
+  // request carrying one asked for a bounded window on purpose -- that is every
+  // page selectAll() fetches. Those come back full of rows by design and must
+  // stay quiet, or the fix for this bug would bury the console in warnings
+  // about itself.
+  //
+  // A request with no `limit=` asked for everything there is. If THAT one comes
+  // back holding precisely the ceiling, rows were dropped.
+  const target = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+  const isDeliberatelyBounded = /[?&]limit=/.test(target)
+
+  return fetch(input, init).then(response => {
+    if (isDeliberatelyBounded) return response
+    try {
+      const range = response.headers.get('content-range')
+      // "0-999/*" -- first row, last row, then the total (often unknown).
+      if (range) {
+        const [from, to] = range.split('/')[0].split('-').map(Number)
+        if (Number.isFinite(from) && Number.isFinite(to) && to - from + 1 >= ROW_CEILING) {
+          console.error(
+            `[salka] TRUNCATED READ: ${to - from + 1} rows came back, which is PostgREST's ceiling. ` +
+            `Rows are missing and nothing else will tell you. Page this query with selectAll(). URL: ${target}`,
+          )
+        }
+      }
+    } catch {
+      // A diagnostic must never be able to break a request.
+    }
+    return response
+  })
+}
+
 export const supabase = createClient(url, key, {
   auth: {
     storageKey: activeStorageKey,
@@ -110,4 +159,5 @@ export const supabase = createClient(url, key, {
     // consume Google/email OAuth parameters from the URL.
     detectSessionInUrl: initialScope === 'customer',
   },
+  global: { fetch: truncationAwareFetch },
 })

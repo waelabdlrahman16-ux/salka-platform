@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react'
 import Icon from './Icon'
 import { supabase } from '../lib/supabase'
+import { selectAll } from '../lib/selectAll'
 import { describeError } from '../lib/rpc'
 import { compressImage } from '../lib/upload'
 import { isoToCairoLocalInput, cairoLocalInputToISO } from '../lib/cairoTime'
@@ -55,7 +56,8 @@ export default function BannersAdmin({ restaurants }: { restaurants: Restaurant[
   async function load() {
     // No .eq('active', true) here: the admin policy returns everything,
     // including switched-off and scheduled banners, which is the point.
-    const { data, error } = await supabase.from('banners').select('*').order('sort').order('id')
+    const { data, error } = await selectAll<BannerRow>((from, to) => supabase.from('banners')
+      .select('*').order('sort').order('id').range(from, to))
     setLoading(false)
     if (error) { setError(describeError(error.message)); return }
     setRows((data as BannerRow[]) ?? [])

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useId } from 'react'
 import { supabase } from '../lib/supabase'
+import { selectAll } from '../lib/selectAll'
 import { useDismissable } from '../lib/useDismissable'
 import { useAuth } from '../lib/auth'
 import { startRinging, stopRinging } from '../lib/ring'
@@ -546,8 +547,8 @@ function KitchenVendor({ rid }: { rid: number }) {
 
     const allIds = [...(o ?? []), ...(done ?? [])].map(x => x.id)
     if (allIds.length) {
-      const { data: its, error: itsErr } = await supabase.from('order_items').select('*')
-        .in('order_id', allIds)
+      const { data: its, error: itsErr } = await selectAll<OrderItem>((from, to) =>
+        supabase.from('order_items').select('*').in('order_id', allIds).order('id').range(from, to))
       // An order card with no lines looks like an EMPTY order, not a failed
       // fetch -- the vendor would cook nothing and mark it ready.
       if (itsErr) { setLoadError('مش قادرين نجيب تفاصيل الأصناف، متأكدش من محتوى الطلبات'); return }

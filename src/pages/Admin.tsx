@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { selectAll } from '../lib/selectAll'
 import { useDismissable } from '../lib/useDismissable'
 import type { Assignment, Compound, Complaint, Driver, DeliverySlotRow, Earning, LiveDelivery, MenuItem, Order, OrderRating, Reliability, Restaurant, Setting, SettlementRequest, Shift, VendorCoverage } from '../lib/types'
 import { ping } from '../lib/notify'
@@ -431,36 +432,46 @@ export default function Admin() {
           .in('status', ACTIVE_ASSIGNMENT_STATUSES).order('id', { ascending: false })),
         withTimeout(supabase.from('delivery_assignments').select(ASSIGNMENT_SELECT)
           .order('id', { ascending: false }).limit(400)),
-        withTimeout(supabase.from('drivers').select('*').order('id')),
+        withTimeout(selectAll<Driver>((from, to) => supabase.from('drivers').select('*').order('id').range(from, to))),
         withTimeout(supabase.from('driver_earnings').select('*, drivers(name)')
           .eq('paid', false).order('id', { ascending: false })),
         withTimeout(supabase.from('driver_earnings').select('*, drivers(name)')
           .order('id', { ascending: false }).limit(300)),
-        withTimeout(supabase.from('restaurants').select('*').order('id')),
+        withTimeout(selectAll<Restaurant>((from, to) => supabase.from('restaurants').select('*').order('id').range(from, to))),
         // 949 rows, 229 kB, and the single largest thing this board moves -- more
         // than half of one 407 kB cycle. `menu` has exactly ONE consumer, the
         // {tab === 'menu'} block, and it feeds no badge and no ping(), so on the
         // other nineteen tabs every byte of it was fetched and thrown away every
         // fifteen seconds. Skipped unless that tab is open; the effect below
         // loads it on arrival.
+        //
+        // It is now 1015 rows, and that number is why this must page. The plain
+        // query returned the 1000 oldest ids and dropped the rest: fifteen items
+        // that no admin could see, price or switch off while customers ordered
+        // them. See lib/selectAll.ts.
         tabRef.current === 'menu'
-          ? withTimeout(supabase.from('menu_items').select('*').order('id'))
+          ? withTimeout(selectAll<MenuItem>((from, to) => supabase.from('menu_items').select('*').order('id').range(from, to)))
           : Promise.resolve({ data: null, error: null }),
-        withTimeout(supabase.from('settings').select('*').order('key')),
+        withTimeout(selectAll<Setting>((from, to) => supabase.from('settings').select('*').order('key').range(from, to))),
         withTimeout(supabase.from('shifts').select('*').order('shift_date', { ascending: false }).limit(40)),
         withTimeout(supabase.from('shift_swap_requests').select('*, shifts(*), requester:drivers!shift_swap_requests_requested_by_fkey(name)')
           .eq('status', 'escalated').order('escalated_at', { ascending: false })),
-        withTimeout(supabase.from('delivery_slots').select('*').order('restaurant_id').order('start_time')),
+        withTimeout(selectAll<DeliverySlotRow>((from, to) => supabase.from('delivery_slots').select('*')
+          .order('restaurant_id').order('start_time').range(from, to))),
         withTimeout(supabase.from('complaints').select('*, orders(customer_name, customer_phone, restaurants(name)), drivers(name)')
           .neq('status', 'resolved').order('id', { ascending: false })),
         withTimeout(supabase.from('complaints').select('*, orders(customer_name, customer_phone, restaurants(name)), drivers(name)')
           .eq('status', 'resolved').order('id', { ascending: false }).limit(100)),
         withTimeout(supabase.from('settlement_requests').select('*, drivers(name)').eq('status', 'pending').order('id', { ascending: false })),
         withTimeout(supabase.from('compounds').select('*').eq('active', true).order('direction').order('distance_km')),
-        withTimeout(supabase.from('vendor_coverage').select('*')),
+        withTimeout(selectAll<VendorCoverage>((from, to) => supabase.from('vendor_coverage').select('*').order('id').range(from, to))),
         withTimeout(supabase.from('order_ratings').select('*, orders(customer_name, customer_phone, restaurants(name))')
           .or('driver_rating.lte.2,restaurant_rating.lte.2').order('id', { ascending: false }).limit(30)),
-        withTimeout(supabase.from('wallet_transactions').select('order_id').not('order_id', 'is', null).ilike('reason', 'تعويض%')),
+        // Every compensation ever paid, and that list only ever grows. Filtered,
+        // but not bounded -- exactly the shape that reaches 1000 quietly.
+        withTimeout(selectAll<{ order_id: number }>((from, to) => supabase.from('wallet_transactions')
+          .select('order_id').not('order_id', 'is', null).ilike('reason', 'تعويض%')
+          .order('id').range(from, to))),
         withTimeout(toDataError(adminReport<StalledOrder[]>('stalledOrders'))),
         withTimeout(toDataError(adminReport<PendingRefund[]>('pendingRefunds'))),
         // Was an N+1: restaurant_reliability() once per restaurant, sequentially

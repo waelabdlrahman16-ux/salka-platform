@@ -11,6 +11,10 @@ const dateValue = (value: unknown) => value == null || value === "" ? null : typ
 // the safe default is the one that never reaches into the vendor's basket.
 const SCOPES = ["delivery", "service", "vendor", "platform", "all"] as const
 const scopeValue = (value: unknown) => value == null || value === "" ? "delivery" : typeof value === "string" && (SCOPES as readonly string[]).includes(value) ? value : null
+// PostgREST's db-max-rows. It truncates at this and returns 200 OK with no hint
+// that anything is missing, service_role included. Anything unbounded must page.
+const PAGE = 1000
+const MAX_PAGES = 40
 
 Deno.serve(async req => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers })
@@ -29,11 +33,24 @@ Deno.serve(async req => {
     if (!body || typeof body.action !== "string") return reply({ ok: false, error: "invalid_request" }, 400)
 
     if (body.action === "list") {
-      const { data: codes, error } = await admin.from("promo_codes").select("id,code,active,discount_type,discount_value,max_discount_egp,minimum_subtotal_egp,applies_to,restaurant_id,compound_id,starts_at,ends_at,max_redemptions,max_redemptions_per_customer").order("id", { ascending: false })
+      const { data: codes, error } = await admin.from("promo_codes").select("id,code,active,discount_type,discount_value,max_discount_egp,minimum_subtotal_egp,applies_to,restaurant_id,compound_id,starts_at,ends_at,max_redemptions,max_redemptions_per_customer").order("id", { ascending: false }).range(0, PAGE - 1)
       if (error) return reply({ ok: false, error: "list_failed" }, 500)
-      const { data: redemptions } = await admin.from("promo_redemptions").select("promo_code_id")
+      // Every redemption ever, counted in memory. PostgREST stops at 1000 rows
+      // without saying so, and service_role does not change that -- so once this
+      // platform had run 1000 promo redemptions in total, every code on this
+      // screen would have started under-reporting how many times it had been
+      // used, and an admin would have judged an exhausted code to be fresh.
+      // Enforcement lives in the database, so this was never over-discounting,
+      // but the number the admin decides on has to be the true one.
       const counts: Record<string, number> = {}
-      for (const row of redemptions ?? []) counts[String(row.promo_code_id)] = (counts[String(row.promo_code_id)] ?? 0) + 1
+      for (let page = 0; page < MAX_PAGES; page++) {
+        const from = page * PAGE
+        const { data: redemptions, error: rErr } = await admin.from("promo_redemptions")
+          .select("promo_code_id").order("id").range(from, from + PAGE - 1)
+        if (rErr) return reply({ ok: false, error: "list_failed" }, 500)
+        for (const row of redemptions ?? []) counts[String(row.promo_code_id)] = (counts[String(row.promo_code_id)] ?? 0) + 1
+        if ((redemptions ?? []).length < PAGE) break
+      }
       return reply({ ok: true, codes: (codes ?? []).map(row => ({ ...row, redemption_count: counts[String(row.id)] ?? 0 })) })
     }
 
