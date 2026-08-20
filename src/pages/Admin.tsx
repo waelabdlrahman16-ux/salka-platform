@@ -683,7 +683,15 @@ export default function Admin() {
   // or restaurant edit made by a vendor visible to the admin immediately.
   useCatalogSync({ refresh: () => load(true), fallbackIntervalMs: 60_000 })
 
-  const escalateAfter = Number(settings.find(s => s.key === 'escalate_after_minutes')?.value ?? 15)
+  // No `?? 15`. A fallback here is the same defect as a coalesce() in the database:
+  // it quietly substitutes a number nobody typed. escalate_after_minutes is 2 in the
+  // portal; the old fallback was 15, so a settings read that came back empty would have
+  // stopped escalation almost entirely while looking like it was working.
+  //
+  // NaN is the honest answer to "we could not read the setting": every comparison
+  // against it is false, so nothing is flagged late rather than everything being
+  // flagged on a number the admin never chose.
+  const escalateAfter = Number(settings.find(s => s.key === 'escalate_after_minutes')?.value ?? NaN)
   const isLate = (o: Order) => {
     const from = o.dispatch_at ? +new Date(o.dispatch_at) : +new Date(o.created_at)
     return (Date.now() - from) / 60000 > escalateAfter
@@ -705,7 +713,10 @@ export default function Admin() {
   const active = assignments.filter(a => activeStatuses.includes(a.status))
   const noAnswerReports = assignments.filter(a => a.no_answer_reported_at && !a.no_answer_admin_action)
   const availableDrivers = drivers.filter(d => d.active && d.available)
-  const vanRequiredSubtotal = Number(settings.find(s => s.key === 'van_required_subtotal_egp')?.value ?? 300)
+  // Same reasoning as escalateAfter above. This one mattered more: the portal says
+  // 9000 and the fallback said 300, so an unread setting would have shown van warnings
+  // on 25 historical orders that policy deliberately exempts.
+  const vanRequiredSubtotal = Number(settings.find(s => s.key === 'van_required_subtotal_egp')?.value ?? NaN)
   const assigningNeedsVan = assigning
     ? (() => {
         const r = restaurants.find(r => r.id === assigning.restaurant_id)
