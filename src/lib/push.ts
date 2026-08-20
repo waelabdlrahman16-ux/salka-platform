@@ -485,7 +485,36 @@ export async function registerPush(onToken: PushTokenSink): Promise<boolean> {
  * dead row, but only the browser can produce a live token, and it will not do so
  * while it believes its cached one is fine.
  */
-async function saveWebTokenHealing(onToken: PushTokenSink): Promise<boolean> {
+// The web twin of nativeInFlight, and it took longer to find because the
+// native race merely produced a confused button while this one DESTROYS TOKENS.
+//
+// Every staff page calls registerPush() on mount AND renders EnablePushButton,
+// which calls it again -- two concurrent flows, by construction, on every load.
+// The native path was given a guard for exactly that. The web path was not, and
+// the web path is the one that calls deleteToken().
+//
+// So: flow A reads the cached token, the server says it is stale, and A calls
+// deleteToken() and mints a replacement. Flow B, a few hundred milliseconds
+// behind, is told the same thing about the same stale string and calls
+// deleteToken() TOO -- and by then the registration it destroys is the fresh one
+// A just created. B mints a third. A's token is now dead, one minute old.
+//
+// That is the ~9 tokens a day. It is not FCM expiring anything and it is not a
+// device problem: the app was deleting its own registrations. The fingerprint is
+// in dead_push_tokens -- deaths arriving in PAIRS a second apart, on tokens
+// whose token_updated_at is 0 to 4 minutes earlier, every one of them platform
+// 'web' and 18 of 22 on the one profile that keeps the admin board open.
+//
+// One flow at a time. The second caller joins the first rather than racing it.
+let webInFlight: Promise<boolean> | null = null
+
+function saveWebTokenHealing(onToken: PushTokenSink): Promise<boolean> {
+  if (webInFlight) return webInFlight
+  webInFlight = saveWebTokenHealingOnce(onToken).finally(() => { webInFlight = null })
+  return webInFlight
+}
+
+async function saveWebTokenHealingOnce(onToken: PushTokenSink): Promise<boolean> {
   const token = await webToken()
   if (!token) return false
 
