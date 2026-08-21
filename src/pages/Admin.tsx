@@ -1400,10 +1400,41 @@ export default function Admin() {
     load(true)
   }
 
-  async function updateSetting(st: Setting, value: string) {
-    if (value === st.value) return
+  /** Why a setting was refused, in Arabic, from the row's own bounds.
+   *
+   *  The validate_setting trigger raises 'invalid_setting_value:<key> must be
+   *  at least 5' and similar -- accurate, English, and aimed at a developer.
+   *  The bounds are on the row we already hold, so the reason is rebuilt here
+   *  rather than parsed out of a server string that was never meant for a
+   *  screen. 40 settings rows carry a min or a max today; every one of them
+   *  used to fail as "الإعداد ماتحفظش. جرب تاني", which tells an admin to
+   *  repeat the exact keystrokes that just failed. */
+  function settingRefusalReason(st: Setting, value: string): string {
+    const trimmed = value.trim()
+    if (st.kind === 'numeric' || st.min_value != null || st.max_value != null) {
+      if (!/^-?\d+(\.\d+)?$/.test(trimmed)) return `"${st.label || st.key}" لازم يكون رقم`
+      const n = Number(trimmed)
+      if (st.min_value != null && n < st.min_value) return `أقل قيمة مسموحة ${st.min_value}`
+      if (st.max_value != null && n > st.max_value) return `أكبر قيمة مسموحة ${st.max_value}`
+    }
+    if (st.kind === 'boolean' && trimmed !== 'true' && trimmed !== 'false') {
+      return `"${st.label || st.key}" لازم يكون مفعّل أو مقفول`
+    }
+    return 'الإعداد ماتحفظش. جرب تاني'
+  }
+
+  /** `revert` puts the box back to the stored value when the server refuses.
+   *  Without it the screen keeps showing the number that was rejected while the
+   *  database holds the old one, so the portal quietly disagrees with itself --
+   *  and the next person to read that screen believes the wrong number. */
+  async function updateSetting(st: Setting, value: string, revert?: HTMLInputElement) {
+    if (value.trim() === st.value) return
     const { error } = await supabase.from('settings').update({ value }).eq('key', st.key)
-    if (error) { setActionError('الإعداد ماتحفظش. جرب تاني'); return }
+    if (error) {
+      setActionError(settingRefusalReason(st, value))
+      if (revert) revert.value = st.value
+      return
+    }
     setActionError('')
     load(true)
   }
@@ -3016,12 +3047,19 @@ export default function Admin() {
               <div key={st.key} className="card p-4 flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-semibold text-sm truncate">{st.label || st.key}</p>
+                  {(st.min_value != null || st.max_value != null) && (
+                    <p className="text-[11px] text-mist">
+                      {st.min_value != null && st.max_value != null
+                        ? `من ${st.min_value} لـ ${st.max_value}`
+                        : st.min_value != null ? `الحد الأدنى ${st.min_value}` : `الحد الأقصى ${st.max_value}`}
+                    </p>
+                  )}
                 </div>
                 {isBool ? (
                   <Toggle on={on} onChange={() => updateSetting(st, on ? 'false' : 'true')} label="مفعّل" labelOff="مقفول" />
                 ) : (
                   <input defaultValue={st.value} className="field !w-24 !py-1.5 text-center"
-                    onBlur={e => updateSetting(st, e.target.value)} />
+                    onBlur={e => updateSetting(st, e.target.value, e.currentTarget)} />
                 )}
               </div>
             )
