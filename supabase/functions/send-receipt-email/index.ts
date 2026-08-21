@@ -148,7 +148,9 @@ Deno.serve(async (req) => {
       method: "POST",
       headers: { "Authorization": `Bearer ${resendKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: "سالكة <receipts@gosalka.com>",
+        // Only app.gosalka.com is verified in Resend; the bare apex never
+        // was, so sending from it 403s every receipt.
+        from: "سالكة <receipts@app.gosalka.com>",
         to: customer.email,
         subject: `فاتورة طلبك #${order.id} من سالكة`,
         html
