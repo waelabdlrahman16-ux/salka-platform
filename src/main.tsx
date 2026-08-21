@@ -7,10 +7,24 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { listenForInstallPrompt } from './lib/installPrompt'
 import './index.css'
 
-// Error monitoring: only activates if VITE_SENTRY_DSN is set (Vercel/Cloudflare
-// env var, or a local .env file) -- completely inert otherwise, so nothing
-// is ever sent anywhere without an explicit DSN being configured.
+// Error monitoring. The DSN falls back to a literal for the same reason
+// firebaseConfig.ts and lib/supabase.ts do: this repository has TWO systems
+// that deploy appgosalka-platform -- the Deploy workflow, which passes
+// VITE_SENTRY_DSN from a repo secret, and a Cloudflare Workers Builds Git
+// integration, which cannot see GitHub secrets at all. Whichever finishes
+// last wins, so with the env var as the only source, whether production had
+// error monitoring depended on a race. Sentry going quiet is exactly the
+// failure you cannot notice by looking: an inert SDK and a healthy app are
+// indistinguishable from the outside, which is how it stayed inert from the
+// day the SDK was added until 2026-08-21.
+//
+// A DSN is not a credential. It is designed to ship in the browser bundle --
+// it only authorises SENDING events to this project, not reading them -- and
+// the same key is already committed in public/_headers, in the CSP's
+// report-uri. Keeping the env var first means a local .env or a dashboard
+// variable can still point a build at a different project.
 const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN
+  || 'https://0db2410bf037e80bba50613f1685114a@o4511834207682560.ingest.de.sentry.io/4511834268762192'
 if (SENTRY_DSN) {
   Sentry.init({
     dsn: SENTRY_DSN,
