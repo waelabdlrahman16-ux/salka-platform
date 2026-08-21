@@ -153,6 +153,12 @@ export const ERROR_AR: Record<string, string> = {
 
   // tips / feedback
   invalid_amount: 'المبلغ مش مظبوط',
+  // Raised by guard_custom_order_quote_dispatch / _fulfilment -- live triggers
+  // on the هنجبلك path. Both were absent here, so a guard doing exactly its job
+  // reached staff as the generic 'حصل خطأ'، which says nothing about what to do
+  // next. Both are ordinary sequencing rules, not faults.
+  quote_not_accepted: 'العميل لسه ماوافقش على السعر',
+  order_not_paid: 'الطلب لسه مادفعش',
   invalid_fee: 'الرسوم لازم تكون رقم موجب',
   fee_too_large: 'الرقم ده كبير أوي، أقصى رسوم توصيل 2000 ج.م',
   compound_not_found: 'المكان ده مش موجود',

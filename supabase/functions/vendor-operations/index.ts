@@ -1,7 +1,7 @@
 import{withSupabase}from"@supabase/server";import{fail,isRateLimitError,json}from"../_shared/secure.ts"
 type Db={public:{Tables:Record<string,never>;Views:Record<string,never>;Enums:Record<string,never>;CompositeTypes:Record<string,never>;Functions:Record<string,{Args:Record<string,unknown>;Returns:unknown}>}}
 type Action="accept"|"confirmPrice"|"delay"|"deliveryOverview"|"ready"|"setItemAvailability"|"setOpen";const ACTIONS=new Set<Action>(["accept","confirmPrice","delay","deliveryOverview","ready","setItemAvailability","setOpen"])
-const KNOWN=["admin_only","already_accepted","delay_limit_reached","invalid_amount","invalid_prep_minutes","item_not_found","not_a_vendor","not_authorized","not_your_order","not_your_restaurant","order_closed","order_not_found","order_not_pending","order_not_priced","price_required","wrong_stage"]
+const KNOWN=["admin_only","already_accepted","delay_limit_reached","invalid_amount","invalid_prep_minutes","item_not_found","not_a_vendor","not_authorized","not_your_order","not_your_restaurant","order_closed","order_not_found","order_not_paid","order_not_pending","order_not_priced","price_required","quote_not_accepted","wrong_stage"]
 const id=(v:unknown)=>Number.isInteger(v)&&Number(v)>0&&Number(v)<=2147483647?Number(v):null
 async function digest(v:string){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,"0")).join("")}
 const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{if(req.method!=="POST")return json({error:"method_not_allowed"},405);if(Number(req.headers.get("content-length")??0)>8192)return json({error:"request_too_large"},413)
