@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
 
-// The service fee percentage is owned by the server. place_order reads
-// settings.service_fee_percent and computes
-//   service_fee := round(subtotal * pct / 100)
+// The service fee is owned by the server. private.service_fee_for() reads
+// settings.service_fee_percent and settings.service_fee_max_egp and computes
+//   service_fee := least(round(subtotal * pct / 100), max)
 // ignoring anything the client thinks the fee is.
+//
+// The ceiling matters as much as the percentage: at 8% with a 199 EGP cap, a
+// 5,000 EGP هنجبلك order is charged 199, and a client that mirrored only the
+// percentage would display 400 and be billed 199 -- the same class of drift as
+// hardcoding the percentage, just in the customer's favour instead of ours.
 //
 // CartPage and CheckoutPage used to hardcode `Math.round(subtotal * 0.02)`.
 // That was invisible for as long as the setting also said 2, and became a
@@ -15,7 +20,11 @@ import { supabase } from './supabase'
 // and it is fixed the same way -- ask the server, and show nothing until it
 // answers. Never mirror server pricing in the client.
 
-const SETTING_KEY = 'service_fee_percent'
+const PCT_KEY = 'service_fee_percent'
+const MAX_KEY = 'service_fee_max_egp'
+
+/** The whole server-side fee policy. Both halves, or neither. */
+export type ServiceFeePolicy = { pct: number; max: number }
 
 // A session-lifetime cache was fine for a browser tab. It is NOT fine for a
 // Capacitor WebView, whose session lasts days -- and the driver/customer app is
@@ -25,29 +34,38 @@ const SETTING_KEY = 'service_fee_percent'
 // layer down as a cache lifetime.
 const TTL_MS = 5 * 60 * 1000
 
-let cache: number | null = null
+let cache: ServiceFeePolicy | null = null
 let cachedAt = 0
-let inflight: Promise<number | null> | null = null
+let inflight: Promise<ServiceFeePolicy | null> | null = null
 
-export async function fetchServiceFeePct(): Promise<number | null> {
+export async function fetchServiceFeePolicy(): Promise<ServiceFeePolicy | null> {
   if (cache !== null && Date.now() - cachedAt < TTL_MS) return cache
   if (inflight) return inflight
 
   const request = (async () => {
     const { data, error } = await supabase
       .from('settings')
-      .select('value')
-      .eq('key', SETTING_KEY)
-      .maybeSingle()
-    if (error) return null
-    // A missing row is a real answer: place_order coalesces it to 0, so 0 is
-    // what the customer will actually be charged. Only a failed read is null.
-    if (!data) { cache = 0; cachedAt = Date.now(); return 0 }
-    const pct = Number(data.value)
-    if (!Number.isFinite(pct) || pct < 0) return null
-    cache = pct
+      .select('key,value')
+      .in('key', [PCT_KEY, MAX_KEY])
+    if (error || !data) return null
+
+    const read = (key: string) => {
+      const row = data.find(r => r.key === key)
+      return row ? Number(row.value) : null
+    }
+    const pct = read(PCT_KEY)
+    const max = read(MAX_KEY)
+
+    // Both rows are CLASS A required and undeletable, and service_fee_for()
+    // raises rather than guessing if either is missing. So a missing row here is
+    // not "charge nothing" -- it is a checkout that will fail server-side, and
+    // showing a number for it would be a lie. Unknown, not zero.
+    if (pct === null || !Number.isFinite(pct) || pct < 0) return null
+    if (max === null || !Number.isFinite(max) || max < 0) return null
+
+    cache = { pct, max }
     cachedAt = Date.now()
-    return pct
+    return cache
   })()
 
   inflight = request
@@ -63,26 +81,26 @@ export function clearServiceFeeCache() {
 }
 
 /**
- * Mirrors the server's arithmetic exactly:
- *   round(subtotal * pct / 100)
- * Returns null when the percentage is not known yet -- callers must not
- * substitute 0 or a guess.
+ * Mirrors private.service_fee_for() exactly:
+ *   least(round(subtotal * pct / 100), max)
+ * Returns null when the policy is not known yet -- callers must not substitute
+ * 0 or a guess.
  */
-export function serviceFeeFor(subtotal: number, pct: number | null): number | null {
-  if (pct === null) return null
-  return Math.round((subtotal * pct) / 100)
+export function serviceFeeFor(subtotal: number, policy: ServiceFeePolicy | null): number | null {
+  if (policy === null) return null
+  return Math.min(Math.round((Math.max(subtotal, 0) * policy.pct) / 100), policy.max)
 }
 
-export type UseServiceFeePct = {
-  /** percentage, or null while unknown -- never fall back to a guess */
-  pct: number | null
+export type UseServiceFeePolicy = {
+  /** the server's fee policy, or null while unknown -- never fall back to a guess */
+  policy: ServiceFeePolicy | null
   loading: boolean
   failed: boolean
   retry: () => void
 }
 
-export function useServiceFeePct(): UseServiceFeePct {
-  const [pct, setPct] = useState<number | null>(null)
+export function useServiceFeePolicy(): UseServiceFeePolicy {
+  const [policy, setPolicy] = useState<ServiceFeePolicy | null>(null)
   const [loading, setLoading] = useState(false)
   const [failed, setFailed] = useState(false)
   const [attempt, setAttempt] = useState(0)
@@ -90,9 +108,9 @@ export function useServiceFeePct(): UseServiceFeePct {
   useEffect(() => {
     let cancelled = false
     setLoading(true); setFailed(false)
-    fetchServiceFeePct().then(result => {
+    fetchServiceFeePolicy().then(result => {
       if (cancelled) return
-      setPct(result)
+      setPolicy(result)
       setFailed(result === null)
       setLoading(false)
     })
@@ -100,7 +118,7 @@ export function useServiceFeePct(): UseServiceFeePct {
   }, [attempt])
 
   return {
-    pct,
+    policy,
     loading,
     failed,
     retry: () => { clearServiceFeeCache(); setAttempt(a => a + 1) }

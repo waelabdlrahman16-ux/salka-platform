@@ -8,7 +8,7 @@ import { loadMenuOptions } from '../lib/menuOptions'
 import { lineIsStale, priceLine } from '../lib/linePricing'
 import { artFor } from '../lib/categoryArt'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
-import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
+import { serviceFeeFor, useServiceFeePolicy } from '../lib/serviceFee'
 import Icon from '../components/Icon'
 import type { Discount, MenuItem, MenuItemAddon, MenuItemCombo, MenuItemSize, Restaurant } from '../lib/types'
 import { getCompoundId } from '../lib/place'
@@ -86,11 +86,12 @@ export default function CartPage() {
   // prep + travel, and the two differ by 35 minutes between a burger and a
   // supermarket shop to the same address.
   const { fee: deliveryFee, loading: feeLoading } = useDeliveryQuote(compoundId, cart.restaurantId)
-  // The rate lives in settings.service_fee_percent and place_order applies it.
-  // This used to be a hardcoded 0.02 that silently understated the total by
-  // whatever the admin had since changed the setting to.
-  const { pct: serviceFeePct, loading: serviceFeeLoading } = useServiceFeePct()
-  const serviceFee = serviceFeeFor(subtotal, serviceFeePct)
+  // The rate AND its ceiling live in settings (service_fee_percent,
+  // service_fee_max_egp) and private.service_fee_for() applies both. This used to
+  // be a hardcoded 0.02 that silently understated the total by whatever the admin
+  // had since changed the setting to.
+  const { policy: serviceFeePolicy, loading: serviceFeeLoading } = useServiceFeePolicy()
+  const serviceFee = serviceFeeFor(subtotal, serviceFeePolicy)
   // Only a complete total when delivery AND the service fee are actually known.
   // Previously the delivery fee was silently omitted from grandTotal whenever no
   // compound was stored, so the sticky CTA understated the price by the entire

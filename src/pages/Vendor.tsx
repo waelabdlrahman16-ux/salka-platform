@@ -6,7 +6,7 @@ import { useAuth } from '../lib/auth'
 import { startRinging, stopRinging } from '../lib/ring'
 import { ping } from '../lib/notify'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
-import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
+import { serviceFeeFor, useServiceFeePolicy } from '../lib/serviceFee'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { registerPush, persistPushToken } from '../lib/push'
 import { orderStatusLabel } from '../lib/statusLabels'
@@ -250,8 +250,8 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
     useDeliveryQuote(compoundId)
   const amount = Number(collectAmount) || 0
   // Server-owned percentage, same hook as every other screen that shows money.
-  const { pct: serviceFeePct } = useServiceFeePct()
-  const pickupServiceFee = paymentMode === 'driver_pays' ? serviceFeeFor(amount, serviceFeePct) : 0
+  const { policy: serviceFeePolicy } = useServiceFeePolicy()
+  const pickupServiceFee = paymentMode === 'driver_pays' ? serviceFeeFor(amount, serviceFeePolicy) : 0
   const valid = name.trim() && isValidEgyptPhone(phone) && compoundId && unit.trim()
     && deliveryFee !== null && (paymentMode === 'prepaid' || amount > 0)
 
