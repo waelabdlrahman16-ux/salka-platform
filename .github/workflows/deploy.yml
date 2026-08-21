@@ -101,3 +101,71 @@ jobs:
         run: npx --no-install wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+  # landing/ is the marketing site on gosalka.com -- a separate assets-only
+  # Worker (gosalka-landing) from the app Worker deployed above
+  # (appgosalka-platform). It had no deploy step at all until now: the site was
+  # live and serving, but every change to it went up by hand from someone's
+  # laptop with `wrangler deploy`, which is exactly the drift this workflow was
+  # created to remove for the app. Same runner, same pinned Wrangler, same
+  # token.
+  #
+  # Its own job rather than a step in the one above because the two are
+  # independent: hand-written HTML with no build, no npm ci, and no reason for
+  # a failed app build to block a copy fix on the marketing page (or the
+  # reverse).
+  deploy-landing:
+    runs-on: ubuntu-latest
+    steps:
+      # fetch-depth: 2 so the guard below can diff against the previous commit.
+      # The default shallow checkout has no parent to compare with.
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      # Most pushes to main touch src/ and not landing/. Re-uploading an
+      # unchanged asset set is harmless but it burns a deploy and makes the
+      # Worker's modified_on meaningless as a signal of when the marketing copy
+      # last actually changed.
+      #
+      # Deliberately fails open: if the diff cannot be computed (first commit,
+      # a force-push that orphaned the parent, workflow_dispatch on a shallow
+      # ref), deploy rather than skip. A redundant deploy costs seconds; a
+      # silently skipped one means the live site does not match main.
+      - name: Check whether landing/ changed
+        id: changed
+        run: |
+          if git rev-parse --verify --quiet HEAD^ >/dev/null; then
+            if git diff --name-only HEAD^ HEAD | grep -q '^landing/'; then
+              echo "run=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "run=false" >> "$GITHUB_OUTPUT"
+              echo "landing/ unchanged in this push -- skipping deploy."
+            fi
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "No parent commit to diff against -- deploying to be safe."
+          fi
+
+      # Wrangler is a devDependency and landing/ has no package.json of its
+      # own, so install from the repo root to get the same pinned version the
+      # app deploy uses. --ignore-scripts and --no-audit because nothing here
+      # is built or run -- this only needs the wrangler binary on disk.
+      - uses: actions/setup-node@v6
+        if: steps.changed.outputs.run == 'true'
+        with:
+          node-version: '22.23.2'
+          cache: npm
+
+      - name: Install Wrangler
+        if: steps.changed.outputs.run == 'true'
+        run: npm ci --ignore-scripts --no-audit
+
+      # --config points at landing/wrangler.jsonc, whose `assets.directory` is
+      # "." -- resolved relative to the config file, so this uploads landing/
+      # itself with no build output involved.
+      - name: Deploy landing to Cloudflare Workers
+        if: steps.changed.outputs.run == 'true'
+        run: npx --no-install wrangler deploy --config landing/wrangler.jsonc
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
