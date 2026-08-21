@@ -3,6 +3,7 @@ import Icon from './Icon'
 import { adminAccountDriverAction } from '../lib/adminAccountDriverActions'
 import { adminReport } from '../lib/adminReports'
 import { orderStatusLabel } from '../lib/statusLabels'
+import { dialLocal, telUrl, whatsappUrl } from '../lib/phone'
 import Toggle from './Toggle'
 import { useSheets } from './ActionSheets'
 
@@ -108,7 +109,6 @@ const dayTime = (iso: string) =>
   new Date(iso).toLocaleString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
 
 /** Egyptian mobiles are stored normalised (no leading 0). Put it back for display and for tel:. */
-const dial = (phone: string) => (phone.startsWith('0') ? phone : `0${phone}`)
 
 function needsAttention(c: Customer) {
   return c.cancelled > c.delivered || c.complaints > 0 || c.refunds_due > 0
@@ -209,8 +209,8 @@ export default function CustomersTab() {
         <p className="font-bold text-sm">طلبات استرجاع الحساب ({recoveries.length})</p>
         <p className="text-xs text-mist mt-1">اتصل بالرقم المسجل الأول، وبعد التأكد وافق لربط الحساب.</p>
         <div className="space-y-2 mt-3">{recoveries.map(r => <div key={r.id} className="bg-white rounded-lg p-3 flex items-center justify-between gap-2">
-          <div><p dir="ltr" className="font-semibold text-sm">{dial(r.phone)}</p><p dir="ltr" className="text-xs text-mist">{r.email || '-'}</p></div>
-          <div className="flex gap-1"><a className="btn-ghost !py-1.5 !px-2 text-xs" href={`tel:${dial(r.phone)}`}>اتصل</a><button className="btn-sea !py-1.5 !px-2 text-xs" disabled={recoveryBusy===r.id} onClick={() => approveRecovery(r.id)}>وافق</button></div>
+          <div><p dir="ltr" className="font-semibold text-sm">{dialLocal(r.phone)}</p><p dir="ltr" className="text-xs text-mist">{r.email || '-'}</p></div>
+          <div className="flex gap-1"><a className="btn-ghost !py-1.5 !px-2 text-xs" href={telUrl(r.phone)}>اتصل</a><button className="btn-sea !py-1.5 !px-2 text-xs" disabled={recoveryBusy===r.id} onClick={() => approveRecovery(r.id)}>وافق</button></div>
         </div>)}</div>
       </div>}
       {/* Six numbers, and the only one to act on is the last. */}
@@ -267,7 +267,7 @@ export default function CustomersTab() {
                   {c.complaints > 0 && <Tag tone="bad">{c.complaints} شكوى</Tag>}
                   {c.refunds_due > 0 && <Tag tone="bad">استرداد مستحق</Tag>}
                 </div>
-                <p dir="ltr" className="text-sm text-mist mt-0.5 text-right">{dial(c.phone)}</p>
+                <p dir="ltr" className="text-sm text-mist mt-0.5 text-right">{dialLocal(c.phone)}</p>
                 <p className="text-xs text-mist mt-0.5 truncate">
                   {[c.last_zone, c.last_unit].filter(Boolean).join(' • ') || 'لسه مافيش عنوان'}
                 </p>
@@ -407,7 +407,7 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
         <div className="sticky top-0 bg-white border-b border-line px-4 py-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="font-bold text-lg truncate">{c.name || 'بدون اسم'}</h3>
-            <p dir="ltr" className="text-sm text-mist text-right">{dial(c.phone)}</p>
+            <p dir="ltr" className="text-sm text-mist text-right">{dialLocal(c.phone)}</p>
             {c.email && <p dir="ltr" className="text-xs text-mist text-right break-all">{c.email}</p>}
           </div>
           <button className="text-mist hover:text-foam text-sm shrink-0 min-h-[44px] inline-flex items-center" onClick={onClose}>إغلاق<Icon name="x" size="xs" className="inline-block align-[-0.15em] ms-1" /></button>
@@ -415,9 +415,9 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
 
         <div className="p-4 space-y-4">
           <div className="flex gap-2">
-            <a className="btn-sea flex-1 text-center !py-2.5" href={`tel:${dial(c.phone)}`}><Icon name="phone" size="sm" className="inline-block align-[-0.15em] me-1" />اتصل</a>
+            <a className="btn-sea flex-1 text-center !py-2.5" href={telUrl(c.phone)}><Icon name="phone" size="sm" className="inline-block align-[-0.15em] me-1" />اتصل</a>
             <a className="btn-ghost flex-1 text-center !py-2.5"
-              href={`https://wa.me/2${dial(c.phone)}`} target="_blank" rel="noreferrer">واتساب</a>
+              href={whatsappUrl(c.phone)} target="_blank" rel="noreferrer">واتساب</a>
           </div>
 
           <div className="grid grid-cols-2 gap-2 text-sm">

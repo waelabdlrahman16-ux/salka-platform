@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { telUrl } from '../lib/phone'
 import { selectAll } from '../lib/selectAll'
 import { useDismissable } from '../lib/useDismissable'
 import type { Assignment, Compound, Complaint, Driver, DeliverySlotRow, Earning, LiveDelivery, MenuItem, Order, OrderRating, Reliability, Restaurant, Setting, SettlementRequest, Shift, VendorCoverage } from '../lib/types'
@@ -1780,7 +1781,7 @@ export default function Admin() {
   const addr = (o: Order) => `${o.zone}، وحدة ${o.unit_number}${o.address_notes ? `: ${o.address_notes}` : ''}`
   const customer = (o: Order) => (
     <div className="mt-2.5 bg-night border border-line rounded-xl p-3 text-sm space-y-1">
-      <p><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
+      <p><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={telUrl(o.customer_phone ?? '')}>{o.customer_phone}</a></p>
       <p><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{addr(o)}</p>
       {o.customer_note && <p className="text-coral-700"><Icon name="penToSquare" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_note}</p>}
     </div>
@@ -1870,7 +1871,7 @@ export default function Admin() {
                     <div className="min-w-0">
                       <p className="font-semibold text-sm">طلب #{o.id}: {o.vendor_name}: {o.total} ج.م</p>
                       <p className="text-xs text-mist mt-0.5">
-                        <Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a>
+                        <Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={telUrl(o.customer_phone ?? '')}>{o.customer_phone}</a>
                       </p>
                       <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{o.compound_name ?? '-'}</p>
                     </div>
@@ -1901,7 +1902,7 @@ export default function Admin() {
                       find it in another tab. Every reason an order can be stuck
                       now has its own way out, right here. */}
                   <div className="flex gap-2 mt-2.5 flex-wrap">
-                    <a className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem] text-center" href={`tel:${o.customer_phone}`}>اتصل بالعميل</a>
+                    <a className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem] text-center" href={telUrl(o.customer_phone ?? '')}>اتصل بالعميل</a>
 
                     {/* Stuck on YOU: it needs a price. */}
                     {full?.pricing_status === 'pending_quote' && (
@@ -1974,7 +1975,7 @@ export default function Admin() {
               return (
                 <div key={a.id} className="bg-night border border-line rounded-xl p-3">
                   <p className="font-semibold text-sm">طلب #{o.id}: {o.restaurants?.name}: {o.total} ج.م</p>
-                  <p className="text-xs text-mist mt-0.5"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
+                  <p className="text-xs text-mist mt-0.5"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={telUrl(o.customer_phone ?? '')}>{o.customer_phone}</a></p>
                   <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{addr(o)}</p>
                   <p className="text-xs text-coral-700 mt-1">
                     {a.delivery_problem_reason
@@ -1982,7 +1983,7 @@ export default function Admin() {
                       : 'المندوب اتصل ومردش حد، اتبلّغ الإدارة'}
                   </p>
                   <div className="flex gap-2 mt-2.5 flex-wrap">
-                    <a className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem] text-center" href={`tel:${o.customer_phone}`}>اتصل بالعميل</a>
+                    <a className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem] text-center" href={telUrl(o.customer_phone ?? '')}>اتصل بالعميل</a>
                     <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem]" onClick={() => resolveNoAnswer(a, 'wait')}>يستنى 5 دقايق</button>
                     <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem]" onClick={() => forceDelivered(a)}>سجّله كمُسلَّم</button>
                     <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem] !text-danger" onClick={() => resolveNoAnswer(a, 'fail')}>توصيل فاشل</button>
@@ -3229,7 +3230,7 @@ export default function Admin() {
                     <div className="min-w-0">
                       <p className="font-semibold text-sm truncate">طلب #{o.id}: {o.vendor_name ?? '-'}</p>
                       <p className="text-xs text-mist mt-0.5">
-                        <Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a>
+                        <Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={telUrl(o.customer_phone ?? '')}>{o.customer_phone}</a>
                       </p>
                       {o.cancel_reason && <p className="text-xs text-mist mt-0.5"><Icon name="penToSquare" size="sm" className="inline-block align-[-0.15em] me-1" />{o.cancel_reason}</p>}
                       <p className="text-xs text-mist mt-0.5">
@@ -3319,7 +3320,7 @@ export default function Admin() {
               </div>
               <p className="text-sm mt-2">{c.description}</p>
               {c.orders && (
-                <p className="text-sm text-mist mt-2"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{c.orders.customer_name} • <a className="text-sea" dir="ltr" href={`tel:${c.orders.customer_phone}`}>{c.orders.customer_phone}</a></p>
+                <p className="text-sm text-mist mt-2"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{c.orders.customer_name} • <a className="text-sea" dir="ltr" href={telUrl(c.orders.customer_phone ?? '')}>{c.orders.customer_phone}</a></p>
               )}
               <div className="flex gap-2.5 mt-3 flex-wrap">
                 {c.status !== 'reviewed' && <button className="btn-ghost flex-1 text-sm" onClick={() => updateComplaintStatus(c, 'reviewed')}>قيد المراجعة</button>}
