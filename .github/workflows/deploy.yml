@@ -78,6 +78,25 @@ jobs:
       # inert since the SDK was first added. Same pattern as the VAPID key
       # above: this is the DSN half of a Sentry client key, meant to ship in
       # the bundle, not a credential that grants access on its own.
+      # CORRECTION, 2026-08-21. Two things above are no longer the whole
+      # picture, and reading them as current led to a wrong diagnosis once
+      # already:
+      #
+      #   1. src/lib/firebaseConfig.ts has since grown a literal fallback for
+      #      the VAPID key, so a build WITHOUT this secret still ships a
+      #      working one. Push is no longer hostage to this env: line.
+      #   2. src/main.tsx now does the same for the Sentry DSN, for the reason
+      #      in point 3.
+      #   3. THIS WORKFLOW IS NOT THE ONLY THING THAT DEPLOYS THIS WORKER.
+      #      appgosalka-platform also has a Cloudflare Workers Builds Git
+      #      integration on this repository, which rebuilds and redeploys on
+      #      every push and cannot see GitHub secrets. Whichever of the two
+      #      finishes last is what production serves. See
+      #      docs/DUPLICATE-DEPLOY-PATHS-2026-08-21.md.
+      #
+      # Both secrets stay set here: they let a build point at a different
+      # Sentry project or VAPID pair without a code change, and they cost
+      # nothing. They are just no longer load-bearing.
       - name: Build
         run: npm run build
         env:
