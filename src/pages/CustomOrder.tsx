@@ -5,7 +5,7 @@ import PromoSection from '../components/PromoSection'
 import { type PromoQuote } from '../lib/promoOffers'
 import { customerOrderCreation } from '../lib/customerOrderCreation'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
-import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
+import { serviceFeeFor, useServiceFeePolicy } from '../lib/serviceFee'
 import { displayEgyptPhone, isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { VENDOR_TYPE_ART } from '../lib/categoryArt'
 import Icon from '../components/Icon'
@@ -380,12 +380,12 @@ export default function CustomOrder() {
   // stop at items + delivery. It is not any more: without this line a 205 ج.م
   // basket shows «تقريبًا 270» and is billed 286.
   //
-  // The percentage comes from the server, never a hardcoded 0.08 -- same rule
-  // as CartPage and CheckoutPage. serviceFeeFor returns null while it is
-  // unknown, and null is rendered as «…» rather than folded into the total as
-  // a zero, which would understate it exactly as before.
-  const { pct: serviceFeePct } = useServiceFeePct()
-  const serviceFee = serviceFeeFor(knownSubtotal, serviceFeePct)
+  // The percentage and its ceiling come from the server, never a hardcoded 0.08
+  // -- same rule as CartPage and CheckoutPage. serviceFeeFor returns null while
+  // either is unknown, and null is rendered as «…» rather than folded into the
+  // total as a zero, which would understate it exactly as before.
+  const { policy: serviceFeePolicy } = useServiceFeePolicy()
+  const serviceFee = serviceFeeFor(knownSubtotal, serviceFeePolicy)
 
   // selectedCompound, not compoundId. CheckoutPage already learned this: a
   // stored id whose compound has since been deactivated passes a truthiness

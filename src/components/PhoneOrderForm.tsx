@@ -2,7 +2,7 @@ import { useEffect, useId, useState } from 'react'
 import Icon from './Icon'
 import { supabase } from '../lib/supabase'
 import { dispatchOperation } from '../lib/dispatchOperations'
-import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
+import { serviceFeeFor, useServiceFeePolicy } from '../lib/serviceFee'
 
 /**
  * An order a vendor phoned in.
@@ -48,8 +48,8 @@ export default function PhoneOrderForm({ onCreated }: { onCreated: () => void })
   // CheckoutPage and CartPage. staff_create_pickup_order charges this now; it
   // used to charge nothing, so two real orders went out earning the delivery
   // fee alone.
-  const { pct: serviceFeePct } = useServiceFeePct()
-  const serviceFee = serviceFeeFor(collect, serviceFeePct)
+  const { policy: serviceFeePolicy } = useServiceFeePolicy()
+  const serviceFee = serviceFeeFor(collect, serviceFeePolicy)
   // Shown before submitting, because the number the driver will ask for at the
   // door is the whole point of the call and getting it wrong is a doorstep
   // argument, not a bug report. null while any component is unknown -- quoting

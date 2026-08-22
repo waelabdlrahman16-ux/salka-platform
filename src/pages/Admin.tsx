@@ -306,6 +306,7 @@ export default function Admin() {
   const [lastServiceFeePct, setLastServiceFeePct] = useState<Record<number, number>>({})
   const [globalServiceFeeDraft, setGlobalServiceFeeDraft] = useState<string | null>(null)
   const [lastGlobalServiceFeePct, setLastGlobalServiceFeePct] = useState<number | null>(null)
+  const [globalServiceFeeCapDraft, setGlobalServiceFeeCapDraft] = useState<string | null>(null)
   const [newRestaurant, setNewRestaurant] = useState({ name: '', description: '', category: '', vendor_type: 'restaurant', prep_minutes: '20' })
   const [showAddRestaurant, setShowAddRestaurant] = useState(false)
   const [uploadingImage, setUploadingImage] = useState<string | null>(null)
@@ -1455,6 +1456,21 @@ export default function Admin() {
     await updateSetting(st, String(pct))
     if (pct > 0) setLastGlobalServiceFeePct(pct)
     setGlobalServiceFeeDraft(null)
+  }
+
+  /** The ceiling on the same card as the percentage, deliberately. Left in the
+   *  generic list below it would sit rows away from the number it modifies, and
+   *  a percentage read without its cap is a fee nobody can predict. */
+  async function commitGlobalServiceFeeCap() {
+    const st = settings.find(s => s.key === 'service_fee_max_egp')
+    if (!st) return
+    const raw = (globalServiceFeeCapDraft ?? st.value).trim()
+    if (!/^\d+(\.\d+)?$/.test(raw)) { setActionError('الحد الأقصى لازم يكون رقم'); setGlobalServiceFeeCapDraft(null); return }
+    const cap = Number(raw)
+    if (cap < 0) { setActionError('الحد الأقصى لازم يكون صفر أو أكتر'); return }
+    if (String(cap) === st.value) { setGlobalServiceFeeCapDraft(null); return }
+    await updateSetting(st, String(cap))
+    setGlobalServiceFeeCapDraft(null)
   }
 
   async function toggleGlobalServiceFee() {
@@ -3031,6 +3047,20 @@ export default function Admin() {
                       onChange={e => setGlobalServiceFeeDraft(e.target.value)}
                       onBlur={() => commitGlobalServiceFee()} />
                     <span className="text-mist text-sm">%</span>
+                    {settings.some(s => s.key === 'service_fee_max_egp') && (() => {
+                      const cap = settings.find(s => s.key === 'service_fee_max_egp')!
+                      return (
+                        <>
+                          <span className="text-mist text-sm whitespace-nowrap">بحد أقصى</span>
+                          <input type="number" min={0} step="1"
+                            className="field !w-20 !py-1.5 text-center"
+                            value={globalServiceFeeCapDraft ?? cap.value}
+                            onChange={e => setGlobalServiceFeeCapDraft(e.target.value)}
+                            onBlur={() => commitGlobalServiceFeeCap()} />
+                          <span className="text-mist text-sm">ج.م</span>
+                        </>
+                      )
+                    })()}
                   </>
                 )}
               </div>
@@ -3040,7 +3070,7 @@ export default function Admin() {
               seed for a compound added later. Leaving them in the same list as
               live settings invites someone to "fix delivery pricing" here and
               watch nothing change. */}
-          {settings.filter(st => !st.key.startsWith('fee_tier') && st.key !== 'service_fee_percent').map(st => {
+          {settings.filter(st => !st.key.startsWith('fee_tier') && st.key !== 'service_fee_percent' && st.key !== 'service_fee_max_egp').map(st => {
             const isBool = st.value === 'true' || st.value === 'false'
             const on = st.value === 'true'
             return (
