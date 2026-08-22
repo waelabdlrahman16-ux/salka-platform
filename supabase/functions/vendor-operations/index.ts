@@ -1,21 +1,20 @@
 import{withSupabase}from"@supabase/server";import{fail,isRateLimitError,json}from"../_shared/secure.ts"
 type Db={public:{Tables:Record<string,never>;Views:Record<string,never>;Enums:Record<string,never>;CompositeTypes:Record<string,never>;Functions:Record<string,{Args:Record<string,unknown>;Returns:unknown}>}}
-// confirmPrice is KEPT DELIBERATELY, though no screen calls it any more.
+// confirmPrice is kept ONLY so the refusal has somewhere to land.
 //
-// Quote issuing moved to the quote-operations function, and Supervisor.tsx now
-// goes through lib/quoteOperations. The local tree that ran in production for
-// weeks had removed this action for exactly that reason -- and #190 put it back,
-// because production was serving a build without it and pricing a هنجبلك order
-// returned invalid_action, 400. That outage is the argument for leaving it:
-// an action nobody calls costs one Set membership check, while removing one that
-// something still reaches (a stale staff tab, a warm Capacitor WebView holding a
-// bundle for days) is a 400 on the money path with no clue in the message.
+// The DB function behind it no longer prices anything: it raises use_quote_flow.
+// It used to set a price without issuing a quote, which left quote_state at
+// 'pending' and the order unable to prepare, dispatch or be recorded as
+// delivered -- order #1187 sat like that for an hour and a half with cancel as
+// the only button, on an order the courier had already delivered.
 //
-// It is a fallback, not the route: confirm_custom_order_price still enforces
-// is_supervisor() and the quote guards still apply. Delete it once the app has
-// been on quote-operations long enough that no cached bundle can reach it.
+// On 2026-08-22 this action was left in place on the reasoning that an action
+// nobody calls costs nothing. That was wrong: a staff tab on an older bundle
+// called it. Removing it now would turn that call into a bare 400
+// invalid_action, so it stays and returns a code the UI can translate into
+// "use the quote screen" -- which is the sentence that gets the order priced.
 type Action="accept"|"confirmPrice"|"delay"|"deliveryOverview"|"ready"|"setItemAvailability"|"setOpen";const ACTIONS=new Set<Action>(["accept","confirmPrice","delay","deliveryOverview","ready","setItemAvailability","setOpen"])
-const KNOWN=["admin_only","already_accepted","delay_limit_reached","invalid_amount","invalid_prep_minutes","item_not_found","not_a_vendor","not_authorized","not_your_order","not_your_restaurant","order_closed","order_not_found","order_not_paid","order_not_pending","order_not_priced","price_required","quote_not_accepted","wrong_stage"]
+const KNOWN=["admin_only","already_accepted","delay_limit_reached","invalid_amount","invalid_prep_minutes","item_not_found","not_a_vendor","not_authorized","not_your_order","not_your_restaurant","order_closed","order_not_found","order_not_paid","order_not_pending","order_not_priced","price_required","quote_not_accepted","use_quote_flow","wrong_stage"]
 const id=(v:unknown)=>Number.isInteger(v)&&Number(v)>0&&Number(v)<=2147483647?Number(v):null
 async function digest(v:string){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,"0")).join("")}
 const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{if(req.method!=="POST")return json({error:"method_not_allowed"},405);if(Number(req.headers.get("content-length")??0)>8192)return json({error:"request_too_large"},413)
