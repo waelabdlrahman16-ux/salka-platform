@@ -51,6 +51,16 @@ the SQL **as executed**. So:
   match your filename — rename the file to the recorded version afterwards. The
   **Git integration uses the filename** as the version, so files applied that way
   do not drift.
+- **202 of the migration files are deliberate historical markers**, not real
+  migrations. They carry one line — `Historical migration marker` — and stand in
+  for versions applied before the repo tracked migrations; the schema of that era
+  is captured in `supabase/baseline/` (`routines.json`, `triggers.json`,
+  `policies.json`, …). An object that appears in the baseline and in no migration
+  file is **captured, not missing** — `public.set_order_is_test` is one. Check
+  the baseline before concluding anything lives only in production.
+- `check:production` compares, for every non-marker file, the set of objects its
+  ledger row CREATED against the set its file creates. All 102 matched when the
+  check was added.
 
 ## Verifying anything RLS-related
 
