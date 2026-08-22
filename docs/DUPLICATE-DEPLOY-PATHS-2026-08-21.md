@@ -117,3 +117,23 @@ of what is being served. The check to watch for on a pull request is that
 
 If a future change needs a build-time input (an env var, a key), it now has
 exactly one place to be configured: `deploy.yml`.
+
+## A third path, found the hard way (2026-08-22)
+
+This document counted two deployers. There were three.
+
+The **Supabase GitHub integration** applies migrations on merge to `main`, and
+it is the only one of the three that changes the database. At 04:06:38 on
+22 Aug, merging a migrations pull request made it apply seven files that had
+been sitting in the repository unapplied; one recreated the customer settings
+policy without `service_fee_max_egp` and checkout was dead until 06:22.
+
+So the rule this document ends with -- pick one path per Worker -- was necessary
+but not sufficient. The full statement is: **merging a pull request that touches
+`supabase/migrations/` is itself the production migration.** There is no
+separate apply step to withhold.
+
+It remains connected, deliberately: applying migrations by hand through the MCP
+tool is what produced the version drift that had to be cleaned up across 23
+files. The guard is `npm run check:production`, which runs after every deploy
+and fails if any migration file lacks a ledger row.
