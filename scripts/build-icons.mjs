@@ -39,7 +39,7 @@ const MAP = [
   ['bell', 'bell'], ['phone', 'phone'], ['thumbsDown', 'thumbs-down'],
   ['question', 'question'], ['camera', 'camera'], ['coins', 'coins'],
   ['arrowCounterClockwise', 'arrow-counter-clockwise'], ['pencilSimple', 'pencil-simple'],
-  ['arrowRight', 'arrow-right'], ['user', 'user'],
+  ['arrowRight', 'arrow-right'], ['signOut', 'sign-out'], ['user', 'user'],
   ['hourglass', 'hourglass'], ['flask', 'flask'], ['van', 'van'], ['moon', 'moon'],
   ['gear', 'gear'], ['arrowUturn', 'arrow-u-up-left'], ['megaphone', 'megaphone'],
   ['storefront', 'storefront'], ['speakerSlash', 'speaker-slash'], ['link', 'link'],

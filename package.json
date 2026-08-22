@@ -16,12 +16,14 @@
     "cap:ios": "npm run cap:sync && npx cap open ios",
     "check:firebase-sw": "node scripts/check-firebase-sw-version.mjs",
     "check:unbounded-reads": "node scripts/check-unbounded-reads.mjs",
+    "check:drift": "node scripts/check-drift.mjs",
     "baseline:capture": "node scripts/capture-baseline.mjs",
     "smoke:order": "node scripts/smoke-place-order.mjs",
     "smoke:setup": "node scripts/ensure-test-restaurant.mjs",
     "test:money": "node scripts/test-money.mjs",
     "test:promo": "node scripts/test-promo.mjs",
     "test:dispatch": "node scripts/test-dispatch.mjs",
+    "check:quote-state": "node scripts/check-quote-state-draft.mjs",
     "build:icons": "node scripts/build-icons.mjs"
   },
   "dependencies": {

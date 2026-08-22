@@ -57,6 +57,16 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # The quote state machine's invariants live across four places that no
+      # compiler ties together: the migration, the Edge Functions, and the admin
+      # UI. This script asserts they still agree -- among other things, that the
+      # legacy vendor confirmPrice action stays retired. It already said so on
+      # 2026-08-21 and nothing ran it; confirmPrice survived a merge, order #1187
+      # was priced through it, and the order could not be progressed at all.
+      # Cheap, no network, no secrets -- there is no reason for it not to be a gate.
+      - name: Quote state machine invariants
+        run: npm run check:quote-state
+
   # Places a real order against a test restaurant and rolls it back. See
   # scripts/smoke-place-order.mjs for why all three safety layers are needed.
   #

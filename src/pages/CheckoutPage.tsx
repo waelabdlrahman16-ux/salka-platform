@@ -9,7 +9,7 @@ import { loadMenuOptions } from '../lib/menuOptions'
 import { lineIsStale, priceLine } from '../lib/linePricing'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { track, trackOnce } from '../lib/analytics'
-import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
+import { serviceFeeFor, useServiceFeePolicy } from '../lib/serviceFee'
 import { PROMO_SCOPE_LABEL } from '../lib/promoScope'
 import PromoSection from '../components/PromoSection'
 import { type PromoQuote } from '../lib/promoOffers'
@@ -284,13 +284,13 @@ export default function CheckoutPage() {
   // a 45-minute supermarket shop like a 10-minute burger.
   const { fee: deliveryFee, quote, loading: feeLoading, failed: feeFailed, retry: retryFee } =
     useDeliveryQuote(compoundId, cart.restaurantId)
-  // Same rule as the delivery fee: settings.service_fee_percent is what
-  // place_order actually charges, so it is fetched, not assumed. The old
+  // Same rule as the delivery fee: the percentage and its 199 EGP ceiling are
+  // what place_order actually charges, so both are fetched, not assumed. The old
   // hardcoded 0.02 quoted the customer one number and billed them another for
   // any setting other than 2.
-  const { pct: serviceFeePct, loading: serviceFeeLoading, failed: serviceFeeFailed, retry: retryServiceFee } =
-    useServiceFeePct()
-  const serviceFee = serviceFeeFor(subtotal, serviceFeePct)
+  const { policy: serviceFeePolicy, loading: serviceFeeLoading, failed: serviceFeeFailed, retry: retryServiceFee } =
+    useServiceFeePolicy()
+  const serviceFee = serviceFeeFor(subtotal, serviceFeePolicy)
   // A code is only an estimate here. The database validates it again against
   // the final server-priced basket inside the order transaction.
   //

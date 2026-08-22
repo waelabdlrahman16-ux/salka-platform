@@ -19,6 +19,7 @@ import { isCancelled, cancelReasonLabel } from '../lib/statusLabels'
 import { useDismissable } from '../lib/useDismissable'
 import { sized, IMG } from '../lib/imageUrl'
 import { usePolledLoad } from '../lib/usePolledLoad'
+import { decideQuote as submitQuoteDecision, renewExpiredQuote, viewCurrentQuote, type QuoteView } from '../lib/quoteOperations'
 
 // Found by driving it: a pharmacy order with no price, no vendor acceptance and
 // no driver rendered "قيد التجهيز" with "الوصول المتوقع 7:15 ص". Nothing was
@@ -95,6 +96,52 @@ function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString('ar-EG-u-nu-latn', { timeZone: 'Africa/Cairo', hour: 'numeric', minute: '2-digit' })
 }
 
+function QuoteCountdown({ expiresAt, onExpire }: { expiresAt: string; onExpire: () => void }) {
+  const remainingSeconds = useCallback(
+    () => Math.max(0, Math.ceil((Date.parse(expiresAt) - Date.now()) / 1000)),
+    [expiresAt],
+  )
+  const [remaining, setRemaining] = useState(remainingSeconds)
+
+  useEffect(() => {
+    setRemaining(remainingSeconds())
+    const timer = window.setInterval(() => {
+      const next = remainingSeconds()
+      setRemaining(next)
+      if (next === 0) onExpire()
+    }, 1000)
+    return () => window.clearInterval(timer)
+  }, [onExpire, remainingSeconds])
+
+  const minutes = Math.floor(remaining / 60)
+  const seconds = remaining % 60
+  const expired = remaining === 0
+  return (
+    <div className={`mt-3 rounded-xl px-4 py-3 text-center ${expired ? 'bg-dangerbg text-danger' : remaining <= 120 ? 'bg-warningbg text-warning' : 'bg-sea/10 text-sea'}`}>
+      <p className="text-[11px] font-bold mb-1">{expired ? 'انتهت صلاحية العرض' : 'العرض ينتهي خلال'}</p>
+      {!expired && <p className="text-3xl font-bold tabular-nums leading-none" dir="ltr">{minutes}:{String(seconds).padStart(2, '0')}</p>}
+    </div>
+  )
+}
+
+/** Shared by the normal tracking view and the payment-only branch. A customer
+ * who accepts a quote should not be dropped into an older-looking screen just
+ * because payment is the next step. */
+function TrackHero() {
+  return (
+    <div className="-mx-4 -mt-6 mb-4 px-4 pt-8 pb-5 bg-gradient-to-b from-shellup to-night">
+      <div className="flex justify-start">
+        <Link to="/" aria-label="العودة للرئيسية" title="العودة للرئيسية"
+          className="grid place-items-center min-w-[44px] min-h-[44px] -mr-1">
+          <span className="w-9 h-9 rounded-full bg-white/95 text-slate-700 grid place-items-center shadow-sm">
+            <Icon name="chevronLeft" size="sm" className="rotate-180" />
+          </span>
+        </Link>
+      </div>
+    </div>
+  )
+}
+
 export default function Track() {
   const { token } = useParams()
   // Only to decide whether the "keep this link" hint below is worth showing.
@@ -132,6 +179,9 @@ export default function Track() {
   const [addingItem, setAddingItem] = useState(false)
   const [extraItem, setExtraItem] = useState('')
   const [extraSaving, setExtraSaving] = useState(false)
+  const [quote, setQuote] = useState<QuoteView | null>(null)
+  const [quoteBusy, setQuoteBusy] = useState<'accept' | 'reject' | 'renew' | null>(null)
+  const [quoteExpired, setQuoteExpired] = useState(false)
 
   // Remember, on this device, that an order has actually landed. It is what
   // gates the install prompt: the app asks for a home-screen slot once, from the
@@ -211,6 +261,24 @@ export default function Track() {
     load()
   }
 
+  async function decideQuote(action: 'accept' | 'reject') {
+    if (!token || !data?.order || !quote || quote.state !== 'offered') return
+    setQuoteBusy(action); setActionError(null)
+    const res = await submitQuoteDecision(action, data.order.id, quote.id, token)
+    setQuoteBusy(null)
+    if (!res.ok) { setActionError({ scope: 'quote', message: res.error }); return }
+    await load()
+  }
+
+  async function renewQuote() {
+    if (!token || !data?.order || !quote || quote.state !== 'expired') return
+    setQuoteBusy('renew'); setActionError(null)
+    const res = await renewExpiredQuote(data.order.id, quote.id, token)
+    setQuoteBusy(null)
+    if (!res.ok) { setActionError({ scope: 'quote', message: res.error }); return }
+    await load(true)
+  }
+
   // The polling effect captures `load` from the first render, so reading `data`
   // directly here would always see its initial null and re-latch not-found on
   // any later failure. Mirror it in a ref.
@@ -242,6 +310,26 @@ export default function Track() {
     setNotFound(false)
     setStaleSince(null)
     setData(res.data)
+
+    // Quote data is intentionally fetched through its own token-guarded API:
+    // track_order remains the stable legacy contract until the quote migration is
+    // rolled out. A missing quote is normal while staff are still pricing.
+    if (token && res.data.order.order_type === 'custom_request') {
+      const quoteResult = await viewCurrentQuote(res.data.order.id, token)
+      if (quoteResult.ok) {
+        setQuote(quoteResult.data)
+        setQuoteExpired(!!quoteResult.data && Date.parse(quoteResult.data.expires_at) <= Date.now())
+      } else {
+        // A former offer is not a safe fallback. The server remains the source
+        // of truth, but clearing this client copy avoids showing controls for a
+        // quote that may have expired or been replaced during a failed refresh.
+        setQuote(null)
+        setQuoteExpired(false)
+      }
+    } else {
+      setQuote(null)
+      setQuoteExpired(false)
+    }
   }
 
   // Deduped: a poll slower than the 10s interval would otherwise have a second
@@ -411,13 +499,16 @@ export default function Track() {
     const isDeposit = o.cod_deposit_amount != null
     const payNow = isDeposit ? o.cod_deposit_amount! : o.total
     return (
-      <div className="max-w-lg mx-auto">
+      <div className="max-w-lg mx-auto pb-6">
         {cancelPickerOpen && (
           <CancelReasonSheet busy={cancelling}
             onClose={() => setCancelPickerOpen(false)}
             onConfirm={cancelOrder} />
         )}
-        <Link to="/" className="text-sm text-mist hover:text-foam"><Icon name="chevronLeft" size="xs" className="inline-block align-middle ml-1" />العودة للرئيسية</Link>
+        <TrackHero />
+        <div className="mb-4">
+          <EnablePushButton onToken={saveCustomerToken} label="نبّهني لما الدفع يتأكد" />
+        </div>
         {errFor('instapay') && (
           <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mt-3">{errFor('instapay')}</p>
         )}
@@ -563,12 +654,7 @@ export default function Track() {
           onClose={() => setCancelPickerOpen(false)}
           onConfirm={cancelOrder} />
       )}
-      <div className="flex items-center justify-between mb-3">
-        {/* rotate-180: the page is RTL, so "back" points RIGHT -- same mirror
-            fix as RestaurantDetail and Vendor. */}
-        <Link to="/" className="text-sm text-mist hover:text-foam"><Icon name="chevronLeft" size="xs" className="inline-block align-middle ml-1 rotate-180" />العودة</Link>
-        <span className="text-sm font-semibold text-mist">طلب #{o.id}</span>
-      </div>
+      <TrackHero />
 
       {/* Polling stopped succeeding but we keep the last known order on screen
           rather than replacing it with a not-found card. */}
@@ -590,6 +676,13 @@ export default function Track() {
 
       {errFor('instapay') && (
         <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-4">{errFor('instapay')}</p>
+      )}
+
+      {current !== 'Delivered' && !isCancelled(o.status) && (
+        <div className="mb-4">
+          <EnablePushButton onToken={saveCustomerToken}
+            label={o.pricing_status === 'pending_quote' ? 'نبّهني لما السعر يجهز' : 'نبّهني لما الطلب يتحرك'} />
+        </div>
       )}
 
       {isCancelled(o.status) || cancelled ? (
@@ -660,8 +753,10 @@ export default function Track() {
               )
             })()}
           </div>
-          {o.status === 'awaiting_quote' && (
-            <p className="text-sm text-mist">لسه بنراجع الأصناف وهنتصل بيك بالسعر</p>
+          {quote?.state === 'offered' ? (
+            <p className="text-sm text-sea">السعر جاهز ومستني موافقتك</p>
+          ) : o.status === 'awaiting_quote' && (
+            <p className="text-sm text-mist">بنراجع الأصناف دلوقتي.</p>
           )}
           {o.status === 'Driver_Searching' && (
             <p className="text-sm text-mist">بندوّر على مندوب قريب منك</p>
@@ -740,32 +835,6 @@ export default function Track() {
             ))}
           </div>
 
-          {/* THE ASK THAT WAS NEVER MADE.
-           *
-           * Every customer notification the server can send -- order accepted,
-           * food ready, rider on the way, rider at your door, delivered --
-           * guards on `orders.push_token is null` and returns. On 2026-08-07
-           * that column had NEVER been non-null: `select count(push_token) from
-           * orders` returned 0 across every order ever placed. All of it was
-           * dead code in production.
-           *
-           * The reason was here. Track called registerPush(), which by design
-           * never prompts -- it only refreshes a token when permission is
-           * already granted -- and no customer surface anywhere in the app
-           * offered the prompt. Permission could not become granted through
-           * Salka, so the refresh had nothing to refresh, forever.
-           *
-           * Placed after the progress bar, not on mount: the customer has just
-           * watched the stages and the question "do you want to be told when it
-           * moves?" answers itself here. Asking on load is how an origin gets
-           * denied permanently. EnablePushButton renders nothing once granted.
-           */}
-          {current !== 'Delivered' && !isCancelled(o.status) && (
-            <div className="mt-3">
-              <EnablePushButton onToken={saveCustomerToken} label="نبّهني لما الطلب يتحرك" />
-            </div>
-          )}
-
           {/* The stage-by-stage story, in the order it actually happens. The
               server now distinguishes awaiting_quote / Scheduled /
               Driver_Searching / No_Driver_Found, so there is something real to
@@ -820,15 +889,26 @@ export default function Track() {
       )}
 
       {/* address */}
-      <div className="card p-4 mb-4 flex items-start gap-3">
+      <div className="card p-4 mb-4">
+        <div className="flex items-start gap-3">
         <span className="w-9 h-9 rounded-md bg-sea/10 text-sea grid place-items-center shrink-0"><Icon name="locationDot" size="sm" /></span>
         <div>
           <p className="font-semibold text-sm">{o.zone}</p>
-          <p className="text-sm text-mist">وحدة {o.unit_number}{o.address_notes ? `: ${o.address_notes}` : ''}</p>
+          <p className="text-sm text-mist">وحدة {o.unit_number}</p>
           {o.customer_note?.trim() && (
             <p className="text-sm text-mist mt-1"><Icon name="penToSquare" size="xs" className="inline-block align-[-0.15em] me-1" />{o.customer_note}</p>
           )}
         </div>
+        </div>
+        {o.address_notes && (
+          <div className="mt-3 pt-3 border-t border-line flex items-start gap-2.5">
+            <Icon name="chatCircle" size="sm" className="text-mist shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-sm">ملاحظات العنوان</p>
+              <p className="text-sm text-mist mt-0.5">{o.address_notes}</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* payment
@@ -842,43 +922,63 @@ export default function Track() {
           2. An unquoted pharmacy basket has total = the delivery fee alone, so
              a 400 ج.م order announced "65 ج.م -- كاش عند الاستلام", directly
              contradicting the قيد التسعير line further down the same page. */}
-      <div className="card p-4 mb-4">
-        {o.pricing_status === 'pending_quote' && !isCancelled(o.status) && !cancelled ? (
+      <div className="card p-5 mb-4">
+        {quote?.state === 'offered' && !isCancelled(o.status) && !cancelled ? (
           <div>
-            {/* An open-ended wait with no number attached is the worst kind.
-                "خلال ١٠ دقايق" gives it an end, and gives you something to
-                measure the vendor against. */}
-            <p className="font-semibold text-sm"><Icon name="phone" size="sm" className="inline-block align-[-0.15em] me-1" />هنتصل بيك خلال ١٠ دقايق</p>
-            <p className="text-sm text-mist mt-0.5">
-              بنراجع طلبك دلوقتي ونحسب السعر. مفيش دفع لحد ما توافق.
-            </p>
-            <div className="flex justify-between text-xs text-mist mt-2.5 pt-2.5 border-t border-line">
-              <span>التوصيل (مؤكد)</span><span>{o.delivery_fee} ج.م</span>
+            <p className="font-semibold text-sm"><Icon name="receipt" size="sm" className="inline-block align-[-0.15em] me-1" />السعر جاهز — راجعه ووافق</p>
+            <p className="text-sm text-mist mt-0.5">مش هنبدأ التجهيز أو نطلب دفع قبل موافقتك.</p>
+            <QuoteCountdown expiresAt={quote.expires_at} onExpire={() => setQuoteExpired(true)} />
+            <div className="space-y-1.5 text-sm mt-3 pt-3 border-t border-line">
+              <div className="flex justify-between"><span className="text-mist">المنتجات</span><span>{quote.subtotal} ج.م</span></div>
+              <div className="flex justify-between"><span className="text-mist">التوصيل</span><span>{quote.delivery_fee} ج.م</span></div>
+              {quote.service_fee > 0 && <div className="flex justify-between"><span className="text-mist">رسوم الخدمة</span><span>{quote.service_fee} ج.م</span></div>}
+              {quote.promo_discount > 0 && <div className="flex justify-between text-success"><span>الخصم</span><span>-{quote.promo_discount} ج.م</span></div>}
+              {quote.wallet_used > 0 && <div className="flex justify-between text-success"><span>من رصيدك</span><span>-{quote.wallet_used} ج.م</span></div>}
+              <div className="flex justify-between font-bold pt-2 mt-2 border-t border-line"><span>الإجمالي</span><span className="text-sea">{quote.total} ج.م</span></div>
             </div>
-            <div className="flex justify-between text-xs text-mist mt-1">
-              <span>الأصناف</span><span>بالمكالمة</span>
-            </div>
-
-            {errFor('extra') && (
-              <p className="text-xs text-danger bg-dangerbg rounded-xl p-2.5 mt-3">{errFor('extra')}</p>
-            )}
-
-            {addingItem ? (
-              <div className="flex gap-2 mt-3">
-                <input className="field flex-1 !h-10 text-sm" value={extraItem} autoFocus
-                  onChange={e => setExtraItem(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addForgottenItem() } }}
-                  placeholder="مثال: لبن" />
-                <button className="btn-sea !py-2 !px-4 text-sm shrink-0"
-                  disabled={!extraItem.trim() || extraSaving} onClick={addForgottenItem}>
-                  {extraSaving ? '…' : 'ضيف'}
-                </button>
-              </div>
-            ) : (
-              <button className="btn-ghost w-full !py-2.5 text-sm mt-3" onClick={() => setAddingItem(true)}>
-                + نسيت صنف
+            {quote.deposit_required && <p className="text-xs text-mist mt-3">بعد الموافقة هتحتاج تحوّل عربون {quote.deposit_amount} ج.م عشان نأكد الطلب.</p>}
+            {errFor('quote') && <p className="text-xs text-danger bg-dangerbg rounded-xl p-2.5 mt-3">{errFor('quote')}</p>}
+            {quoteExpired && <p className="text-xs text-danger bg-dangerbg rounded-xl p-2.5 mt-3">انتهت صلاحية السعر. هنراجع الطلب ونبعتلك عرض جديد.</p>}
+            <div className="flex gap-2 mt-3">
+              <button className="btn-ghost flex-1 !py-2.5 text-sm" disabled={quoteBusy !== null || quoteExpired} onClick={() => decideQuote('reject')}>
+                {quoteBusy === 'reject' ? '…' : 'مش مناسب'}
               </button>
-            )}
+              <button className="btn-sea flex-1 !py-2.5 text-sm" disabled={quoteBusy !== null || quoteExpired} onClick={() => decideQuote('accept')}>
+                {quoteBusy === 'accept' ? '…' : 'أوافق على السعر'}
+              </button>
+            </div>
+          </div>
+        ) : quote?.state === 'expired' && !isCancelled(o.status) && !cancelled ? (
+          <div>
+            <p className="font-semibold text-sm"><Icon name="clock" size="sm" className="inline-block align-[-0.15em] me-1" />انتهت صلاحية السعر</p>
+            <p className="text-sm text-mist mt-0.5">العرض محفوظ بنفس التفاصيل. لو لسه محتاج الطلب، جدّده من هنا من غير ما نغيّر السعر.</p>
+            <div className="space-y-1.5 text-sm mt-3 pt-3 border-t border-line">
+              <div className="flex justify-between"><span className="text-mist">المنتجات</span><span>{quote.subtotal} ج.م</span></div>
+              <div className="flex justify-between"><span className="text-mist">التوصيل</span><span>{quote.delivery_fee} ج.م</span></div>
+              {quote.service_fee > 0 && <div className="flex justify-between"><span className="text-mist">رسوم الخدمة</span><span>{quote.service_fee} ج.م</span></div>}
+              {quote.promo_discount > 0 && <div className="flex justify-between text-success"><span>الخصم</span><span>-{quote.promo_discount} ج.م</span></div>}
+              {quote.wallet_used > 0 && <div className="flex justify-between text-success"><span>من رصيدك</span><span>-{quote.wallet_used} ج.م</span></div>}
+              <div className="flex justify-between font-bold pt-2 mt-2 border-t border-line"><span>الإجمالي</span><span className="text-sea">{quote.total} ج.م</span></div>
+            </div>
+            {quote.deposit_required && <p className="text-xs text-mist mt-3">بعد الموافقة هتحتاج تحوّل عربون {quote.deposit_amount} ج.م عشان نأكد الطلب.</p>}
+            {errFor('quote') && <p className="text-xs text-danger bg-dangerbg rounded-xl p-2.5 mt-3">{errFor('quote')}</p>}
+            <div className="flex gap-2 mt-3">
+              <button className="btn-ghost flex-1 !py-2.5 text-sm" disabled={quoteBusy !== null || cancelling} onClick={() => setCancelPickerOpen(true)}>مش محتاج الطلب</button>
+              <button className="btn-sea flex-1 !py-2.5 text-sm" disabled={quoteBusy !== null} onClick={renewQuote}>{quoteBusy === 'renew' ? '…' : 'جدّد العرض'}</button>
+            </div>
+            <p className="text-xs text-mist mt-2.5">بعد التجديد قدامك 15 دقيقة تراجع السعر وتوافق. مش هنبدأ تجهيز أو توصيل قبل موافقتك.</p>
+          </div>
+        ) : quote?.state === 'rejected' && !isCancelled(o.status) && !cancelled ? (
+          <div>
+            <p className="font-semibold text-sm"><Icon name="x" size="sm" className="inline-block align-[-0.15em] me-1" />تم رفض السعر</p>
+            <p className="text-sm text-mist mt-0.5">مش هنبدأ الطلب. هنراجع السعر ونبعتلك عرض جديد لو حابب تكمل.</p>
+          </div>
+        ) : o.pricing_status === 'pending_quote' && !isCancelled(o.status) && !cancelled ? (
+          <div>
+            <p className="font-semibold text-sm"><Icon name="bell" size="sm" className="inline-block align-[-0.15em] me-1" />هيوصلك إشعار أول ما السعر يجهز</p>
+            <p className="text-sm text-mist mt-0.5">
+              بنراجع طلبك دلوقتي ونحسب السعر. ممكن نتصل لو احتجنا نوضح حاجة، ومفيش دفع لحد ما توافق.
+            </p>
           </div>
         ) : (isCancelled(o.status) || cancelled) && o.pricing_status === 'pending_quote' ? (
           // Gating the quote panel on "not cancelled" pushed this case into the
@@ -939,6 +1039,7 @@ export default function Track() {
       <div className="card p-4 mb-4">
         {o.order_type === 'custom_request' ? (
           <div className="space-y-2">
+            <p className="font-semibold text-sm mb-3"><Icon name="basket" size="sm" className="inline-block align-[-0.15em] me-1" />تفاصيل طلبك</p>
             {(o.request_items ?? []).map((it, i) => (
               <div key={i} className="flex items-center gap-3 text-sm">
                 <span className="w-6 h-6 rounded-full bg-shellup grid place-items-center text-xs font-bold shrink-0">{it.qty}</span>
@@ -947,6 +1048,25 @@ export default function Track() {
             ))}
             {o.request_notes && <p className="text-sm text-mist italic mt-1">"{o.request_notes}"</p>}
             <Adjustments items={data.items} />
+            {o.pricing_status === 'pending_quote' && !isCancelled(o.status) && !cancelled && (
+              <div className="pt-3 mt-3 border-t border-line">
+                {errFor('extra') && <p className="text-xs text-danger bg-dangerbg rounded-xl p-2.5 mb-2.5">{errFor('extra')}</p>}
+                {addingItem ? (
+                  <div className="flex gap-2">
+                    <input className="field flex-1 !h-10 text-sm" value={extraItem} autoFocus
+                      onChange={e => setExtraItem(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addForgottenItem() } }}
+                      placeholder="مثال: لبن" />
+                    <button className="btn-sea !py-2 !px-4 text-sm shrink-0"
+                      disabled={!extraItem.trim() || extraSaving} onClick={addForgottenItem}>
+                      {extraSaving ? '…' : 'ضيف'}
+                    </button>
+                  </div>
+                ) : (
+                  <button className="btn-ghost w-full !py-2.5 text-sm" onClick={() => setAddingItem(true)}>+ نسيت صنف</button>
+                )}
+              </div>
+            )}
           </div>
         ) : o.order_type === 'pickup_request' ? (
           <>
@@ -1005,7 +1125,7 @@ export default function Track() {
         )}
         <div className="flex justify-between font-bold pt-2 border-t border-line">
           <span>الإجمالي</span>
-          <span className="text-sea">{o.pricing_status === 'pending_quote' ? 'قيد التسعير' : `${o.total} ج.م`}</span>
+          <span className="text-sea">{quote?.state === 'offered' ? 'راجع العرض فوق' : o.pricing_status === 'pending_quote' ? 'قيد التسعير' : `${o.total} ج.م`}</span>
         </div>
       </div>
 
@@ -1088,7 +1208,6 @@ export default function Track() {
           </button>
         </>
       )}
-      {canCancel && <p className="text-center text-xs text-mist mb-4">تقدر تلغي الطلب طول ما لسه قيد الانتظار</p>}
 
       {/* The login ask for in-app-browser traffic, moved here from the arrival
           card in App.tsx -- see lib/inAppBrowser.ts for why it cannot live
@@ -1124,19 +1243,8 @@ export default function Track() {
           </div>
         </div>
       ) : !isCancelled(o.status) && !cancelled ? (
-        <button className="text-danger text-sm underline block mx-auto mb-4" onClick={() => setComplaining(true)}>في مشكلة في الطلب؟</button>
+        <button className="text-mist text-sm block mx-auto mb-4" onClick={() => setComplaining(true)}>في مشكلة في الطلب؟</button>
       ) : null}
-
-      {/* Both of these belong to an order that is still happening.
-          On a CANCELLED order they are noise at best: "في مشكلة في الطلب؟" invites
-          a complaint about an order nobody is working on, and the auto-refresh
-          notice promises live updates for something whose state will never
-          change again. It was also the only remaining line of technical
-          plumbing shown to a customer -- how often the page polls is our
-          problem, not theirs. */}
-      {!isCancelled(o.status) && !cancelled && o.status !== 'Delivered' && (
-        <p className="text-center text-xs text-mist">الصفحة بتتحدث تلقائياً</p>
-      )}
     </div>
   )
 }

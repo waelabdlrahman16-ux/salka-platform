@@ -94,6 +94,16 @@ export interface Discount {
   starts_at: string | null; ends_at: string | null
 }
 export interface RequestItem { name: string; qty: number }
+export type QuoteState = 'not_required' | 'pending' | 'offered' | 'accepted' | 'rejected' | 'expired' | 'superseded'
+export interface OrderQuote {
+  id: number; order_id: number; version: number
+  state: Exclude<QuoteState, 'not_required' | 'pending'>
+  issued_at: string; expires_at: string
+  accepted_at: string | null; rejected_at: string | null
+  subtotal: number; delivery_fee: number; service_fee: number
+  promo_discount: number; wallet_used: number; total: number
+  deposit_required: boolean; deposit_amount: number
+}
 export interface Order {
   id: number; restaurant_id: number
   kitchen_id: number | null; pickup_location_name: string | null; pickup_location_address: string | null
@@ -121,6 +131,9 @@ export interface Order {
   request_notes: string | null
   prescription_path?: string | null
   pricing_status: 'n/a' | 'pending_quote' | 'confirmed'
+  /** Canonical quote state; undefined while querying a legacy projection. */
+  quote_state?: QuoteState | null
+  current_quote_id?: number | null
   payment_mode: 'prepaid' | 'driver_pays' | null
   collect_amount: number | null
   instapay_claimed_at: string | null
@@ -210,7 +223,20 @@ export interface Slot {
   id: number; start_time: string; end_time: string
   capacity: number; remaining: number; scheduled_date: string
 }
-export interface Setting { key: string; value: string; label: string }
+// min_value/max_value/kind are columns the settings table has always had and
+// this type never exposed, so `select('*')` fetched the bounds and the client
+// threw them away. A validate_setting trigger enforces all three server-side,
+// which meant the portal could only ever report "didn't save, try again" for a
+// rule it was holding in its hand.
+export interface Setting {
+  key: string
+  value: string
+  label: string
+  kind?: 'numeric' | 'boolean' | 'text'
+  min_value?: number | null
+  max_value?: number | null
+  required?: boolean
+}
 
 export interface Shift {
   id: number; driver_id: number; shift_date: string

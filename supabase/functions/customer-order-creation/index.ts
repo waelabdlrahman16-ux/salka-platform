@@ -145,7 +145,10 @@ const customerOrderCreation = withSupabase<OrderDatabase>(
       fn = "submit_custom_order"
       args = { ...common, p_request_items: body.items, p_request_notes: notes ?? "", p_slot_id: slotId,
         p_scheduled_date: body.scheduledDate ?? null, p_prescription_path: rx,
-        p_promo_code: customPromo?.toUpperCase() ?? null }
+        p_promo_code: customPromo?.toUpperCase() ?? null,
+        // Intent only. The amount is decided by the quote, from the live
+        // balance, and settled at acceptance -- never taken on the client's word.
+        p_use_wallet: body.useWallet === true }
     } else {
       const notes = optionalText(body.requestNotes, 2000)
       const collect = body.collectAmount == null ? null : Number(body.collectAmount)

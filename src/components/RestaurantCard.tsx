@@ -150,7 +150,7 @@ export default function RestaurantCard({
             image above the fold and lazy actively broke it, while this is a
             list that can run to nine cards. */}
         <img src={sized(cover, IMG.wide)} alt="" loading="lazy" decoding="async"
-          className="absolute inset-0 w-full h-full object-cover"
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity ${closed ? 'opacity-55' : ''}`}
           // A broken cover must not leave a grey rectangle where the food
           // should be. Hiding the <img> reveals the tinted background, which
           // reads as a plain card rather than a failure.
@@ -174,6 +174,12 @@ export default function RestaurantCard({
             {ratingChip}
           </span>
         )}
+
+        {closed && (
+          <span className="absolute bottom-2 left-2.5 text-xs font-semibold text-mist bg-white border border-line rounded-full px-3 py-1 shadow-sm">
+            {status.text}
+          </span>
+        )}
       </div>
 
       {/* Tightened from p-3 and a 36px logo. ~15px of padding that was not
@@ -190,13 +196,6 @@ export default function RestaurantCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-1.5 min-w-0">
             <h2 className={`font-bold text-[15px] truncate leading-tight ${closed ? 'text-mist' : ''}`}>{r.name}</h2>
-            {/* ms-auto: the opening time goes to the far end of the row, where a
-                status belongs, instead of interrupting the name. */}
-            {closed && (
-              <span className="ms-auto shrink-0 text-[10px] font-bold text-mist bg-shellup border border-line rounded-full px-2 py-0.5">
-                {status.text}
-              </span>
-            )}
           </div>
           <div className="mt-0.5">{metaRow(false)}</div>
         </div>

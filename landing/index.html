@@ -3,269 +3,693 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Salka | سالكة — التوصيل يعرف الساحل</title>
-<meta name="description" content="Salka (سالكة) توصل طلبك على طول ساحل العين السخنة — من المطعم لباب الشاليه. تغطية حقيقية على 52 كمبوند، لحد 31 كم." />
+<title>Salka | سالكة — توصيل أكل وسوبر ماركت وصيدلية في العين السخنة</title>
+<meta name="description" content="اطلب أكل، سوبر ماركت، وصيدلية لباب الشاليه في العين السخنة. سالكة بتغطي 62 كمبوند وفندق على طول الساحل، لحد 31 كم — شوف رسوم التوصيل ووقت الوصول لكمبوندك قبل ما تطلب." />
+<link rel="canonical" href="https://gosalka.com/" />
+<meta name="theme-color" content="#063A39" />
 <meta name="facebook-domain-verification" content="lz78x1bjevfuhqj1efukii67ravd1n" />
+
+<meta property="og:type" content="website" />
+<meta property="og:locale" content="ar_EG" />
+<meta property="og:site_name" content="سالكة" />
+<meta property="og:title" content="سالكة — التوصيل يعرف الساحل" />
+<meta property="og:description" content="أكل، سوبر ماركت، وصيدلية لباب الشاليه في العين السخنة. 62 كمبوند متغطّي فعليًا، لحد 31 كم." />
+<meta property="og:url" content="https://gosalka.com/" />
+<meta name="twitter:card" content="summary" />
+
+<script>document.documentElement.className += " js";</script>
+
+<link rel="preconnect" href="https://auth.gosalka.com" crossorigin>
+<link rel="preconnect" href="https://pqpnwxyevrsipklzmwex.supabase.co" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 <style>
   :root{
     --sea:#0A5F5E;
     --sea-deep:#063A39;
     --sea-tint:rgba(10,95,94,.08);
-    --silver:#F4F7F7;
-    --line:#E1E8E7;
-    --ink:#17302E;
-    --mist:#64716F;
+    --sand:#FBF8F3;
+    --card:#FFFFFF;
+    --line:#E6EDEC;
+    --ink:#12211F;
+    --mist:#65736F;
     --gold:#B8934A;
-    --gold-tint:rgba(184,147,74,.12);
+    --sun:#F0A03C;
+    --sun-tint:rgba(240,160,60,.14);
+    --radius:18px;
+    --shadow:0 2px 14px rgba(18,33,31,.06);
+    --shadow-lg:0 18px 44px rgba(6,58,57,.14);
   }
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
-  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} *{animation:none !important; transition:none !important} }
+  @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} *{animation:none !important;transition:none !important} }
   body{
-    margin:0; background:var(--silver); color:var(--ink);
-    font-family:'IBM Plex Sans Arabic', sans-serif;
+    margin:0; background:var(--sand); color:var(--ink);
+    font-family:'IBM Plex Sans Arabic',system-ui,sans-serif;
     line-height:1.7; -webkit-font-smoothing:antialiased;
   }
-  h1,h2,h3,.display{ font-family:'Baloo Bhaijaan 2', sans-serif; font-weight:800; }
-  a{ color:inherit }
-  .wrap{ max-width:1080px; margin:0 auto; padding:0 24px; }
-  .num{ font-variant-numeric:tabular-nums; }
-  .reveal{ opacity:0; transform:translateY(16px); transition:opacity .6s ease, transform .6s ease; }
-  .reveal.in{ opacity:1; transform:none; }
+  h1,h2,h3,.display{ font-family:'Baloo Bhaijaan 2',sans-serif; font-weight:800; margin:0 }
+  a{ color:inherit; text-decoration:none }
+  img,svg{ max-width:100% }
+  .wrap{ max-width:1120px; margin:0 auto; padding:0 20px }
+  .num{ font-variant-numeric:tabular-nums }
+  /* Progressive enhancement: the reveal only exists once the inline script in
+     <head> has marked the document as scripted. Without that guard a JS error,
+     a blocked script or a text-mode reader gets a page whose entire body below
+     the hero is opacity:0 -- invisible content that is still in the DOM, which
+     is worse than no animation at all. */
+  .js .reveal{ opacity:0; transform:translateY(18px); transition:opacity .5s ease,transform .5s ease }
+  .js .reveal.in{ opacity:1; transform:none }
+  :focus-visible{ outline:3px solid var(--sun); outline-offset:2px; border-radius:6px }
+  .skip{ position:absolute; right:-9999px; top:0; background:#fff; padding:10px 16px; z-index:99 }
+  .skip:focus{ right:12px; top:12px }
 
-  /* ---- nav ---- */
-  nav{ display:flex; align-items:center; justify-content:space-between; padding:22px 24px; max-width:1080px; margin:0 auto; }
-  .logo{ display:flex; align-items:center; gap:9px; font-family:'Baloo Bhaijaan 2'; font-weight:800; font-size:21px; color:var(--sea-deep); }
-  .logo svg{ width:28px; height:28px; }
-  .logo .logo-en{ font-family:'Baloo Bhaijaan 2'; font-weight:600; font-size:12px; letter-spacing:.06em; color:var(--mist); text-transform:uppercase; }
-  .cta-btn{
-    background:var(--sea); color:#fff; border:none; padding:12px 26px; border-radius:12px;
-    font-family:'Baloo Bhaijaan 2'; font-weight:700; font-size:15px; text-decoration:none;
-    display:inline-block; transition:background .15s, transform .15s;
+  /* ---------- buttons ---------- */
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    font-family:'Baloo Bhaijaan 2',sans-serif; font-weight:700; font-size:15.5px;
+    padding:13px 26px; border-radius:14px; border:1.5px solid transparent; cursor:pointer;
+    transition:background .15s,border-color .15s,transform .15s,color .15s;
   }
-  .cta-btn:hover{ background:var(--sea-deep); transform:translateY(-1px); }
-  .cta-btn:focus-visible, a:focus-visible, button:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; }
+  .btn-primary{ background:var(--sun); color:#3A2408; box-shadow:0 6px 18px rgba(240,160,60,.32) }
+  .btn-primary:hover{ background:#E5912C; transform:translateY(-1px) }
+  .btn-sea{ background:var(--sea); color:#fff }
+  .btn-sea:hover{ background:var(--sea-deep); transform:translateY(-1px) }
+  .btn-ghost{ background:#fff; color:var(--ink); border-color:var(--line) }
+  .btn-ghost:hover{ border-color:var(--sea); color:var(--sea) }
+  .btn-ghost-light{ background:transparent; color:#fff; border-color:rgba(255,255,255,.34) }
+  .btn-ghost-light:hover{ border-color:#fff; background:rgba(255,255,255,.08) }
+  .btn-block{ width:100%; }
 
-  /* ---- hero ---- */
-  .hero{ padding:56px 0 8px; text-align:center; }
-  .hero .eyebrow{
-    display:inline-flex; align-items:center; gap:7px; background:var(--sea-tint); color:var(--sea-deep); font-weight:600;
-    font-size:13.5px; padding:7px 16px; border-radius:999px; margin-bottom:24px;
+  /* ---------- header ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:50; background:rgba(251,248,243,.86);
+    backdrop-filter:saturate(140%) blur(12px); border-bottom:1px solid transparent;
+    transition:border-color .2s,box-shadow .2s;
   }
-  .hero .eyebrow b{ color:var(--gold); }
-  .hero h1{ font-size:clamp(34px,6vw,58px); color:var(--sea-deep); margin:0 0 18px; line-height:1.22; }
-  .hero p.sub{ font-size:17.5px; color:var(--mist); max-width:540px; margin:0 auto 32px; }
-  .hero-actions{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-bottom:56px; }
-  .btn-ghost{
-    border:1.5px solid var(--line); color:var(--ink); background:#fff; padding:11px 24px;
-    border-radius:12px; font-family:'Baloo Bhaijaan 2'; font-weight:700; font-size:15px; text-decoration:none;
-    transition:border-color .15s;
+  .topbar.stuck{ border-bottom-color:var(--line); box-shadow:0 2px 12px rgba(18,33,31,.05) }
+  .topbar-in{ display:flex; align-items:center; gap:22px; padding:14px 20px; max-width:1120px; margin:0 auto }
+  .logo{ display:flex; align-items:center; gap:9px; font-family:'Baloo Bhaijaan 2'; font-weight:800; font-size:22px; color:var(--sea-deep) }
+  .logo svg{ width:30px; height:30px; flex-shrink:0 }
+  .logo .en{ font-size:11.5px; font-weight:600; letter-spacing:.08em; color:var(--mist); text-transform:uppercase }
+  .navlinks{ display:flex; gap:24px; margin-inline-start:auto; font-size:15px; font-weight:600; color:var(--mist) }
+  .navlinks a:hover{ color:var(--sea) }
+  .topbar .btn{ padding:10px 20px; font-size:14.5px }
+  @media (max-width:860px){ .navlinks{ display:none } .topbar .btn{ margin-inline-start:auto } }
+
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative; overflow:hidden; color:#fff;
+    background:
+      radial-gradient(120% 90% at 88% -10%, rgba(240,160,60,.30) 0%, transparent 55%),
+      radial-gradient(100% 80% at 8% 110%, rgba(10,95,94,.55) 0%, transparent 60%),
+      linear-gradient(160deg,#0A5F5E 0%,#063A39 62%,#04292A 100%);
   }
-  .btn-ghost:hover{ border-color:var(--sea); }
-
-  /* ---- distance gauge (signature element) ---- */
-  .gauge-wrap{ max-width:760px; margin:0 auto; padding:0 16px 8px; }
-  .gauge-label{ display:flex; justify-content:space-between; font-size:12.5px; color:var(--mist); margin-bottom:8px; }
-  .gauge{ position:relative; height:10px; border-radius:999px; background:var(--line); overflow:visible; }
-  .gauge-fill{ position:absolute; inset:0; border-radius:999px;
-    background:linear-gradient(to left, var(--sea) 0%, var(--sea) 32%, var(--gold) 32%, var(--gold) 65%, var(--sea-deep) 65%, var(--sea-deep) 100%); }
-  .gauge-scoot{
-    position:absolute; top:50%; right:0; width:26px; height:26px; margin-top:-13px;
-    background:var(--sea-deep); border-radius:999px; display:grid; place-items:center; color:#fff;
-    box-shadow:0 3px 10px rgba(6,58,57,.3);
-    animation:ride 6s ease-in-out infinite;
+  .hero::after{
+    content:""; position:absolute; inset:auto 0 -1px 0; height:70px;
+    background:linear-gradient(to bottom,transparent,var(--sand));
   }
-  .gauge-scoot svg{ width:14px; height:14px; }
-  @keyframes ride{
-    0%,100%{ right:0; } 50%{ right:calc(100% - 26px); }
+  .hero-in{ position:relative; z-index:1; padding:60px 0 74px; display:grid; grid-template-columns:1.05fr .95fr; gap:48px; align-items:center }
+  @media (max-width:920px){ .hero-in{ grid-template-columns:1fr; gap:34px; padding:44px 0 62px } }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.18); color:#EAF5F3; font-weight:600; font-size:13.5px;
+    padding:7px 15px; border-radius:999px; margin-bottom:20px;
   }
-  .gauge-ticks{ display:flex; justify-content:space-between; margin-top:10px; font-size:12px; color:var(--mist); }
-  .gauge-ticks b{ display:block; color:var(--ink); font-size:14px; font-family:'Baloo Bhaijaan 2'; font-weight:700; }
-  .gauge-ticks .gold-tick b{ color:var(--gold); }
+  .eyebrow b{ color:#FFD79A }
+  .hero h1{ font-size:clamp(34px,5.6vw,58px); line-height:1.2; margin-bottom:16px }
+  .hero h1 .accent{ color:#FFC97A }
+  .hero .sub{ font-size:17.5px; color:rgba(255,255,255,.82); max-width:520px; margin-bottom:26px }
+  .hero-actions{ display:flex; gap:12px; flex-wrap:wrap; margin-bottom:26px }
+  .hero-trust{ display:flex; gap:22px; flex-wrap:wrap; font-size:13.5px; color:rgba(255,255,255,.72) }
+  .hero-trust span{ display:flex; align-items:center; gap:7px }
+  .hero-trust svg{ width:15px; height:15px; color:#FFC97A; flex-shrink:0 }
 
-  /* ---- sections ---- */
-  section{ padding:64px 0; }
-  section h2{ font-size:clamp(24px,4vw,32px); color:var(--sea-deep); margin:0 0 12px; }
-  .kicker{ color:var(--mist); font-weight:700; font-size:12.5px; letter-spacing:.06em; margin:0 0 8px; text-transform:uppercase; }
-  .center{ text-align:center }
-  .lede{ max-width:560px; margin:0 auto 40px; color:var(--mist); font-size:16.5px; }
-
-  /* vendor chips */
-  .vendors{ display:flex; flex-wrap:wrap; gap:12px; justify-content:center; }
-  .vendor-chip{
-    background:#fff; border:1px solid var(--line); border-radius:12px; padding:13px 20px;
-    font-weight:600; font-size:14.5px; box-shadow:0 2px 10px rgba(23,48,46,.04);
-    display:flex; align-items:center; gap:8px;
+  /* ---------- address picker (signature) ---------- */
+  .picker{
+    background:var(--card); color:var(--ink); border-radius:22px; padding:24px;
+    box-shadow:var(--shadow-lg);
   }
-  .vendor-chip .dot{ width:7px; height:7px; border-radius:999px; background:var(--sea); flex-shrink:0; }
-
-  /* steps */
-  .steps{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
-  @media (max-width:720px){ .steps{ grid-template-columns:1fr } }
-  .step{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:26px 22px; }
-  .step .stepnum{
-    width:34px; height:34px; border-radius:10px; background:var(--sea-tint); color:var(--sea);
-    display:grid; place-items:center; font-family:'Baloo Bhaijaan 2'; font-weight:700; margin-bottom:14px; font-size:15px;
+  .picker h2{ font-size:19.5px; color:var(--sea-deep); margin-bottom:4px }
+  .picker .hint{ font-size:13.5px; color:var(--mist); margin:0 0 16px }
+  .field{ position:relative; margin-bottom:14px }
+  .field label{ display:block; font-size:12.5px; font-weight:700; color:var(--mist); margin-bottom:7px }
+  .field select{
+    width:100%; appearance:none; font-family:inherit; font-size:16px; font-weight:600; color:var(--ink);
+    background:var(--sand); border:1.5px solid var(--line); border-radius:14px;
+    padding:14px 46px 14px 16px; cursor:pointer;
   }
-  .step h3{ font-size:17.5px; margin:0 0 6px; color:var(--ink); }
-  .step p{ margin:0; color:var(--mist); font-size:14.5px; }
-
-  /* coverage */
-  .coverage-card{
-    background:var(--sea); color:#fff; border-radius:20px; padding:44px 36px; text-align:center;
+  .field select:hover{ border-color:var(--sea) }
+  .field .pin{ position:absolute; top:38px; right:16px; width:18px; height:18px; color:var(--sea); pointer-events:none }
+  .field .chev{ position:absolute; top:40px; left:16px; width:14px; height:14px; color:var(--mist); pointer-events:none }
+  .quote{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px;
+    background:var(--sea-tint); border-radius:14px; padding:14px 10px; text-align:center;
   }
-  .coverage-card h2{ color:#fff }
-  .coverage-card .kicker{ color:rgba(255,255,255,.75) }
-  .coverage-card .lede{ color:rgba(255,255,255,.8) }
-  .coverage-stat{ font-family:'Baloo Bhaijaan 2'; font-weight:800; font-size:48px; line-height:1; color:#F2D9A8; }
-  .coverage-grid{ display:flex; gap:44px; justify-content:center; flex-wrap:wrap; margin-top:26px; }
-  .coverage-item p{ margin:6px 0 0; opacity:.85; font-size:13.5px; }
+  .quote div span{ display:block; font-size:11.5px; color:var(--mist); margin-top:2px }
+  .quote div b{ font-family:'Baloo Bhaijaan 2'; font-weight:800; font-size:19px; color:var(--sea-deep); line-height:1.25 }
+  .quote.empty{ background:var(--sand); color:var(--mist) }
+  .quote.empty b{ color:var(--mist) }
+  .picker .foot{ margin:12px 0 0; font-size:12.5px; color:var(--mist); text-align:center }
+  .picker .foot a{ color:var(--sea); font-weight:600; text-decoration:underline }
 
-  /* final cta */
-  .final-cta{ text-align:center; padding:64px 0 84px; }
-  .final-cta h2{ font-size:clamp(26px,5vw,38px); }
+  /* ---------- sections ---------- */
+  section{ padding:66px 0 }
+  .sec-head{ margin-bottom:28px }
+  .sec-head.center{ text-align:center; max-width:560px; margin-inline:auto; margin-bottom:36px }
+  .kicker{ color:var(--sun); font-weight:700; font-size:12.5px; letter-spacing:.08em; text-transform:uppercase; margin:0 0 8px }
+  h2{ font-size:clamp(25px,4vw,34px); color:var(--sea-deep); line-height:1.3 }
+  .lede{ color:var(--mist); font-size:16.5px; margin:10px 0 0 }
 
-  footer{ border-top:1px solid var(--line); padding:26px 24px; text-align:center; color:var(--mist); font-size:13px; }
+  /* ---------- categories ---------- */
+  .cats{ display:grid; grid-template-columns:repeat(6,1fr); gap:14px }
+  @media (max-width:900px){ .cats{ grid-template-columns:repeat(3,1fr) } }
+  @media (max-width:520px){ .cats{ grid-template-columns:repeat(2,1fr) } }
+  .cat{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:20px 14px; text-align:center; box-shadow:var(--shadow);
+    transition:transform .16s,box-shadow .16s,border-color .16s;
+  }
+  .cat:hover{ transform:translateY(-3px); box-shadow:0 12px 26px rgba(18,33,31,.09); border-color:transparent }
+  .cat .art{ width:56px; height:56px; margin:0 auto 12px; border-radius:16px; display:grid; place-items:center; font-size:26px; line-height:1 }
+  .cat .art-photo{ overflow:hidden; background:linear-gradient(140deg,#F6E7D3,#EBD3B4) }
+  .cat .art-photo img{ width:100%; height:100%; object-fit:cover; display:block }
+  .cat b{ display:block; font-family:'Baloo Bhaijaan 2'; font-weight:700; font-size:15px }
+  .cat span{ font-size:12.5px; color:var(--mist) }
+
+  /* ---------- vendor rail ---------- */
+  .rail{
+    display:grid; grid-auto-flow:column; grid-auto-columns:minmax(248px,1fr); gap:16px;
+    overflow-x:auto; padding:4px 4px 18px; scroll-snap-type:x mandatory;
+    scrollbar-width:thin;
+  }
+  .rail > *{ scroll-snap-align:start }
+  .vcard{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    overflow:hidden; box-shadow:var(--shadow); display:flex; flex-direction:column;
+    transition:transform .16s,box-shadow .16s;
+  }
+  .vcard:hover{ transform:translateY(-3px); box-shadow:0 12px 26px rgba(18,33,31,.10) }
+  .vcard .thumb{
+    height:132px; position:relative; overflow:hidden;
+    background:linear-gradient(140deg,#F6E7D3,#EBD3B4);
+  }
+  .vcard .thumb img{ width:100%; height:100%; object-fit:cover; display:block }
+  .vcard .thumb .eta{
+    position:absolute; bottom:10px; right:10px; background:rgba(255,255,255,.94); color:var(--ink);
+    font-size:12px; font-weight:700; padding:4px 11px; border-radius:999px;
+  }
+  .vcard .body{ padding:14px 16px 16px }
+  .vcard b{ display:block; font-family:'Baloo Bhaijaan 2'; font-weight:700; font-size:16.5px }
+  .vcard .cuisine{ font-size:13px; color:var(--mist); margin-bottom:10px }
+  .tags{ display:flex; gap:7px; flex-wrap:wrap }
+  .tag{ font-size:11.5px; font-weight:600; color:var(--sea); background:var(--sea-tint); padding:4px 10px; border-radius:999px }
+  .tag.warm{ color:#8A5A12; background:var(--sun-tint) }
+  .rail-note{ font-size:13.5px; color:var(--mist); margin:6px 0 0 }
+
+  /* ---------- steps ---------- */
+  .steps{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px }
+  @media (max-width:760px){ .steps{ grid-template-columns:1fr } }
+  .step{ background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:26px 22px; box-shadow:var(--shadow) }
+  .step .n{
+    width:38px; height:38px; border-radius:12px; background:var(--sea-deep); color:#FFC97A;
+    display:grid; place-items:center; font-family:'Baloo Bhaijaan 2'; font-weight:800; font-size:17px; margin-bottom:14px;
+  }
+  .step h3{ font-size:18px; margin-bottom:6px }
+  .step p{ margin:0; color:var(--mist); font-size:14.5px }
+
+  /* ---------- coverage ---------- */
+  .coverage{
+    background:linear-gradient(150deg,#0A5F5E,#063A39 70%); color:#fff;
+    border-radius:26px; padding:46px 38px; text-align:center;
+  }
+  .coverage h2{ color:#fff }
+  .coverage .lede{ color:rgba(255,255,255,.78); max-width:520px; margin-inline:auto }
+  .stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin:32px 0 26px }
+  @media (max-width:620px){ .stats{ grid-template-columns:1fr; gap:22px } .coverage{ padding:36px 22px } }
+  .stat b{ display:block; font-family:'Baloo Bhaijaan 2'; font-weight:800; font-size:clamp(38px,7vw,50px); line-height:1; color:#FFC97A }
+  .stat span{ font-size:13.5px; opacity:.82 }
+
+  /* ---------- app band ---------- */
+  .app{ display:grid; grid-template-columns:1fr 1fr; gap:44px; align-items:center }
+  @media (max-width:880px){ .app{ grid-template-columns:1fr; gap:30px } }
+  .app ul{ list-style:none; padding:0; margin:20px 0 26px; display:grid; gap:12px }
+  .app li{ display:flex; gap:11px; align-items:flex-start; font-size:15.5px; color:var(--mist) }
+  .app li svg{ width:20px; height:20px; color:var(--sea); flex-shrink:0; margin-top:4px }
+  .phone{
+    max-width:270px; margin:0 auto; background:var(--sea-deep); border-radius:34px; padding:11px;
+    box-shadow:var(--shadow-lg);
+  }
+  .phone-screen{ background:var(--sand); border-radius:25px; overflow:hidden }
+  .phone-top{ background:var(--sea); color:#fff; padding:16px 16px 20px }
+  .phone-top .where{ font-size:11.5px; opacity:.75 }
+  .phone-top .place{ font-family:'Baloo Bhaijaan 2'; font-weight:700; font-size:15.5px }
+  .phone-body{ padding:14px; display:grid; gap:10px }
+  .prow{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px 12px; display:flex; align-items:center; gap:10px }
+  .prow .ic{ width:32px; height:32px; border-radius:9px; display:grid; place-items:center; font-size:16px; flex-shrink:0 }
+  .prow .t{ flex:1; min-width:0 }
+  .prow .t b{ display:block; font-size:13px; font-family:'Baloo Bhaijaan 2'; font-weight:700 }
+  .prow .t span{ font-size:11px; color:var(--mist) }
+  .prow .go{ font-size:11px; font-weight:700; color:var(--sea) }
+  .ptrack{ background:var(--sea-deep); color:#fff; border-radius:12px; padding:12px }
+  .ptrack b{ font-family:'Baloo Bhaijaan 2'; font-weight:700; font-size:12.5px; display:block }
+  .ptrack .bar{ height:5px; border-radius:999px; background:rgba(255,255,255,.2); margin-top:9px; overflow:hidden }
+  .ptrack .bar i{ display:block; height:100%; width:64%; border-radius:999px; background:#FFC97A }
+  .ptrack span{ font-size:10.5px; opacity:.75 }
+
+  /* ---------- faq ---------- */
+  .faq{ max-width:760px; margin-inline:auto; display:grid; gap:12px }
+  .faq details{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:2px 18px; box-shadow:var(--shadow) }
+  .faq summary{
+    cursor:pointer; padding:16px 0; font-family:'Baloo Bhaijaan 2'; font-weight:700; font-size:16px;
+    display:flex; align-items:center; justify-content:space-between; gap:12px; list-style:none;
+  }
+  .faq summary::-webkit-details-marker{ display:none }
+  .faq summary::after{ content:"+"; color:var(--sea); font-size:21px; font-weight:700; flex-shrink:0 }
+  .faq details[open] summary::after{ content:"−" }
+  .faq p{ margin:0 0 16px; color:var(--mist); font-size:15px }
+
+  /* ---------- final cta ---------- */
+  .final{ text-align:center; padding:14px 0 76px }
+  .final h2{ font-size:clamp(27px,5vw,40px); margin-bottom:10px }
+  .final .lede{ margin-bottom:26px }
+
+  /* ---------- footer ---------- */
+  footer{ background:#06211F; color:rgba(255,255,255,.7); padding:44px 0 30px; font-size:14px }
+  .fgrid{ display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:32px; margin-bottom:30px }
+  @media (max-width:760px){ .fgrid{ grid-template-columns:1fr; gap:24px } }
+  footer h3{ color:#fff; font-size:15px; margin-bottom:12px }
+  footer .logo{ color:#fff; margin-bottom:10px }
+  footer .logo .en{ color:rgba(255,255,255,.5) }
+  footer ul{ list-style:none; padding:0; margin:0; display:grid; gap:8px }
+  footer a:hover{ color:#FFC97A }
+  .fbottom{ border-top:1px solid rgba(255,255,255,.12); padding-top:20px; text-align:center; font-size:13px; color:rgba(255,255,255,.5) }
 </style>
 </head>
 <body>
 
-<nav>
-  <div class="logo">
-    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path d="M14 10c-6 0-9 4-9 9s3 8 8 8c6 0 6-6 12-6 5 0 8 4 8 8s-3 9-9 9" stroke="#0A5F5E" stroke-width="5" stroke-linecap="round"/>
-    </svg>
-    سالكة
-    <span class="logo-en">Salka</span>
+<a class="skip" href="#main">تخطَّ إلى المحتوى</a>
+
+<div class="topbar" id="topbar">
+  <div class="topbar-in">
+    <a class="logo" href="/">
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M14 10c-6 0-9 4-9 9s3 8 8 8c6 0 6-6 12-6 5 0 8 4 8 8s-3 9-9 9" stroke="#0A5F5E" stroke-width="5" stroke-linecap="round"/>
+      </svg>
+      سالكة <span class="en">Salka</span>
+    </a>
+    <nav class="navlinks">
+      <a href="#cats">اطلب إيه</a>
+      <a href="#vendors">المطاعم</a>
+      <a href="#coverage">التغطية</a>
+      <a href="#app">التطبيق</a>
+    </nav>
+    <a class="btn btn-primary" href="https://app.gosalka.com">اطلب دلوقتي</a>
   </div>
-  <a class="cta-btn" href="https://app.gosalka.com">اطلب دلوقتي</a>
-</nav>
+</div>
 
 <header class="hero">
-  <div class="wrap">
-    <span class="eyebrow">ساحل العين السخنة — <b>52</b> كمبوند وفندق متغطّي فعليًا</span>
-    <h1>التوصيل يعرف الساحل</h1>
-    <p class="sub">مش تطبيق توصيل عادي بيوريك "خارج نطاق التغطية". سالكة موجودة فعليًا على طول الساحل، وبتوصلك بجد.</p>
-    <div class="hero-actions">
-      <a class="cta-btn" href="https://app.gosalka.com">اطلب دلوقتي</a>
-      <a class="btn-ghost" href="#vendors">شوف المطاعم</a>
-    </div>
-  </div>
-
-  <div class="gauge-wrap reveal">
-    <div class="gauge-label">
-      <span>قريب</span>
-      <span>بعيد على الساحل</span>
-    </div>
-    <div class="gauge">
-      <div class="gauge-fill"></div>
-      <div class="gauge-scoot" aria-hidden="true">
-        <svg viewBox="0 0 48 48" fill="none"><path d="M14 10c-6 0-9 4-9 9s3 8 8 8c6 0 6-6 12-6 5 0 8 4 8 8s-3 9-9 9" stroke="#fff" stroke-width="6" stroke-linecap="round"/></svg>
+  <div class="wrap hero-in">
+    <div>
+      <span class="eyebrow">ساحل العين السخنة — <b>62</b> كمبوند وفندق متغطّي فعليًا</span>
+      <h1>الأكل يوصل لباب <span class="accent">الشاليه</span>.</h1>
+      <p class="sub">مطاعم، سوبر ماركت، وصيدلية — من أول دوم مارينا لحد كاي على بعد 31 كم. مفيش "خارج نطاق التغطية".</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="https://app.gosalka.com">اطلب دلوقتي</a>
+        <a class="btn btn-ghost-light" href="#vendors">شوف المطاعم</a>
+      </div>
+      <div class="hero-trust">
+        <span><svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 1l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L1.5 7.2l5.9-.9z"/></svg> كل كمبوند اتزار واتأكد بالـ GPS</span>
+        <span><svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 1a9 9 0 100 18 9 9 0 000-18zm1 9.4l3.3 2-1 1.6L9 11.5V4.8h2z"/></svg> تتبّع لحظة بلحظة لحد الباب</span>
       </div>
     </div>
-    <div class="gauge-ticks">
-      <div>حتى 10 كم<b>20 دقيقة</b></div>
-      <div class="gold-tick">حتى 20 كم<b>35 دقيقة</b></div>
-      <div>حتى 31 كم<b>45 دقيقة</b></div>
+
+    <div class="picker">
+      <h2>انت فين على الساحل؟</h2>
+      <p class="hint">اختار كمبوندك وشوف رسوم التوصيل ووقت الوصول قبل ما تطلب.</p>
+      <div class="field">
+        <label for="cpick">الكمبوند أو الفندق</label>
+        <svg class="pin" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 1a6 6 0 00-6 6c0 4.4 6 12 6 12s6-7.6 6-12a6 6 0 00-6-6zm0 8.2A2.2 2.2 0 1110 4.8a2.2 2.2 0 010 4.4z"/></svg>
+        <svg class="chev" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 11L2.8 5.8l1.4-1.4L8 8.2l3.8-3.8 1.4 1.4z"/></svg>
+        <select id="cpick" aria-describedby="quote"></select>
+      </div>
+      <div class="quote empty" id="quote" aria-live="polite">
+        <div><b>—</b><span>المسافة</span></div>
+        <div><b>—</b><span>رسوم التوصيل</span></div>
+        <div><b>—</b><span>وقت الوصول</span></div>
+      </div>
+      <a class="btn btn-sea btn-block" id="order" href="https://app.gosalka.com">اطلب دلوقتي</a>
+      <p class="foot">كمبوندك مش في القايمة؟ <a href="/compounds/">شوف الـ62 كلهم</a></p>
     </div>
   </div>
 </header>
 
-<main>
+<main id="main">
 
-  <section id="vendors">
-    <div class="wrap center reveal">
-      <p class="kicker">على الساحل معاك</p>
-      <h2>مطاعمك المفضلة، وأكتر</h2>
-      <p class="lede">من البرجر السريع للمأكولات البحرية، لغاية الصيدلية والسوبر ماركت — كله من مكان واحد قريب منك.</p>
-      <div class="vendors">
-        <span class="vendor-chip"><span class="dot"></span>كنتاكي (KFC)</span>
-        <span class="vendor-chip"><span class="dot"></span>ماكدونالدز</span>
-        <span class="vendor-chip"><span class="dot"></span>هارت أتاك</span>
-        <span class="vendor-chip"><span class="dot"></span>أرابياتا</span>
-        <span class="vendor-chip"><span class="dot"></span>إستاكوزا الدولي (مأكولات بحرية)</span>
-        <span class="vendor-chip"><span class="dot"></span>صيدلية</span>
-        <span class="vendor-chip"><span class="dot"></span>سوبر ماركت</span>
+  <section id="cats">
+    <div class="wrap">
+      <div class="sec-head center reveal">
+        <p class="kicker">اطلب إيه</p>
+        <h2>كل اللي محتاجه في الساحل، من مكان واحد</h2>
+      </div>
+      <div class="cats reveal">
+        <a class="cat" href="https://app.gosalka.com">
+          <div class="art art-photo"><img src="https://pqpnwxyevrsipklzmwex.supabase.co/storage/v1/render/image/public/vendor-assets/restaurants/3/cover-1787128922440.jpg?width=160&height=160&quality=70" alt="برجر مشوي"
+               width="160" height="160" loading="lazy" decoding="async" /></div>
+          <b>مطاعم</b><span>برجر وفراخ ومشويات</span>
+        </a>
+        <a class="cat" href="https://app.gosalka.com">
+          <div class="art art-photo"><img src="https://pqpnwxyevrsipklzmwex.supabase.co/storage/v1/render/image/public/vendor-assets/restaurants/19/cover-1787129076884.jpg?width=160&height=160&quality=70" alt="كشري بلازا"
+               width="160" height="160" loading="lazy" decoding="async" /></div>
+          <b>مصري وكشري</b><span>كشري وكبدة وحواوشي</span>
+        </a>
+        <a class="cat" href="https://app.gosalka.com">
+          <div class="art art-photo"><img src="https://auth.gosalka.com/storage/v1/render/image/public/vendor-assets/menu-items/new/9/1785964122037-1785964122047.jpg?width=160&height=160&quality=70" alt="سينابون"
+               width="160" height="160" loading="lazy" decoding="async" /></div>
+          <b>حلويات ومشروبات</b><span>لأي وقت</span>
+        </a>
+        <a class="cat" href="https://app.gosalka.com">
+          <div class="art" style="background:rgba(96,160,90,.14)">🛒</div>
+          <b>سوبر ماركت</b><span>نواقص الشاليه</span>
+        </a>
+        <a class="cat" href="https://app.gosalka.com">
+          <div class="art" style="background:rgba(214,90,90,.13)">💊</div>
+          <b>صيدلية</b><span>دوا وروشتة</span>
+        </a>
+        <a class="cat" href="https://app.gosalka.com/custom-order">
+          <div class="art" style="background:var(--sea-tint)">✨</div>
+          <b>هنجبلك</b><span>حاجة مش في القايمة</span>
+        </a>
       </div>
     </div>
   </section>
 
-  <section>
+  <section id="vendors" style="padding-top:8px">
     <div class="wrap">
-      <div class="center reveal" style="margin-bottom:32px">
+      <div class="sec-head reveal">
+        <p class="kicker">على الساحل معاك</p>
+        <h2>مطاعمك المفضلة، بتوصل بجد</h2>
+        <p class="lede">أسماء انت عارفها، بتشتغل فعليًا مع سالكة في السخنة.</p>
+      </div>
+      <div class="rail reveal">
+        <a class="vcard" href="https://app.gosalka.com">
+          <div class="thumb">
+            <img src="https://auth.gosalka.com/storage/v1/render/image/public/vendor-assets/menu-items/new/4/1785843315212-1785843315228.jpg?width=500&height=340&quality=70" alt="ساندوتش فول من أرابياتا" width="500" height="340"
+                 loading="lazy" decoding="async" />
+            <span class="eta">20–45 دقيقة</span>
+          </div>
+          <div class="body"><b>أرابياتا</b><div class="cuisine">فطار وشرقي · مكرونة</div>
+            <div class="tags"><span class="tag warm">الأكثر طلبًا</span></div></div>
+        </a>
+        <a class="vcard" href="https://app.gosalka.com">
+          <div class="thumb">
+            <img src="https://pqpnwxyevrsipklzmwex.supabase.co/storage/v1/render/image/public/vendor-assets/restaurants/3/cover-1787128922440.jpg?width=500&height=340&quality=70" alt="هارت أتاك" width="500" height="340"
+                 loading="lazy" decoding="async" />
+            <span class="eta">20–45 دقيقة</span>
+          </div>
+          <div class="body"><b>هارت أتاك</b><div class="cuisine">برجر مشوي · فراخ</div>
+            <div class="tags"><span class="tag warm">مميز على الساحل</span></div></div>
+        </a>
+        <a class="vcard" href="https://app.gosalka.com">
+          <div class="thumb">
+            <img src="https://pqpnwxyevrsipklzmwex.supabase.co/storage/v1/render/image/public/vendor-assets/restaurants/19/cover-1787129076884.jpg?width=500&height=340&quality=70" alt="كشري بلازا" width="500" height="340"
+                 loading="lazy" decoding="async" />
+            <span class="eta">20–45 دقيقة</span>
+          </div>
+          <div class="body"><b>كشري بلازا</b><div class="cuisine">كشري · أكل مصري</div>
+            <div class="tags"><span class="tag">توصيل لباب الشاليه</span></div></div>
+        </a>
+        <a class="vcard" href="https://app.gosalka.com">
+          <div class="thumb">
+            <img src="https://pqpnwxyevrsipklzmwex.supabase.co/storage/v1/render/image/public/vendor-assets/restaurants/2/cover-1786804542041.jpg?width=500&height=340&quality=70" alt="ماكدونالدز" width="500" height="340"
+                 loading="lazy" decoding="async" />
+            <span class="eta">20–45 دقيقة</span>
+          </div>
+          <div class="body"><b>ماكدونالدز</b><div class="cuisine">برجر · وجبات سريعة</div>
+            <div class="tags"><span class="tag">توصيل لباب الشاليه</span></div></div>
+        </a>
+        <a class="vcard" href="https://app.gosalka.com">
+          <div class="thumb">
+            <img src="https://auth.gosalka.com/storage/v1/render/image/public/vendor-assets/menu-items/new/13/1786027471089-1786027471099.jpg?width=500&height=340&quality=70" alt="كريب سوبر كرانشي من ديڤادو" width="500" height="340"
+                 loading="lazy" decoding="async" />
+            <span class="eta">20–45 دقيقة</span>
+          </div>
+          <div class="body"><b>ديڤادو</b><div class="cuisine">كريب · ساندوتشات</div>
+            <div class="tags"><span class="tag">توصيل لباب الشاليه</span></div></div>
+        </a>
+        <a class="vcard" href="https://app.gosalka.com">
+          <div class="thumb">
+            <img src="https://auth.gosalka.com/storage/v1/render/image/public/vendor-assets/menu-items/new/9/1785964122037-1785964122047.jpg?width=500&height=340&quality=70" alt="سينابون" width="500" height="340"
+                 loading="lazy" decoding="async" />
+            <span class="eta">20–45 دقيقة</span>
+          </div>
+          <div class="body"><b>سينابون</b><div class="cuisine">حلويات · قهوة</div>
+            <div class="tags"><span class="tag">حلو بعد الأكل</span></div></div>
+        </a>
+      </div>
+      <p class="rail-note">القايمة الكاملة والأسعار المحدّثة جوّه التطبيق.</p>
+    </div>
+  </section>
+
+  <section style="padding-top:8px">
+    <div class="wrap">
+      <div class="sec-head center reveal">
         <p class="kicker">اطلب في 3 خطوات</p>
         <h2>بسيطة زي ما لازم تكون</h2>
       </div>
       <div class="steps reveal">
         <div class="step">
-          <div class="stepnum">١</div>
+          <div class="n">١</div>
           <h3>اختار مكانك</h3>
-          <p>حدد الكمبوند أو الفندق اللي انت فيه من 52 موقع متأكدين من إحداثياته فعليًا.</p>
+          <p>حدد الكمبوند أو الفندق اللي انت فيه من 62 موقع متأكدين من إحداثياته فعليًا.</p>
         </div>
         <div class="step">
-          <div class="stepnum">٢</div>
+          <div class="n">٢</div>
           <h3>اطلب اللي عايزه</h3>
-          <p>من مطعم، صيدلية، سوبر ماركت — أو اطلب حاجة خاصة مش موجودة في القايمة.</p>
+          <p>من مطعم، صيدلية، أو سوبر ماركت — أو اطلب حاجة خاصة مش موجودة في القايمة.</p>
         </div>
         <div class="step">
-          <div class="stepnum">٣</div>
-          <h3>تابع لحظة بلحظة</h3>
-          <p>هتعرف بالظبط فين طلبك ومتى هيوصلك، لحد ما يوصل باب الشاليه.</p>
+          <div class="n">٣</div>
+          <h3>تابع لحد الباب</h3>
+          <p>هتعرف بالظبط فين طلبك وامتى هيوصل، ومعاك رقم الكابتن لحد ما يوصل.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <section>
+  <section id="coverage">
     <div class="wrap reveal">
-      <div class="coverage-card">
-        <p class="kicker" >تغطية حقيقية، مش خريطة فاضية</p>
+      <div class="coverage">
+        <p class="kicker" style="color:#FFC97A">تغطية حقيقية، مش خريطة فاضية</p>
         <h2>كل رقم هنا حقيقي</h2>
-        <p class="lede">مفيش تخمين ولا مسافات متوقعة — كل كمبوند اتزار فعليًا واتأكد موقعه بالـ GPS.</p>
-        <div class="coverage-grid">
-          <div class="coverage-item">
-            <div class="coverage-stat num">52</div>
-            <p>كمبوند وفندق متأكد من موقعه</p>
+        <p class="lede">مفيش تخمين ولا مسافات متوقعة — كل كمبوند اتزار فعليًا واتأكد موقعه بالـ GPS، ورسوم التوصيل معروفة قبل ما تطلب.</p>
+        <div class="stats">
+          <div class="stat"><b class="num">62</b><span>كمبوند وفندق متأكد من موقعه</span></div>
+          <div class="stat"><b class="num">31</b><span>أبعد كيلومتر بنوصله فعليًا</span></div>
+          <div class="stat"><b class="num">7</b><span>مركبة توصيل بتشتغل يوميًا</span></div>
+        </div>
+        <a class="btn btn-ghost-light" href="/compounds/">شوف كل الكمبوندات ورسومها</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="app" style="padding-top:14px">
+    <div class="wrap app reveal">
+      <div>
+        <p class="kicker">التطبيق</p>
+        <h2>حطّها على شاشتك في ثانية</h2>
+        <p class="lede">سالكة بتشتغل من المتصفح على أي موبايل — مفيش تحميل ولا مساحة. افتح الموقع واضغط «إضافة إلى الشاشة الرئيسية» وهتلاقيها أيقونة زي أي تطبيق.</p>
+        <ul>
+          <li><svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M8 14.2L4.3 10.5l1.4-1.4L8 11.4l6.3-6.3 1.4 1.4z"/></svg> تتبّع الطلب لحظة بلحظة على الخريطة</li>
+          <li><svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M8 14.2L4.3 10.5l1.4-1.4L8 11.4l6.3-6.3 1.4 1.4z"/></svg> إشعار أول ما الكابتن يتحرك ناحيتك</li>
+          <li><svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M8 14.2L4.3 10.5l1.4-1.4L8 11.4l6.3-6.3 1.4 1.4z"/></svg> عناوينك وطلباتك السابقة محفوظة</li>
+        </ul>
+        <a class="btn btn-primary" href="https://app.gosalka.com">افتح سالكة</a>
+      </div>
+      <div class="phone" aria-hidden="true">
+        <div class="phone-screen">
+          <div class="phone-top">
+            <div class="where">التوصيل إلى</div>
+            <div class="place">لافيستا ٦ — 120 ج.م</div>
           </div>
-          <div class="coverage-item">
-            <div class="coverage-stat num">31</div>
-            <p>أبعد كيلومتر بنوصله فعليًا</p>
-          </div>
-          <div class="coverage-item">
-            <div class="coverage-stat num">7</div>
-            <p>مركبة توصيل بتشتغل يوميًا</p>
+          <div class="phone-body">
+            <div class="prow"><div class="ic" style="background:var(--sun-tint)">🍔</div><div class="t"><b>هارت أتاك</b><span>25 دقيقة</span></div><div class="go">اطلب</div></div>
+            <div class="prow"><div class="ic" style="background:rgba(10,95,94,.10)">🍽️</div><div class="t"><b>كشري بلازا</b><span>40 دقيقة</span></div><div class="go">اطلب</div></div>
+            <div class="prow"><div class="ic" style="background:rgba(214,90,90,.13)">💊</div><div class="t"><b>صيدلية</b><span>مفتوحة دلوقتي</span></div><div class="go">اطلب</div></div>
+            <div class="ptrack">
+              <b>طلبك في الطريق</b>
+              <span>الكابتن على بعد 4 كم</span>
+              <div class="bar"><i></i></div>
+            </div>
           </div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <section style="padding-top:14px">
+    <div class="wrap">
+      <div class="sec-head center reveal">
+        <p class="kicker">أسئلة متكررة</p>
+        <h2>اللي بيتسأل كتير</h2>
+      </div>
+      <div class="faq reveal">
+        <details>
+          <summary>بتوصلوا لأي كمبوند في السخنة؟</summary>
+          <p>بنوصّل لـ62 كمبوند وفندق على طول ساحل العين السخنة، من دوم مارينا على بعد 1 كم لحد كاي على بعد 31 كم. كل موقع فيهم اتأكد بالـ GPS، ورسومه مكتوبة في <a href="/compounds/" style="color:var(--sea);text-decoration:underline">صفحة التغطية</a>.</p>
+        </details>
+        <details>
+          <summary>رسوم التوصيل بكام؟</summary>
+          <p>الرسوم بالمسافة: 65 ج.م لحد 5 كم، 120 ج.م لحد 10 كم، 175 ج.م لحد 15 كم، 225 ج.م لحد 20 كم، و350 ج.م لأبعد من كده. اختار كمبوندك فوق وهتشوف رسومك بالظبط قبل ما تطلب.</p>
+        </details>
+        <details>
+          <summary>الطلب بيوصل في قد إيه؟</summary>
+          <p>حوالي 20 دقيقة لحد 10 كم، 35 دقيقة لحد 20 كم، و45 دقيقة لأبعد من كده — بيزيد شوية في أوقات الذروة والويك إند. هتقدر تتابع الطلب على الخريطة طول الوقت.</p>
+        </details>
+        <details>
+          <summary>ينفع أطلب حاجة مش موجودة في القايمة؟</summary>
+          <p>أيوه — ده «هنجبلك». اكتب اللي انت عايزه من أي محل في السخنة، واحنا نجيبه ونسعّره لك قبل ما نتحرك.</p>
+        </details>
+        <details>
+          <summary>بتشتغلوا في الشتا ولا الصيف بس؟</summary>
+          <p>سالكة شغالة على مدار السنة على الساحل، مش موسم الصيف بس. أوقات المطاعم نفسها بتختلف من موسم للتاني وهتلاقيها محدّثة جوّه التطبيق.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="final">
+    <div class="wrap reveal">
+      <h2>جاهز تطلب؟</h2>
+      <p class="lede">سالكة معاك من أول لحظة تطلب لحد ما يوصلك الأكل.</p>
+      <a class="btn btn-primary" href="https://app.gosalka.com">اطلب دلوقتي</a>
     </div>
   </section>
 
 </main>
 
-<section class="final-cta">
-  <div class="wrap reveal">
-    <h2>جاهز تطلب؟</h2>
-    <p class="lede">سالكة معاك من أول لحظة تطلب لحد ما يوصلك الأكل.</p>
-    <a class="cta-btn" href="https://app.gosalka.com">اطلب دلوقتي</a>
-  </div>
-</section>
-
 <footer>
-  © سالكة 2026 — العين السخنة، مصر
+  <div class="wrap">
+    <div class="fgrid">
+      <div>
+        <div class="logo">
+          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M14 10c-6 0-9 4-9 9s3 8 8 8c6 0 6-6 12-6 5 0 8 4 8 8s-3 9-9 9" stroke="#FFC97A" stroke-width="5" stroke-linecap="round"/>
+          </svg>
+          سالكة <span class="en">Salka</span>
+        </div>
+        <p style="margin:0;max-width:320px">توصيل أكل وسوبر ماركت وصيدلية على طول ساحل العين السخنة — لباب الشاليه.</p>
+      </div>
+      <div>
+        <h3>سالكة</h3>
+        <ul>
+          <li><a href="https://app.gosalka.com">اطلب دلوقتي</a></li>
+          <li><a href="/compounds/">الكمبوندات اللي بنوصّلها</a></li>
+          <li><a href="#app">التطبيق</a></li>
+          <li><a href="https://app.gosalka.com/terms">الشروط والأحكام</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3>كمبوندات مطلوبة</h3>
+        <ul>
+          <li><a href="/compounds/بورتو-السخنة-الجولف-باي/">بورتو السخنة</a></li>
+          <li><a href="/compounds/لافيستا-6/">لافيستا</a></li>
+          <li><a href="/compounds/تلال/">تلال</a></li>
+          <li><a href="/compounds/ماونتن-ڤيو/">ماونتن ڤيو</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="fbottom">© سالكة 2026 — العين السخنة، مصر</div>
+  </div>
 </footer>
 
 <script>
+(function(){
+  // Distances and fees come from the same source as /compounds/ -- the pages
+  // built from the surveyed GPS coordinates. Kept in sync by hand today; if
+  // this list and the compounds pages ever disagree, the compounds pages win.
+  var C = [{"n":"لاسيتا","u":"/compounds/لاسيتا/","k":2.5,"f":65,"z":"جنوب السخنة"},{"n":"بيلا فيلو","u":"/compounds/بيلا-فيلو/","k":3.0,"f":65,"z":"جنوب السخنة"},{"n":"جبل بيتش","u":"/compounds/جبل-بيتش/","k":3.0,"f":65,"z":"جنوب السخنة"},{"n":"بورتو السخنة - الأهرامات","u":"/compounds/بورتو-السخنة-الأهرامات/","k":3.5,"f":65,"z":"جنوب السخنة"},{"n":"بورتو السخنة - الهاواين","u":"/compounds/بورتو-السخنة-الهاواين/","k":3.5,"f":65,"z":"جنوب السخنة"},{"n":"بورتو السخنة - الكاريبيان","u":"/compounds/بورتو-السخنة-الكاريبيان/","k":3.5,"f":65,"z":"جنوب السخنة"},{"n":"بورتو السخنة - الهاند فيلا","u":"/compounds/بورتو-السخنة-الهاند-فيلا/","k":3.5,"f":65,"z":"جنوب السخنة"},{"n":"بورتو السخنة - الووتر فرونت","u":"/compounds/بورتو-السخنة-الووتر-فرونت/","k":3.5,"f":65,"z":"جنوب السخنة"},{"n":"بورتو السخنة - الباهامز","u":"/compounds/بورتو-السخنة-الباهامز/","k":3.5,"f":65,"z":"جنوب السخنة"},{"n":"بورتو السخنة - البانوراما","u":"/compounds/بورتو-السخنة-البانوراما/","k":3.5,"f":65,"z":"جنوب السخنة"},{"n":"بورتو السخنة - الحدائق المعلقة","u":"/compounds/بورتو-السخنة-الحدائق-المعلقة/","k":3.5,"f":65,"z":"جنوب السخنة"},{"n":"بورتو السخنة - الايلاند","u":"/compounds/بورتو-السخنة-الايلاند/","k":3.5,"f":65,"z":"جنوب السخنة"},{"n":"فيفا","u":"/compounds/فيفا/","k":4.0,"f":65,"z":"جنوب السخنة"},{"n":"بورتو السخنة - الجولف باي","u":"/compounds/بورتو-السخنة-الجولف-باي/","k":4.0,"f":65,"z":"جنوب السخنة"},{"n":"رايمونت","u":"/compounds/رايمونت/","k":8.0,"f":120,"z":"جنوب السخنة"},{"n":"جروف","u":"/compounds/جروف/","k":8.0,"f":120,"z":"جنوب السخنة"},{"n":"جولدن هوست","u":"/compounds/جولدن-هوست/","k":11.0,"f":175,"z":"جنوب السخنة"},{"n":"مون فيو","u":"/compounds/مون-فيو/","k":13.0,"f":175,"z":"جنوب السخنة"},{"n":"بورتو ساوتش بيتش","u":"/compounds/بورتو-ساوتش-بيتش/","k":15.0,"f":175,"z":"جنوب السخنة"},{"n":"أريج","u":"/compounds/أريج/","k":15.0,"f":175,"z":"جنوب السخنة"},{"n":"لافيستا جاردنز","u":"/compounds/لافيستا-جاردنز/","k":16.0,"f":225,"z":"جنوب السخنة"},{"n":"هافين بيتش","u":"/compounds/هافين-بيتش/","k":18.0,"f":225,"z":"جنوب السخنة"},{"n":"فنار ديلونا","u":"/compounds/فنار-ديلونا/","k":20.0,"f":225,"z":"جنوب السخنة"},{"n":"بوهو","u":"/compounds/بوهو/","k":20.0,"f":225,"z":"جنوب السخنة"},{"n":"تينوكون","u":"/compounds/تينوكون/","k":22.0,"f":350,"z":"جنوب السخنة"},{"n":"فينيسيا","u":"/compounds/فينيسيا/","k":23.0,"f":350,"z":"جنوب السخنة"},{"n":"بيرلاندو","u":"/compounds/بيرلاندو/","k":24.0,"f":350,"z":"جنوب السخنة"},{"n":"أورلاندو ٢","u":"/compounds/أورلاندو-2/","k":28.0,"f":350,"z":"جنوب السخنة"},{"n":"كورنادو ١","u":"/compounds/كورنادو-1/","k":28.0,"f":350,"z":"جنوب السخنة"},{"n":"ماونتن ڤيو","u":"/compounds/ماونتن-ڤيو/","k":29.0,"f":350,"z":"جنوب السخنة"},{"n":"كورونادو","u":"/compounds/كورونادو/","k":29.0,"f":350,"z":"جنوب السخنة"},{"n":"لافيستا ٧","u":"/compounds/لافيستا-7/","k":29.0,"f":350,"z":"جنوب السخنة"},{"n":"كاي","u":"/compounds/كاي/","k":31.0,"f":350,"z":"جنوب السخنة"},{"n":"دوم مارينا","u":"/compounds/دوم-مارينا/","k":1.0,"f":65,"z":"شمال السخنة"},{"n":"بيلا فينتو","u":"/compounds/بيلا-فينتو/","k":4.0,"f":65,"z":"شمال السخنة"},{"n":"توليب الجلالة","u":"/compounds/توليب-الجلالة/","k":7.0,"f":120,"z":"شمال السخنة"},{"n":"بي مونت","u":"/compounds/بي-مونت/","k":7.0,"f":120,"z":"شمال السخنة"},{"n":"تلال","u":"/compounds/تلال/","k":9.0,"f":120,"z":"شمال السخنة"},{"n":"المونت جلالة","u":"/compounds/المونت-جلالة/","k":10.0,"f":120,"z":"شمال السخنة"},{"n":"لافيستا ٦","u":"/compounds/لافيستا-6/","k":10.0,"f":120,"z":"شمال السخنة"},{"n":"لافيستا توباز","u":"/compounds/لافيستا-توباز/","k":11.0,"f":175,"z":"شمال السخنة"},{"n":"لافيستا ١","u":"/compounds/لافيستا-1/","k":12.0,"f":175,"z":"شمال السخنة"},{"n":"جراند اوشن","u":"/compounds/جراند-اوشن/","k":13.0,"f":175,"z":"شمال السخنة"},{"n":"الحجاز ٣","u":"/compounds/الحجاز-3/","k":13.0,"f":175,"z":"شمال السخنة"},{"n":"الحجاز ٢","u":"/compounds/الحجاز-2/","k":14.0,"f":175,"z":"شمال السخنة"},{"n":"السخنة هيلز","u":"/compounds/السخنة-هيلز/","k":14.0,"f":175,"z":"شمال السخنة"},{"n":"لاجون باي","u":"/compounds/لاجون-باي/","k":14.0,"f":175,"z":"شمال السخنة"},{"n":"الحجاز ١","u":"/compounds/الحجاز-1/","k":15.0,"f":175,"z":"شمال السخنة"},{"n":"الحجاز ٤","u":"/compounds/الحجاز-4/","k":16.0,"f":225,"z":"شمال السخنة"},{"n":"هوليداي","u":"/compounds/هوليداي/","k":16.0,"f":225,"z":"شمال السخنة"},{"n":"استلا هايتس","u":"/compounds/استلا-هايتس/","k":18.0,"f":225,"z":"شمال السخنة"},{"n":"لافيستا ٣","u":"/compounds/لافيستا-3/","k":21.0,"f":350,"z":"شمال السخنة"},{"n":"بياسيرا","u":"/compounds/بياسيرا/","k":22.0,"f":350,"z":"شمال السخنة"},{"n":"بيلا رومانس","u":"/compounds/بيلا-رومانس/","k":22.0,"f":350,"z":"شمال السخنة"},{"n":"لاسيرينا بيتش","u":"/compounds/لاسيرينا-بيتش/","k":23.0,"f":350,"z":"شمال السخنة"},{"n":"أزار","u":"/compounds/أزار/","k":24.0,"f":350,"z":"شمال السخنة"},{"n":"قرية برنسيس","u":"/compounds/قرية-برنسيس/","k":24.0,"f":350,"z":"شمال السخنة"},{"n":"لونج بيتش","u":"/compounds/لونج-بيتش/","k":25.0,"f":350,"z":"شمال السخنة"},{"n":"لافيستا ٥","u":"/compounds/لافيستا-5/","k":30.0,"f":350,"z":"شمال السخنة"},{"n":"كورال سي بيتش","u":"/compounds/كورال-سي-بيتش/","k":30.0,"f":350,"z":"شمال السخنة"},{"n":"نيوفينيسيا","u":"/compounds/نيوفينيسيا/","k":30.0,"f":350,"z":"شمال السخنة"},{"n":"لافيستا ٤","u":"/compounds/لافيستا-4/","k":31.0,"f":350,"z":"شمال السخنة"}];
+
+  // Matches the delivery-time bands quoted in the FAQ and previously on the
+  // gauge. Deliberately a range, not a promise of a single number.
+  function eta(km){ return km <= 10 ? '20 دقيقة' : km <= 20 ? '35 دقيقة' : '45 دقيقة'; }
+
+  var sel = document.getElementById('cpick');
+  var quote = document.getElementById('quote');
+  var order = document.getElementById('order');
+  if (!sel || !quote || !order) return;
+
+  var ph = document.createElement('option');
+  ph.value = ''; ph.textContent = 'اختار كمبوندك…';
+  sel.appendChild(ph);
+
+  var zones = {};
+  C.forEach(function(c){ (zones[c.z] = zones[c.z] || []).push(c); });
+  Object.keys(zones).forEach(function(z){
+    var g = document.createElement('optgroup');
+    g.label = z;
+    zones[z].forEach(function(c){
+      var o = document.createElement('option');
+      o.value = c.u; o.textContent = c.n;
+      o.dataset.k = c.k; o.dataset.f = c.f;
+      g.appendChild(o);
+    });
+    sel.appendChild(g);
+  });
+
+  function cell(b, s){
+    var d = document.createElement('div');
+    var bb = document.createElement('b'); bb.textContent = b;
+    var ss = document.createElement('span'); ss.textContent = s;
+    d.appendChild(bb); d.appendChild(ss);
+    return d;
+  }
+
+  sel.addEventListener('change', function(){
+    var o = sel.selectedOptions[0];
+    quote.textContent = '';
+    if (!o || !o.value) {
+      quote.className = 'quote empty';
+      quote.appendChild(cell('—','المسافة'));
+      quote.appendChild(cell('—','رسوم التوصيل'));
+      quote.appendChild(cell('—','وقت الوصول'));
+      order.href = 'https://app.gosalka.com';
+      order.textContent = 'اطلب دلوقتي';
+      return;
+    }
+    var km = parseFloat(o.dataset.k);
+    quote.className = 'quote';
+    quote.appendChild(cell(km + ' كم', 'المسافة'));
+    quote.appendChild(cell(o.dataset.f + ' ج.م', 'رسوم التوصيل'));
+    quote.appendChild(cell(eta(km), 'وقت الوصول'));
+    // Send them to the compound's own page rather than straight into the app:
+    // it carries the full fee table and the vendors that reach it, and it is
+    // the page that ranks for "<compound> توصيل".
+    order.href = o.value;
+    order.textContent = 'اطلب لـ' + o.textContent;
+  });
+})();
+
+(function(){
+  var bar = document.getElementById('topbar');
+  if (bar) {
+    var onScroll = function(){ bar.classList.toggle('stuck', window.scrollY > 8); };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+  }
+
   var els = document.querySelectorAll('.reveal');
   if ('IntersectionObserver' in window) {
     var io = new IntersectionObserver(function(entries){
-      entries.forEach(function(e){ if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
-    }, { threshold: 0.15 });
+      entries.forEach(function(e){ if (e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.12 });
     els.forEach(function(el){ io.observe(el); });
   } else {
     els.forEach(function(el){ el.classList.add('in'); });
   }
+})();
 </script>
 
 </body>

@@ -193,7 +193,11 @@ function BottomNav() {
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
       <div className="max-w-5xl mx-auto grid grid-cols-5">
         {items.map(it => {
+          // Tracking is not a sixth destination or a new custom-order form.
+          // It lives under Account, the reliable place to reopen every running
+          // order. Home is a shortcut to the same screen.
           const active = it.to === '/' ? pathname === '/' : pathname.startsWith(it.to)
+            || (pathname.startsWith('/track/') && it.to === '/profile')
           return (
             <Link key={it.to} to={it.to} aria-current={active ? 'page' : undefined}
               className={`relative flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-semibold

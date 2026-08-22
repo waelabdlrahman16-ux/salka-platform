@@ -5,17 +5,19 @@ import PromoSection from '../components/PromoSection'
 import { type PromoQuote } from '../lib/promoOffers'
 import { customerOrderCreation } from '../lib/customerOrderCreation'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
-import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
+import { serviceFeeFor, useServiceFeePolicy } from '../lib/serviceFee'
 import { displayEgyptPhone, isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { VENDOR_TYPE_ART } from '../lib/categoryArt'
 import Icon from '../components/Icon'
 import { getSessionToken, useCustomerAuth } from '../lib/customerAuth'
+import { rememberLiveOrder } from '../lib/liveOrder'
 import type { Compound, MenuItem, Restaurant, Slot } from '../lib/types'
 import { getCompoundId } from '../lib/place'
 import { publicCatalog } from '../lib/publicCatalog'
 import { customerSessionAccess } from '../lib/customerSessionAccess'
 import { customerAccount } from '../lib/customerAccounts'
 import { cairoToday } from '../lib/cairoTime'
+import { openLabel } from '../lib/vendorHours'
 
 export default function CustomOrder() {
   const fid = useId()
@@ -30,6 +32,11 @@ export default function CustomOrder() {
   /** The vendor read failed. Distinct from "no vendor is open" -- the two
    *  look identical on screen and mean opposite things. */
   const [loadFailed, setLoadFailed] = useState(false)
+  // The chooser displays only vendors that can accept an order now, but the
+  // empty state must still be able to answer *when* to come back. Keep the
+  // server-calculated opening moments separately instead of guessing from the
+  // browser clock or reimplementing the hours rules here.
+  const [closedVendorOpenings, setClosedVendorOpenings] = useState<{ vendor_type: string; next_open_at: string | null }[]>([])
   const [vendor, setVendor] = useState<Restaurant | null>(null)
   // The vendor's known items. Deliberately used as typing shortcuts and NOT as
   // a priced catalogue: of the supermarket's 13 rows, nine are shelf labels
@@ -54,7 +61,6 @@ export default function CustomOrder() {
   const [search, setSearch] = useState('')
   const [popular, setPopular] = useState<string[]>([])
   const [lastRequest, setLastRequest] = useState<{ id: number; created_at: string; request_items: { name: string; qty: number }[] } | null>(null)
-  const [howOpen, setHowOpen] = useState(false)
   // The address form used to sit under the item list on the same screen, so
   // every order -- including a one-line "بنادول" -- was a long scroll past six
   // delivery fields before the send button. It is a separate step now: build
@@ -84,6 +90,10 @@ export default function CustomOrder() {
   const [promoChecking, setPromoChecking] = useState(false)
   const nameEdited = useRef(false)
   const [name, setName] = useState(''); const [phone, setPhone] = useState(() => localStorage.getItem('salka_phone') ?? '')
+  // Wallet on هنجبلك. Intent only -- the amount lands in the quote, computed
+  // server-side from the live balance, and is settled when the customer accepts.
+  const [walletBalance, setWalletBalance] = useState(0)
+  const [useWallet, setUseWallet] = useState(true)
   const [unit, setUnit] = useState('')
   const [addrNotes, setAddrNotes] = useState('')
   const [compoundId, setCompoundId] = useState<number | null>(() => {
@@ -178,9 +188,16 @@ export default function CustomOrder() {
       // line and did not.
       if (r.error || s.error) { setLoadFailed(true); return }
       setLoadFailed(false)
-      const states = new Map(
-        ((s.data ?? []) as { id: number; is_open: boolean; next_open_at: string | null }[]).map(v => [v.id, v]))
-      setVendors(((r.data ?? []) as Restaurant[])
+      const stateRows = (s.data ?? []) as { id: number; is_open: boolean; next_open_at: string | null }[]
+      const states = new Map(stateRows.map(v => [v.id, v]))
+      const restaurantRows = (r.data ?? []) as Restaurant[]
+      setClosedVendorOpenings(restaurantRows.flatMap(v => {
+        const state = states.get(v.id)
+        return state && !state.is_open
+          ? [{ vendor_type: v.vendor_type, next_open_at: state.next_open_at }]
+          : []
+      }))
+      setVendors(restaurantRows
         .filter(v => states.get(v.id)?.is_open)
         .map(v => ({ ...v, is_open: true, next_open_at: states.get(v.id)?.next_open_at ?? null })))
     })
@@ -374,18 +391,16 @@ export default function CustomOrder() {
   }, 0)
   const unpricedCount = lines.filter(l => priceOf(l.name) === null).length
 
-  // confirm_custom_order_price charges the same 8% as place_order, on the same
-  // base (subtotal only) with the same rounding. Until that migration, custom
-  // orders were the one path that never charged it, so this card was allowed to
-  // stop at items + delivery. It is not any more: without this line a 205 ج.م
-  // basket shows «تقريبًا 270» and is billed 286.
+  // The server-side quote snapshot charges the same service fee as checkout,
+  // on the same subtotal-only base and rounding. This remains an estimate here;
+  // the customer sees the immutable authoritative total only in the offer.
   //
-  // The percentage comes from the server, never a hardcoded 0.08 -- same rule
-  // as CartPage and CheckoutPage. serviceFeeFor returns null while it is
-  // unknown, and null is rendered as «…» rather than folded into the total as
-  // a zero, which would understate it exactly as before.
-  const { pct: serviceFeePct } = useServiceFeePct()
-  const serviceFee = serviceFeeFor(knownSubtotal, serviceFeePct)
+  // The percentage and its ceiling come from the server, never a hardcoded 0.08
+  // -- same rule as CartPage and CheckoutPage. serviceFeeFor returns null while
+  // either is unknown, and null is rendered as «…» rather than folded into the
+  // total as a zero, which would understate it exactly as before.
+  const { policy: serviceFeePolicy } = useServiceFeePolicy()
+  const serviceFee = serviceFeeFor(knownSubtotal, serviceFeePolicy)
 
   // selectedCompound, not compoundId. CheckoutPage already learned this: a
   // stored id whose compound has since been deactivated passes a truthiness
@@ -403,6 +418,15 @@ export default function CustomOrder() {
   // signed-in customer with a gap (no saved unit number yet), still gets the
   // form -- a summary card with a blank in it is worse than the form.
   const collapsedAddress = !addressExpanded && !!customer && addressComplete && !!selectedCompound
+
+  // Same lookup CheckoutPage uses. A failed call leaves the balance at 0 and
+  // simply does not offer the option -- it never claims a balance it could not
+  // read, and never silently promises a discount the quote will not contain.
+  useEffect(() => {
+    if (!isValidEgyptPhone(phone)) { setWalletBalance(0); return }
+    customerSessionAccess<number>('wallet', { phone: phone.trim(), sessionToken: getSessionToken() })
+      .then(result => setWalletBalance(result.ok ? (Number(result.data) || 0) : 0))
+  }, [phone])
 
   async function submit() {
     if (!vendor || !valid) return
@@ -422,7 +446,8 @@ export default function CustomOrder() {
       sessionToken: getSessionToken(),
       slotId: slot?.id ?? null,
       scheduledDate: slot?.scheduled_date ?? null,
-      prescriptionPath: rxPath
+      prescriptionPath: rxPath,
+      useWallet: walletBalance > 0 && useWallet
     })
     const data = result.ok ? result.data : null
     const err = result.ok ? null : { message: result.code }
@@ -432,6 +457,7 @@ export default function CustomOrder() {
       return
     }
     localStorage.setItem('salka_phone', phone.trim())
+    rememberLiveOrder(String(data.token))
     nav(`/track/${data.token}`)
   }
 
@@ -448,6 +474,16 @@ export default function CustomOrder() {
     const shownVendors = (typeFilter ? vendors.filter(v => v.vendor_type === typeFilter) : vendors)
       .slice().sort((a, b) => rank(a) - rank(b))
     const pharmacyOpen = vendors.some(v => v.vendor_type === 'pharmacy')
+    const nextClosedOpening = closedVendorOpenings
+      .filter(v => !typeFilter || v.vendor_type === typeFilter)
+      .sort((a, b) => {
+        const aTime = a.next_open_at ? Date.parse(a.next_open_at) : Number.POSITIVE_INFINITY
+        const bTime = b.next_open_at ? Date.parse(b.next_open_at) : Number.POSITIVE_INFINITY
+        return aTime - bTime
+      })[0]
+    const openingText = nextClosedOpening
+      ? openLabel({ is_open: false, next_open_at: nextClosedOpening.next_open_at }).text
+      : null
 
     return (
       <div>
@@ -591,7 +627,7 @@ export default function CustomOrder() {
               <p className="text-sm text-mist mt-1 mb-4">
                 {typeFilter === 'supermarket' && pharmacyOpen
                   ? 'الماركت بيفتح في مواعيد محددة، بس الصيدلية شغالة دلوقتي.'
-                  : 'الصيدلية والماركت بيفتحوا في مواعيد محددة. جرب تاني بعد شوية.'}
+                  : openingText ?? 'الصيدلية والماركت بيفتحوا في مواعيد محددة. جرب تاني بعد شوية.'}
               </p>
               {/* An empty list used to be a screen with nothing on it and
                   nowhere to go. When one of the two is closed the other is
@@ -614,26 +650,13 @@ export default function CustomOrder() {
   // Step 2 -- one simple list, no fake matching
   return (
     <div className="pb-6">
-      {/* Only offer "back to the vendor list" when there IS a list to go back
-          to. With one vendor of this type the customer was brought straight
-          here, so clearing the selection would strand them on a chooser holding
-          a single card -- a screen they never chose to leave. Then رجوع means
-          what it says everywhere else: back where you came from. */}
-      {/* Back to the chooser when there is one, otherwise Home. This used to
-          call nav(-1), which on a cold start from a shared /restaurant/:id link
-          -- redirected here with replace:true, so that entry is gone -- either
-          did nothing or threw the customer out of the app entirely. */}
-      {/* The same gradient band as the list this screen came from, so the two
-          read as one place. Back is the app's icon button rather than a word,
-          the vendor's mark identifies where you are, and the fee sits with the
-          name instead of on a line of its own. */}
+      {/* This always returns to the supermarket/pharmacy chooser. It is a
+          destination choice, not browser history, so it stays predictable on
+          a cold start and after a redirect. */}
       <div className="-mx-4 -mt-6 mb-4 px-4 pt-4 pb-5 bg-gradient-to-b from-shellup to-night">
-        <button aria-label="رجوع" title="رجوع"
+        <button aria-label="اختيار متجر آخر" title="اختيار متجر آخر"
           className="grid place-items-center min-w-[44px] min-h-[44px] -mr-2.5 mb-1"
-          onClick={() => {
-            const siblings = typeFilter ? vendors.filter(v => v.vendor_type === typeFilter) : vendors
-            if (siblings.length > 1) setVendor(null); else nav('/')
-          }}>
+          onClick={() => setVendor(null)}>
           <span className="w-8 h-8 rounded-full bg-white/70 text-slate-700 grid place-items-center">
             <Icon name="chevronLeft" size="sm" className="rotate-180" />
           </span>
@@ -649,56 +672,9 @@ export default function CustomOrder() {
           </span>
           <div className="min-w-0">
             <h1 className="text-xl font-bold truncate leading-tight">{vendor.name}</h1>
-            <p className="text-[13px] text-mist mt-0.5">
-              {deliveryFee !== null ? `${deliveryFee} ج.م توصيل` : 'التوصيل حسب مكانك'}
-            </p>
           </div>
         </div>
       </div>
-
-      {/* The deal being struck, as a card rather than a run-on sentence with a
-          link buried in it. The four-step explainer that used to open this
-          screen is still behind «إزاي بيشتغل؟» -- someone who wants paracetamol
-          should not have to read an explainer to reach a text box. */}
-      <div className="card !bg-shellup p-3.5 mb-4 flex items-start gap-2.5">
-        <Icon name="phone" size="sm" className="text-sea shrink-0 mt-0.5" />
-        <div className="min-w-0">
-          <p className="text-[13px] font-semibold">هنتصل بيك بالسعر قبل ما نجهّز</p>
-          <p className="text-[13px] text-mist mt-0.5">
-            مفيش دفع دلوقتي.{' '}
-            <button className="text-sea font-semibold underline" onClick={() => setHowOpen(o => !o)}>
-              {howOpen ? 'إخفاء' : 'إزاي بيشتغل؟'}
-            </button>
-          </p>
-        </div>
-      </div>
-
-      {howOpen && (
-        <ol className="card p-4 mb-4 text-sm space-y-2 bg-shellup/50">
-          <li className="flex gap-2.5">
-            <span className="shrink-0 w-5 h-5 rounded-full bg-sea text-white grid place-items-center text-[11px] font-bold">1</span>
-            <span>اكتب قايمة اللي محتاجه، مش لازم تكون دقيقة.</span>
-          </li>
-          {scheduled && (
-            <li className="flex gap-2.5">
-              <span className="shrink-0 w-5 h-5 rounded-full bg-sea text-white grid place-items-center text-[11px] font-bold">2</span>
-              <span>اختار فترة التوصيل اللي تناسبك.</span>
-            </li>
-          )}
-          <li className="flex gap-2.5">
-            <span className="shrink-0 w-5 h-5 rounded-full bg-sea text-white grid place-items-center text-[11px] font-bold">{scheduled ? '3' : '2'}</span>
-            <span><b>نتصل بيك بسعر الأصناف قبل ما نجهّز حاجة</b>، تقدر توافق أو تلغي، ومفيش دفع دلوقتي.</span>
-          </li>
-          <li className="flex gap-2.5">
-            <span className="shrink-0 w-5 h-5 rounded-full bg-sea text-white grid place-items-center text-[11px] font-bold">{scheduled ? '4' : '3'}</span>
-            <span>
-              التوصيل{' '}
-              {deliveryFee !== null ? <b className="text-foam">{deliveryFee} ج.م</b> : <span className="text-mist">…</span>}
-              ، ده الرقم الوحيد المعروف من دلوقتي.
-            </span>
-          </li>
-        </ol>
-      )}
 
       {step === 'items' ? (
         <>
@@ -1005,21 +981,21 @@ export default function CustomOrder() {
         </>
       ) : (
         <>
-          <button className="text-sm text-mist hover:text-foam mb-3" onClick={() => setStep('items')}>
-            <Icon name="chevronLeft" size="xs" className="inline-block align-middle ml-1" />رجوع للقايمة
+          {/* Final check before send: the address card answers “where?”, this
+              matching card answers “what?”. It is deliberately a compact
+              summary, not the former duplicate vendor recap. */}
+          <button type="button" className="w-full card p-4 mb-4 text-right flex items-start gap-3 border-sea/40"
+            onClick={() => setStep('items')}>
+            <Icon name="basket" size="md" className="shrink-0 mt-0.5" />
+            <span className="flex-1 min-w-0">
+              <span className="block font-bold text-sm">طلبك</span>
+              <span className="block text-xs text-mist mt-1 leading-5">
+                {rxPath && <span className="block">روشتة مرفوعة</span>}
+                {lines.map(item => <span key={item.name} className="block truncate">{item.name} <bdi dir="ltr">×{item.qty}</bdi></span>)}
+              </span>
+            </span>
+            <span className="text-sea text-xs font-semibold shrink-0 mt-1"><Icon name="pencilSimple" size="xs" className="inline-block align-[-0.15em] me-0.5" />تغيير</span>
           </button>
-
-          {/* A short recap, so the second step is not a form with no memory of
-              what it is for. */}
-          <div className="card p-3.5 mb-4 bg-shellup/60 border-none">
-            <p className="text-sm font-bold mb-1">{vendor.name}</p>
-            <p className="text-xs text-mist">
-              {rxPath && lines.length === 0
-                ? 'روشتة مرفوعة'
-                : [rxPath ? 'روشتة مرفوعة' : null, lines.map(l => `${l.name}${l.qty > 1 ? ` ×${l.qty}` : ''}`).join(' • ')]
-                    .filter(Boolean).join(' • ')}
-            </p>
-          </div>
 
       {/* Six fields collapse to one line as soon as we already know the answers.
           A signed-in customer with a saved address sees a summary and a تغيير
@@ -1095,7 +1071,10 @@ export default function CustomOrder() {
 
       {/* Delivery is known up front even though the items aren't priced yet --
           the customer used to first see this charge on the tracking page. */}
-      {compoundId && (
+      {/* When the estimate is present it already contains delivery, so repeating
+          it in a second card makes the same charge look like it may be added
+          twice. Keep the standalone fee only when there is no estimate yet. */}
+      {compoundId && !(lines.length > 0 && knownSubtotal > 0) && (
         <div className="card p-3.5 mb-3">
           <div className="flex justify-between text-sm">
             <span className="text-mist">رسوم التوصيل{quote ? ` لـ ${quote.compound_name}` : ''}</span>
@@ -1111,6 +1090,22 @@ export default function CustomOrder() {
       <p className="text-sm text-mist bg-shellup/60 rounded-xl p-3 mb-4">
         <Icon name="chatCircle" size="sm" className="inline-block align-[-0.15em] me-1" />لسه مش هتدفع حاجة دلوقتي. هنتصل بيك بسعر الأصناف وتقرر وقتها.
       </p>
+
+      {/* Offered before the price exists, so the wording promises rather than
+          quotes: the exact amount is decided by the quote and shown in the
+          breakdown on the tracking page, where the customer accepts it. */}
+      {walletBalance > 0 && (
+        <div className="card p-4 mb-4">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" className="accent-sea w-4 h-4" checked={useWallet} onChange={e => setUseWallet(e.target.checked)} />
+            <Icon name="wallet" size="md" className="text-mist" />
+            <span className="flex-1">
+              <span className="font-semibold block">استخدم رصيدك</span>
+              <span className="text-xs text-mist">عندك {walletBalance} ج.م — هنخصمها من العرض لما يوصلك</span>
+            </span>
+          </label>
+        </div>
+      )}
 
       {/* priceKnown={false}: there is no price yet, so no honest saving to show.
           The card promises when the discount lands instead of quoting a number
@@ -1131,6 +1126,10 @@ export default function CustomOrder() {
           <button className="underline font-semibold" onClick={retryFee}>جرب تاني</button>
         </p>
       )}
+
+      <p className="text-xs text-mist text-center mb-4">
+        عنوان الطلب بيتثبت وقت الإرسال؛ تعديل حسابك بعد كده بيأثر على الطلبات الجديدة بس.
+      </p>
 
       {error && <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-4">{error}</p>}
 
@@ -1159,8 +1158,8 @@ export default function CustomOrder() {
           // reaches a customer who thinks it is coming now. Name the moment.
           : scheduled && slot
             ? `ابعت الطلب، التسليم ${slot.scheduled_date === cairoToday() ? 'النهاردة' : 'بكرة'} ${slot.start_time.slice(0, 5)}–${slot.end_time.slice(0, 5)}`
-          : rxPath && lines.length === 0 ? 'ابعت الروشتة، هنتصل بيك بالسعر'
-          : 'ابعت الطلب، هنتصل بيك بالسعر'}
+          : rxPath && lines.length === 0 ? 'ابعت الروشتة، هيوصلك إشعار بالسعر'
+          : 'ابعت الطلب، هيوصلك إشعار بالسعر'}
       </button>
         </>
       )}

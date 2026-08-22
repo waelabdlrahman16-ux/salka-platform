@@ -19,7 +19,7 @@ import { adminCompoundAction } from '../lib/adminCompoundActions'
 import { catalogCheck } from '../lib/catalogChecks'
 import { staffOperation } from '../lib/staffOperations'
 import { dispatchOperation } from '../lib/dispatchOperations'
-import { vendorOperation } from '../lib/vendorOperations'
+import { issueQuote, previewQuote } from '../lib/quoteOperations'
 import Icon, { type IconName } from '../components/Icon'
 import BannersAdmin from '../components/BannersAdmin'
 import FeedAdsAdmin from '../components/FeedAdsAdmin'
@@ -306,6 +306,7 @@ export default function Admin() {
   const [lastServiceFeePct, setLastServiceFeePct] = useState<Record<number, number>>({})
   const [globalServiceFeeDraft, setGlobalServiceFeeDraft] = useState<string | null>(null)
   const [lastGlobalServiceFeePct, setLastGlobalServiceFeePct] = useState<number | null>(null)
+  const [globalServiceFeeCapDraft, setGlobalServiceFeeCapDraft] = useState<string | null>(null)
   const [newRestaurant, setNewRestaurant] = useState({ name: '', description: '', category: '', vendor_type: 'restaurant', prep_minutes: '20' })
   const [showAddRestaurant, setShowAddRestaurant] = useState(false)
   const [uploadingImage, setUploadingImage] = useState<string | null>(null)
@@ -635,18 +636,27 @@ export default function Admin() {
     // behind their inbox. Pausing would have silenced all of them -- the first
     // version of this change did, which is the trap it was written to avoid.
     //
-    // So a hidden board still polls, at 60s instead of 15s: alerts still arrive,
-    // a minute late at worst, and idle traffic drops by three quarters. Nothing
-    // here is sub-minute critical -- a stalled order is late by definition.
+    // So a hidden board still polls, at 120s instead of 30s: alerts still arrive,
+    // two minutes late at worst, and idle traffic drops by three quarters.
+    // Nothing here is sub-minute critical -- a stalled order is late by
+    // definition.
+    //
+    // THE INTERVAL IS ALSO A RATE LIMIT. load() fires 4 admin-reports actions
+    // per cycle, each capped at 90 per user per 10 min. At 15s one tab spends
+    // 40 per action, so a third open tab exceeded the cap -- production showed
+    // 381 HTTP 429s in 24h, 310 in one hour, silently freezing the dispatch
+    // board. At 30s a tab costs 20, so three tabs = 60, inside the cap.
+    const VISIBLE_POLL_MS = 30_000
+    const HIDDEN_POLL_MS = 120_000
     let hiddenSince: number | null = null
     const t = setInterval(() => {
       if (document.visibilityState === 'visible') { hiddenSince = null; load(); return }
       const now = Date.now()
       if (hiddenSince === null) hiddenSince = now
-      if (now - hiddenSince >= 60000) { hiddenSince = now; load() }
-    }, 15000)
+      if (now - hiddenSince >= HIDDEN_POLL_MS) { hiddenSince = now; load() }
+    }, VISIBLE_POLL_MS)
 
-    // Coming back refreshes IMMEDIATELY, not up to 15s later. This is a dispatch
+    // Coming back refreshes IMMEDIATELY, not up to 30s later. This is a dispatch
     // board: staff return to it and assign a driver, confirm an InstaPay
     // payment, settle cash. Acting on a snapshot from before they switched away
     // is worth far more than the bandwidth saved. The «آخر تحديث» line under the
@@ -719,8 +729,12 @@ export default function Admin() {
   // -- while simultaneously sitting in the "بانتظار التأكيد" banner awaiting
   // payment confirmation. Failed_Delivery silently re-entered the queue too.
   const undispatchable = new Set<string>([...CLOSED_ORDER_STATUSES, ...UNPAID_ORDER_STATUSES])
+  // The database is the final gate, but do not offer a dispatcher an action
+  // that an unaccepted canonical quote will refuse.
+  const quoteAwaitingCustomer = (o: Order) =>
+    o.order_type === 'custom_request' && o.quote_state != null && o.quote_state !== 'accepted'
   const unassigned = orders
-    .filter(o => !undispatchable.has(o.status) && !assignedOrderIds.has(o.id))
+    .filter(o => !undispatchable.has(o.status) && !quoteAwaitingCustomer(o) && !assignedOrderIds.has(o.id))
     .sort((a, b) => Number(isCooking(a)) - Number(isCooking(b)))
   const active = assignments.filter(a => activeStatuses.includes(a.status))
   const noAnswerReports = assignments.filter(a => a.no_answer_reported_at && !a.no_answer_admin_action)
@@ -1376,25 +1390,103 @@ export default function Admin() {
     load(true)
   }
 
-  // The result was discarded. You agree 400 ج.م on the phone and hang up; the
-  // RPC fails; the order sits unpriced and un-dispatchable while the customer
-  // waits for a driver who can never be assigned.
-  async function confirmCustomOrderPrice(orderId: number, subtotal: number) {
-    if (!subtotal || subtotal <= 0) { setActionError('اكتب سعر صحيح'); return }
-    const res = await vendorOperation('confirmPrice', { orderId, subtotal }, {
-      not_authorized: 'التسعير للإدارة بس',
-      order_not_found: 'الطلب ده مش طلب خاص أو مش موجود',
-      invalid_amount: 'السعر لازم يكون رقم أكبر من صفر',
+  async function renameRestaurant(r: Restaurant) {
+    const name = await promptSheet({
+      title: 'تعديل اسم المكان',
+      body: 'الاسم الجديد هيظهر للعملاء في الطلبات الجاية. الطلبات القديمة محتفظة باسمها وقت الطلب.',
+      initial: r.name,
+      placeholder: 'اسم المكان',
+      validate: value => value.trim().length >= 2 && value.trim().length <= 120 ? null : 'اكتب اسم من حرفين إلى ١٢٠ حرف',
+    })
+    if (name === null || name.trim() === r.name) return
+    await updateRestaurant(r, { name: name.trim() })
+  }
+
+  async function deleteRestaurant(r: Restaurant) {
+    if (!await confirmSheet({
+      title: `حذف ${r.name} نهائيًا؟`,
+      body: 'الحذف متاح فقط لو المكان عمره ما استقبل طلب ومفيش له حساب دخول. لو له تاريخ، استخدم الإخفاء بدل الحذف.',
+      danger: true,
+      confirmLabel: 'حذف نهائي',
+    })) return
+    const res = await adminAccountDriverAction('deleteRestaurant', { restaurantId: r.id }, {
+      restaurant_has_orders: 'المكان له طلبات قديمة، فمسموح إخفاؤه فقط حفاظًا على السجل والحسابات.',
+      restaurant_has_login: 'المكان له حساب دخول. امسح حسابه من «الحسابات» الأول، أو اخفه بدل الحذف.',
+      restaurant_not_found: 'المكان مش موجود، حدّث الصفحة.',
+      admin_only: 'محتاج صلاحية أدمن.',
     })
     if (!res.ok) { setActionError(res.error); return }
     setActionError('')
     load(true)
   }
 
-  async function updateSetting(st: Setting, value: string) {
-    if (value === st.value) return
+  // The result was discarded. You agree 400 ج.م on the phone and hang up; the
+  // RPC fails; the order sits unpriced and un-dispatchable while the customer
+  // waits for a driver who can never be assigned.
+  async function issueCustomOrderQuote(orderId: number, subtotal: number) {
+    if (!subtotal || subtotal <= 0) { setActionError('اكتب سعر صحيح'); return }
+    const preview = await previewQuote(orderId, subtotal)
+    const quoteErrors: Record<string, string> = {
+      not_authorized: 'التسعير للإدارة بس',
+      order_not_found: 'الطلب ده مش طلب خاص أو مش موجود',
+      invalid_amount: 'السعر لازم يكون رقم أكبر من صفر',
+      quote_requires_admin_approval: 'إجمالي العرض ده محتاج موافقة الإدارة',
+    }
+    if (!preview.ok) { setActionError(quoteErrors[preview.code] ?? preview.error); return }
+    const p = preview.data
+    if (!await confirmSheet({
+      title: `العميل هيدفع ${p.total} ج.م`,
+      body: `المنتجات ${p.subtotal} ج.م • التوصيل ${p.delivery_fee} ج.م${p.service_fee ? ` • رسوم الخدمة ${p.service_fee} ج.م` : ''}${p.promo_discount ? ` • خصم ${p.promo_discount} ج.م` : ''}${p.wallet_used ? ` • محفظة ${p.wallet_used} ج.م` : ''}\nالعرض صالح 15 دقيقة، والطلب لن يتحرك قبل موافقة العميل.`,
+      confirmLabel: `ابعت عرض ${p.total} ج.م`,
+    })) return
+    const res = await issueQuote(orderId, subtotal)
+    if (!res.ok) { setActionError(quoteErrors[res.code] ?? res.error); return }
+    // The canonical quote is already written, but a large board refresh can
+    // take several seconds on a slow connection. Reflect the offered state at
+    // once so an operator cannot send a second quote while waiting for that
+    // refresh to complete.
+    setOrders(prev => prev.map(order => order.id === orderId
+      ? { ...order, quote_state: 'offered' }
+      : order))
+    setActionError('')
+    load(true)
+  }
+
+  /** Why a setting was refused, in Arabic, from the row's own bounds.
+   *
+   *  The validate_setting trigger raises 'invalid_setting_value:<key> must be
+   *  at least 5' and similar -- accurate, English, and aimed at a developer.
+   *  The bounds are on the row we already hold, so the reason is rebuilt here
+   *  rather than parsed out of a server string that was never meant for a
+   *  screen. 40 settings rows carry a min or a max today; every one of them
+   *  used to fail as "الإعداد ماتحفظش. جرب تاني", which tells an admin to
+   *  repeat the exact keystrokes that just failed. */
+  function settingRefusalReason(st: Setting, value: string): string {
+    const trimmed = value.trim()
+    if (st.kind === 'numeric' || st.min_value != null || st.max_value != null) {
+      if (!/^-?\d+(\.\d+)?$/.test(trimmed)) return `"${st.label || st.key}" لازم يكون رقم`
+      const n = Number(trimmed)
+      if (st.min_value != null && n < st.min_value) return `أقل قيمة مسموحة ${st.min_value}`
+      if (st.max_value != null && n > st.max_value) return `أكبر قيمة مسموحة ${st.max_value}`
+    }
+    if (st.kind === 'boolean' && trimmed !== 'true' && trimmed !== 'false') {
+      return `"${st.label || st.key}" لازم يكون مفعّل أو مقفول`
+    }
+    return 'الإعداد ماتحفظش. جرب تاني'
+  }
+
+  /** `revert` puts the box back to the stored value when the server refuses.
+   *  Without it the screen keeps showing the number that was rejected while the
+   *  database holds the old one, so the portal quietly disagrees with itself --
+   *  and the next person to read that screen believes the wrong number. */
+  async function updateSetting(st: Setting, value: string, revert?: HTMLInputElement) {
+    if (value.trim() === st.value) return
     const { error } = await supabase.from('settings').update({ value }).eq('key', st.key)
-    if (error) { setActionError('الإعداد ماتحفظش. جرب تاني'); return }
+    if (error) {
+      setActionError(settingRefusalReason(st, value))
+      if (revert) revert.value = st.value
+      return
+    }
     setActionError('')
     load(true)
   }
@@ -1415,6 +1507,21 @@ export default function Admin() {
     await updateSetting(st, String(pct))
     if (pct > 0) setLastGlobalServiceFeePct(pct)
     setGlobalServiceFeeDraft(null)
+  }
+
+  /** The ceiling on the same card as the percentage, deliberately. Left in the
+   *  generic list below it would sit rows away from the number it modifies, and
+   *  a percentage read without its cap is a fee nobody can predict. */
+  async function commitGlobalServiceFeeCap() {
+    const st = settings.find(s => s.key === 'service_fee_max_egp')
+    if (!st) return
+    const raw = (globalServiceFeeCapDraft ?? st.value).trim()
+    if (!/^\d+(\.\d+)?$/.test(raw)) { setActionError('الحد الأقصى لازم يكون رقم'); setGlobalServiceFeeCapDraft(null); return }
+    const cap = Number(raw)
+    if (cap < 0) { setActionError('الحد الأقصى لازم يكون صفر أو أكتر'); return }
+    if (String(cap) === st.value) { setGlobalServiceFeeCapDraft(null); return }
+    await updateSetting(st, String(cap))
+    setGlobalServiceFeeCapDraft(null)
   }
 
   async function toggleGlobalServiceFee() {
@@ -1879,7 +1986,11 @@ export default function Admin() {
                       {orderStatusLabel(o.status)}
                     </span>
                   </div>
-                  {full?.pricing_status === 'pending_quote' && (
+                  {full?.quote_state === 'offered' ? (
+                    <p className="text-xs text-sea font-semibold mt-1.5 bg-sea/10 rounded-lg px-2 py-1">
+                      <Icon name="clock" size="sm" className="inline-block align-[-0.15em] me-1" />العرض اتبعت ومستني موافقة العميل قبل ما الطلب يتحرك
+                    </p>
+                  ) : full?.pricing_status === 'pending_quote' && (
                     <p className="text-xs text-coral-700 font-semibold mt-1.5 bg-coral-100 rounded-lg px-2 py-1">
                       <Icon name="receipt" size="sm" className="inline-block align-[-0.15em] me-1" />واقف عليك إنت، الطلب ده محتاج تسعير قبل ما أي مندوب يقدر ياخده
                     </p>
@@ -1901,11 +2012,17 @@ export default function Admin() {
                       and for that the only option was "افتح الطلب", i.e. go and
                       find it in another tab. Every reason an order can be stuck
                       now has its own way out, right here. */}
+                  {/* A note, not an action -- it used to sit inside the button
+                      row with w-full, which pushed اتصل بالعميل / افتح الطلب /
+                      إلغاء الطلب onto their own lines and read as "no actions". */}
+                  {full?.status === 'awaiting_payment' && full.instapay_claimed_at == null && (
+                    <p className="text-xs text-mist mt-1.5">مستني العميل يؤكد إنه حوّل قبل ما تراجع الدفع.</p>
+                  )}
                   <div className="flex gap-2 mt-2.5 flex-wrap">
                     <a className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem] text-center" href={telUrl(o.customer_phone ?? '')}>اتصل بالعميل</a>
 
                     {/* Stuck on YOU: it needs a price. */}
-                    {full?.pricing_status === 'pending_quote' && (
+                    {full?.pricing_status === 'pending_quote' && full.quote_state !== 'offered' && (
                       <button className="btn-sea !py-1.5 text-xs flex-1 min-w-[7rem]"
                         onClick={() => { setTab('orders'); setOrderStatusFilter('all'); setOrderQuery(`#${o.id}`) }}>
                         <Icon name="receipt" size="sm" className="inline-block align-[-0.15em] me-1" />سعّر الطلب
@@ -1913,16 +2030,15 @@ export default function Admin() {
                     )}
 
                     {/* Stuck on YOU: it needs the payment confirming. */}
-                    {full?.status === 'awaiting_payment' && (
+                    {full?.status === 'awaiting_payment' && full.instapay_claimed_at != null && (
                       <button className="btn-sea !py-1.5 text-xs flex-1 min-w-[7rem]"
                         disabled={accountBusy === `instapay-${o.id}`}
                         onClick={() => full && confirmInstapayPayment(full)}>
                         {accountBusy === `instapay-${o.id}` ? '…' : <><Icon name="creditCard" size="sm" className="inline-block align-[-0.15em] me-1" />تأكيد الاستلام</>}
                       </button>
                     )}
-
                     {/* Stuck because nobody has taken it. This is the common one. */}
-                    {!assignment && full && full.status !== 'awaiting_payment' && full.pricing_status !== 'pending_quote' && (
+                    {!assignment && full && full.status !== 'awaiting_payment' && full.pricing_status !== 'pending_quote' && !quoteAwaitingCustomer(full) && (
                       <button className="btn-sea !py-1.5 text-xs flex-1 min-w-[7rem]" onClick={() => setAssigning(full)}>
                         <Icon name="moped" size="sm" className="inline-block align-[-0.15em] me-1" />عيّن مندوب
                       </button>
@@ -2441,21 +2557,18 @@ export default function Admin() {
               {customer(o)}
 
               {/* `pricing_status` does NOT clear when an order is cancelled, so a
-                  cancelled custom order still reads pending_quote forever. This
-                  block was therefore offering a live price box on a dead order --
-                  and confirm_custom_order_price had no status check either, so
-                  typing a number would have rewritten the total of an order the
-                  customer had already walked away from. Order #86 was exactly
-                  this: cancelled at 14:07 and still asking to be priced. */}
-              {o.order_type === 'custom_request' && o.pricing_status === 'pending_quote'
+                  cancelled custom order still reads pending_quote forever. Keep
+                  the quote-issue control off a dead order; pricing now creates
+                  an offer and never advances fulfilment by itself. */}
+              {o.order_type === 'custom_request' && o.pricing_status === 'pending_quote' && o.quote_state !== 'offered'
                 && !isCancelled(o.status) && (
                 <div className="flex items-center gap-2 mt-3">
                   <input type="number" inputMode="decimal" placeholder="السعر بعد المكالمة" aria-label="السعر بعد المكالمة"
                     className="field !py-1.5 text-sm" id={`quote-${o.id}`} />
                   <button className="btn-sea shrink-0 !py-1.5 text-sm" onClick={() => {
                     const el = document.getElementById(`quote-${o.id}`) as HTMLInputElement
-                    confirmCustomOrderPrice(o.id, Number(el.value))
-                  }}>تأكيد السعر</button>
+                    issueCustomOrderQuote(o.id, Number(el.value))
+                  }}>ابعت عرض السعر</button>
                 </div>
               )}
 
@@ -2826,17 +2939,24 @@ export default function Admin() {
                   </div>
                 )}
 
-                {/* Archiving lives HERE, not as a red pill on every collapsed
-                    card. It is rare and destructive; giving it a permanent
-                    header slot made every closed vendor look like two alarms. */}
+                {/* Vendor lifecycle actions stay inside the expanded card: they
+                    are discoverable when managing a place, but never clutter
+                    the high-frequency menu view. Archive preserves history;
+                    permanent deletion is guarded on the server. */}
                 {expanded && (
-                  <div className="mt-3 pt-2.5 border-t border-line flex justify-end">
+                  <div className="mt-3 pt-2.5 border-t border-line flex flex-wrap gap-2 items-center">
+                    <button className="btn-ghost !py-1.5 !px-2.5 text-xs" onClick={() => renameRestaurant(r)}>
+                      <Icon name="penToSquare" size="xs" className="inline-block align-[-0.15em] me-1" />تعديل الاسم
+                    </button>
                     <button
-                      className={`text-xs font-semibold ${r.archived ? 'text-success' : 'text-danger'}`}
+                      className={`text-xs font-semibold min-h-[36px] ${r.archived ? 'text-success' : 'text-danger'}`}
                       onClick={() => archiveRestaurant(r, !r.archived)}>
                       {r.archived
                       ? <><Icon name="arrowUturn" size="sm" className="inline-block align-[-0.15em] me-1" />تفعيل المطعم تاني</>
                       : <><Icon name="prohibit" size="sm" className="inline-block align-[-0.15em] me-1" />إيقاف المطعم، يختفي من التطبيق خالص</>}
+                    </button>
+                    <button className="text-xs text-danger font-semibold min-h-[36px] mr-auto" onClick={() => deleteRestaurant(r)}>
+                      حذف نهائي
                     </button>
                   </div>
                 )}
@@ -2991,6 +3111,20 @@ export default function Admin() {
                       onChange={e => setGlobalServiceFeeDraft(e.target.value)}
                       onBlur={() => commitGlobalServiceFee()} />
                     <span className="text-mist text-sm">%</span>
+                    {settings.some(s => s.key === 'service_fee_max_egp') && (() => {
+                      const cap = settings.find(s => s.key === 'service_fee_max_egp')!
+                      return (
+                        <>
+                          <span className="text-mist text-sm whitespace-nowrap">بحد أقصى</span>
+                          <input type="number" min={0} step="1"
+                            className="field !w-20 !py-1.5 text-center"
+                            value={globalServiceFeeCapDraft ?? cap.value}
+                            onChange={e => setGlobalServiceFeeCapDraft(e.target.value)}
+                            onBlur={() => commitGlobalServiceFeeCap()} />
+                          <span className="text-mist text-sm">ج.م</span>
+                        </>
+                      )
+                    })()}
                   </>
                 )}
               </div>
@@ -3000,19 +3134,26 @@ export default function Admin() {
               seed for a compound added later. Leaving them in the same list as
               live settings invites someone to "fix delivery pricing" here and
               watch nothing change. */}
-          {settings.filter(st => !st.key.startsWith('fee_tier') && st.key !== 'service_fee_percent').map(st => {
+          {settings.filter(st => !st.key.startsWith('fee_tier') && st.key !== 'service_fee_percent' && st.key !== 'service_fee_max_egp').map(st => {
             const isBool = st.value === 'true' || st.value === 'false'
             const on = st.value === 'true'
             return (
               <div key={st.key} className="card p-4 flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-semibold text-sm truncate">{st.label || st.key}</p>
+                  {(st.min_value != null || st.max_value != null) && (
+                    <p className="text-[11px] text-mist">
+                      {st.min_value != null && st.max_value != null
+                        ? `من ${st.min_value} لـ ${st.max_value}`
+                        : st.min_value != null ? `الحد الأدنى ${st.min_value}` : `الحد الأقصى ${st.max_value}`}
+                    </p>
+                  )}
                 </div>
                 {isBool ? (
                   <Toggle on={on} onChange={() => updateSetting(st, on ? 'false' : 'true')} label="مفعّل" labelOff="مقفول" />
                 ) : (
                   <input defaultValue={st.value} className="field !w-24 !py-1.5 text-center"
-                    onBlur={e => updateSetting(st, e.target.value)} />
+                    onBlur={e => updateSetting(st, e.target.value, e.currentTarget)} />
                 )}
               </div>
             )
@@ -3401,10 +3542,18 @@ export default function Admin() {
                       an observer is a distinct read-only role, not a step on this
                       ladder, so the convert button simply does not apply to it. */}
                   {acc.role !== 'observer' && (
-                    <button className="btn-ghost w-full !py-1.5 text-xs mt-2.5"
-                      onClick={() => convertStaffRole(acc.profile_id, acc.role === 'supervisor' ? 'catalog' : 'supervisor')}>
-                      {acc.role === 'supervisor' ? 'رجّعه موظف قوايم' : 'خلّيه مشرف تشغيل'}
-                    </button>
+                    <div className="flex gap-2 mt-2.5">
+                      <button className="btn-ghost flex-1 !py-1.5 text-xs"
+                        onClick={() => convertStaffRole(acc.profile_id, acc.role === 'supervisor' ? 'catalog' : 'supervisor')}>
+                        {acc.role === 'supervisor' ? 'رجّعه موظف قوايم' : 'خلّيه مشرف تشغيل'}
+                      </button>
+                      {acc.role === 'supervisor' && (
+                        <button className="btn-ghost !py-1.5 text-xs" disabled={accountBusy === acc.profile_id}
+                          onClick={() => changeEmail(acc.profile_id, acc.email)}>
+                          تغيير الإيميل
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               ))}

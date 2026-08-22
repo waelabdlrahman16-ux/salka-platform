@@ -132,7 +132,7 @@ export default function EnablePushButton({
   const iosBlock = iosPushBlocker()
   if (support !== 'native' && iosBlock) {
     return (
-      <p className="text-xs text-coral-700 bg-coral-100 rounded-xl p-3 mb-3 leading-relaxed">
+      <p className="text-xs text-coral-700 bg-coral-100 border border-coral-300/70 rounded-xl p-3 mb-3 leading-relaxed">
         {iosBlock === 'not-safari'
           ? <>التنبيهات على الآيفون بتشتغل من <b>سفاري</b> بس. افتح سالكة في سفاري، وبعدين
               اضغط <b>زر المشاركة ⬆️</b> واختار <b>«إضافة إلى الشاشة الرئيسية»</b>. وافتحها
@@ -149,7 +149,7 @@ export default function EnablePushButton({
   // one, which is worse than a clear limitation.
   if (support === 'unsupported' && isIOS()) {
     return (
-      <p className="text-xs text-coral-700 bg-coral-100 rounded-xl p-3 mb-3 leading-relaxed">
+      <p className="text-xs text-coral-700 bg-coral-100 border border-coral-300/70 rounded-xl p-3 mb-3 leading-relaxed">
         التنبيهات محتاجة iOS 16.4 أو أحدث. حدّث الآيفون، وبعدها افتح سالكة من أيقونة الشاشة الرئيسية وفعّل التنبيهات.
       </p>
     )
@@ -167,7 +167,7 @@ export default function EnablePushButton({
   // anything -- a second click would not even produce a dialog.
   if (permission === 'denied') {
     return (
-      <p className="text-xs text-coral-700 bg-coral-100 rounded-xl p-3 mb-3">
+      <p className="text-xs text-coral-700 bg-coral-100 border border-coral-300/70 rounded-xl p-3 mb-3">
         التنبيهات متمنوعة من إعدادات المتصفح. لازم تسمح بيها من إعدادات الموقع عشان توصلك الطلبات وانت مقفل الشاشة.
       </p>
     )

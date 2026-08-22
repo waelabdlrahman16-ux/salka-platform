@@ -23,17 +23,17 @@ export type IconName =
   | 'image' | 'briefcase' | 'wallet' | 'clipboardText'
   | 'bell' | 'phone' | 'thumbsDown' | 'question'
   | 'camera' | 'coins' | 'arrowCounterClockwise' | 'pencilSimple'
-  | 'arrowRight' | 'user' | 'hourglass' | 'flask'
-  | 'van' | 'moon' | 'gear' | 'arrowUturn'
-  | 'megaphone' | 'storefront' | 'speakerSlash' | 'link'
-  | 'chartLineDown' | 'arrowDown' | 'trash' | 'folders'
-  | 'bellRinging' | 'siren' | 'mobileSlash' | 'handPointing'
-  | 'car' | 'trafficSignal' | 'users' | 'chartBar'
-  | 'thumbsUp' | 'prohibit' | 'note' | 'stethoscope'
-  | 'handSoap' | 'basket' | 'sprayBottle' | 'umbrella'
-  | 'baby' | 'carrot' | 'cheese' | 'asclepius'
-  | 'caretDown' | 'caretUp' | 'checkCircle' | 'motorcycle'
-  | 'calendarCheck'
+  | 'arrowRight' | 'signOut' | 'user' | 'hourglass'
+  | 'flask' | 'van' | 'moon' | 'gear'
+  | 'arrowUturn' | 'megaphone' | 'storefront' | 'speakerSlash'
+  | 'link' | 'chartLineDown' | 'arrowDown' | 'trash'
+  | 'folders' | 'bellRinging' | 'siren' | 'mobileSlash'
+  | 'handPointing' | 'car' | 'trafficSignal' | 'users'
+  | 'chartBar' | 'thumbsUp' | 'prohibit' | 'note'
+  | 'stethoscope' | 'handSoap' | 'basket' | 'sprayBottle'
+  | 'umbrella' | 'baby' | 'carrot' | 'cheese'
+  | 'asclepius' | 'caretDown' | 'caretUp' | 'checkCircle'
+  | 'motorcycle' | 'calendarCheck'
 
 
 const BOLD: Record<IconName, string> = {
@@ -82,6 +82,7 @@ const BOLD: Record<IconName, string> = {
   arrowCounterClockwise: 'M228,128a100,100,0,0,1-98.66,100H128a99.39,99.39,0,0,1-68.62-27.29,12,12,0,0,1,16.48-17.45,76,76,0,1,0-1.57-109c-.13.13-.25.25-.39.37L54.89,92H72a12,12,0,0,1,0,24H24a12,12,0,0,1-12-12V56a12,12,0,0,1,24,0V76.72L57.48,57.06A100,100,0,0,1,228,128Z',
   pencilSimple: 'M230.14,70.54,185.46,25.85a20,20,0,0,0-28.29,0L33.86,149.17A19.85,19.85,0,0,0,28,163.31V208a20,20,0,0,0,20,20H92.69a19.86,19.86,0,0,0,14.14-5.86L230.14,98.82a20,20,0,0,0,0-28.28ZM91,204H52V165l84-84,39,39ZM192,103,153,64l18.34-18.34,39,39Z',
   arrowRight: 'M224.49,136.49l-72,72a12,12,0,0,1-17-17L187,140H40a12,12,0,0,1,0-24H187L135.51,64.48a12,12,0,0,1,17-17l72,72A12,12,0,0,1,224.49,136.49Z',
+  signOut: 'M124,216a12,12,0,0,1-12,12H48a12,12,0,0,1-12-12V40A12,12,0,0,1,48,28h64a12,12,0,0,1,0,24H60V204h52A12,12,0,0,1,124,216Zm108.49-96.49-40-40a12,12,0,0,0-17,17L195,116H112a12,12,0,0,0,0,24h83l-19.52,19.51a12,12,0,0,0,17,17l40-40A12,12,0,0,0,232.49,119.51Z',
   user: 'M234.38,210a123.36,123.36,0,0,0-60.78-53.23,76,76,0,1,0-91.2,0A123.36,123.36,0,0,0,21.62,210a12,12,0,1,0,20.77,12c18.12-31.32,50.12-50,85.61-50s67.49,18.69,85.61,50a12,12,0,0,0,20.77-12ZM76,96a52,52,0,1,1,52,52A52.06,52.06,0,0,1,76,96Z',
   hourglass: 'M204,75.64V40a20,20,0,0,0-20-20H72A20,20,0,0,0,52,40V76a20.1,20.1,0,0,0,8,16l48,36L60,164a20.1,20.1,0,0,0-8,16v36a20,20,0,0,0,20,20H184a20,20,0,0,0,20-20V180.36a20.13,20.13,0,0,0-7.94-16L147.9,128l48.16-36.4A20.13,20.13,0,0,0,204,75.64ZM180,212H76V182l52-39,52,39.33Zm0-138.35L128,113,76,74V44H180Z',
   flask: 'M225.15,197.71,164,95.81V44h4a12,12,0,0,0,0-24H88a12,12,0,0,0,0,24h4V95.81L30.85,197.71A20,20,0,0,0,48,228H208a20,20,0,0,0,17.15-30.29ZM140,44V99.14a12,12,0,0,0,1.71,6.17l35.13,58.54c-10.79.86-25.15-1.31-43.42-10.56-14-7.08-27.46-11.33-40.27-12.76l21.14-35.22A12,12,0,0,0,116,99.14V44ZM55.06,204,79,164.19c13-1.11,27.62,2.42,43.62,10.52,19.61,9.92,36.25,13.31,49.85,13.31A75.44,75.44,0,0,0,190.11,186l10.83,18Z',

@@ -111,6 +111,26 @@ export const ERROR_AR: Record<string, string> = {
   order_edit_rate_limit: 'حاولت تضيف أصناف كتير. استنى شوية وجرب تاني',
   daily_order_edit_limit: 'وصلت للحد اليومي لإضافة الأصناف. كلّمنا عشان نساعدك',
   order_edit_failed: 'مقدرناش نضيف الصنف. جرب تاني أو كلّمنا',
+  quote_expired: 'انتهت صلاحية السعر. هنراجع الطلب ونبعتلك سعر جديد',
+  quote_not_current: 'السعر اتغير. حدّث الصفحة وشوف آخر عرض',
+  quote_not_offered: 'السعر ده مش متاح للموافقة دلوقتي',
+  quote_not_found: 'السعر ده مش موجود. حدّث الصفحة وجرب تاني',
+  quote_not_pending: 'الطلب مش مستني تسعير دلوقتي. حدّث الصفحة',
+  quote_requires_admin_approval: 'إجمالي العرض ده محتاج موافقة الإدارة',
+  quote_not_accepted: 'العميل لسه ما وافقش على السعر، مينفعش نبدأ التوصيل',
+  invalid_quote_input: 'راجع السعر وجرب تاني',
+  invalid_idempotency_key: 'حصل عطل مؤقت. حدّث الصفحة وجرب تاني',
+  invalid_quote_token: 'مش مسموح بالعملية دي',
+  // Raised by accept_custom_order_quote when the balance moved between the
+  // quote being issued and the customer accepting it. The frozen total promised
+  // a wallet discount we can no longer fund, and charging a different total is
+  // the surprise the 15-minute quote exists to prevent. Renewing re-prices it.
+  // confirm_custom_order_price is retired: it priced an order without issuing a
+  // quote and left it unable to move. Staff reaching it are on an older screen,
+  // so the message names the screen that works rather than describing a fault.
+  use_quote_flow: 'التسعير بقى من شاشة عرض السعر. حدّث الصفحة واستخدم "ابعت عرض السعر"',
+  wallet_balance_changed: 'رصيدك اتغير بعد ما وصلك العرض. جدّد العرض عشان نحسبه من جديد',
+  quote_transition_failed: 'مقدرناش نحدّث موافقتك على السعر. جرب تاني',
 
   // dispatch / driver
   already_taken: 'الطلب اتاخد من مندوب تاني',
@@ -153,6 +173,13 @@ export const ERROR_AR: Record<string, string> = {
 
   // tips / feedback
   invalid_amount: 'المبلغ مش مظبوط',
+  // Raised by guard_custom_order_quote_dispatch / _fulfilment -- live triggers
+  // on the هنجبلك path. Absent here, a guard doing exactly its job reached staff
+  // as the generic 'حصل خطأ'، which says nothing about what to do next. This is
+  // an ordinary sequencing rule, not a fault. quote_not_accepted is the other
+  // code these guards raise; it is defined with the rest of the quote copy above,
+  // where its message also names the consequence.
+  order_not_paid: 'الطلب لسه مادفعش',
   invalid_fee: 'الرسوم لازم تكون رقم موجب',
   fee_too_large: 'الرقم ده كبير أوي، أقصى رسوم توصيل 2000 ج.م',
   compound_not_found: 'المكان ده مش موجود',

@@ -1,7 +1,8 @@
 # Quote and approval — transition matrix
 
-**Status: specification only.** Nothing in this document has been built, migrated or
-deployed. It describes the target contract and, beside it, what the system does today.
+**Status: specification with a local implementation draft.** The companion migration
+and application patches exist locally only; nothing has been migrated, deployed, or
+changed in production. “Today” below always refers to the production baseline.
 
 Scope: the **Quote dimension** of the canonical order model. This is the first matrix
 because it is the launch blocker — see "The defect" below.
@@ -107,10 +108,10 @@ Eight facets per transition, per the plan's §2.
 | Facet | Contract |
 |---|---|
 | **Actor** | Supervisor or Admin |
-| **Conditions** | `quote_state = 'pending'`; order not cancelled; amount ≥ 0 and within policy ceiling |
+| **Conditions** | `quote_state = 'pending'`; order not cancelled; amount ≥ 0 and within policy ceiling; server assigns an expiry exactly 15 minutes after issue |
 | **DB / audit** | Insert `order_quotes` v1 with the frozen snapshot and `expires_at`; `quote_state = 'offered'`; event `quote.offered` with actor, role, version, amount |
 | **Financial** | None yet. **Issuing a quote takes no money and must not create a payable** |
-| **Notifications** | Customer: push + SMS fallback, "وصلك سعر لطلبك" with the amount and the expiry |
+| **Notifications** | Customer: push, "وصلك سعر لطلبك" with the amount and the 15-minute expiry. SMS fallback remains a separate, unimplemented channel. |
 | **Idempotency** | Re-issuing the same amount within the window returns the existing version rather than creating v2 |
 | **Labels** | Customer: "السعر جاهز — راجعه ووافق" · Vendor: not visible · Ops: "في انتظار موافقة العميل" |
 | **Today** | **DOES NOT EXIST.** `confirm_custom_order_price` jumps straight past this to live. **This is the launch blocker.** |
@@ -171,14 +172,14 @@ Eight facets per transition, per the plan's §2.
 
 | Facet | Contract |
 |---|---|
-| **Actor** | Supervisor or Admin, **with a mandatory reason** |
-| **Conditions** | Accepted but not yet fulfilled; reason present |
-| **DB / audit** | v(n) keeps `accepted_at` as historical fact; v(n+1) issued as `offered`; `quote_state` returns to `offered`; event `quote.reissued_after_acceptance` — flagged for audit review |
-| **Financial** | **Any payment already taken against v(n) is reconciled explicitly** — refunded, or credited to the new balance. Never silently reused |
-| **Notifications** | Customer: **must re-accept**, showing what changed and why. Ops: exception queue |
-| **Idempotency** | Reason + amount + version keyed; a repeat is rejected, not duplicated |
-| **Labels** | Customer: "اتغير سعر طلبك — محتاج موافقتك تاني" · Ops: "أعيد التسعير بعد الموافقة" |
-| **Today** | **THIS IS THE 19 AUGUST BUG, GENERALISED.** `admin_adjust_order` silently changed an accepted price; the discount was deleted from the total on 1 order and understated on 6, for 98.40 EGP against customers. The fix made the recalculation correct. **This transition makes it impossible instead.** |
+| **Actor** | No normal actor; the quote issue operation refuses this transition |
+| **Conditions** | `quote_state = accepted` is terminal for quote pricing. Any post-acceptance commercial change requires an explicit cancellation/refund/reorder policy, not a silent re-quote. |
+| **DB / audit** | No quote version is inserted; the attempted transition is refused. |
+| **Financial** | Existing payment is never silently reused, refunded, or changed by quote pricing. |
+| **Notifications** | None from a refused operation; any future exception workflow must notify the customer separately. |
+| **Idempotency** | A retry remains refused; it cannot create a new offer. |
+| **Labels** | Customer: accepted terms remain authoritative · Ops: use the explicit exception workflow when introduced. |
+| **Today** | **THIS IS THE 19 AUGUST BUG, GENERALISED.** `admin_adjust_order` silently changed an accepted price; the local quote transition guard now makes that impossible rather than trying to repair it through another quote version. |
 
 ### Q9 · `pending` or `offered` → cancelled
 
@@ -218,12 +219,16 @@ Eight facets per transition, per the plan's §2.
 
 ---
 
-## 4. Open questions — needed before build
+## 4. Product decisions
 
-1. **Expiry duration**, and whether an expired quote auto-cancels the order or leaves it re-requestable. Suggest 24h and re-requestable; not decided.
-2. **Does a *lower* price need re-acceptance?** Cheaper is still a change to the agreed contract. Suggest yes, for one rule rather than two.
+1. **Decided: quotes expire after 15 minutes and remain re-requestable.** Expiry
+   does not auto-cancel the order.
+2. **Decided: a *lower* price also needs re-acceptance.** Every material change
+   creates a new immutable version; accepted terms are never repriced in place.
 3. **Vendor lead time.** Moving vendor visibility to Q10 means they learn about orders later than today. That is correct, but it is an operational change they must be told about, not just a code change.
-4. **Policy ceiling on a quote** — is there an amount above which a supervisor cannot issue without admin approval?
+4. **Decided: a Supervisor may issue quotes up to 3,000 EGP.** A higher total
+   requires an Admin; the Class-A setting `quote_admin_approval_ceiling_egp`
+   makes that policy adjustable without a client-side bypass.
 
 ---
 
