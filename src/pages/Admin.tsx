@@ -2012,6 +2012,12 @@ export default function Admin() {
                       and for that the only option was "افتح الطلب", i.e. go and
                       find it in another tab. Every reason an order can be stuck
                       now has its own way out, right here. */}
+                  {/* A note, not an action -- it used to sit inside the button
+                      row with w-full, which pushed اتصل بالعميل / افتح الطلب /
+                      إلغاء الطلب onto their own lines and read as "no actions". */}
+                  {full?.status === 'awaiting_payment' && full.instapay_claimed_at == null && (
+                    <p className="text-xs text-mist mt-1.5">مستني العميل يؤكد إنه حوّل قبل ما تراجع الدفع.</p>
+                  )}
                   <div className="flex gap-2 mt-2.5 flex-wrap">
                     <a className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem] text-center" href={telUrl(o.customer_phone ?? '')}>اتصل بالعميل</a>
 
@@ -2031,10 +2037,6 @@ export default function Admin() {
                         {accountBusy === `instapay-${o.id}` ? '…' : <><Icon name="creditCard" size="sm" className="inline-block align-[-0.15em] me-1" />تأكيد الاستلام</>}
                       </button>
                     )}
-                    {full?.status === 'awaiting_payment' && full.instapay_claimed_at == null && (
-                      <p className="text-xs text-mist w-full">مستني العميل يؤكد إنه حوّل قبل ما تراجع الدفع.</p>
-                    )}
-
                     {/* Stuck because nobody has taken it. This is the common one. */}
                     {!assignment && full && full.status !== 'awaiting_payment' && full.pricing_status !== 'pending_quote' && !quoteAwaitingCustomer(full) && (
                       <button className="btn-sea !py-1.5 text-xs flex-1 min-w-[7rem]" onClick={() => setAssigning(full)}>
