@@ -111,6 +111,17 @@ export const ERROR_AR: Record<string, string> = {
   order_edit_rate_limit: 'حاولت تضيف أصناف كتير. استنى شوية وجرب تاني',
   daily_order_edit_limit: 'وصلت للحد اليومي لإضافة الأصناف. كلّمنا عشان نساعدك',
   order_edit_failed: 'مقدرناش نضيف الصنف. جرب تاني أو كلّمنا',
+  quote_expired: 'انتهت صلاحية السعر. هنراجع الطلب ونبعتلك سعر جديد',
+  quote_not_current: 'السعر اتغير. حدّث الصفحة وشوف آخر عرض',
+  quote_not_offered: 'السعر ده مش متاح للموافقة دلوقتي',
+  quote_not_found: 'السعر ده مش موجود. حدّث الصفحة وجرب تاني',
+  quote_not_pending: 'الطلب مش مستني تسعير دلوقتي. حدّث الصفحة',
+  quote_requires_admin_approval: 'إجمالي العرض ده محتاج موافقة الإدارة',
+  quote_not_accepted: 'العميل لسه ما وافقش على السعر، مينفعش نبدأ التوصيل',
+  invalid_quote_input: 'راجع السعر وجرب تاني',
+  invalid_idempotency_key: 'حصل عطل مؤقت. حدّث الصفحة وجرب تاني',
+  invalid_quote_token: 'مش مسموح بالعملية دي',
+  quote_transition_failed: 'مقدرناش نحدّث موافقتك على السعر. جرب تاني',
 
   // dispatch / driver
   already_taken: 'الطلب اتاخد من مندوب تاني',
@@ -154,10 +165,11 @@ export const ERROR_AR: Record<string, string> = {
   // tips / feedback
   invalid_amount: 'المبلغ مش مظبوط',
   // Raised by guard_custom_order_quote_dispatch / _fulfilment -- live triggers
-  // on the هنجبلك path. Both were absent here, so a guard doing exactly its job
-  // reached staff as the generic 'حصل خطأ'، which says nothing about what to do
-  // next. Both are ordinary sequencing rules, not faults.
-  quote_not_accepted: 'العميل لسه ماوافقش على السعر',
+  // on the هنجبلك path. Absent here, a guard doing exactly its job reached staff
+  // as the generic 'حصل خطأ'، which says nothing about what to do next. This is
+  // an ordinary sequencing rule, not a fault. quote_not_accepted is the other
+  // code these guards raise; it is defined with the rest of the quote copy above,
+  // where its message also names the consequence.
   order_not_paid: 'الطلب لسه مادفعش',
   invalid_fee: 'الرسوم لازم تكون رقم موجب',
   fee_too_large: 'الرقم ده كبير أوي، أقصى رسوم توصيل 2000 ج.م',

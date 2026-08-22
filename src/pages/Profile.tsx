@@ -8,12 +8,15 @@ import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
 import { customerSessionAccess } from '../lib/customerSessionAccess'
 import { customerAccount } from '../lib/customerAccounts'
 import { homeFor, useAuth } from '../lib/auth'
-import { orderStatusLabel } from '../lib/statusLabels'
 import { useSheets } from '../components/ActionSheets'
 import { describeError } from '../lib/rpc'
 import { SUPPORT_WHATSAPP_URL } from '../lib/support'
 import type { Compound } from '../lib/types'
 import { displayEgyptPhone } from '../lib/validation'
+import { quoteSummary } from '../lib/quoteDisplay'
+import type { QuoteState } from '../lib/types'
+import { LIVE_ORDER_DONE } from '../lib/liveOrder'
+import { LiveOrderLink } from '../components/LiveOrderCard'
 
 interface Address {
   id: number; label: string; compound_id: number; compound_name: string
@@ -23,6 +26,7 @@ interface OrderRow {
   id: number; public_token: string; total: number
   status: string; created_at: string; restaurant_name: string
   pricing_status?: 'n/a' | 'pending_quote' | 'confirmed'
+  quote_state?: QuoteState | null
 }
 
 export default function Profile() {
@@ -44,6 +48,8 @@ export default function Profile() {
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [addressError, setAddressError] = useState('')
+  const liveOrders = orders.filter(o => !LIVE_ORDER_DONE.includes(o.status))
+  const pastOrders = orders.filter(o => LIVE_ORDER_DONE.includes(o.status))
 
   async function load() {
     const res = await customerAccount<Address[]>('myAddresses')
@@ -191,12 +197,12 @@ export default function Profile() {
       {sheetElement}
       {/* Names can be corrected directly. Phone changes are hidden below,
           not deleted -- see the note above VerifiedPhoneEditor's old spot. */}
-      <div className="card p-4">
+      <div className="card p-4 min-h-[76px]">
         <div className="flex items-center gap-3">
-          <div className="w-14 h-14 rounded-full bg-sea/10 text-sea grid place-items-center text-xl font-bold shrink-0">
+          <div className="w-[46px] h-[46px] rounded-lg bg-sea/10 text-sea grid place-items-center text-[19px] font-semibold shrink-0">
             {(customer.name || 'ح').trim().charAt(0)}
           </div>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 text-right">
             {editingIdentity ? (
               <IdentityEditor
                 initialName={customer.name ?? ''}
@@ -205,21 +211,24 @@ export default function Profile() {
               />
             ) : (
               <>
-                <p className="font-bold text-lg truncate">{customer.name || 'حسابك'}</p>
-                {customer.email && <p className="text-xs text-mist mt-0.5 truncate" dir="ltr">{customer.email}</p>}
+                <p className="font-medium text-base truncate">{customer.name || 'حسابك'}</p>
                 {customer.phone
                   ? <p className="text-xs text-mist mt-0.5" dir="ltr">{displayEgyptPhone(customer.phone)}</p>
                   : <p className="text-xs text-coral-700 mt-0.5">لسه ما ضفتش رقم موبايل</p>}
               </>
             )}
           </div>
+          {!editingIdentity && (
+            <div className="flex items-center gap-3" dir="ltr">
+              <button aria-label="خروج" title="خروج" className="w-8 h-8 rounded-lg bg-imgbg grid place-items-center text-ink hover:text-danger" onClick={async () => { await logout(); nav('/') }}>
+                <Icon name="signOut" size="sm" />
+              </button>
+              <button aria-label="تعديل الاسم" title="تعديل الاسم" className="w-8 h-8 rounded-lg bg-shellup grid place-items-center text-foam hover:text-sea" onClick={() => setEditingIdentity(true)}>
+                <Icon name="pencilSimple" size="sm" />
+              </button>
+            </div>
+          )}
         </div>
-        {!editingIdentity && (
-          <div className="flex gap-2 mt-3 pt-3 border-t border-line">
-            <button className="btn-ghost flex-1 !py-2 text-sm" onClick={() => setEditingIdentity(true)}>تعديل</button>
-            <button className="btn-ghost flex-1 !py-2 text-sm" onClick={async () => { await logout(); nav('/') }}>خروج</button>
-          </div>
-        )}
       </div>
 
       {/* Hidden for now, at Wael's call, 2026-08-15 -- SMS Misr isn't live, so
@@ -270,7 +279,7 @@ export default function Profile() {
 
         <div className="space-y-2.5">
           {addresses.map(a => (
-            <div key={a.id} className="card p-3.5">
+            <div key={a.id} className="card p-4 min-h-[76px]">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="font-semibold flex items-center gap-1.5">
@@ -280,13 +289,11 @@ export default function Profile() {
                   <p className="text-sm text-mist mt-0.5">{a.compound_name}، {a.unit_number}</p>
                   {a.notes && <p className="text-xs text-mist mt-0.5">{a.notes}</p>}
                 </div>
-              </div>
-              <div className="flex gap-2 mt-2.5">
-                <button className="btn-ghost flex-1 !py-1.5 text-xs" onClick={() => startEdit(a)}>تعديل</button>
-                {!a.is_default && (
-                  <button className="btn-ghost flex-1 !py-1.5 text-xs" onClick={() => makeDefault(a)}>خليه الافتراضي</button>
-                )}
-                <button className="btn-ghost !py-1.5 !px-3 text-xs !text-danger" onClick={() => remove(a)}>حذف</button>
+                <div className="flex items-center gap-3 shrink-0" dir="ltr">
+                  <button aria-label={`حذف ${a.label}`} title="حذف" className="w-8 h-8 rounded-lg bg-dangerbg text-danger grid place-items-center" onClick={() => remove(a)}><Icon name="trash" size="sm" /></button>
+                  <button aria-label={`تعديل ${a.label}`} title="تعديل" className="w-8 h-8 rounded-lg bg-shellup text-foam grid place-items-center" onClick={() => startEdit(a)}><Icon name="pencilSimple" size="sm" /></button>
+                  {!a.is_default && <button aria-label={`خلي ${a.label} الافتراضي`} title="خليه الافتراضي" className="w-8 h-8 rounded-lg bg-shellup text-foam grid place-items-center" onClick={() => makeDefault(a)}><Icon name="check" size="sm" /></button>}
+                </div>
               </div>
             </div>
           ))}
@@ -294,25 +301,40 @@ export default function Profile() {
       </div>
 
       <div className="card p-4">
-        <p className="text-sm text-mist">رصيدك في المحفظة</p>
-        <p className="text-2xl font-bold text-sea mt-1">{walletBalance ?? '-'} ج.م</p>
+        <p className="text-sm text-mist">المحفظة</p>
+        <p className="text-xl font-bold text-sea mt-1">{walletBalance ?? '-'} ج.م</p>
       </div>
 
-      {orders.length > 0 && (
+      {liveOrders.length > 0 && (
         <div>
-          <h2 className="font-bold mb-2.5">طلباتي</h2>
+          <h2 className="font-bold mb-2.5">طلبات شغالة دلوقتي</h2>
           <div className="space-y-2">
-            {orders.slice(0, 5).map(o => (
-              <Link key={o.id} to={`/track/${o.public_token}`} className="card p-3.5 flex items-center justify-between hover:border-sea/50 transition-colors">
-                <div className="min-w-0">
-                  <p className="font-semibold text-sm truncate">#{o.id} • {o.restaurant_name}</p>
-                  <p className="text-xs text-mist mt-0.5">{orderStatusLabel(o.status)}</p>
-                </div>
-                <span className="text-sea font-bold text-sm shrink-0">
-                  {o.pricing_status === 'pending_quote' ? 'قيد التسعير' : `${o.total} ج.م`}
+            {liveOrders.map(o => <LiveOrderLink key={o.id} live={o} token={o.public_token} />)}
+          </div>
+        </div>
+      )}
+
+      {pastOrders.length > 0 && (
+        <div>
+          <h2 className="font-bold mb-2.5">طلبات سابقة</h2>
+          <div className="space-y-2">
+            {pastOrders.slice(0, 5).map(o => {
+              const quote = quoteSummary(o.quote_state, o.pricing_status, o.total)
+              return (
+              <Link key={o.id} to={`/track/${o.public_token}`} className="card p-4 min-h-[76px] flex items-center gap-3 hover:border-sea/50 transition-colors">
+                <span className="w-8 h-8 rounded-lg bg-shellup text-[#714808] grid place-items-center shrink-0">
+                  <Icon name="basket" size="sm" />
                 </span>
+                <div className="min-w-0 flex-1 flex items-center gap-1.5 text-right">
+                  <p className="font-semibold text-sm truncate">{o.restaurant_name}</p>
+                  <span className="text-foam/50 text-sm">•</span>
+                  <p className="text-xs font-semibold text-mist shrink-0" dir="ltr">#{o.id}</p>
+                </div>
+                <span className="shrink-0 text-ink text-sm font-semibold">{quote.text}</span>
+                <Icon name="chevronLeft" size="xs" className="text-mist shrink-0" />
               </Link>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
@@ -322,7 +344,7 @@ export default function Profile() {
         <span className="w-11 h-11 rounded-xl grid place-items-center text-xl shrink-0 bg-successbg"><Icon name="chatCircle" size="md" className="text-success" /></span>
         <div>
           <p className="font-bold">تحتاج مساعدة؟</p>
-          <p className="text-xs text-mist mt-0.5">كلّمنا على واتساب</p>
+          <p className="text-xs text-mist mt-0.5">إبعتلنا على الواتساب</p>
         </div>
       </a>
 

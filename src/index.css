@@ -21,6 +21,18 @@
 html { font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif; overflow-x: hidden; overflow-x: clip; }
 body { @apply bg-night text-foam antialiased; overflow-x: hidden; overflow-x: clip; }
 
+/* Payment is waiting on the customer, not progressing normally. The small,
+   low-frequency pulse makes that distinction visible without turning the home
+   screen into an alarm. Respect reduced-motion preferences. */
+@keyframes payment-wait-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.06); opacity: .78; }
+}
+.animate-payment-wait { animation: payment-wait-pulse 1.8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-payment-wait { animation: none; }
+}
+
 /* 12px is the base card: quick tiles and product cards. The vendor card and
    the promo banner override to 16px -- they carry a photograph, and a larger
    corner reads on a big surface where it would look sloppy on a small one. */

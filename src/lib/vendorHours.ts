@@ -114,9 +114,10 @@ export function openLabel(v: OpenState, now: Date = new Date()): { open: boolean
   if (!next) return { open: false, text: temporarily ? 'مقفول مؤقتاً' : 'مقفول' }
 
   const dayOf = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: 'Africa/Cairo' })
-  const at = next.toLocaleTimeString('ar-EG', {
+  const atParts = next.toLocaleTimeString('en-US', {
     timeZone: 'Africa/Cairo', hour: 'numeric', minute: '2-digit', hour12: true,
   })
+  const at = atParts.replace(/^(.*)\s(AM|PM)$/, '$2 $1')
 
   const tomorrow = new Date(now.getTime() + 86400000)
   const when =

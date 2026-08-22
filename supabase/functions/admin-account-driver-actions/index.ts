@@ -2,10 +2,10 @@ import { withSupabase } from "@supabase/server"
 import { fail, isRateLimitError, json } from "../_shared/secure.ts"
 
 type Db = { public: { Tables: Record<string, never>; Views: Record<string, never>; Enums: Record<string, never>; CompositeTypes: Record<string, never>; Functions: Record<string, { Args: Record<string, unknown>; Returns: unknown }> } }
-type Action = "approveAccountRecovery" | "convertStaffRole" | "deleteCustomer" | "deleteCustomerByPhone" | "deleteStaff" | "listAccountRecoveries" | "resetDriverDevice" | "setCustomerBan" | "setVendorSlots" | "upsertDriver"
-const ACTIONS = new Set<Action>(["approveAccountRecovery","convertStaffRole","deleteCustomer","deleteCustomerByPhone","deleteStaff","listAccountRecoveries","resetDriverDevice","setCustomerBan","setVendorSlots","upsertDriver"])
+type Action = "approveAccountRecovery" | "applyCustomerAddressToOrder" | "convertStaffRole" | "customerManagement" | "deleteCustomer" | "deleteCustomerByPhone" | "deleteRestaurant" | "deleteStaff" | "listAccountRecoveries" | "resetDriverDevice" | "setCustomerBan" | "setVendorSlots" | "updateCustomerAddress" | "updateCustomerFuture" | "upsertDriver"
+const ACTIONS = new Set<Action>(["approveAccountRecovery","applyCustomerAddressToOrder","convertStaffRole","customerManagement","deleteCustomer","deleteCustomerByPhone","deleteRestaurant","deleteStaff","listAccountRecoveries","resetDriverDevice","setCustomerBan","setVendorSlots","updateCustomerAddress","updateCustomerFuture","upsertDriver"])
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-const KNOWN = ["admin_only","cannot_delete_admin","cannot_delete_self","cannot_target_self","customer_has_live_order","customer_has_wallet_balance","driver_has_live_delivery","driver_holds_cash","driver_not_found","has_live_orders","invalid_phone","invalid_payout_schedule","invalid_role","invalid_vehicle_type","name_required","no_account_for_phone","phone_already_used","phone_required","profile_not_found","target_not_convertible","vendor_not_found"]
+const KNOWN = ["address_not_found","admin_only","cannot_delete_admin","cannot_delete_self","cannot_target_self","customer_has_live_order","customer_has_wallet_balance","customer_not_found","driver_has_live_delivery","driver_holds_cash","driver_not_found","has_live_orders","invalid_label","invalid_name","invalid_notes","invalid_phone","invalid_payout_schedule","invalid_role","invalid_vehicle_type","name_required","no_account_for_phone","order_not_editable","phone_already_used","phone_required","profile_not_found","restaurant_has_login","restaurant_has_orders","restaurant_not_found","target_not_convertible","unit_number_required","vendor_not_found"]
 function positiveId(v: unknown): number | null { return Number.isInteger(v) && Number(v)>0 && Number(v)<=2_147_483_647 ? Number(v) : null }
 function clean(v: unknown,max: number): string | null { if(typeof v!=="string")return null;const s=v.trim();return s&&s.length<=max?s:null }
 async function digest(v:string):Promise<string>{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,"0")).join("")}
@@ -25,6 +25,24 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{
   }
   let fn="",args:Record<string,unknown>={}
   if(action==="listAccountRecoveries"){fn="admin_pending_account_recoveries"}
+  else if(action==="customerManagement"){
+    const phone=clean(input.phone,24);if(!phone)return json({error:"invalid_account_input"},400)
+    fn="admin_customer_management";args={p_phone:phone}
+  }else if(action==="updateCustomerFuture"){
+    const phone=clean(input.phone,24),name=clean(input.name,60);if(!phone||!name)return json({error:"invalid_account_input"},400)
+    fn="admin_update_customer_future";args={p_phone:phone,p_name:name}
+  }else if(action==="updateCustomerAddress"){
+    const phone=clean(input.phone,24),addressId=positiveId(input.addressId),label=clean(input.label,60),compoundId=positiveId(input.compoundId),unitNumber=clean(input.unitNumber,120),notes=input.notes==null?"":typeof input.notes==="string"?input.notes.trim():null
+    if(!phone||!addressId||!label||!compoundId||!unitNumber||notes===null||notes.length>500)return json({error:"invalid_account_input"},400)
+    fn="admin_update_customer_address";args={p_phone:phone,p_address_id:addressId,p_label:label,p_compound_id:compoundId,p_unit_number:unitNumber,p_notes:notes}
+  }else if(action==="applyCustomerAddressToOrder"){
+    const phone=clean(input.phone,24),orderId=positiveId(input.orderId),addressId=positiveId(input.addressId)
+    if(!phone||!orderId||!addressId)return json({error:"invalid_account_input"},400)
+    fn="admin_apply_customer_address_to_order";args={p_phone:phone,p_order_id:orderId,p_address_id:addressId}
+  }else if(action==="deleteRestaurant"){
+    const restaurantId=positiveId(input.restaurantId);if(!restaurantId)return json({error:"invalid_account_input"},400)
+    fn="admin_delete_empty_restaurant";args={p_restaurant_id:restaurantId}
+  }
   else if(action==="approveAccountRecovery"){const requestId=positiveId(input.requestId);if(!requestId)return json({error:"invalid_account_input"},400);fn="admin_approve_account_recovery";args={p_request_id:requestId}}
   else if(action==="convertStaffRole"){
     const profileId=clean(input.profileId,36),role=input.role

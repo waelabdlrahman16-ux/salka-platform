@@ -162,15 +162,30 @@ export default function Vendor() {
 function RideHistoryPanel({ restaurantId }: { restaurantId: number }) {
   const [rides, setRides] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
+  const [failed, setFailed] = useState(false)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
+    setLoading(true)
+    setFailed(false)
     supabase.from('orders').select('*')
       .eq('restaurant_id', restaurantId).eq('order_type', 'pickup_request')
       .order('id', { ascending: false }).limit(100)
-      .then(({ data }) => { setRides(data ?? []); setLoading(false) })
-  }, [restaurantId])
+      .then(({ data, error }) => {
+        if (error) { setFailed(true); setLoading(false); return }
+        setRides(data ?? [])
+        setLoading(false)
+      })
+  }, [restaurantId, attempt])
 
   if (loading) return <p className="text-mist text-center py-8">جاري التحميل…</p>
+  if (failed) return (
+    <div className="card p-4 text-center">
+      <p className="font-semibold">مش قادرين نجيب سجل الطلبات</p>
+      <p className="text-sm text-mist mt-1 mb-3">اتأكد من النت وجرب تاني.</p>
+      <button className="btn-sea !py-2 !px-5 text-sm" onClick={() => setAttempt(a => a + 1)}>حاول تاني</button>
+    </div>
+  )
   if (rides.length === 0) return <p className="text-mist text-center py-8">لسه مفيش طلبات مندوب</p>
 
   return (

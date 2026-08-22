@@ -23,6 +23,7 @@
     "test:money": "node scripts/test-money.mjs",
     "test:promo": "node scripts/test-promo.mjs",
     "test:dispatch": "node scripts/test-dispatch.mjs",
+    "check:quote-state": "node scripts/check-quote-state-draft.mjs",
     "build:icons": "node scripts/build-icons.mjs"
   },
   "dependencies": {

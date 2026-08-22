@@ -35,8 +35,20 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     // app. Returning true keeps them in their existing session; the profile
     // simply refreshes on the next call.
     if (!res.ok) return true
-    if (res.data) { setCustomer(res.data); return true }
-    return false
+    if (res.data) {
+      // `my_customer_profile` deliberately contains only customer fields on
+      // some deployments. The authenticated session remains the source of
+      // truth for the sign-in email, so keep the account card complete when
+      // that read model has not included it yet.
+      setCustomer({ ...res.data, email: res.data.email ?? session.user.email ?? null })
+      return true
+    }
+    // A valid Supabase session is authoritative. Falling back to an old
+    // browser token here can put a previous person's customer record on the
+    // current screen, pre-filling their name, phone and address into an order.
+    // Stay signed in but show no customer data until the account profile exists.
+    setCustomer(null)
+    return true
   }
 
   async function refreshFromLegacyToken() {
@@ -76,7 +88,10 @@ export function CustomerAuthProvider({ children }: { children: ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
         const res = await customerAccount<Customer | null>('myProfile')
-        if (res.ok && res.data) setCustomer(res.data)
+        if (res.ok && res.data) {
+          setCustomer({ ...res.data, email: res.data.email ?? session.user.email ?? null })
+        }
+        else if (res.ok) setCustomer(null)
       }
     })
     return () => sub.subscription.unsubscribe()
