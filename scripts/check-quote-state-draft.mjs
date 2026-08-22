@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 
-const migration = await readFile('supabase/migrations/20260820130000_quote_acceptance_state_machine.sql', 'utf8')
+const migration = await readFile('supabase/migrations/20260821014958_quote_acceptance_state_machine.sql', 'utf8')
 const quoteEdge = await readFile('supabase/functions/quote-operations/index.ts', 'utf8')
 const vendorEdge = await readFile('supabase/functions/vendor-operations/index.ts', 'utf8')
 const track = await readFile('src/pages/Track.tsx', 'utf8')
@@ -25,8 +25,16 @@ for (const [pattern, name] of requiredMigration) {
   if (!pattern.test(migration)) throw new Error(`Missing ${name}`)
 }
 
-if (!/"view" \| "issue" \| "accept" \| "reject"/.test(quoteEdge)) {
-  throw new Error('Quote Edge Function action contract changed unexpectedly')
+// Asserted one action at a time rather than as one contiguous string. The
+// original pattern matched the four actions in the order they were first
+// written, so shipping staffView, preview and renew -- all deliberate, all live
+// -- broke a check that was meant to catch actions going MISSING, not being
+// added. Each name is now checked on its own, and the list grows when the
+// contract legitimately does.
+for (const action of ['view', 'staffView', 'preview', 'issue', 'accept', 'reject', 'renew']) {
+  if (!new RegExp(`"${action}"`).test(quoteEdge)) {
+    throw new Error(`Quote Edge Function is missing the ${action} action`)
+  }
 }
 if (!/orderToken \|\| !UUID\.test\(orderToken\)/.test(quoteEdge)) {
   throw new Error('Customer quote actions must require the opaque order token')

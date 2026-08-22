@@ -125,6 +125,10 @@ export const ERROR_AR: Record<string, string> = {
   // quote being issued and the customer accepting it. The frozen total promised
   // a wallet discount we can no longer fund, and charging a different total is
   // the surprise the 15-minute quote exists to prevent. Renewing re-prices it.
+  // confirm_custom_order_price is retired: it priced an order without issuing a
+  // quote and left it unable to move. Staff reaching it are on an older screen,
+  // so the message names the screen that works rather than describing a fault.
+  use_quote_flow: 'التسعير بقى من شاشة عرض السعر. حدّث الصفحة واستخدم "ابعت عرض السعر"',
   wallet_balance_changed: 'رصيدك اتغير بعد ما وصلك العرض. جدّد العرض عشان نحسبه من جديد',
   quote_transition_failed: 'مقدرناش نحدّث موافقتك على السعر. جرب تاني',
 
