@@ -96,6 +96,49 @@ let started = false
 try {
   await client.connect()
 
+  // ---- the customer's own read path ---------------------------------------
+  // This script connects as the owner, where RLS never applies -- so everything
+  // below this line proves the SERVER can price an order, and nothing about
+  // whether the CUSTOMER can see the price.
+  //
+  // On 2026-08-22 that gap cost a checkout outage. The service-fee cap added
+  // settings.service_fee_max_egp, the client started reading it alongside
+  // service_fee_percent, and settings_customer_read -- a per-key whitelist --
+  // did not include it. RLS returned one row where the client needed two, and
+  // lib/serviceFee.ts correctly refused to invent the missing half: checkout
+  // showed "مش قادرين نحسب رسوم الخدمة دلوقتي" and could not complete. The
+  // server was charging the right number the whole time. Every gate was green,
+  // including this one, because every gate ran as a superuser.
+  //
+  // So: assert as anon, the role the browser actually uses. Add a key here when
+  // the client starts reading one -- a setting the client needs and cannot read
+  // is an outage, not a degradation.
+  const CLIENT_READ_SETTINGS = [
+    'service_fee_percent',      // lib/serviceFee.ts
+    'service_fee_max_egp',      // lib/serviceFee.ts -- the ceiling
+    'cod_deposit_threshold_egp',
+    'sms_login_enabled',
+  ]
+  await client.query('begin')
+  started = true
+  await client.query('set local role anon')
+  const visible = (await q(
+    'select key from settings where key = any($1::text[])', [CLIENT_READ_SETTINGS]
+  )).map(r => r.key)
+  await client.query('reset role')
+  const unreadable = CLIENT_READ_SETTINGS.filter(k => !visible.includes(k))
+  if (unreadable.length) {
+    fail(`anon cannot read ${unreadable.length} setting(s) the client needs: ${unreadable.join(', ')}.`,
+      'settings_customer_read is a per-key whitelist and these keys are not on it.\n' +
+      'The server will price orders correctly and the customer will see no price,\n' +
+      'which stops checkout dead. Add them to the policy in a migration.')
+    await client.query('rollback'); started = false
+    await client.end(); process.exit()
+  }
+  console.log(`\u2713 anon can read all ${CLIENT_READ_SETTINGS.length} client-read settings`)
+  await client.query('rollback')
+  started = false
+
   // ---- preconditions -------------------------------------------------------
   // A test restaurant that cannot notify anyone, has an orderable item, and
   // covers at least one compound. All four conditions, or we do not proceed.
