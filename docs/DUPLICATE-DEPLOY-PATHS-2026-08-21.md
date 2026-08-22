@@ -102,3 +102,18 @@ Cloudflare dashboard → Workers & Pages → `appgosalka-platform` → Settings 
 Build → disconnect the Git repository. Leave `gosalka-landing` as it is. After
 that, `Current Version ID` in the `deploy.yml` log is once again the only thing
 that put code in front of customers.
+
+## Done, 2026-08-22
+
+The Git integration for `appgosalka-platform` was disconnected in the Cloudflare
+dashboard. `gosalka-landing` stays connected, so the landing page keeps its
+branch preview URLs.
+
+From here, `deploy.yml` is the only thing that puts the app in front of
+customers, and `Current Version ID` in its log is once again a truthful record
+of what is being served. The check to watch for on a pull request is that
+`Workers Builds: appgosalka-platform` no longer appears while
+`Workers Builds: gosalka-landing` still does.
+
+If a future change needs a build-time input (an env var, a key), it now has
+exactly one place to be configured: `deploy.yml`.
