@@ -8,6 +8,8 @@ import { orderStatusLabel } from '../lib/statusLabels'
 import { useAuth } from '../lib/auth'
 import { isValidEgyptPhone } from '../lib/validation'
 import { customerAccount } from '../lib/customerAccounts'
+import { quoteSummary } from '../lib/quoteDisplay'
+import type { QuoteState } from '../lib/types'
 
 interface Row {
   id: number
@@ -17,6 +19,7 @@ interface Row {
   created_at: string
   restaurant_name: string
   pricing_status?: 'n/a' | 'pending_quote' | 'confirmed'
+  quote_state?: QuoteState | null
 }
 
 export default function MyOrders() {
@@ -196,7 +199,9 @@ export default function MyOrders() {
 
       {customer?.phone && !error && (
         <div className="space-y-3 mt-5">
-          {(rows ?? []).map(order => (
+          {(rows ?? []).map(order => {
+            const quote = quoteSummary(order.quote_state, order.pricing_status, order.total)
+            return (
             <Link
               key={order.id}
               to={`/track/${order.public_token}`}
@@ -211,14 +216,13 @@ export default function MyOrders() {
                     })} • {orderStatusLabel(order.status)}
                   </p>
                 </div>
-                <span className={`font-bold shrink-0 ${
-                  order.pricing_status === 'pending_quote' ? 'text-mist text-xs' : 'text-sea'
-                }`}>
-                  {order.pricing_status === 'pending_quote' ? 'قيد التسعير' : `${order.total} ج.م`}
+                <span className={`font-bold shrink-0 ${quote.pending ? 'text-mist text-xs' : 'text-sea'}`}>
+                  {quote.text}
                 </span>
               </div>
             </Link>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>

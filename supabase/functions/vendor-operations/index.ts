@@ -1,7 +1,7 @@
 import{withSupabase}from"@supabase/server";import{fail,isRateLimitError,json}from"../_shared/secure.ts"
 type Db={public:{Tables:Record<string,never>;Views:Record<string,never>;Enums:Record<string,never>;CompositeTypes:Record<string,never>;Functions:Record<string,{Args:Record<string,unknown>;Returns:unknown}>}}
-type Action="accept"|"confirmPrice"|"delay"|"deliveryOverview"|"ready"|"setItemAvailability"|"setOpen";const ACTIONS=new Set<Action>(["accept","confirmPrice","delay","deliveryOverview","ready","setItemAvailability","setOpen"])
-const KNOWN=["admin_only","already_accepted","delay_limit_reached","invalid_amount","invalid_prep_minutes","item_not_found","not_a_vendor","not_authorized","not_your_order","not_your_restaurant","order_closed","order_not_found","order_not_pending","order_not_priced","price_required","wrong_stage"]
+type Action="accept"|"delay"|"deliveryOverview"|"ready"|"setItemAvailability"|"setOpen";const ACTIONS=new Set<Action>(["accept","delay","deliveryOverview","ready","setItemAvailability","setOpen"])
+const KNOWN=["admin_only","already_accepted","delay_limit_reached","invalid_prep_minutes","item_not_found","not_a_vendor","not_authorized","not_your_order","not_your_restaurant","order_closed","order_not_found","order_not_paid","order_not_pending","order_not_priced","price_required","quote_not_accepted","wrong_stage"]
 const id=(v:unknown)=>Number.isInteger(v)&&Number(v)>0&&Number(v)<=2147483647?Number(v):null
 async function digest(v:string){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v));return Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,"0")).join("")}
 const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{if(req.method!=="POST")return json({error:"method_not_allowed"},405);if(Number(req.headers.get("content-length")??0)>8192)return json({error:"request_too_large"},413)
@@ -11,7 +11,6 @@ const handler=withSupabase<Db>({auth:"user"},async(req,ctx)=>{if(req.method!=="P
  if(action==="accept"){const prep=x.prepMinutes==null?null:Number(x.prepMinutes);if(!orderId||(prep!==null&&(!Number.isInteger(prep)||prep<1||prep>240)))return json({error:"invalid_vendor_input"},400);fn="vendor_accept_order";args={p_order_id:orderId,p_prep_minutes:prep}}
  else if(action==="ready"){if(!orderId)return json({error:"invalid_vendor_input"},400);fn="vendor_ready";args={p_order_id:orderId}}
  else if(action==="delay"){const mins=Number(x.minutes);if(!orderId||!Number.isInteger(mins)||mins<1||mins>120)return json({error:"invalid_vendor_input"},400);fn="vendor_delay";args={p_order_id:orderId,p_minutes:mins}}
- else if(action==="confirmPrice"){const amount=Number(x.subtotal);if(!orderId||!Number.isFinite(amount)||amount<0||amount>1000000)return json({error:"invalid_vendor_input"},400);fn="confirm_custom_order_price";args={p_order_id:orderId,p_subtotal:amount}}
  else if(action==="setOpen"){if(typeof x.open!=="boolean")return json({error:"invalid_vendor_input"},400);fn="vendor_set_open";args={p_open:x.open}}
  else if(action==="setItemAvailability"){const itemId=id(x.itemId);if(!itemId||typeof x.available!=="boolean")return json({error:"invalid_vendor_input"},400);fn="vendor_set_item_availability";args={p_item_id:itemId,p_available:x.available}}
  else{if(!Array.isArray(x.orderIds)||x.orderIds.length>100||!x.orderIds.every(v=>id(v)))return json({error:"invalid_vendor_input"},400);fn="vendor_delivery_overview";args={p_order_ids:x.orderIds}}

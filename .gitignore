@@ -2,6 +2,10 @@ node_modules
 dist
 tsconfig.tsbuildinfo
 
+# Disposable local Supabase test workspace and CLI link metadata.
+local-schema-test/
+supabase/.temp/
+
 # Local secrets. .env.local holds SUPABASE_DB_URL for scripts/capture-baseline.mjs
 # and scripts/smoke-place-order.mjs -- that string contains the production
 # database password, so it must never be committed. The negation keeps the

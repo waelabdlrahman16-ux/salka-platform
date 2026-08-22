@@ -111,6 +111,17 @@ export const ERROR_AR: Record<string, string> = {
   order_edit_rate_limit: 'حاولت تضيف أصناف كتير. استنى شوية وجرب تاني',
   daily_order_edit_limit: 'وصلت للحد اليومي لإضافة الأصناف. كلّمنا عشان نساعدك',
   order_edit_failed: 'مقدرناش نضيف الصنف. جرب تاني أو كلّمنا',
+  quote_expired: 'انتهت صلاحية السعر. هنراجع الطلب ونبعتلك سعر جديد',
+  quote_not_current: 'السعر اتغير. حدّث الصفحة وشوف آخر عرض',
+  quote_not_offered: 'السعر ده مش متاح للموافقة دلوقتي',
+  quote_not_found: 'السعر ده مش موجود. حدّث الصفحة وجرب تاني',
+  quote_not_pending: 'الطلب مش مستني تسعير دلوقتي. حدّث الصفحة',
+  quote_requires_admin_approval: 'إجمالي العرض ده محتاج موافقة الإدارة',
+  quote_not_accepted: 'العميل لسه ما وافقش على السعر، مينفعش نبدأ التوصيل',
+  invalid_quote_input: 'راجع السعر وجرب تاني',
+  invalid_idempotency_key: 'حصل عطل مؤقت. حدّث الصفحة وجرب تاني',
+  invalid_quote_token: 'مش مسموح بالعملية دي',
+  quote_transition_failed: 'مقدرناش نحدّث موافقتك على السعر. جرب تاني',
 
   // dispatch / driver
   already_taken: 'الطلب اتاخد من مندوب تاني',

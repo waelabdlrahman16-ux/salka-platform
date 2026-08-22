@@ -28,6 +28,8 @@ export default function PhoneOrderForm({ onCreated }: { onCreated: () => void })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState<{ id: number; total: number } | null>(null)
+  const [sourcesFailed, setSourcesFailed] = useState(false)
+  const [sourcesAttempt, setSourcesAttempt] = useState(0)
 
   const [f, setF] = useState({
     restaurant_id: '', compound_id: '', name: '', phone: '',
@@ -35,12 +37,23 @@ export default function PhoneOrderForm({ onCreated }: { onCreated: () => void })
   })
 
   useEffect(() => {
-    if (!open || vendors.length > 0) return
-    supabase.from('restaurants').select('id, name, vendor_type').eq('archived', false).order('name')
-      .then(({ data }) => setVendors((data ?? []) as Vendor[]))
+    if (!open || (vendors.length > 0 && compounds.length > 0)) return
+    setSourcesFailed(false)
+    // This form records an order a restaurant has already taken by phone.
+    // Pharmacy/supermarket requests follow the quote-and-shopping flow, and
+    // the server correctly rejects them here; hiding them prevents a dead-end
+    // after the supervisor has filled the whole form.
+    supabase.from('restaurants').select('id, name, vendor_type').eq('archived', false).eq('vendor_type', 'restaurant').order('name')
+      .then(({ data, error }) => {
+        if (error) { setSourcesFailed(true); return }
+        setVendors((data ?? []) as Vendor[])
+      })
     supabase.from('compounds').select('id, name, delivery_fee').eq('active', true).order('name')
-      .then(({ data }) => setCompounds((data ?? []) as Compound[]))
-  }, [open, vendors.length])
+      .then(({ data, error }) => {
+        if (error) { setSourcesFailed(true); return }
+        setCompounds((data ?? []) as Compound[])
+      })
+  }, [open, sourcesAttempt, vendors.length, compounds.length])
 
   const fee = compounds.find(c => String(c.id) === f.compound_id)?.delivery_fee ?? null
   const collect = Number(f.collect) || 0
@@ -113,6 +126,12 @@ export default function PhoneOrderForm({ onCreated }: { onCreated: () => void })
         <p className="font-bold text-sm"><Icon name="phone" size="sm" className="inline-block align-[-0.15em] me-1" />طلب بالتليفون</p>
         <button className="text-mist text-xs" onClick={() => { setOpen(false); setDone(null); setError('') }}>إغلاق<Icon name="x" size="xs" className="inline-block align-[-0.15em] ms-1" /></button>
       </div>
+      {sourcesFailed && (
+        <div className="text-sm text-danger bg-dangerbg rounded-xl p-3 mt-3 flex items-center justify-between gap-3">
+          <span>مش قادرين نجيب المطاعم أو المناطق دلوقتي.</span>
+          <button className="btn-ghost !py-1.5 !px-3 text-xs shrink-0" onClick={() => setSourcesAttempt(a => a + 1)}>جرب تاني</button>
+        </div>
+      )}
       <p className="text-xs text-mist mb-3">
         للمطعم اللي أخد الطلب بنفسه وعايز مندوب يوصّله. المندوب هيحصّل فلوس الأكل للمطعم + التوصيل لينا.
       </p>

@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Icon from './Icon'
 import { adminAccountDriverAction } from '../lib/adminAccountDriverActions'
 import { adminReport } from '../lib/adminReports'
+import { supabase } from '../lib/supabase'
 import { orderStatusLabel } from '../lib/statusLabels'
 import Toggle from './Toggle'
 import { useSheets } from './ActionSheets'
@@ -86,6 +87,19 @@ type Detail = {
   orders: DetailOrder[]
   complaints: { id: number; order_id: number; category: string | null; description: string | null; status: string | null; created_at: string }[]
 }
+
+type CustomerAddress = {
+  id: number
+  label: string
+  compound_id: number
+  compound_name: string
+  unit_number: string
+  notes: string | null
+  is_default: boolean
+}
+
+type CustomerManagement = { customer_id: number | null; addresses: CustomerAddress[] }
+type CompoundOption = { id: number; name: string }
 
 type Segment = 'all' | 'repeat' | 'once' | 'never' | 'attention'
 type Recovery = { id: number; phone: string; email: string | null; created_at: string }
@@ -324,7 +338,79 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
 }) {
   const [banBusy, setBanBusy] = useState(false)
   const [banError, setBanError] = useState('')
+  const [management, setManagement] = useState<CustomerManagement | null>(null)
+  const [managementError, setManagementError] = useState('')
+  const [managementBusy, setManagementBusy] = useState(false)
+  const [compounds, setCompounds] = useState<CompoundOption[]>([])
+  const [editingAddress, setEditingAddress] = useState<CustomerAddress | null>(null)
+  const [addressDraft, setAddressDraft] = useState({ label: '', compoundId: '', unitNumber: '', notes: '' })
   const { confirmSheet, promptSheet, sheetElement } = useSheets()
+
+  const loadManagement = useCallback(async () => {
+    setManagementError('')
+    const res = await adminAccountDriverAction<CustomerManagement>('customerManagement', { phone: c.phone }, {
+      admin_only: 'مش من صلاحياتك',
+    })
+    if (!res.ok) { setManagementError(res.error); return }
+    setManagement(res.data)
+  }, [c.phone])
+
+  useEffect(() => { void loadManagement() }, [loadManagement])
+
+  async function updateFutureName() {
+    const name = await promptSheet({
+      title: 'اسم العميل للطلبات الجاية',
+      body: 'التغيير ده للملف والطلبات الجديدة فقط. الطلبات القديمة مش هتتغير.',
+      initial: c.name ?? '',
+      placeholder: 'اسم العميل',
+    })
+    if (name === null) return
+    setManagementBusy(true); setManagementError('')
+    const res = await adminAccountDriverAction('updateCustomerFuture', { phone: c.phone, name }, {
+      invalid_name: 'اكتب اسم من ٢ إلى ٦٠ حرف', admin_only: 'مش من صلاحياتك',
+    })
+    setManagementBusy(false)
+    if (!res.ok) { setManagementError(res.error); return }
+    onChanged()
+  }
+
+  async function startEditAddress(address: CustomerAddress) {
+    if (compounds.length === 0) {
+      const { data, error } = await supabase.from('compounds').select('id,name').eq('active', true).order('name')
+      if (error) { setManagementError('مش قادرين نحمّل الأماكن دلوقتي'); return }
+      setCompounds(data ?? [])
+    }
+    setAddressDraft({ label: address.label, compoundId: String(address.compound_id), unitNumber: address.unit_number, notes: address.notes ?? '' })
+    setEditingAddress(address)
+  }
+
+  async function saveAddress() {
+    if (!editingAddress) return
+    setManagementBusy(true); setManagementError('')
+    const res = await adminAccountDriverAction('updateCustomerAddress', {
+      phone: c.phone, addressId: editingAddress.id, label: addressDraft.label,
+      compoundId: Number(addressDraft.compoundId), unitNumber: addressDraft.unitNumber, notes: addressDraft.notes,
+    }, { address_not_found: 'العنوان ده مش موجود', compound_not_found: 'اختار مكان صحيح', unit_number_required: 'رقم الوحدة مطلوب', admin_only: 'مش من صلاحياتك' })
+    setManagementBusy(false)
+    if (!res.ok) { setManagementError(res.error); return }
+    setEditingAddress(null)
+    await loadManagement()
+  }
+
+  async function applyAddressToOrder(address: CustomerAddress, order: DetailOrder) {
+    if (!await confirmSheet({
+      title: `تحديث عنوان طلب #${order.id}؟`,
+      body: `هيتغيّر عنوان الطلب الحالي إلى ${address.compound_name} • ${address.unit_number}. ده لا يغيّر رسوم التوصيل أو أي طلب تاني.`,
+      danger: true,
+    })) return
+    setManagementBusy(true); setManagementError('')
+    const res = await adminAccountDriverAction('applyCustomerAddressToOrder', {
+      phone: c.phone, addressId: address.id, orderId: order.id,
+    }, { order_not_editable: 'الطلب ده اتسلّم أو اتلغى، مش ينفع نغيّر عنوانه', address_not_found: 'العنوان ده مش موجود', admin_only: 'مش من صلاحياتك' })
+    setManagementBusy(false)
+    if (!res.ok) { setManagementError(res.error); return }
+    onChanged()
+  }
 
   // Banning is keyed on the PHONE, not on an account, because most orders here
   // are placed without signing in at all -- a ban on a customer id would be
@@ -434,6 +520,60 @@ function CustomerSheet({ customer: c, detail, error, onClose, onChanged }: {
             <Field label="طريقة الدفع" value={c.last_payment || '-'} />
             <Field label="تقييمه للمندوبين" value={c.avg_rating_given ? `${c.avg_rating_given} ★` : '-'} />
           </div>
+
+          <section className="border border-line rounded-xl p-3 space-y-3">
+            <div>
+              <p className="font-bold text-sm">إدارة بيانات العميل</p>
+              <p className="text-xs text-mist mt-0.5">أي تعديل هنا بيأثر على الطلبات الجاية فقط. الطلبات القديمة محفوظة كما هي.</p>
+            </div>
+            {managementError && <p className="text-xs text-danger">{managementError}</p>}
+            <button className="btn-ghost text-sm !py-2" disabled={managementBusy} onClick={updateFutureName}>
+              <Icon name="penToSquare" size="xs" className="inline-block align-[-0.15em] me-1" />تعديل الاسم للطلبات الجاية
+            </button>
+            {!management && !managementError && <p className="text-xs text-mist">بنحمّل العناوين المحفوظة…</p>}
+            {management?.addresses.length === 0 && <p className="text-xs text-mist">مفيش عناوين محفوظة للحساب ده.</p>}
+            <div className="space-y-2">
+              {management?.addresses.map(address => (
+                <div key={address.id} className="bg-shellup rounded-lg p-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold">{address.label}{address.is_default ? ' • الافتراضي' : ''}</p>
+                      <p className="text-xs text-mist mt-0.5">{address.compound_name} • {address.unit_number}</p>
+                      {address.notes && <p className="text-xs text-mist mt-0.5">{address.notes}</p>}
+                    </div>
+                    <button className="text-xs text-foam shrink-0 min-h-[32px]" disabled={managementBusy} onClick={() => startEditAddress(address)}>تعديل</button>
+                  </div>
+                  {editingAddress?.id === address.id && (
+                    <div className="mt-2 pt-2 border-t border-line space-y-2">
+                      <input className="field !py-1.5 text-sm" value={addressDraft.label} placeholder="اسم العنوان" onChange={e => setAddressDraft(d => ({ ...d, label: e.target.value }))} />
+                      <select className="field !py-1.5 text-sm" value={addressDraft.compoundId} onChange={e => setAddressDraft(d => ({ ...d, compoundId: e.target.value }))}>
+                        <option value="">اختار المكان</option>
+                        {compounds.map(compound => <option key={compound.id} value={compound.id}>{compound.name}</option>)}
+                      </select>
+                      <input className="field !py-1.5 text-sm" value={addressDraft.unitNumber} placeholder="رقم الوحدة" onChange={e => setAddressDraft(d => ({ ...d, unitNumber: e.target.value }))} />
+                      <textarea className="field !h-auto !py-1.5 text-sm" rows={2} value={addressDraft.notes} placeholder="ملاحظات العنوان (اختياري)" onChange={e => setAddressDraft(d => ({ ...d, notes: e.target.value }))} />
+                      <div className="flex gap-2">
+                        <button className="btn-sea !py-1.5 text-xs" disabled={managementBusy} onClick={saveAddress}>حفظ للطلبات الجاية</button>
+                        <button className="btn-ghost !py-1.5 text-xs" disabled={managementBusy} onClick={() => setEditingAddress(null)}>إلغاء</button>
+                      </div>
+                    </div>
+                  )}
+                  {detail && detail.orders.filter(o => !['Delivered', 'Cancelled'].includes(o.status)).length > 0 && (
+                    <div className="border-t border-line mt-2 pt-2">
+                      <p className="text-[11px] text-mist mb-1.5">تحديث طلب موجود — إجراء منفصل</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {detail.orders.filter(o => !['Delivered', 'Cancelled'].includes(o.status)).map(order => (
+                          <button key={order.id} className="text-xs text-foam border border-sea/30 rounded-lg px-2 py-1" disabled={managementBusy} onClick={() => applyAddressToOrder(address, order)}>
+                            طبّق على #{order.id}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
 
           {detail && detail.complaints.length > 0 && (
             <div className="bg-dangerbg rounded-xl p-3 space-y-2">
