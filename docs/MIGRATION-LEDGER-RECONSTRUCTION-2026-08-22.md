@@ -30,11 +30,11 @@ newline is correct either way.
 
 ## State as of 22 Aug 2026
 
-Filenames and ledger versions were realigned for 23 migrations. What remains:
+Filenames and ledger versions were realigned for 23 migrations, and **all 38
+ledger-only migrations have been reconstructed and checksum-verified**. Every
+version in `schema_migrations` now has a file. What remains:
 
-- **38 ledger versions with no local file.** All 38 have their SQL stored
-  (89,566 characters total), so all 38 are reconstructable by the method above.
-  Nine were done and checksum-verified; the rest were not.
+- **0 ledger versions with no local file.**
 - **7 local files with no ledger version.** These are NOT reconstructable and
   are a different problem:
   - `record_actor_on_money_movements` and
@@ -46,6 +46,18 @@ Filenames and ledger versions were realigned for 23 migrations. What remains:
     `restrict_delivery_override_to_admin` have no ledger row under any name.
     Whether they ever ran cannot be settled from the ledger; that one does need
     a schema comparison.
+
+## What a reconstruction is faithful to
+
+The ledger stores the statements as **executed**, which is not always identical
+to the file as **authored**. `20260810163258` is the proof: the repository's copy
+of it carries fifteen lines of leading commentary explaining why the RLS policies
+were consolidated, and the ledger's copy begins at the first `drop policy`. A
+leading comment block is not a statement, so it never reached the ledger.
+
+The practical rule: where a file already exists, keep it -- it may carry
+reasoning the ledger cannot. Reconstruct only what is missing. That is what was
+done here; the repository's richer `20260810163258` was left untouched.
 
 ## Worth knowing about the first five reconstructed
 
