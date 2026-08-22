@@ -1,0 +1,32 @@
+
+-- tier6 becomes the 30-35km band at 420; new tier7 is the >35km catch-all, keeping the old 570
+INSERT INTO settings (key, value) VALUES ('fee_tier6_max_km', '35')
+  ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+UPDATE settings SET value = '420' WHERE key = 'fee_tier6_egp';
+INSERT INTO settings (key, value) VALUES ('fee_tier7_egp', '570')
+  ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+
+CREATE OR REPLACE FUNCTION delivery_fee_for_distance(p_km numeric)
+RETURNS numeric
+LANGUAGE sql
+AS $$
+  select case
+    when p_km is null then null
+    when p_km <= coalesce((select value::numeric from settings where key = 'fee_tier1_max_km'), 5)
+      then coalesce((select value::numeric from settings where key = 'fee_tier1_egp'), 65)
+    when p_km <= coalesce((select value::numeric from settings where key = 'fee_tier2_max_km'), 10)
+      then coalesce((select value::numeric from settings where key = 'fee_tier2_egp'), 120)
+    when p_km <= coalesce((select value::numeric from settings where key = 'fee_tier3_max_km'), 15)
+      then coalesce((select value::numeric from settings where key = 'fee_tier3_egp'), 180)
+    when p_km <= coalesce((select value::numeric from settings where key = 'fee_tier4_max_km'), 20)
+      then coalesce((select value::numeric from settings where key = 'fee_tier4_egp'), 230)
+    when p_km <= coalesce((select value::numeric from settings where key = 'fee_tier5_max_km'), 30)
+      then coalesce((select value::numeric from settings where key = 'fee_tier5_egp'), 350)
+    when p_km <= coalesce((select value::numeric from settings where key = 'fee_tier6_max_km'), 35)
+      then coalesce((select value::numeric from settings where key = 'fee_tier6_egp'), 420)
+    else coalesce((select value::numeric from settings where key = 'fee_tier7_egp'), 570)
+  end;
+$$;
+
+-- Recompute every compound's fee against the new tier structure
+UPDATE compounds SET delivery_fee = delivery_fee_for_distance(distance_km);
