@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, useId } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import PromoSection from '../components/PromoSection'
+import { type PromoQuote } from '../lib/promoOffers'
 import { customerOrderCreation } from '../lib/customerOrderCreation'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
-import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
+import { serviceFeeFor, useServiceFeePolicy } from '../lib/serviceFee'
 import { displayEgyptPhone, isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { VENDOR_TYPE_ART } from '../lib/categoryArt'
 import Icon from '../components/Icon'
@@ -75,6 +77,18 @@ export default function CustomOrder() {
   const [slot, setSlot] = useState<Slot | null>(null)
 
   const [compounds, setCompounds] = useState<Compound[]>([])
+  // Same three-way disagreement as CheckoutPage -- see the long note there.
+  // The account name comes from Google and was beating the name the customer
+  // actually orders under.
+  // The code the customer picks now is HELD on the request and applied when
+  // staff confirm the price -- see 20260821090000. Quoted here only to catch a
+  // code that is wrong for reasons that do not need a price (expired, wrong
+  // vendor, wrong area); the two price-dependent verdicts are ignored, because
+  // at a subtotal of zero they are true of every code and mean nothing yet.
+  const [promoCode, setPromoCode] = useState('')
+  const [promoQuote, setPromoQuote] = useState<PromoQuote | null>(null)
+  const [promoChecking, setPromoChecking] = useState(false)
+  const nameEdited = useRef(false)
   const [name, setName] = useState(''); const [phone, setPhone] = useState(() => localStorage.getItem('salka_phone') ?? '')
   const [unit, setUnit] = useState('')
   const [addrNotes, setAddrNotes] = useState('')
@@ -142,7 +156,7 @@ export default function CustomOrder() {
       // subsequent keystroke in the phone field, forever.
       setAddressLoaded(true)
       if (data) {
-        if (!name.trim() && data.customer_name) setName(data.customer_name)
+        if (data.customer_name && !nameEdited.current) setName(data.customer_name)
         if (!unit.trim() && data.unit_number) setUnit(data.unit_number)
         if (!addrNotes.trim() && data.address_notes) setAddrNotes(data.address_notes)
         if (!compoundId && data.compound_id) setCompoundId(data.compound_id)
@@ -320,6 +334,21 @@ export default function CustomOrder() {
     setRxPreview(URL.createObjectURL(file))
   }
 
+  useEffect(() => {
+    const code = promoCode.trim().toUpperCase()
+    if (!code || !vendor?.id || !compoundId) { setPromoQuote(null); setPromoChecking(false); return }
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      setPromoChecking(true)
+      const { data, error } = await supabase.rpc('quote_promo_code', {
+        p_code: code, p_restaurant_id: vendor.id, p_compound_id: compoundId,
+        p_subtotal: 0, p_delivery_fee: 0, p_service_fee: 0,
+      })
+      if (!cancelled) { setPromoQuote(error ? { valid: false, reason: 'promo_invalid' } : data as PromoQuote); setPromoChecking(false) }
+    }, 350)
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [promoCode, vendor?.id, compoundId])
+
   const selectedCompound = compounds.find(c => c.id === compoundId)
   const { fee: deliveryFee, quote, loading: feeLoading, failed: feeFailed, retry: retryFee } =
     useDeliveryQuote(compoundId)
@@ -362,12 +391,12 @@ export default function CustomOrder() {
   // on the same subtotal-only base and rounding. This remains an estimate here;
   // the customer sees the immutable authoritative total only in the offer.
   //
-  // The percentage comes from the server, never a hardcoded 0.08 -- same rule
-  // as CartPage and CheckoutPage. serviceFeeFor returns null while it is
-  // unknown, and null is rendered as «…» rather than folded into the total as
-  // a zero, which would understate it exactly as before.
-  const { pct: serviceFeePct } = useServiceFeePct()
-  const serviceFee = serviceFeeFor(knownSubtotal, serviceFeePct)
+  // The percentage and its ceiling come from the server, never a hardcoded 0.08
+  // -- same rule as CartPage and CheckoutPage. serviceFeeFor returns null while
+  // either is unknown, and null is rendered as «…» rather than folded into the
+  // total as a zero, which would understate it exactly as before.
+  const { policy: serviceFeePolicy } = useServiceFeePolicy()
+  const serviceFee = serviceFeeFor(knownSubtotal, serviceFeePolicy)
 
   // selectedCompound, not compoundId. CheckoutPage already learned this: a
   // stored id whose compound has since been deactivated passes a truthiness
@@ -400,6 +429,7 @@ export default function CustomOrder() {
       items: lines,
       requestNotes: notes.trim(),
       compoundId,
+      promoCode: promoCode.trim().toUpperCase() || null,
       sessionToken: getSessionToken(),
       slotId: slot?.id ?? null,
       scheduledDate: slot?.scheduled_date ?? null,
@@ -996,7 +1026,7 @@ export default function CustomOrder() {
           )}
 
           <div><label className="label" htmlFor={`${fid}-2`}>الاسم *</label>
-            <input id={`${fid}-2`} className="field" value={name} onChange={e => setName(e.target.value)} placeholder="الاسم بالكامل" /></div>
+            <input id={`${fid}-2`} className="field" value={name} onChange={e => { nameEdited.current = true; setName(e.target.value) }} placeholder="الاسم بالكامل" /></div>
           <div><label className="label" htmlFor={`${fid}-3`}>رقم الموبايل *</label>
             <input id={`${fid}-3`} className={`field ${phone.trim() && !isValidEgyptPhone(phone) ? '!border-dangerline' : ''}`}
               dir="ltr" value={phone} onChange={e => setPhone(e.target.value)} placeholder="01xxxxxxxxx" maxLength={13} />
@@ -1042,6 +1072,23 @@ export default function CustomOrder() {
           </div>
         </div>
       )}
+
+      <p className="text-sm text-mist bg-shellup/60 rounded-xl p-3 mb-4">
+        <Icon name="chatCircle" size="sm" className="inline-block align-[-0.15em] me-1" />لسه مش هتدفع حاجة دلوقتي. هنتصل بيك بسعر الأصناف وتقرر وقتها.
+      </p>
+
+      {/* priceKnown={false}: there is no price yet, so no honest saving to show.
+          The card promises when the discount lands instead of quoting a number
+          that would change the moment staff send the quote. */}
+      <PromoSection
+        basket={{ restaurantId: vendor?.id ?? null, compoundId, subtotal: 0, deliveryFee: 0, serviceFee: 0 }}
+        code={promoCode}
+        quote={promoQuote}
+        checking={promoChecking}
+        priceKnown={false}
+        onApply={setPromoCode}
+        onRemove={() => { setPromoCode(''); setPromoQuote(null) }}
+      />
 
       {feeFailed && compoundId && (
         <p className="text-sm text-danger bg-dangerbg rounded-xl p-3 mb-4">

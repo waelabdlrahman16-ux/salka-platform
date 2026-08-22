@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react'
 import Icon from './Icon'
 import { supabase } from '../lib/supabase'
+import { selectAll } from '../lib/selectAll'
 import { adminCompoundAction } from '../lib/adminCompoundActions'
 
 /**
@@ -41,8 +42,9 @@ export default function CompoundsTab() {
 
   async function load() {
     const [c, r] = await Promise.all([
-      supabase.from('compounds').select('*').order('active', { ascending: false }).order('name'),
-      supabase.from('regions').select('id, name').order('id'),
+      selectAll<Row>((from, to) => supabase.from('compounds').select('*')
+        .order('active', { ascending: false }).order('name').order('id').range(from, to)),
+      selectAll<Region>((from, to) => supabase.from('regions').select('id, name').order('id').range(from, to)),
     ])
     if (!c.error) setRows((c.data ?? []) as Row[])
     if (!r.error) setRegions((r.data ?? []) as Region[])

@@ -223,7 +223,20 @@ export interface Slot {
   id: number; start_time: string; end_time: string
   capacity: number; remaining: number; scheduled_date: string
 }
-export interface Setting { key: string; value: string; label: string }
+// min_value/max_value/kind are columns the settings table has always had and
+// this type never exposed, so `select('*')` fetched the bounds and the client
+// threw them away. A validate_setting trigger enforces all three server-side,
+// which meant the portal could only ever report "didn't save, try again" for a
+// rule it was holding in its hand.
+export interface Setting {
+  key: string
+  value: string
+  label: string
+  kind?: 'numeric' | 'boolean' | 'text'
+  min_value?: number | null
+  max_value?: number | null
+  required?: boolean
+}
 
 export interface Shift {
   id: number; driver_id: number; shift_date: string

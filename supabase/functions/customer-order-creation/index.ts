@@ -28,6 +28,7 @@ const ORDER_ERRORS = [
   "vendor_not_covering_compound", "promo_invalid", "promo_expired",
   "promo_not_available", "promo_minimum_not_met", "promo_limit_reached",
   "promo_already_used", "promo_customer_missing", "promo_nothing_to_discount",
+  "invalid_promo_code",
 ].sort((a, b) => b.length - a.length)
 
 function object(value: unknown): value is Record<string, unknown> {
@@ -133,12 +134,18 @@ const customerOrderCreation = withSupabase<OrderDatabase>(
       const slotId = nullablePositiveId(body.slotId)
       const notes = optionalText(body.requestNotes, 2000)
       const rx = optionalText(body.prescriptionPath, 120)
-      if (slotId === undefined || notes === undefined || rx === undefined || (body.scheduledDate != null && typeof body.scheduledDate !== "string")) {
+      // A custom request has no price yet, so the code is HELD here and applied
+      // when staff confirm the price. submit_custom_order validates everything
+      // that does not depend on price and raises now if the code is wrong --
+      // being told at submit beats discovering it when the quote arrives.
+      const customPromo = optionalText(body.promoCode, 32)
+      if (slotId === undefined || notes === undefined || rx === undefined || customPromo === undefined || (body.scheduledDate != null && typeof body.scheduledDate !== "string")) {
         return json({ error: "invalid_order_input" }, 400)
       }
       fn = "submit_custom_order"
       args = { ...common, p_request_items: body.items, p_request_notes: notes ?? "", p_slot_id: slotId,
-        p_scheduled_date: body.scheduledDate ?? null, p_prescription_path: rx }
+        p_scheduled_date: body.scheduledDate ?? null, p_prescription_path: rx,
+        p_promo_code: customPromo?.toUpperCase() ?? null }
     } else {
       const notes = optionalText(body.requestNotes, 2000)
       const collect = body.collectAmount == null ? null : Number(body.collectAmount)

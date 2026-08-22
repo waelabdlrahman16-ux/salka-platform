@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { telUrl } from '../lib/phone'
+import { selectAll } from '../lib/selectAll'
 import { useDismissable } from '../lib/useDismissable'
 import type { Assignment, Compound, Complaint, Driver, DeliverySlotRow, Earning, LiveDelivery, MenuItem, Order, OrderRating, Reliability, Restaurant, Setting, SettlementRequest, Shift, VendorCoverage } from '../lib/types'
 import { ping } from '../lib/notify'
@@ -304,6 +306,7 @@ export default function Admin() {
   const [lastServiceFeePct, setLastServiceFeePct] = useState<Record<number, number>>({})
   const [globalServiceFeeDraft, setGlobalServiceFeeDraft] = useState<string | null>(null)
   const [lastGlobalServiceFeePct, setLastGlobalServiceFeePct] = useState<number | null>(null)
+  const [globalServiceFeeCapDraft, setGlobalServiceFeeCapDraft] = useState<string | null>(null)
   const [newRestaurant, setNewRestaurant] = useState({ name: '', description: '', category: '', vendor_type: 'restaurant', prep_minutes: '20' })
   const [showAddRestaurant, setShowAddRestaurant] = useState(false)
   const [uploadingImage, setUploadingImage] = useState<string | null>(null)
@@ -431,36 +434,46 @@ export default function Admin() {
           .in('status', ACTIVE_ASSIGNMENT_STATUSES).order('id', { ascending: false })),
         withTimeout(supabase.from('delivery_assignments').select(ASSIGNMENT_SELECT)
           .order('id', { ascending: false }).limit(400)),
-        withTimeout(supabase.from('drivers').select('*').order('id')),
+        withTimeout(selectAll<Driver>((from, to) => supabase.from('drivers').select('*').order('id').range(from, to))),
         withTimeout(supabase.from('driver_earnings').select('*, drivers(name)')
           .eq('paid', false).order('id', { ascending: false })),
         withTimeout(supabase.from('driver_earnings').select('*, drivers(name)')
           .order('id', { ascending: false }).limit(300)),
-        withTimeout(supabase.from('restaurants').select('*').order('id')),
+        withTimeout(selectAll<Restaurant>((from, to) => supabase.from('restaurants').select('*').order('id').range(from, to))),
         // 949 rows, 229 kB, and the single largest thing this board moves -- more
         // than half of one 407 kB cycle. `menu` has exactly ONE consumer, the
         // {tab === 'menu'} block, and it feeds no badge and no ping(), so on the
         // other nineteen tabs every byte of it was fetched and thrown away every
         // fifteen seconds. Skipped unless that tab is open; the effect below
         // loads it on arrival.
+        //
+        // It is now 1015 rows, and that number is why this must page. The plain
+        // query returned the 1000 oldest ids and dropped the rest: fifteen items
+        // that no admin could see, price or switch off while customers ordered
+        // them. See lib/selectAll.ts.
         tabRef.current === 'menu'
-          ? withTimeout(supabase.from('menu_items').select('*').order('id'))
+          ? withTimeout(selectAll<MenuItem>((from, to) => supabase.from('menu_items').select('*').order('id').range(from, to)))
           : Promise.resolve({ data: null, error: null }),
-        withTimeout(supabase.from('settings').select('*').order('key')),
+        withTimeout(selectAll<Setting>((from, to) => supabase.from('settings').select('*').order('key').range(from, to))),
         withTimeout(supabase.from('shifts').select('*').order('shift_date', { ascending: false }).limit(40)),
         withTimeout(supabase.from('shift_swap_requests').select('*, shifts(*), requester:drivers!shift_swap_requests_requested_by_fkey(name)')
           .eq('status', 'escalated').order('escalated_at', { ascending: false })),
-        withTimeout(supabase.from('delivery_slots').select('*').order('restaurant_id').order('start_time')),
+        withTimeout(selectAll<DeliverySlotRow>((from, to) => supabase.from('delivery_slots').select('*')
+          .order('restaurant_id').order('start_time').range(from, to))),
         withTimeout(supabase.from('complaints').select('*, orders(customer_name, customer_phone, restaurants(name)), drivers(name)')
           .neq('status', 'resolved').order('id', { ascending: false })),
         withTimeout(supabase.from('complaints').select('*, orders(customer_name, customer_phone, restaurants(name)), drivers(name)')
           .eq('status', 'resolved').order('id', { ascending: false }).limit(100)),
         withTimeout(supabase.from('settlement_requests').select('*, drivers(name)').eq('status', 'pending').order('id', { ascending: false })),
         withTimeout(supabase.from('compounds').select('*').eq('active', true).order('direction').order('distance_km')),
-        withTimeout(supabase.from('vendor_coverage').select('*')),
+        withTimeout(selectAll<VendorCoverage>((from, to) => supabase.from('vendor_coverage').select('*').order('id').range(from, to))),
         withTimeout(supabase.from('order_ratings').select('*, orders(customer_name, customer_phone, restaurants(name))')
           .or('driver_rating.lte.2,restaurant_rating.lte.2').order('id', { ascending: false }).limit(30)),
-        withTimeout(supabase.from('wallet_transactions').select('order_id').not('order_id', 'is', null).ilike('reason', 'تعويض%')),
+        // Every compensation ever paid, and that list only ever grows. Filtered,
+        // but not bounded -- exactly the shape that reaches 1000 quietly.
+        withTimeout(selectAll<{ order_id: number }>((from, to) => supabase.from('wallet_transactions')
+          .select('order_id').not('order_id', 'is', null).ilike('reason', 'تعويض%')
+          .order('id').range(from, to))),
         withTimeout(toDataError(adminReport<StalledOrder[]>('stalledOrders'))),
         withTimeout(toDataError(adminReport<PendingRefund[]>('pendingRefunds'))),
         // Was an N+1: restaurant_reliability() once per restaurant, sequentially
@@ -623,18 +636,27 @@ export default function Admin() {
     // behind their inbox. Pausing would have silenced all of them -- the first
     // version of this change did, which is the trap it was written to avoid.
     //
-    // So a hidden board still polls, at 60s instead of 15s: alerts still arrive,
-    // a minute late at worst, and idle traffic drops by three quarters. Nothing
-    // here is sub-minute critical -- a stalled order is late by definition.
+    // So a hidden board still polls, at 120s instead of 30s: alerts still arrive,
+    // two minutes late at worst, and idle traffic drops by three quarters.
+    // Nothing here is sub-minute critical -- a stalled order is late by
+    // definition.
+    //
+    // THE INTERVAL IS ALSO A RATE LIMIT. load() fires 4 admin-reports actions
+    // per cycle, each capped at 90 per user per 10 min. At 15s one tab spends
+    // 40 per action, so a third open tab exceeded the cap -- production showed
+    // 381 HTTP 429s in 24h, 310 in one hour, silently freezing the dispatch
+    // board. At 30s a tab costs 20, so three tabs = 60, inside the cap.
+    const VISIBLE_POLL_MS = 30_000
+    const HIDDEN_POLL_MS = 120_000
     let hiddenSince: number | null = null
     const t = setInterval(() => {
       if (document.visibilityState === 'visible') { hiddenSince = null; load(); return }
       const now = Date.now()
       if (hiddenSince === null) hiddenSince = now
-      if (now - hiddenSince >= 60000) { hiddenSince = now; load() }
-    }, 15000)
+      if (now - hiddenSince >= HIDDEN_POLL_MS) { hiddenSince = now; load() }
+    }, VISIBLE_POLL_MS)
 
-    // Coming back refreshes IMMEDIATELY, not up to 15s later. This is a dispatch
+    // Coming back refreshes IMMEDIATELY, not up to 30s later. This is a dispatch
     // board: staff return to it and assign a driver, confirm an InstaPay
     // payment, settle cash. Acting on a snapshot from before they switched away
     // is worth far more than the bandwidth saved. The «آخر تحديث» line under the
@@ -1430,10 +1452,41 @@ export default function Admin() {
     load(true)
   }
 
-  async function updateSetting(st: Setting, value: string) {
-    if (value === st.value) return
+  /** Why a setting was refused, in Arabic, from the row's own bounds.
+   *
+   *  The validate_setting trigger raises 'invalid_setting_value:<key> must be
+   *  at least 5' and similar -- accurate, English, and aimed at a developer.
+   *  The bounds are on the row we already hold, so the reason is rebuilt here
+   *  rather than parsed out of a server string that was never meant for a
+   *  screen. 40 settings rows carry a min or a max today; every one of them
+   *  used to fail as "الإعداد ماتحفظش. جرب تاني", which tells an admin to
+   *  repeat the exact keystrokes that just failed. */
+  function settingRefusalReason(st: Setting, value: string): string {
+    const trimmed = value.trim()
+    if (st.kind === 'numeric' || st.min_value != null || st.max_value != null) {
+      if (!/^-?\d+(\.\d+)?$/.test(trimmed)) return `"${st.label || st.key}" لازم يكون رقم`
+      const n = Number(trimmed)
+      if (st.min_value != null && n < st.min_value) return `أقل قيمة مسموحة ${st.min_value}`
+      if (st.max_value != null && n > st.max_value) return `أكبر قيمة مسموحة ${st.max_value}`
+    }
+    if (st.kind === 'boolean' && trimmed !== 'true' && trimmed !== 'false') {
+      return `"${st.label || st.key}" لازم يكون مفعّل أو مقفول`
+    }
+    return 'الإعداد ماتحفظش. جرب تاني'
+  }
+
+  /** `revert` puts the box back to the stored value when the server refuses.
+   *  Without it the screen keeps showing the number that was rejected while the
+   *  database holds the old one, so the portal quietly disagrees with itself --
+   *  and the next person to read that screen believes the wrong number. */
+  async function updateSetting(st: Setting, value: string, revert?: HTMLInputElement) {
+    if (value.trim() === st.value) return
     const { error } = await supabase.from('settings').update({ value }).eq('key', st.key)
-    if (error) { setActionError('الإعداد ماتحفظش. جرب تاني'); return }
+    if (error) {
+      setActionError(settingRefusalReason(st, value))
+      if (revert) revert.value = st.value
+      return
+    }
     setActionError('')
     load(true)
   }
@@ -1454,6 +1507,21 @@ export default function Admin() {
     await updateSetting(st, String(pct))
     if (pct > 0) setLastGlobalServiceFeePct(pct)
     setGlobalServiceFeeDraft(null)
+  }
+
+  /** The ceiling on the same card as the percentage, deliberately. Left in the
+   *  generic list below it would sit rows away from the number it modifies, and
+   *  a percentage read without its cap is a fee nobody can predict. */
+  async function commitGlobalServiceFeeCap() {
+    const st = settings.find(s => s.key === 'service_fee_max_egp')
+    if (!st) return
+    const raw = (globalServiceFeeCapDraft ?? st.value).trim()
+    if (!/^\d+(\.\d+)?$/.test(raw)) { setActionError('الحد الأقصى لازم يكون رقم'); setGlobalServiceFeeCapDraft(null); return }
+    const cap = Number(raw)
+    if (cap < 0) { setActionError('الحد الأقصى لازم يكون صفر أو أكتر'); return }
+    if (String(cap) === st.value) { setGlobalServiceFeeCapDraft(null); return }
+    await updateSetting(st, String(cap))
+    setGlobalServiceFeeCapDraft(null)
   }
 
   async function toggleGlobalServiceFee() {
@@ -1820,7 +1888,7 @@ export default function Admin() {
   const addr = (o: Order) => `${o.zone}، وحدة ${o.unit_number}${o.address_notes ? `: ${o.address_notes}` : ''}`
   const customer = (o: Order) => (
     <div className="mt-2.5 bg-night border border-line rounded-xl p-3 text-sm space-y-1">
-      <p><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
+      <p><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={telUrl(o.customer_phone ?? '')}>{o.customer_phone}</a></p>
       <p><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{addr(o)}</p>
       {o.customer_note && <p className="text-coral-700"><Icon name="penToSquare" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_note}</p>}
     </div>
@@ -1910,7 +1978,7 @@ export default function Admin() {
                     <div className="min-w-0">
                       <p className="font-semibold text-sm">طلب #{o.id}: {o.vendor_name}: {o.total} ج.م</p>
                       <p className="text-xs text-mist mt-0.5">
-                        <Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a>
+                        <Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={telUrl(o.customer_phone ?? '')}>{o.customer_phone}</a>
                       </p>
                       <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{o.compound_name ?? '-'}</p>
                     </div>
@@ -1945,7 +2013,7 @@ export default function Admin() {
                       find it in another tab. Every reason an order can be stuck
                       now has its own way out, right here. */}
                   <div className="flex gap-2 mt-2.5 flex-wrap">
-                    <a className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem] text-center" href={`tel:${o.customer_phone}`}>اتصل بالعميل</a>
+                    <a className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem] text-center" href={telUrl(o.customer_phone ?? '')}>اتصل بالعميل</a>
 
                     {/* Stuck on YOU: it needs a price. */}
                     {full?.pricing_status === 'pending_quote' && full.quote_state !== 'offered' && (
@@ -2021,7 +2089,7 @@ export default function Admin() {
               return (
                 <div key={a.id} className="bg-night border border-line rounded-xl p-3">
                   <p className="font-semibold text-sm">طلب #{o.id}: {o.restaurants?.name}: {o.total} ج.م</p>
-                  <p className="text-xs text-mist mt-0.5"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a></p>
+                  <p className="text-xs text-mist mt-0.5"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={telUrl(o.customer_phone ?? '')}>{o.customer_phone}</a></p>
                   <p className="text-xs text-mist mt-0.5"><Icon name="locationDot" size="sm" className="inline-block align-[-0.15em] me-1" />{addr(o)}</p>
                   <p className="text-xs text-coral-700 mt-1">
                     {a.delivery_problem_reason
@@ -2029,7 +2097,7 @@ export default function Admin() {
                       : 'المندوب اتصل ومردش حد، اتبلّغ الإدارة'}
                   </p>
                   <div className="flex gap-2 mt-2.5 flex-wrap">
-                    <a className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem] text-center" href={`tel:${o.customer_phone}`}>اتصل بالعميل</a>
+                    <a className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem] text-center" href={telUrl(o.customer_phone ?? '')}>اتصل بالعميل</a>
                     <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem]" onClick={() => resolveNoAnswer(a, 'wait')}>يستنى 5 دقايق</button>
                     <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem]" onClick={() => forceDelivered(a)}>سجّله كمُسلَّم</button>
                     <button className="btn-ghost !py-1.5 text-xs flex-1 min-w-[7rem] !text-danger" onClick={() => resolveNoAnswer(a, 'fail')}>توصيل فاشل</button>
@@ -3041,6 +3109,20 @@ export default function Admin() {
                       onChange={e => setGlobalServiceFeeDraft(e.target.value)}
                       onBlur={() => commitGlobalServiceFee()} />
                     <span className="text-mist text-sm">%</span>
+                    {settings.some(s => s.key === 'service_fee_max_egp') && (() => {
+                      const cap = settings.find(s => s.key === 'service_fee_max_egp')!
+                      return (
+                        <>
+                          <span className="text-mist text-sm whitespace-nowrap">بحد أقصى</span>
+                          <input type="number" min={0} step="1"
+                            className="field !w-20 !py-1.5 text-center"
+                            value={globalServiceFeeCapDraft ?? cap.value}
+                            onChange={e => setGlobalServiceFeeCapDraft(e.target.value)}
+                            onBlur={() => commitGlobalServiceFeeCap()} />
+                          <span className="text-mist text-sm">ج.م</span>
+                        </>
+                      )
+                    })()}
                   </>
                 )}
               </div>
@@ -3050,19 +3132,26 @@ export default function Admin() {
               seed for a compound added later. Leaving them in the same list as
               live settings invites someone to "fix delivery pricing" here and
               watch nothing change. */}
-          {settings.filter(st => !st.key.startsWith('fee_tier') && st.key !== 'service_fee_percent').map(st => {
+          {settings.filter(st => !st.key.startsWith('fee_tier') && st.key !== 'service_fee_percent' && st.key !== 'service_fee_max_egp').map(st => {
             const isBool = st.value === 'true' || st.value === 'false'
             const on = st.value === 'true'
             return (
               <div key={st.key} className="card p-4 flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-semibold text-sm truncate">{st.label || st.key}</p>
+                  {(st.min_value != null || st.max_value != null) && (
+                    <p className="text-[11px] text-mist">
+                      {st.min_value != null && st.max_value != null
+                        ? `من ${st.min_value} لـ ${st.max_value}`
+                        : st.min_value != null ? `الحد الأدنى ${st.min_value}` : `الحد الأقصى ${st.max_value}`}
+                    </p>
+                  )}
                 </div>
                 {isBool ? (
                   <Toggle on={on} onChange={() => updateSetting(st, on ? 'false' : 'true')} label="مفعّل" labelOff="مقفول" />
                 ) : (
                   <input defaultValue={st.value} className="field !w-24 !py-1.5 text-center"
-                    onBlur={e => updateSetting(st, e.target.value)} />
+                    onBlur={e => updateSetting(st, e.target.value, e.currentTarget)} />
                 )}
               </div>
             )
@@ -3280,7 +3369,7 @@ export default function Admin() {
                     <div className="min-w-0">
                       <p className="font-semibold text-sm truncate">طلب #{o.id}: {o.vendor_name ?? '-'}</p>
                       <p className="text-xs text-mist mt-0.5">
-                        <Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={`tel:${o.customer_phone}`}>{o.customer_phone}</a>
+                        <Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{o.customer_name} • <a className="text-sea" dir="ltr" href={telUrl(o.customer_phone ?? '')}>{o.customer_phone}</a>
                       </p>
                       {o.cancel_reason && <p className="text-xs text-mist mt-0.5"><Icon name="penToSquare" size="sm" className="inline-block align-[-0.15em] me-1" />{o.cancel_reason}</p>}
                       <p className="text-xs text-mist mt-0.5">
@@ -3370,7 +3459,7 @@ export default function Admin() {
               </div>
               <p className="text-sm mt-2">{c.description}</p>
               {c.orders && (
-                <p className="text-sm text-mist mt-2"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{c.orders.customer_name} • <a className="text-sea" dir="ltr" href={`tel:${c.orders.customer_phone}`}>{c.orders.customer_phone}</a></p>
+                <p className="text-sm text-mist mt-2"><Icon name="user" size="sm" className="inline-block align-[-0.15em] me-1" />{c.orders.customer_name} • <a className="text-sea" dir="ltr" href={telUrl(c.orders.customer_phone ?? '')}>{c.orders.customer_phone}</a></p>
               )}
               <div className="flex gap-2.5 mt-3 flex-wrap">
                 {c.status !== 'reviewed' && <button className="btn-ghost flex-1 text-sm" onClick={() => updateComplaintStatus(c, 'reviewed')}>قيد المراجعة</button>}

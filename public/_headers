@@ -1,12 +1,37 @@
 # Cloudflare serves these on every response. Audit finding 19 added the CSP.
 #
-# IT IS REPORT-ONLY ON PURPOSE. A Content-Security-Policy that is wrong does not
-# degrade a site, it breaks it -- a missed origin means a blank page or a dead
-# checkout, on a site taking real orders. Report-Only enforces nothing and sends
-# every violation to Sentry instead, so the policy can be proved against real
-# traffic (real devices, the Facebook in-app browser, iOS Safari) before it is
-# allowed to block anything. Flip the header name to Content-Security-Policy
-# once Sentry has been quiet for a few days of normal ordering.
+# IT IS NOW ENFORCING. It ran as Report-Only from the audit until 2026-08-21.
+#
+# It was NOT flipped on "Sentry has been quiet", which is weak evidence: Sentry
+# only hears about pages real people happened to open in a real browser, so a
+# screen nobody visited that week reports nothing and breaks on the day you
+# enforce. It was flipped after the policy was tested DIRECTLY -- the real
+# production build served locally with this exact policy as an enforcing header,
+# every route walked, and every origin named below probed one at a time, with an
+# unlisted host as a control to prove the policy was actually blocking.
+#
+# What that test proved, all with zero violations: images from BOTH
+# auth.gosalka.com and the .supabase.co host load; OpenStreetMap tiles load; the
+# Google Fonts stylesheet loads via <link>; the Supabase REST API, the FCM and
+# Firebase-installations endpoints are reachable; and the realtime WebSocket
+# (wss://) OPENS -- while an unlisted image host and an unlisted wss:// host
+# were both refused, so enforcement was demonstrably live.
+#
+# TWO THINGS THE TEST COULD NOT REACH, recorded honestly:
+#
+#   The staff portals. /admin, /vendor, /driver, /supervisor, /catalog and
+#   /observer all redirect to /login without a session, so those screens were
+#   never rendered. Their ingredients were each proved separately -- leaflet is
+#   bundled and covered by 'self', the tiles load, https and wss to Supabase both
+#   work -- but the assembled screens were not exercised.
+#
+#   The service worker. firebase-messaging-sw.js importScripts the FCM SDK from
+#   www.gstatic.com, and script-src lists that host precisely so it may. It could
+#   not be executed under test: registration fails in the test browser on
+#   localhost, and fails IDENTICALLY with no policy at all, so the failure is
+#   environmental and not this policy. The permission is there by reading, not by
+#   demonstration. If push notifications stop after this ships, THIS is the first
+#   thing to suspect, and reverting is one word in the header name below.
 #
 # WHY script-src NEEDS 'unsafe-inline'. Cloudflare injects a ~921-character
 # inline script into every response at the edge -- the bot-challenge and RUM
@@ -60,4 +85,4 @@
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(self)
-  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://pqpnwxyevrsipklzmwex.supabase.co https://auth.gosalka.com https://*.tile.openstreetmap.org; connect-src 'self' https://pqpnwxyevrsipklzmwex.supabase.co wss://pqpnwxyevrsipklzmwex.supabase.co https://auth.gosalka.com wss://auth.gosalka.com https://fcmregistrations.googleapis.com https://firebaseinstallations.googleapis.com https://o4511834207682560.ingest.de.sentry.io; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; report-uri https://o4511834207682560.ingest.de.sentry.io/api/4511834268762192/security/?sentry_key=0db2410bf037e80bba50613f1685114a
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://pqpnwxyevrsipklzmwex.supabase.co https://auth.gosalka.com https://*.tile.openstreetmap.org; connect-src 'self' https://pqpnwxyevrsipklzmwex.supabase.co wss://pqpnwxyevrsipklzmwex.supabase.co https://auth.gosalka.com wss://auth.gosalka.com https://fcmregistrations.googleapis.com https://firebaseinstallations.googleapis.com https://o4511834207682560.ingest.de.sentry.io; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'none'; report-uri https://o4511834207682560.ingest.de.sentry.io/api/4511834268762192/security/?sentry_key=0db2410bf037e80bba50613f1685114a

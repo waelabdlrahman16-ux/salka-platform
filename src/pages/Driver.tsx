@@ -6,6 +6,7 @@ import { pingIds } from '../lib/notify'
 import { registerPush, persistPushToken } from '../lib/push'
 import EnablePushButton from '../components/EnablePushButton'
 import EnableSoundButton from '../components/EnableSoundButton'
+import { telUrl, whatsappUrl } from '../lib/phone'
 import { startLocationReporting, stopLocationReporting, reportPosition } from '../lib/geolocation'
 import type { Assignment, Driver, Shift, SwapRequest } from '../lib/types'
 import Icon from '../components/Icon'
@@ -1109,8 +1110,8 @@ export default function DriverPage() {
                     arrival. The !py-1.5 + text-xs overrides dropped them to
                     ~28px; min-h-[44px] restores the platform touch minimum. */}
                 <div className="flex gap-2 pt-1">
-                  <a className="btn-ghost !px-2 text-sm flex-1 min-h-[44px] inline-flex items-center justify-center whitespace-nowrap" href={`tel:${o.customer_phone}`}>اتصال</a>
-                  <a className="btn-ghost !px-2 text-sm flex-1 min-h-[44px] inline-flex items-center justify-center whitespace-nowrap" href={`https://wa.me/${o.customer_phone.replace(/^0/, '20').replace('+', '')}`} target="_blank" rel="noreferrer">واتساب</a>
+                  <a className="btn-ghost !px-2 text-sm flex-1 min-h-[44px] inline-flex items-center justify-center whitespace-nowrap" href={telUrl(o.customer_phone)}>اتصال</a>
+                  <a className="btn-ghost !px-2 text-sm flex-1 min-h-[44px] inline-flex items-center justify-center whitespace-nowrap" href={whatsappUrl(o.customer_phone)} target="_blank" rel="noreferrer">واتساب</a>
                   {destLat != null && destLng != null && (
                     <a className="btn-sea !px-2 text-sm flex-1 min-h-[44px] inline-flex items-center justify-center whitespace-nowrap"
                       href={`https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&travelmode=driving`}

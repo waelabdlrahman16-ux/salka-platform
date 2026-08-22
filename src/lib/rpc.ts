@@ -164,6 +164,13 @@ export const ERROR_AR: Record<string, string> = {
 
   // tips / feedback
   invalid_amount: 'المبلغ مش مظبوط',
+  // Raised by guard_custom_order_quote_dispatch / _fulfilment -- live triggers
+  // on the هنجبلك path. Absent here, a guard doing exactly its job reached staff
+  // as the generic 'حصل خطأ'، which says nothing about what to do next. This is
+  // an ordinary sequencing rule, not a fault. quote_not_accepted is the other
+  // code these guards raise; it is defined with the rest of the quote copy above,
+  // where its message also names the consequence.
+  order_not_paid: 'الطلب لسه مادفعش',
   invalid_fee: 'الرسوم لازم تكون رقم موجب',
   fee_too_large: 'الرقم ده كبير أوي، أقصى رسوم توصيل 2000 ج.م',
   compound_not_found: 'المكان ده مش موجود',
@@ -247,6 +254,10 @@ export const ERROR_AR: Record<string, string> = {
   promo_already_used: 'استخدمت كود الخصم ده قبل كده',
   promo_nothing_to_discount: 'كود الخصم مش بيخصم حاجة في الطلب ده',
   promo_customer_missing: 'سجّل دخولك عشان تستخدم كود الخصم',
+  // Raised by submit_custom_order when a هنجبلك request carries a code that is
+  // not even code-shaped. Same class as the block above: emitted by the server,
+  // and without an entry here it collapses into the generic Arabic error.
+  invalid_promo_code: 'كود الخصم غير صحيح',
 
   // ---------------------------------------------------------------------------
   // Order-path validation the customer can act on. Same problem as the promo

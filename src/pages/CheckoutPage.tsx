@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useId } from 'react'
+import { useEffect, useMemo, useRef, useState, useId } from 'react'
 import Icon from '../components/Icon'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
@@ -9,8 +9,10 @@ import { loadMenuOptions } from '../lib/menuOptions'
 import { lineIsStale, priceLine } from '../lib/linePricing'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
 import { track, trackOnce } from '../lib/analytics'
-import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
-import { PROMO_SCOPE_LABEL, type PromoScope } from '../lib/promoScope'
+import { serviceFeeFor, useServiceFeePolicy } from '../lib/serviceFee'
+import { PROMO_SCOPE_LABEL } from '../lib/promoScope'
+import PromoSection from '../components/PromoSection'
+import { type PromoQuote } from '../lib/promoOffers'
 import { useCustomerAuth, getSessionToken } from '../lib/customerAuth'
 import { rememberLiveOrder } from '../lib/liveOrder'
 import LocationPreviewMap from '../components/LocationPreviewMap'
@@ -55,6 +57,30 @@ export default function CheckoutPage() {
   // and nothing ever filled them in afterwards. A signed-in customer retyped
   // their name and phone on every single order while the app already knew both.
   // The effect below is what actually delivers them.
+  // WHICH NAME BELONGS IN THIS BOX. Three sources disagree, and until now the
+  // weakest one won.
+  //
+  //   1. What the customer typed here, right now. Always wins.
+  //   2. The name on their LAST ORDER -- what they actually call themselves
+  //      when ordering food, in the language they chose.
+  //   3. `customer.name` on the account. This is NOT something the customer
+  //      ever typed: a database trigger copies it from the Google profile at
+  //      signup, and nothing afterwards updates it. 206 of 256 accounts hold a
+  //      Latin name from Google while the person orders in Arabic.
+  //
+  // Source 3 was reaching the box first -- synchronously, on first paint -- and
+  // source 2 arrived 500ms later behind a debounce and was then discarded,
+  // because the old condition only filled an EMPTY box. So someone who signed
+  // up with an Arabic name saw it silently replaced by an English one on their
+  // next order, having edited nothing. On a shared family Google login it was
+  // not even a translation: «Naglaa Zayed» over an order placed by محمد مصطفي,
+  // and the driver arrives asking for the wrong person.
+  //
+  // Source 3 still prefills, so a first-time customer is not left with an empty
+  // box, but source 2 now replaces it when it lands. A REF, not state: the read
+  // happens inside a 500ms timeout, and a state value captured in that closure
+  // would be stale exactly when someone is mid-word.
+  const nameEdited = useRef(false)
   const [name, setName] = useState(() => customer?.name ?? '')
   const [phone, setPhone] = useState(() => displayEgyptPhone(customer?.phone) || localStorage.getItem('salka_phone') || '')
   // Which fields the customer has actually left, so an error appears when they
@@ -104,7 +130,7 @@ export default function CheckoutPage() {
   const [codThresholdFailed, setCodThresholdFailed] = useState(false)
   const [useWallet, setUseWallet] = useState(true)
   const [promoCode, setPromoCode] = useState('')
-  const [promoQuote, setPromoQuote] = useState<{ valid: boolean; discount?: number; reason?: string; minimum?: number; applies_to?: PromoScope } | null>(null)
+  const [promoQuote, setPromoQuote] = useState<PromoQuote | null>(null)
   const [promoChecking, setPromoChecking] = useState(false)
 
   // Saved addresses, and the default one preselected. Guarded on `customer`
@@ -176,7 +202,7 @@ export default function CheckoutPage() {
       const data = result.ok ? result.data : null
       setAddressLoaded(true)
       if (data) {
-        if (!name.trim() && data.customer_name) setName(data.customer_name)
+        if (data.customer_name && !nameEdited.current) setName(data.customer_name)
         if (!unit.trim() && data.unit_number) setUnit(data.unit_number)
         if (!notes.trim() && data.address_notes) setNotes(data.address_notes)
         if (!compoundId && data.compound_id) setCompoundId(data.compound_id)
@@ -258,13 +284,13 @@ export default function CheckoutPage() {
   // a 45-minute supermarket shop like a 10-minute burger.
   const { fee: deliveryFee, quote, loading: feeLoading, failed: feeFailed, retry: retryFee } =
     useDeliveryQuote(compoundId, cart.restaurantId)
-  // Same rule as the delivery fee: settings.service_fee_percent is what
-  // place_order actually charges, so it is fetched, not assumed. The old
+  // Same rule as the delivery fee: the percentage and its 199 EGP ceiling are
+  // what place_order actually charges, so both are fetched, not assumed. The old
   // hardcoded 0.02 quoted the customer one number and billed them another for
   // any setting other than 2.
-  const { pct: serviceFeePct, loading: serviceFeeLoading, failed: serviceFeeFailed, retry: retryServiceFee } =
-    useServiceFeePct()
-  const serviceFee = serviceFeeFor(subtotal, serviceFeePct)
+  const { policy: serviceFeePolicy, loading: serviceFeeLoading, failed: serviceFeeFailed, retry: retryServiceFee } =
+    useServiceFeePolicy()
+  const serviceFee = serviceFeeFor(subtotal, serviceFeePolicy)
   // A code is only an estimate here. The database validates it again against
   // the final server-priced basket inside the order transaction.
   //
@@ -285,7 +311,7 @@ export default function CheckoutPage() {
         p_code: code, p_restaurant_id: cart.restaurantId, p_compound_id: compoundId, p_subtotal: subtotal,
         p_delivery_fee: deliveryFee, p_service_fee: serviceFee,
       })
-      if (!cancelled) { setPromoQuote(error ? { valid: false, reason: 'promo_invalid' } : data as typeof promoQuote); setPromoChecking(false) }
+      if (!cancelled) { setPromoQuote(error ? { valid: false, reason: 'promo_invalid' } : data as PromoQuote); setPromoChecking(false) }
     }, 350)
     return () => { cancelled = true; clearTimeout(timer) }
   }, [promoCode, cart.restaurantId, compoundId, subtotal, deliveryFee, serviceFee])
@@ -551,7 +577,7 @@ export default function CheckoutPage() {
                 Arabic reader does not look for it. */}
             <div><label className="label" htmlFor={`${fid}-1`}>الاسم <span className="text-mist font-normal">(مطلوب)</span></label>
               <input id={`${fid}-1`} className={`field ${touched.name && !name.trim() ? '!border-dangerline' : ''}`}
-                value={name} onChange={e => setName(e.target.value)}
+                value={name} onChange={e => { nameEdited.current = true; setName(e.target.value) }}
                 onBlur={() => setTouched(t => ({ ...t, name: true }))} placeholder="الاسم بالكامل" />
               {touched.name && !name.trim() && (
                 <p className="text-xs text-danger mt-1">اكتب اسمك عشان المندوب يعرف يسأل عليك</p>
@@ -666,25 +692,15 @@ export default function CheckoutPage() {
         </div>
       )}
 
-      <div className="card p-4 mb-4">
-        <label className="label" htmlFor={`${fid}-promo`}>عندك كود خصم؟ <span className="text-mist font-normal">(اختياري)</span></label>
-        <input id={`${fid}-promo`} className="field" value={promoCode}
-          onChange={e => setPromoCode(e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ''))}
-          placeholder="مثال: SOKHNA10" maxLength={32} dir="ltr" />
-        {promoChecking && <p className="text-xs text-mist mt-2">بنتأكد من الكود…</p>}
-        {!promoChecking && promoCode.trim() && promoQuote?.valid && (
-          <p className="text-xs text-success font-semibold mt-2">تم تطبيق الخصم على {PROMO_SCOPE_LABEL[promoQuote.applies_to ?? 'all']}: -{promoDiscount} ج.م</p>
-        )}
-        {!promoChecking && promoCode.trim() && promoQuote && !promoQuote.valid && (
-          <p className="text-xs text-danger mt-2">
-            {promoQuote.reason === 'promo_expired' ? 'الكود منتهي أو لسه ما بدأش'
-              : promoQuote.reason === 'promo_minimum_not_met' ? `الحد الأدنى ${promoQuote.minimum ?? ''} ج.م`
-              : promoQuote.reason === 'promo_not_available' ? 'الكود مش متاح للمطعم أو المكان ده'
-              : promoQuote.reason === 'promo_nothing_to_discount' ? `الكود ده بيخصم من ${PROMO_SCOPE_LABEL[promoQuote.applies_to ?? 'all']}، ومفيش حاجة يخصم منها في الطلب ده`
-              : 'الكود غير صحيح أو غير متاح'}
-          </p>
-        )}
-      </div>
+      {/* The customer no longer types the advertised code. See PromoSection. */}
+      <PromoSection
+        basket={{ restaurantId: cart.restaurantId, compoundId, subtotal, deliveryFee, serviceFee }}
+        code={promoCode}
+        quote={promoQuote}
+        checking={promoChecking}
+        onApply={setPromoCode}
+        onRemove={() => { setPromoCode(''); setPromoQuote(null) }}
+      />
 
       <h2 className="text-[13px] font-bold text-mist mb-2 mt-5">طريقة الدفع</h2>
       <div className="card p-4 mb-4">

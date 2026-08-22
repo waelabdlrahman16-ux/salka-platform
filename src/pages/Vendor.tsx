@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, useId } from 'react'
 import { supabase } from '../lib/supabase'
+import { selectAll } from '../lib/selectAll'
 import { useDismissable } from '../lib/useDismissable'
 import { useAuth } from '../lib/auth'
 import { startRinging, stopRinging } from '../lib/ring'
 import { ping } from '../lib/notify'
 import { useDeliveryQuote } from '../lib/deliveryQuote'
-import { serviceFeeFor, useServiceFeePct } from '../lib/serviceFee'
+import { serviceFeeFor, useServiceFeePolicy } from '../lib/serviceFee'
 import { isValidEgyptPhone, PHONE_HINT } from '../lib/validation'
 import { registerPush, persistPushToken } from '../lib/push'
 import { orderStatusLabel } from '../lib/statusLabels'
@@ -264,8 +265,8 @@ function DriverRequestPanel({ restaurant, standalone, onClose }: { restaurant: R
     useDeliveryQuote(compoundId)
   const amount = Number(collectAmount) || 0
   // Server-owned percentage, same hook as every other screen that shows money.
-  const { pct: serviceFeePct } = useServiceFeePct()
-  const pickupServiceFee = paymentMode === 'driver_pays' ? serviceFeeFor(amount, serviceFeePct) : 0
+  const { policy: serviceFeePolicy } = useServiceFeePolicy()
+  const pickupServiceFee = paymentMode === 'driver_pays' ? serviceFeeFor(amount, serviceFeePolicy) : 0
   const valid = name.trim() && isValidEgyptPhone(phone) && compoundId && unit.trim()
     && deliveryFee !== null && (paymentMode === 'prepaid' || amount > 0)
 
@@ -561,8 +562,8 @@ function KitchenVendor({ rid }: { rid: number }) {
 
     const allIds = [...(o ?? []), ...(done ?? [])].map(x => x.id)
     if (allIds.length) {
-      const { data: its, error: itsErr } = await supabase.from('order_items').select('*')
-        .in('order_id', allIds)
+      const { data: its, error: itsErr } = await selectAll<OrderItem>((from, to) =>
+        supabase.from('order_items').select('*').in('order_id', allIds).order('id').range(from, to))
       // An order card with no lines looks like an EMPTY order, not a failed
       // fetch -- the vendor would cook nothing and mark it ready.
       if (itsErr) { setLoadError('مش قادرين نجيب تفاصيل الأصناف، متأكدش من محتوى الطلبات'); return }
