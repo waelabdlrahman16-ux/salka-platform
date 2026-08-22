@@ -90,6 +90,10 @@ export default function CustomOrder() {
   const [promoChecking, setPromoChecking] = useState(false)
   const nameEdited = useRef(false)
   const [name, setName] = useState(''); const [phone, setPhone] = useState(() => localStorage.getItem('salka_phone') ?? '')
+  // Wallet on هنجبلك. Intent only -- the amount lands in the quote, computed
+  // server-side from the live balance, and is settled when the customer accepts.
+  const [walletBalance, setWalletBalance] = useState(0)
+  const [useWallet, setUseWallet] = useState(true)
   const [unit, setUnit] = useState('')
   const [addrNotes, setAddrNotes] = useState('')
   const [compoundId, setCompoundId] = useState<number | null>(() => {
@@ -415,6 +419,15 @@ export default function CustomOrder() {
   // form -- a summary card with a blank in it is worse than the form.
   const collapsedAddress = !addressExpanded && !!customer && addressComplete && !!selectedCompound
 
+  // Same lookup CheckoutPage uses. A failed call leaves the balance at 0 and
+  // simply does not offer the option -- it never claims a balance it could not
+  // read, and never silently promises a discount the quote will not contain.
+  useEffect(() => {
+    if (!isValidEgyptPhone(phone)) { setWalletBalance(0); return }
+    customerSessionAccess<number>('wallet', { phone: phone.trim(), sessionToken: getSessionToken() })
+      .then(result => setWalletBalance(result.ok ? (Number(result.data) || 0) : 0))
+  }, [phone])
+
   async function submit() {
     if (!vendor || !valid) return
     setSaving(true); setError('')
@@ -433,7 +446,8 @@ export default function CustomOrder() {
       sessionToken: getSessionToken(),
       slotId: slot?.id ?? null,
       scheduledDate: slot?.scheduled_date ?? null,
-      prescriptionPath: rxPath
+      prescriptionPath: rxPath,
+      useWallet: walletBalance > 0 && useWallet
     })
     const data = result.ok ? result.data : null
     const err = result.ok ? null : { message: result.code }
@@ -1076,6 +1090,22 @@ export default function CustomOrder() {
       <p className="text-sm text-mist bg-shellup/60 rounded-xl p-3 mb-4">
         <Icon name="chatCircle" size="sm" className="inline-block align-[-0.15em] me-1" />لسه مش هتدفع حاجة دلوقتي. هنتصل بيك بسعر الأصناف وتقرر وقتها.
       </p>
+
+      {/* Offered before the price exists, so the wording promises rather than
+          quotes: the exact amount is decided by the quote and shown in the
+          breakdown on the tracking page, where the customer accepts it. */}
+      {walletBalance > 0 && (
+        <div className="card p-4 mb-4">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" className="accent-sea w-4 h-4" checked={useWallet} onChange={e => setUseWallet(e.target.checked)} />
+            <Icon name="wallet" size="md" className="text-mist" />
+            <span className="flex-1">
+              <span className="font-semibold block">استخدم رصيدك</span>
+              <span className="text-xs text-mist">عندك {walletBalance} ج.م — هنخصمها من العرض لما يوصلك</span>
+            </span>
+          </label>
+        </div>
+      )}
 
       {/* priceKnown={false}: there is no price yet, so no honest saving to show.
           The card promises when the discount lands instead of quoting a number

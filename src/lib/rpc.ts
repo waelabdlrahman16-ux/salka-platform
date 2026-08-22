@@ -121,6 +121,11 @@ export const ERROR_AR: Record<string, string> = {
   invalid_quote_input: 'راجع السعر وجرب تاني',
   invalid_idempotency_key: 'حصل عطل مؤقت. حدّث الصفحة وجرب تاني',
   invalid_quote_token: 'مش مسموح بالعملية دي',
+  // Raised by accept_custom_order_quote when the balance moved between the
+  // quote being issued and the customer accepting it. The frozen total promised
+  // a wallet discount we can no longer fund, and charging a different total is
+  // the surprise the 15-minute quote exists to prevent. Renewing re-prices it.
+  wallet_balance_changed: 'رصيدك اتغير بعد ما وصلك العرض. جدّد العرض عشان نحسبه من جديد',
   quote_transition_failed: 'مقدرناش نحدّث موافقتك على السعر. جرب تاني',
 
   // dispatch / driver
