@@ -120,3 +120,39 @@ jobs:
         run: npx --no-install wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+      # AFTER the deploy, against production as it actually ended up.
+      #
+      # Every other gate in this repository runs before the merge. That was
+      # enough until 2026-08-22, when the merge ITSELF changed the database:
+      # the Supabase Git integration applied seven migration files that had no
+      # ledger row, one of which recreated the customer settings policy without
+      # service_fee_max_egp. Checkout was dead from 04:06 to 06:22 UTC and
+      # nothing noticed -- CI had been green, because CI ran beforehand.
+      #
+      # continue-on-error is deliberate: the deploy has already happened, so
+      # failing the job cannot undo it, and a red X here must not be mistaken
+      # for a failed deploy. It is an alarm, not a gate. Read the log.
+      # The secrets context is not readable from a step-level `if`, so the
+      # presence check has to be a step of its own -- the same shape ci.yml
+      # already uses for smoke-order, and for the same reason. Writing
+      # `if: secrets.X != ''` would evaluate to false forever and this check
+      # would never run, which is precisely the silent-no-op it exists to stop.
+      - name: Check for database credentials
+        id: creds
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$DB_URL" ]; then
+            echo "have=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::SUPABASE_DB_URL is not set -- production invariants were NOT verified after this deploy."
+          else
+            echo "have=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify production invariants
+        if: steps.creds.outputs.have == 'true'
+        continue-on-error: true
+        run: npm run check:production
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}

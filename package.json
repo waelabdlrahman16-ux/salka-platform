@@ -24,7 +24,8 @@
     "test:promo": "node scripts/test-promo.mjs",
     "test:dispatch": "node scripts/test-dispatch.mjs",
     "check:quote-state": "node scripts/check-quote-state-draft.mjs",
-    "build:icons": "node scripts/build-icons.mjs"
+    "build:icons": "node scripts/build-icons.mjs",
+    "check:production": "node scripts/check-production-invariants.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.2",
