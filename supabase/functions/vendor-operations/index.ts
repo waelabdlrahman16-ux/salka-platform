@@ -1,5 +1,19 @@
 import{withSupabase}from"@supabase/server";import{fail,isRateLimitError,json}from"../_shared/secure.ts"
 type Db={public:{Tables:Record<string,never>;Views:Record<string,never>;Enums:Record<string,never>;CompositeTypes:Record<string,never>;Functions:Record<string,{Args:Record<string,unknown>;Returns:unknown}>}}
+// confirmPrice is KEPT DELIBERATELY, though no screen calls it any more.
+//
+// Quote issuing moved to the quote-operations function, and Supervisor.tsx now
+// goes through lib/quoteOperations. The local tree that ran in production for
+// weeks had removed this action for exactly that reason -- and #190 put it back,
+// because production was serving a build without it and pricing a هنجبلك order
+// returned invalid_action, 400. That outage is the argument for leaving it:
+// an action nobody calls costs one Set membership check, while removing one that
+// something still reaches (a stale staff tab, a warm Capacitor WebView holding a
+// bundle for days) is a 400 on the money path with no clue in the message.
+//
+// It is a fallback, not the route: confirm_custom_order_price still enforces
+// is_supervisor() and the quote guards still apply. Delete it once the app has
+// been on quote-operations long enough that no cached bundle can reach it.
 type Action="accept"|"confirmPrice"|"delay"|"deliveryOverview"|"ready"|"setItemAvailability"|"setOpen";const ACTIONS=new Set<Action>(["accept","confirmPrice","delay","deliveryOverview","ready","setItemAvailability","setOpen"])
 const KNOWN=["admin_only","already_accepted","delay_limit_reached","invalid_amount","invalid_prep_minutes","item_not_found","not_a_vendor","not_authorized","not_your_order","not_your_restaurant","order_closed","order_not_found","order_not_paid","order_not_pending","order_not_priced","price_required","quote_not_accepted","wrong_stage"]
 const id=(v:unknown)=>Number.isInteger(v)&&Number(v)>0&&Number(v)<=2147483647?Number(v):null
