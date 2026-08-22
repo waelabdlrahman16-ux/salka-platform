@@ -361,6 +361,8 @@ export default function Admin() {
   // feedback at all while the modal stayed open -- the operator just kept tapping.
   const [modalError, setModalError] = useState('')
   const inFlightRef = useRef<Promise<void> | null>(null)
+  // Last time the SLOW half of load() ran -- see SLOW_ACTIONS_MS below.
+  const slowFetchedAt = useRef(0)
   // The poll below is registered once, with an empty dependency array, so the
   // load() it holds is the closure from the FIRST render. Reading `tab` out of
   // that closure would read 'unassigned' forever, and the menu query would stay
@@ -383,17 +385,43 @@ export default function Admin() {
   // consequence here is duplicate writes: add a menu item, the list does not
   // change, add it again, two live items at whatever price was typed second.
   // Callers that just mutated something pass force.
+  // NOT EVERYTHING ON THIS BOARD CHANGES EVERY 30 SECONDS.
+  //
+  // load() fired four admin-reports actions per cycle. Production showed 10,668
+  // admin-reports calls in 24h -- 37% of ALL edge-function traffic, more than
+  // every customer-facing function combined -- and 40 HTTP 429s when enough
+  // tabs were open to pass the 90-per-user-per-action cap.
+  //
+  // Two of the four earn that cadence: stalledOrders feeds ping('stalled'), and
+  // liveDeliveries drives the live map. Both are why this board is allowed to
+  // poll while hidden at all.
+  //
+  // The other two do not. listAccounts is the staff/vendor/driver roster and
+  // pendingRefunds only moves when an admin marks a refund -- both change when a
+  // HUMAN acts, never on their own, and neither raises an alert. Refetching them
+  // twice a minute bought nothing.
+  //
+  // So they run every SLOW_ACTIONS_MS instead, and on any forced load (manual
+  // refresh, tab switch, returning to the tab) so an admin who just changed one
+  // still sees it immediately. That is 4 actions/cycle down to 2, without
+  // touching a single alert path.
+  const SLOW_ACTIONS_MS = 120_000
+
   async function load(force = false): Promise<void> {
     if (inFlightRef.current) {
       if (!force) return inFlightRef.current
       await inFlightRef.current.catch(() => {})
     }
-    const p = runLoad().finally(() => { if (inFlightRef.current === p) inFlightRef.current = null })
+    const p = runLoad(force).finally(() => { if (inFlightRef.current === p) inFlightRef.current = null })
     inFlightRef.current = p
     return p
   }
 
-  async function runLoad() {
+  async function runLoad(force: boolean) {
+    // Decided ONCE per cycle, before any await, and stamped up front: two polls
+    // that overlap must not both decide they are the slow one.
+    const wantSlow = force || Date.now() - slowFetchedAt.current >= SLOW_ACTIONS_MS
+    if (wantSlow) slowFetchedAt.current = Date.now()
     try {
       // supabase-js has no timeout. Without a ceiling, one hung request pins the
       // in-flight ref forever: every later load(true) waits on a dead promise, no
@@ -475,7 +503,9 @@ export default function Admin() {
           .select('order_id').not('order_id', 'is', null).ilike('reason', 'تعويض%')
           .order('id').range(from, to))),
         withTimeout(toDataError(adminReport<StalledOrder[]>('stalledOrders'))),
-        withTimeout(toDataError(adminReport<PendingRefund[]>('pendingRefunds'))),
+        wantSlow
+          ? withTimeout(toDataError(adminReport<PendingRefund[]>('pendingRefunds')))
+          : Promise.resolve({ data: null, error: null }),
         // Was an N+1: restaurant_reliability() once per restaurant, sequentially
         // awaited, inside the same 15s cycle.
         withTimeout(toDataError(catalogCheck<Record<string, Reliability>>('restaurantsReliabilityAll'))),
@@ -518,7 +548,9 @@ export default function Admin() {
       if (!lr.error) setLowRatings(lr.data ?? [])
       if (!wt.error) setCompensatedOrderIds(new Set((wt.data ?? []).map((t: any) => t.order_id)))
       if (!stalled.error) setStalled((stalled.data as StalledOrder[]) ?? [])
-      if (!refunds.error) setPendingRefunds((refunds.data as PendingRefund[]) ?? [])
+      // null means SKIPPED this cycle, not "no refunds" -- same rule as the
+      // menu query above. Assigning [] would blank the tab between slow cycles.
+      if (!refunds.error && refunds.data) setPendingRefunds(refunds.data as PendingRefund[])
       if (!rel.error) setReliability((rel.data as Record<number, Reliability>) ?? {})
       // Deliberately NOT part of coreFailed. If this one query fails the board
       // still lists every live delivery and every action still works -- only the
@@ -530,15 +562,17 @@ export default function Admin() {
         setLiveById(next)
       }
 
-      const accountsRes = await adminReport<{
-        vendors: { profile_id: string; restaurant_id: number; email: string }[]
-        drivers: { profile_id: string; driver_id: number; email: string }[]
-        catalog: { profile_id: string; name: string; email: string; role: 'catalog' | 'supervisor' | 'observer'; has_device?: boolean }[]
-      }>('listAccounts')
-      if (accountsRes.ok) {
-        setVendorAccounts(accountsRes.data?.vendors ?? [])
-        setDriverAccounts(accountsRes.data?.drivers ?? [])
-        setCatalogAccounts(accountsRes.data?.catalog ?? [])
+      if (wantSlow) {
+        const accountsRes = await adminReport<{
+          vendors: { profile_id: string; restaurant_id: number; email: string }[]
+          drivers: { profile_id: string; driver_id: number; email: string }[]
+          catalog: { profile_id: string; name: string; email: string; role: 'catalog' | 'supervisor' | 'observer'; has_device?: boolean }[]
+        }>('listAccounts')
+        if (accountsRes.ok) {
+          setVendorAccounts(accountsRes.data?.vendors ?? [])
+          setDriverAccounts(accountsRes.data?.drivers ?? [])
+          setCatalogAccounts(accountsRes.data?.catalog ?? [])
+        }
       }
 
       setSyncFailed(coreFailed)
