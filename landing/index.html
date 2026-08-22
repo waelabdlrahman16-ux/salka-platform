@@ -19,6 +19,8 @@
 
 <script>document.documentElement.className += " js";</script>
 
+<link rel="preconnect" href="https://auth.gosalka.com" crossorigin>
+<link rel="preconnect" href="https://pqpnwxyevrsipklzmwex.supabase.co" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -172,6 +174,8 @@
   }
   .cat:hover{ transform:translateY(-3px); box-shadow:0 12px 26px rgba(18,33,31,.09); border-color:transparent }
   .cat .art{ width:56px; height:56px; margin:0 auto 12px; border-radius:16px; display:grid; place-items:center; font-size:26px; line-height:1 }
+  .cat .art-photo{ overflow:hidden; background:linear-gradient(140deg,#F6E7D3,#EBD3B4) }
+  .cat .art-photo img{ width:100%; height:100%; object-fit:cover; display:block }
   .cat b{ display:block; font-family:'Baloo Bhaijaan 2'; font-weight:700; font-size:15px }
   .cat span{ font-size:12.5px; color:var(--mist) }
 
@@ -188,7 +192,11 @@
     transition:transform .16s,box-shadow .16s;
   }
   .vcard:hover{ transform:translateY(-3px); box-shadow:0 12px 26px rgba(18,33,31,.10) }
-  .vcard .thumb{ height:116px; display:grid; place-items:center; font-size:40px; position:relative }
+  .vcard .thumb{
+    height:132px; position:relative; overflow:hidden;
+    background:linear-gradient(140deg,#F6E7D3,#EBD3B4);
+  }
+  .vcard .thumb img{ width:100%; height:100%; object-fit:cover; display:block }
   .vcard .thumb .eta{
     position:absolute; bottom:10px; right:10px; background:rgba(255,255,255,.94); color:var(--ink);
     font-size:12px; font-weight:700; padding:4px 11px; border-radius:999px;
@@ -348,12 +356,19 @@
       </div>
       <div class="cats reveal">
         <a class="cat" href="https://app.gosalka.com">
-          <div class="art" style="background:var(--sun-tint)">🍔</div>
-          <b>مطاعم</b><span>برجر وبيتزا وشرقي</span>
+          <div class="art art-photo"><img src="https://pqpnwxyevrsipklzmwex.supabase.co/storage/v1/render/image/public/vendor-assets/restaurants/3/cover-1787128922440.jpg?width=160&height=160&quality=70" alt="برجر مشوي"
+               width="160" height="160" loading="lazy" decoding="async" /></div>
+          <b>مطاعم</b><span>برجر وفراخ ومشويات</span>
         </a>
         <a class="cat" href="https://app.gosalka.com">
-          <div class="art" style="background:rgba(10,95,94,.10)">🦐</div>
-          <b>مأكولات بحرية</b><span>طازة من البحر</span>
+          <div class="art art-photo"><img src="https://pqpnwxyevrsipklzmwex.supabase.co/storage/v1/render/image/public/vendor-assets/restaurants/19/cover-1787129076884.jpg?width=160&height=160&quality=70" alt="كشري بلازا"
+               width="160" height="160" loading="lazy" decoding="async" /></div>
+          <b>مصري وكشري</b><span>كشري وكبدة وحواوشي</span>
+        </a>
+        <a class="cat" href="https://app.gosalka.com">
+          <div class="art art-photo"><img src="https://auth.gosalka.com/storage/v1/render/image/public/vendor-assets/menu-items/new/9/1785964122037-1785964122047.jpg?width=160&height=160&quality=70" alt="سينابون"
+               width="160" height="160" loading="lazy" decoding="async" /></div>
+          <b>حلويات ومشروبات</b><span>لأي وقت</span>
         </a>
         <a class="cat" href="https://app.gosalka.com">
           <div class="art" style="background:rgba(96,160,90,.14)">🛒</div>
@@ -362,10 +377,6 @@
         <a class="cat" href="https://app.gosalka.com">
           <div class="art" style="background:rgba(214,90,90,.13)">💊</div>
           <b>صيدلية</b><span>دوا وروشتة</span>
-        </a>
-        <a class="cat" href="https://app.gosalka.com">
-          <div class="art" style="background:rgba(120,110,200,.13)">🥤</div>
-          <b>مشروبات وحلويات</b><span>لأي وقت</span>
         </a>
         <a class="cat" href="https://app.gosalka.com/custom-order">
           <div class="art" style="background:var(--sea-tint)">✨</div>
@@ -384,34 +395,58 @@
       </div>
       <div class="rail reveal">
         <a class="vcard" href="https://app.gosalka.com">
-          <div class="thumb" style="background:linear-gradient(140deg,#FFE9C9,#FFD79A)">🍗<span class="eta">20–45 دقيقة</span></div>
-          <div class="body"><b>كنتاكي KFC</b><div class="cuisine">دجاج مقلي · وجبات عائلية</div>
+          <div class="thumb">
+            <img src="https://auth.gosalka.com/storage/v1/render/image/public/vendor-assets/menu-items/new/4/1785843315212-1785843315228.jpg?width=500&height=340&quality=70" alt="ساندوتش فول من أرابياتا" width="500" height="340"
+                 loading="lazy" decoding="async" />
+            <span class="eta">20–45 دقيقة</span>
+          </div>
+          <div class="body"><b>أرابياتا</b><div class="cuisine">فطار وشرقي · مكرونة</div>
+            <div class="tags"><span class="tag warm">الأكثر طلبًا</span></div></div>
+        </a>
+        <a class="vcard" href="https://app.gosalka.com">
+          <div class="thumb">
+            <img src="https://pqpnwxyevrsipklzmwex.supabase.co/storage/v1/render/image/public/vendor-assets/restaurants/3/cover-1787128922440.jpg?width=500&height=340&quality=70" alt="هارت أتاك" width="500" height="340"
+                 loading="lazy" decoding="async" />
+            <span class="eta">20–45 دقيقة</span>
+          </div>
+          <div class="body"><b>هارت أتاك</b><div class="cuisine">برجر مشوي · فراخ</div>
+            <div class="tags"><span class="tag warm">مميز على الساحل</span></div></div>
+        </a>
+        <a class="vcard" href="https://app.gosalka.com">
+          <div class="thumb">
+            <img src="https://pqpnwxyevrsipklzmwex.supabase.co/storage/v1/render/image/public/vendor-assets/restaurants/19/cover-1787129076884.jpg?width=500&height=340&quality=70" alt="كشري بلازا" width="500" height="340"
+                 loading="lazy" decoding="async" />
+            <span class="eta">20–45 دقيقة</span>
+          </div>
+          <div class="body"><b>كشري بلازا</b><div class="cuisine">كشري · أكل مصري</div>
             <div class="tags"><span class="tag">توصيل لباب الشاليه</span></div></div>
         </a>
         <a class="vcard" href="https://app.gosalka.com">
-          <div class="thumb" style="background:linear-gradient(140deg,#FFE0DC,#FFC4BB)">🍟<span class="eta">20–45 دقيقة</span></div>
+          <div class="thumb">
+            <img src="https://pqpnwxyevrsipklzmwex.supabase.co/storage/v1/render/image/public/vendor-assets/restaurants/2/cover-1786804542041.jpg?width=500&height=340&quality=70" alt="ماكدونالدز" width="500" height="340"
+                 loading="lazy" decoding="async" />
+            <span class="eta">20–45 دقيقة</span>
+          </div>
           <div class="body"><b>ماكدونالدز</b><div class="cuisine">برجر · وجبات سريعة</div>
             <div class="tags"><span class="tag">توصيل لباب الشاليه</span></div></div>
         </a>
         <a class="vcard" href="https://app.gosalka.com">
-          <div class="thumb" style="background:linear-gradient(140deg,#F6DCC6,#EBBE97)">🍔<span class="eta">20–45 دقيقة</span></div>
-          <div class="body"><b>هارت أتاك</b><div class="cuisine">برجر مشوي</div>
-            <div class="tags"><span class="tag warm">الأكثر طلبًا</span></div></div>
-        </a>
-        <a class="vcard" href="https://app.gosalka.com">
-          <div class="thumb" style="background:linear-gradient(140deg,#E4EFD9,#C6DEB3)">🍝<span class="eta">20–45 دقيقة</span></div>
-          <div class="body"><b>أرابياتا</b><div class="cuisine">مكرونة · بيتزا</div>
+          <div class="thumb">
+            <img src="https://auth.gosalka.com/storage/v1/render/image/public/vendor-assets/menu-items/new/13/1786027471089-1786027471099.jpg?width=500&height=340&quality=70" alt="كريب سوبر كرانشي من ديڤادو" width="500" height="340"
+                 loading="lazy" decoding="async" />
+            <span class="eta">20–45 دقيقة</span>
+          </div>
+          <div class="body"><b>ديڤادو</b><div class="cuisine">كريب · ساندوتشات</div>
             <div class="tags"><span class="tag">توصيل لباب الشاليه</span></div></div>
         </a>
         <a class="vcard" href="https://app.gosalka.com">
-          <div class="thumb" style="background:linear-gradient(140deg,#D6EAF0,#AED6E3)">🦞<span class="eta">30–55 دقيقة</span></div>
-          <div class="body"><b>إستاكوزا الدولي</b><div class="cuisine">مأكولات بحرية طازة</div>
-            <div class="tags"><span class="tag warm">مميز على الساحل</span></div></div>
-        </a>
-        <a class="vcard" href="https://app.gosalka.com">
-          <div class="thumb" style="background:linear-gradient(140deg,#E6E2F5,#CFC7EC)">🛒<span class="eta">حسب المتاح</span></div>
-          <div class="body"><b>سوبر ماركت وصيدلية</b><div class="cuisine">نواقص الشاليه والدوا</div>
-            <div class="tags"><span class="tag">طول اليوم</span></div></div>
+          <div class="thumb">
+            <img src="https://auth.gosalka.com/storage/v1/render/image/public/vendor-assets/menu-items/new/9/1785964122037-1785964122047.jpg?width=500&height=340&quality=70" alt="سينابون" width="500" height="340"
+                 loading="lazy" decoding="async" />
+            <span class="eta">20–45 دقيقة</span>
+          </div>
+          <div class="body"><b>سينابون</b><div class="cuisine">حلويات · قهوة</div>
+            <div class="tags"><span class="tag">حلو بعد الأكل</span></div></div>
         </a>
       </div>
       <p class="rail-note">القايمة الكاملة والأسعار المحدّثة جوّه التطبيق.</p>
@@ -481,7 +516,7 @@
           </div>
           <div class="phone-body">
             <div class="prow"><div class="ic" style="background:var(--sun-tint)">🍔</div><div class="t"><b>هارت أتاك</b><span>25 دقيقة</span></div><div class="go">اطلب</div></div>
-            <div class="prow"><div class="ic" style="background:rgba(10,95,94,.10)">🦐</div><div class="t"><b>إستاكوزا الدولي</b><span>40 دقيقة</span></div><div class="go">اطلب</div></div>
+            <div class="prow"><div class="ic" style="background:rgba(10,95,94,.10)">🍽️</div><div class="t"><b>كشري بلازا</b><span>40 دقيقة</span></div><div class="go">اطلب</div></div>
             <div class="prow"><div class="ic" style="background:rgba(214,90,90,.13)">💊</div><div class="t"><b>صيدلية</b><span>مفتوحة دلوقتي</span></div><div class="go">اطلب</div></div>
             <div class="ptrack">
               <b>طلبك في الطريق</b>
