@@ -102,17 +102,46 @@ rejects it, but FCM keeps accepting a token long after the browser is gone, so
 stale rows linger. `admin_list_accounts` returns `has_device` and the accounts
 screen shows when an account has none.
 
+`stale_order_sweep` (every 10 minutes) is the floor under all of it. Every
+branch of `push_nudge_sweep` is fenced by `created_at > now() - 45 minutes` and
+the pricing escalation is a one-shot, so before 2026-08-22 an order went
+permanently silent after 45 minutes — that is why one sat 202 minutes unpriced.
+The sweep re-alerts everyone by **age** — 45m, 90m, 180m, 360m, then hourly, with
+**no attempts ceiling**, since a ceiling is the bug — and measures scheduled
+orders from `dispatch_at` so a pre-booked order is not an instant alarm. It stops
+only when the order leaves the waiting state.
+
+Pruning dead tokens: only ever delete a token older than 7 days **that is not the
+last one its profile has**. Deleting the last one silences a real vendor or
+driver, and `vendor_no_device` then fires on every order they get.
+
 ## Things not to touch without asking
 
 - **Order #979** — manually closed as Delivered at 217 EGP as a customer-friendly
   exception.
 - **Order #427** — a real customer was overcharged 25.80 EGP on 19 Aug: the promo
-  was recorded but never deducted from `total`. The bug that caused it
-  (`reprice_order` dropping the promo) was fixed hours later; this order still
-  carries the wrong total and has NOT been corrected.
-- **Driver cash balances** — `cash_held` does not reconcile against
-  deliveries minus remittances: أشرف −125, علي −359.50, and كريم **+6,219**
-  unexplained. Real money owed by real people; do not "fix" it silently.
+  (`SOKHNA30`) was recorded but never deducted from `total`, so 448.00 was
+  collected where 422.20 was owed. The bug that caused it (`reprice_order`
+  dropping the promo) was fixed hours later. **Settled 2026-08-22**: the customer
+  had no account, so a `customer_wallets` row was created for phone
+  `1100424577` and credited 25.80 (`wallet_transactions.order_id = 427`).
+  `orders.total` still reads 448.00 **on purpose** — that is what the driver
+  actually collected, and rewriting it would break the match against the cash.
+- **Driver cash balances** — **settled 2026-08-22**. The accountant collected
+  the outstanding cash outside the app, so `driver_settlements` now carries a
+  `cash_remitted` row per driver for exactly what was held at that moment:
+  كريم 13,620.70, أشرف 15,478.70, علي 8,145.30 — 37,244.70 total. `cash_held`
+  was decremented by those amounts, not zeroed: كريم collected another 674.00
+  on a delivery that landed mid-settlement, and he really does still hold it,
+  so his balance reads 674.00 and the other two read 0.00.
+
+  Two rules that came out of doing it. **Never write a settlement from a figure
+  you read earlier** — `cash_held` moves whenever a driver delivers, and the
+  first attempt was caught only because it asserted the total before
+  committing. Settle a named amount and subtract it; never assign zero.
+  And the reconciliation gap (collected − settled − held: كريم −3,024.00,
+  أشرف +1,735.00, علي −99.50) is a **separate, still-unexplained** problem —
+  settling the cash did not explain it. Do not "fix" it silently.
 
 ## Working rules
 
