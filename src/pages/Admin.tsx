@@ -280,7 +280,7 @@ export default function Admin() {
   }
   const [vendorAccounts, setVendorAccounts] = useState<{ profile_id: string; restaurant_id: number; email: string }[]>([])
   const [driverAccounts, setDriverAccounts] = useState<{ profile_id: string; driver_id: number; email: string }[]>([])
-  const [catalogAccounts, setCatalogAccounts] = useState<{ profile_id: string; name: string; email: string; role: 'catalog' | 'supervisor' | 'observer' }[]>([])
+  const [catalogAccounts, setCatalogAccounts] = useState<{ profile_id: string; name: string; email: string; role: 'catalog' | 'supervisor' | 'observer'; has_device?: boolean }[]>([])
   const [newCatalogName, setNewCatalogName] = useState('')
   // One slot, keyed by action-and-row: `instapay-41`, `cash-7`, `driver-3`.
   // Per-row keys matter -- settling driver A must not disable driver B's button.
@@ -533,7 +533,7 @@ export default function Admin() {
       const accountsRes = await adminReport<{
         vendors: { profile_id: string; restaurant_id: number; email: string }[]
         drivers: { profile_id: string; driver_id: number; email: string }[]
-        catalog: { profile_id: string; name: string; email: string; role: 'catalog' | 'supervisor' | 'observer' }[]
+        catalog: { profile_id: string; name: string; email: string; role: 'catalog' | 'supervisor' | 'observer'; has_device?: boolean }[]
       }>('listAccounts')
       if (accountsRes.ok) {
         setVendorAccounts(accountsRes.data?.vendors ?? [])
@@ -3527,6 +3527,19 @@ export default function Admin() {
                         </span>
                       </p>
                       <p className="text-xs text-mist truncate" dir="ltr">{acc.email}</p>
+                      {/* A web push token dies whenever the browser clears
+                          storage or the PWA is reinstalled -- on 2026-08-22
+                          there were 183 dead against 15 live. Until now that
+                          was silent: the account simply stopped being told
+                          about orders and nobody knew. push_nudge_sweep has
+                          always been this honest about a VENDOR with no
+                          device; there is no reason staff deserve less. */}
+                      {acc.has_device === false && (
+                        <p className="text-xs text-coral-700 font-semibold mt-1">
+                          <Icon name="bell" size="sm" className="inline-block align-[-0.15em] me-1" />
+                          مفيش جهاز مسجّل — مش بيوصله إشعارات. يفتح التطبيق ويسمح بالإشعارات.
+                        </p>
+                      )}
                     </div>
                     <div className="flex gap-1.5 shrink-0">
                       <AccountActionsMenu
