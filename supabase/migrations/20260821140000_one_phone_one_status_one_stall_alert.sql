@@ -101,9 +101,13 @@ alter table orders add constraint orders_status_known check (
 -- panel and the alert cannot drift apart -- which is the failure mode the
 -- audit found four times over elsewhere.
 alter table orders add column if not exists stall_alert_sent_at timestamptz;
+alter table orders add column if not exists stall_alert_status text;
 
 comment on column orders.stall_alert_sent_at is
-  'When the waiting-on-us stall alert was pushed, so it fires once per order.';
+  'When the waiting-on-us stall alert was last pushed.';
+comment on column orders.stall_alert_status is
+  'Which status that alert was about, so an order that stalls twice in two '
+  'different states is reported twice -- and only twice.';
 
 create or replace function public.alert_stalled_orders()
 returns void
@@ -118,7 +122,12 @@ begin
       from stalled_orders() s
       join orders o on o.id = s.id
      where s.status in ('awaiting_quote', 'awaiting_payment')
-       and o.stall_alert_sent_at is null
+       -- Once per STATUS, not once per order. A هنجبلك order legitimately
+       -- passes through awaiting_quote and then awaiting_payment; keying the
+       -- suppression to the order alone would report the first stall and stay
+       -- silent through the second. Order #1187 took exactly that path on
+       -- 22 Aug and sat unnoticed in awaiting_payment.
+       and o.stall_alert_status is distinct from s.status
   loop
     perform notify_admin(
       case v_row.status
@@ -129,7 +138,9 @@ begin
         || ' — مستني من ' || v_row.minutes_stalled || ' دقيقة',
       jsonb_build_object('order_id', v_row.id, 'type', 'stalled_on_us',
                          'order_status', v_row.status));
-    update orders set stall_alert_sent_at = now() where id = v_row.id;
+    update orders
+       set stall_alert_sent_at = now(), stall_alert_status = v_row.status
+     where id = v_row.id;
   end loop;
 end $$;
 
