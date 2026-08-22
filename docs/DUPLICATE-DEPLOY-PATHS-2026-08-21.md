@@ -69,3 +69,36 @@ should pick one path per Worker:
 Either is defensible. Two at once is not: `modified_on` stops identifying the
 commit being served, and any future build-time input has to be configured in
 two places or it will silently apply to only half the deploys.
+
+## Recommendation (2026-08-22)
+
+**Disconnect the Git integration for `appgosalka-platform`. Keep it for
+`gosalka-landing`. Keep the Actions job for both.**
+
+What changed since the section above was written: `npm run check:quote-state`
+became a CI gate, alongside `build` and `lint`, and `smoke-order` places a real
+order on every pull request. That reframes the choice. The two paths are no
+longer "equivalent with different pins" — one of them runs the gates and one of
+them does not:
+
+- `deploy.yml` runs on push to `main`, but the gates run in `ci.yml` and a
+  human reads them on the PR before merging.
+- Cloudflare Workers Builds deploys whatever lands on the branch, on its own,
+  regardless of what CI concluded. A `main` that is red still ships.
+
+That is the argument that was missing before. The gates are cheap and they have
+already earned their keep — the retired `confirmPrice` path bricked a live order
+precisely because a check nobody ran was the only thing that knew about it. A
+deploy path that cannot see those checks should not be the one serving the app.
+
+The split keeps what the integration is actually good for. `gosalka-landing` is
+hand-written static HTML with no build inputs and no gates that apply to it, and
+its branch preview URLs are how the landing page gets reviewed at all — PR #192's
+photography was unreviewable from inside a sandbox without one. Nothing is lost
+by leaving that Worker connected, and the previews stay.
+
+**Steps** (dashboard only — this cannot be done from the repository):
+Cloudflare dashboard → Workers & Pages → `appgosalka-platform` → Settings →
+Build → disconnect the Git repository. Leave `gosalka-landing` as it is. After
+that, `Current Version ID` in the `deploy.yml` log is once again the only thing
+that put code in front of customers.
