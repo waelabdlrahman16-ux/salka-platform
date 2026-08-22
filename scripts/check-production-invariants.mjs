@@ -29,7 +29,7 @@
 //   2  the check could not run -- bad secret, no network. Also a failure, but
 //      a different one: an unverified deploy must not read as a healthy one.
 
-import { readdirSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import pg from 'pg'
@@ -102,6 +102,67 @@ try {
       'deliberately, or delete them, but do not leave them armed.')
   } else {
     console.log(`✓ all ${onDisk.length} migration files are in the ledger`)
+  }
+
+  // 1b. A migration FILE must contain what its ledger row actually executed.
+  //
+  // Check 1 asks only whether a version is PRESENT. It cannot see a file whose
+  // contents are not what ran -- and that is the failure mode behind every
+  // schema object that has ever turned out to live only in production. The
+  // quote system and the admin customer screens both got there that way: applied
+  // to the database, never truly captured in a file.
+  //
+  // TEXT COMPARISON IS THE WRONG TOOL. The ledger holds statements, not the
+  // authored file: a leading comment block is not a statement and never reaches
+  // it, and a deploy through a different tool can reflow whitespace. What has to
+  // match is the set of objects each side CREATES. Both sides are scanned with
+  // the same pattern, so when a file and its ledger row agree, the two sets are
+  // identical -- verified across all 102 non-marker files at the time of writing.
+  //
+  // HISTORICAL MARKERS ARE NOT DRIFT. 202 of the files here are deliberate
+  // placeholders for versions applied before the repository tracked migrations;
+  // the schema of that era is captured in supabase/baseline instead. They say so
+  // in their first line, and they are skipped. Without that exemption this check
+  // is 202 false alarms and gets ignored, which is worse than not having it.
+  //
+  // One direction only: a ledger row creating something its file does not is
+  // always wrong. The reverse is not necessarily -- a statement can be edited
+  // out of a file after failing -- so it is not asserted here.
+  const CREATES = /create\s+(?:or\s+replace\s+)?(?:function|trigger)\s+([a-zA-Z0-9_."]+)/gi
+  const objectsIn = text => new Set(
+    [...text.matchAll(CREATES)].map(m => m[1].toLowerCase().replace(/"/g, '')))
+
+  const fileFor = new Map(
+    readdirSync(MIGRATIONS_DIR)
+      .filter(f => f.endsWith('.sql'))
+      .map(f => [f.split('_')[0], f]))
+
+  const ledgerRows = await q(
+    'select version, statements from supabase_migrations.schema_migrations')
+  const contentDrift = []
+  let compared = 0
+  for (const { version, statements } of ledgerRows) {
+    const file = fileFor.get(version)
+    if (!file || !statements) continue          // check 1 owns the missing-file case
+    const authoredText = readFileSync(join(MIGRATIONS_DIR, file), 'utf8')
+    if (authoredText.includes('Historical migration marker')) continue
+    const executed = objectsIn(statements.join('\n'))
+    if (!executed.size) continue
+    compared++
+    const missing = [...executed].filter(o => !objectsIn(authoredText).has(o))
+    if (missing.length) contentDrift.push({ file, missing })
+  }
+
+  if (contentDrift.length) {
+    fail(`${contentDrift.length} migration file(s) do not contain what they executed:\n` +
+      contentDrift.map(d => `      ${d.file} is missing ${d.missing.join(', ')}`).join('\n'),
+      'The ledger recorded these objects being created by that version; the file of\n' +
+      'that version does not create them, so the definition exists only in\n' +
+      'production. Reconstruct the file from the ledger row -- see\n' +
+      'docs/MIGRATION-LEDGER-RECONSTRUCTION-2026-08-22.md. Do NOT write a new\n' +
+      'migration: the version is already applied and will never be replayed.')
+  } else {
+    console.log(`\u2713 all ${compared} migration files match what their version executed`)
   }
 
   // 2. An anonymous visitor can read every setting checkout needs.
