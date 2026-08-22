@@ -127,14 +127,21 @@ driver, and `vendor_no_device` then fires on every order they get.
   `1100424577` and credited 25.80 (`wallet_transactions.order_id = 427`).
   `orders.total` still reads 448.00 **on purpose** — that is what the driver
   actually collected, and rewriting it would break the match against the cash.
-- **Driver cash balances** — as of 2026-08-22 `cash_held` reads كريم 13,620.70,
-  أشرف 15,478.70, علي 8,145.30 — **37,244.70 outstanding**. Collected minus
-  settled minus held still leaves a gap of كريم −3,024.00, أشرف +1,735.00,
-  علي −99.50. A settlement outside the app was discussed and **explicitly
-  deferred**: the owner's instruction on 2026-08-22 was to leave the numbers
-  alone until the accountant's real figures arrive. Real money owed by real
-  people; do not "fix" it silently, and do not zero `cash_held` to make a
-  reconciliation come out even.
+- **Driver cash balances** — **settled 2026-08-22**. The accountant collected
+  the outstanding cash outside the app, so `driver_settlements` now carries a
+  `cash_remitted` row per driver for exactly what was held at that moment:
+  كريم 13,620.70, أشرف 15,478.70, علي 8,145.30 — 37,244.70 total. `cash_held`
+  was decremented by those amounts, not zeroed: كريم collected another 674.00
+  on a delivery that landed mid-settlement, and he really does still hold it,
+  so his balance reads 674.00 and the other two read 0.00.
+
+  Two rules that came out of doing it. **Never write a settlement from a figure
+  you read earlier** — `cash_held` moves whenever a driver delivers, and the
+  first attempt was caught only because it asserted the total before
+  committing. Settle a named amount and subtract it; never assign zero.
+  And the reconciliation gap (collected − settled − held: كريم −3,024.00,
+  أشرف +1,735.00, علي −99.50) is a **separate, still-unexplained** problem —
+  settling the cash did not explain it. Do not "fix" it silently.
 
 ## Working rules
 
